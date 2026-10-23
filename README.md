@@ -1,4 +1,4 @@
-# Nova Cards 0.4.1
+# Nova Cards 0.5.0
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -11,6 +11,7 @@ Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
 | [Nova Dock Card](#nova-dock-card) | `custom:nova-dock-card` |
 | [Nova Modular Card](#nova-modular-card) | `custom:nova-modular-card` |
 | [Nova Kamera Card](#nova-kamera-card) | `custom:nova-camera-card` |
+| [Nova Media Card](#nova-media-card) | `custom:nova-media-card` |
 
 ## Installation (HACS)
 
@@ -256,11 +257,51 @@ split_layout: grid          # grid | row | column
 
 ---
 
+## Nova Media Card
+
+Media-Player-Karte im Look der Modular Card: Cover als Hintergrund, Titel, Interpret, App-Logo – leuchtet beim Abspielen.
+Buttons erscheinen nur, wenn der Player sie kann (`supported_features`).
+
+```yaml
+type: custom:nova-media-card
+entity: media_player.wohnzimmer_tv
+name: Wohnzimmer
+artwork: cover              # background | cover | none
+show_source: true
+sources: [HDMI 1, Netflix]  # optional: nur diese Quellen
+players:                    # optional: weitere Player, oben umschaltbar
+  - entity: media_player.kueche
+    name: Küche
+  - media_player.bad
+icon_map:                   # App/Quelle → Logo (Groß/Klein egal)
+  netflix: /local/logos/netflix.svg
+  youtube: mdi:youtube
+  HDMI 1: mdi:video-input-hdmi
+```
+
+| Option | Standard | Bedeutung |
+|---|---|---|
+| `entity` | – | `media_player.*` (Pflicht) |
+| `name`, `icon` | Entität | Kopfzeile |
+| `tap_action`, `hold_action` | more-info | Icon antippen / lange drücken |
+| `artwork` | `background` | `background` = Cover als Hintergrund, `cover` = Cover-Bild + unscharfer Hintergrund, `none` |
+| `glow` | `true` | Rahmen leuchtet beim Abspielen |
+| `show_progress` | `true` | Fortschrittsbalken mit Zeit, antippen = springen (wenn der Player Seek kann) |
+| `show_volume`, `show_mute` | `true` | Lautstärke-Regler (bzw. −/+ bei Playern ohne `volume_set`) und Stumm-Button |
+| `show_power` | `true` | Ein/Aus-Button oben rechts |
+| `show_source` / `sources` | `false` / alle | Quellen als Pillen; `sources` = nur diese anzeigen |
+| `players[]` | – | Weitere Player: `entity`, `name`, `icon`. Antippen = umschalten, lange drücken = Details |
+| `show_players` | `true` | Umschalter anzeigen |
+| `auto_switch` | `true` | Wechselt zum Player, der gerade spielt – bis man selbst umschaltet |
+| `icon_map` + `icon_entity` | – | Logo statt Icon: Schlüssel = App-Name, Quelle oder Kanal des Players; mit `icon_entity` zählt deren Zustand (wie bei der Raum Card). Gilt auch für die Quellen-Pillen |
+
+---
+
 ## Theming
 
 Alle Karten lesen diese Variablen (z. B. im Theme oder per card-mod):
 
-`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`
+`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`, `--nova-media-min-height`, `--nova-media-artwork-opacity`
 
 ## Lizenz
 

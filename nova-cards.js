@@ -1,9 +1,9 @@
-/* Nova Cards v0.4.1 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera – alle als custom:nova-*. */
+/* Nova Cards v0.5.0 | MIT | https://github.com/Blackstar9119/nova-cards
+   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media – alle als custom:nova-*. */
 
 /* ---------- Raum, Thermostat, Licht ---------- */
 (() => {
-var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.4.1",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
+var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.5.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
 --nv-fg:var(--nova-text-color,#fff);
@@ -153,9 +153,9 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 </div>`,this._cnt=n.querySelector(".cnt"),this._all=n.querySelector(".all"),this._all?.addEventListener("click",()=>{let r=this._list.filter(l=>this._h.states[l]?.state==="on");r.length&&this._h.callService("light","turn_off",{entity_id:r})});let o=n.querySelector(".grid"),a=Object.fromEntries(t.entities.map(r=>[r.entity,r]));this._tiles=this._list.map(r=>{let l=a[r]||{entity:r},c=document.createElement("div");c.className="t",c.innerHTML='<div class="top" tabindex="0" role="button"><div class="ic"><ha-icon></ha-icon></div><div class="nm"><b></b><small></small></div></div><input type="range" min="1" max="100"><div class="dots"></div>';let p=c.querySelector(".top"),d=c.querySelector("input"),m=c.querySelector(".dots");return m.addEventListener("click",u=>{let f=u.composedPath().find(b=>b.dataset?.c)?.dataset.c;f&&this._h.callService("light","turn_on",{entity_id:r,...ht(f)})}),F(p,{tap:()=>l.tap_action?.action?w(this,{entity:r,tap_action:l.tap_action},"tap"):this._h.callService("light","toggle",{entity_id:r}),hold:()=>l.hold_action?.action?w(this,{entity:r,hold_action:l.hold_action},"hold"):$(this,r)}),d.addEventListener("pointerdown",()=>c._drag=!0),d.addEventListener("input",()=>c.style.setProperty("--p",`${d.value}%`)),d.addEventListener("change",()=>{this._h.callService("light","turn_on",{entity_id:r,brightness_pct:+d.value}),setTimeout(()=>c._drag=!1,800)}),o.appendChild(c),{id:r,o:l,t:c,ic:c.querySelector("ha-icon"),nm:c.querySelector("b"),st:c.querySelector("small"),sl:d,dots:m}})}_update(){if(!this._h||!this._tiles)return;let t=this._h,e=0;for(let n of this._tiles){let i=t.states[n.id],o=i?.attributes||{},a=i?.state==="on",r=!i||i.state==="unavailable";a&&e++;let l=(o.supported_color_modes||[]).some(f=>f!=="onoff"),c=a?Math.max(1,Math.round((o.brightness||0)/2.55)):0;n.t.classList.toggle("on",a),n.t.classList.toggle("na",r),n.ic.setAttribute("icon",n.o.icon||o.icon||(a?"mdi:lightbulb-on":"mdi:lightbulb-outline")),n.nm.textContent=n.o.name||this._strip(o.friendly_name||n.id),n.st.textContent=r?"nicht erreichbar":a?l?`${c} %`:"an":"aus";let p=this._c.use_light_color!==!1&&a&&o.rgb_color;p?n.t.style.setProperty("--lc",`rgb(${p.join(",")})`):n.t.style.removeProperty("--lc"),n.sl.style.display=l&&!r?"":"none",n.t._drag||(n.sl.value=c||1,n.t.style.setProperty("--p",`${c}%`));let m=!r&&(dt(o)||pt(o))&&this._c.show_colors!==!1?[...n.o.colors||[],...this._c.colors||[]].filter((f,b,x)=>x.indexOf(f)===b):[],u=m.join();n.dots._sig!==u&&(n.dots._sig=u,n.dots.innerHTML=m.map(f=>`<div class="dot" data-c="${g(f)}" style="background:${g(A(f))}"></div>`).join(""))}this._cnt&&(this._cnt.textContent=e?`${e} an`:""),this._all?.classList.toggle("show",!!this._c.show_all_off&&e>0)}_strip(t){let e=this._c.strip_prefix??this._c.title??(this._c.area?this._h.areas?.[this._c.area]?.name:"");return e&&t.toLowerCase().startsWith(e.toLowerCase()+" ")?t.slice(e.length+1):t}};_(gt,G,{name:"Nova Licht Card",description:"Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.",documentationURL:z("nova-licht-card")});
 })();
 
-/* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card ---------- */
+/* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card + Nova Media Card ---------- */
 (() => {
-const VERSION = '0.4.1';
+const VERSION = '0.5.0';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const OFF = new Set(['off','unavailable','unknown','idle','docked','standby','closed','paused','not_home','none','ready']);
 const isOn = s => !!s && !OFF.has(s.state);
@@ -1562,6 +1562,349 @@ class NovaCameraCardEditor extends NovaModularCardEditor {
   }
 }
 define('nova-camera-card-editor', NovaCameraCardEditor);
+
+/* ---------- Nova Media Card ---------- */
+const MPCSS = `
+.g.mp{gap:12px;min-height:var(--nova-media-min-height,0)}
+.g.mp.play{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.mp>*{position:relative;z-index:1}
+.mp>.art{position:absolute;inset:0;z-index:0;background:center/cover no-repeat;opacity:0;transition:opacity .6s,filter .6s;pointer-events:none}
+.mp.has-art>.art{opacity:var(--nova-media-artwork-opacity,.5)}
+.mp.cover>.art{filter:blur(22px) saturate(140%);transform:scale(1.2)}
+.mp:not(.play)>.art{filter:grayscale(.6)}.mp.cover:not(.play)>.art{filter:blur(22px) grayscale(.6)}
+.mp>.shade{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(10,14,24,.05),rgba(10,14,24,.55));opacity:0;transition:opacity .6s;pointer-events:none}
+.mp.has-art>.shade{opacity:1}
+.mp .hd .ic img{width:26px;height:26px;border-radius:6px}
+.hb.on{background:var(--nv-accent);color:var(--nv-accent-fg)}
+.now{display:flex;align-items:center;gap:12px;min-width:0}
+.thumb{width:72px;height:72px;flex:none;border-radius:14px;background:var(--nv-chip) center/cover no-repeat;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none}
+.mp.cover.has-art .thumb{display:block}
+.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+.tt b{font-size:17px;font-weight:600}.tt span{font-size:13px;opacity:.75;margin-top:2px}
+.bar{display:flex;align-items:center;gap:8px;font-size:11px;opacity:.85;font-variant-numeric:tabular-nums}
+.bar .tr{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
+.bar.seek .tr{cursor:pointer}
+.bar .tr i{display:block;height:100%;width:0;background:var(--nv-accent);border-radius:3px;transition:width 1s linear}
+.ctl{display:flex;align-items:center;justify-content:center;gap:14px}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:all .2s}
+.ctl .cb ha-icon{--mdc-icon-size:24px}
+.ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.ctl .cb.pp ha-icon{--mdc-icon-size:30px}
+.cb:active{transform:scale(.9)}
+.vol{display:flex;align-items:center;gap:10px}
+.vol .cb{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
+.vol .cb ha-icon{--mdc-icon-size:18px}
+.vol .cb.on{background:var(--nv-error);color:#fff}
+.vol .v{min-width:38px;text-align:right;font-size:13px;font-weight:600}
+.vol input{flex:1}
+.vol .step{flex:1;display:flex;justify-content:center;gap:10px}
+.src,.pls{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:2px}
+.src::-webkit-scrollbar,.pls::-webkit-scrollbar{display:none}
+.pls .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:none}
+.pls .pill .eq{display:none;--mdc-icon-size:14px}.pls .pill.pl .eq{display:flex}
+.mp.off .now,.mp.off .bar,.mp.off .ctl,.mp.off .vol,.mp.off .src{display:none}
+@container (max-width:300px){.ctl{gap:8px}.ctl .cb{width:38px;height:38px}.ctl .cb.pp{width:48px;height:48px}.thumb{width:56px;height:56px}.tt b{font-size:15px}}`;
+
+// supported_features von media_player
+const MF = {PAUSE: 1, SEEK: 2, VOL_SET: 4, MUTE: 8, PREV: 16, NEXT: 32, ON: 128, OFF: 256, VOL_STEP: 1024, SOURCE: 2048, STOP: 4096, PLAY: 16384};
+const MDEF = {artwork: 'background', show_progress: true, show_volume: true, show_mute: true, show_power: true, show_source: false, show_players: true, auto_switch: true};
+const hasF = (s, f) => ((s?.attributes.supported_features || 0) & f) === f;
+const clock = t => { t = Math.max(0, Math.floor(t || 0)); const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), x = String(t % 60).padStart(2, '0'); return h ? `${h}:${String(m).padStart(2, '0')}:${x}` : `${m}:${x}`; };
+const posOf = s => {
+  const a = s.attributes;
+  if (a.media_position == null) return null;
+  const upd = a.media_position_updated_at ? Date.parse(a.media_position_updated_at) : NaN;
+  return a.media_position + (s.state === 'playing' && !isNaN(upd) ? (Date.now() - upd) / 1000 : 0);
+};
+// icon_map: Schlüssel ohne Groß/Klein, z. B. {netflix: /local/logos/netflix.svg}
+const mapIcon = (map, ...keys) => {
+  if (!map) return null;
+  const m = Object.fromEntries(Object.entries(map).map(([k, v]) => [String(k).toLowerCase(), v]));
+  for (const k of keys) if (k != null && m[String(k).toLowerCase()]) return m[String(k).toLowerCase()];
+  return null;
+};
+const cssUrl = u => `url("${String(u).replace(/["\\\n]/g, encodeURIComponent)}")`;
+
+class NovaMediaCard extends HTMLElement {
+  static getConfigElement() { return document.createElement('nova-media-card-editor'); }
+  static getStubConfig(h) {
+    const ids = Object.keys(h.states).filter(i => i.startsWith('media_player.'));
+    return {entity: ids.find(i => h.states[i].state === 'playing') || ids[0] || 'media_player.'};
+  }
+  setConfig(c) {
+    if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
+    if (!c.entity || dom(c.entity) !== 'media_player') throw new Error('entity muss eine media_player.* Entität sein');
+    this._c = {...MDEF, ...c, players: [].concat(c.players || []).map(toObj).filter(o => dom(o.entity) === 'media_player')};
+    this._all = [{entity: c.entity, name: c.name, icon: c.icon}, ...this._c.players];
+    this._idx = 0; this._manual = false;
+    this._built = false;
+    if (this._h) { this._build(); this._update(); }
+  }
+  set hass(h) {
+    this._h = h;
+    if (!this._c) return;
+    if (!this._built) this._build();
+    this._update();
+  }
+  getCardSize() { return 4; }
+  getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
+  connectedCallback() { if (this._built) this._tick(); }
+  disconnectedCallback() { clearInterval(this._tm); this._tm = null; }
+  get _p() { return this._all[this._idx]; }
+  _build() {
+    this._built = true;
+    const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'});
+    const multi = this._all.length > 1 && c.show_players !== false;
+    r.innerHTML = `<style>${MVARS}${MCSS}${MPCSS}</style><div class="g mp${c.artwork === 'cover' ? ' cover' : ''}">
+${c.artwork !== 'none' ? '<div class="art"></div><div class="shade"></div>' : ''}
+${multi ? '<div class="pills pls"></div>' : ''}
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${c.show_power !== false ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ''}</div>
+<div class="now"><div class="thumb"></div><div class="tt"><b></b><span></span></div></div>
+${c.show_progress !== false ? '<div class="bar"><span class="a">0:00</span><div class="tr"><i></i></div><span class="b">0:00</span></div>' : ''}
+<div class="ctl"><div class="cb pv" title="Zurück"><ha-icon icon="mdi:skip-previous"></ha-icon></div><div class="cb pp" title="Play/Pause"><ha-icon icon="mdi:play"></ha-icon></div><div class="cb nx" title="Weiter"><ha-icon icon="mdi:skip-next"></ha-icon></div></div>
+${c.show_volume !== false || c.show_mute !== false ? `<div class="vol">${c.show_mute !== false ? '<div class="cb mu" title="Stumm"><ha-icon icon="mdi:volume-high"></ha-icon></div>' : ''}${c.show_volume !== false ? '<input type="range" min="0" max="100" step="1"><div class="step"><div class="cb vd" title="Leiser"><ha-icon icon="mdi:volume-minus"></ha-icon></div><div class="cb vu" title="Lauter"><ha-icon icon="mdi:volume-plus"></ha-icon></div></div><span class="v"></span>' : ''}</div>` : ''}
+${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
+    const q = s => r.querySelector(s);
+    this._e = {g: q('.g'), art: q('.art'), thumb: q('.thumb'), pls: q('.pls'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), pw: q('.pw'),
+      title: q('.tt b'), artist: q('.tt span'), bar: q('.bar'), fill: q('.bar i'), ta: q('.bar .a'), tb: q('.bar .b'),
+      pv: q('.pv'), pp: q('.pp'), nx: q('.nx'), mu: q('.mu'), vol: q('.vol input'), step: q('.vol .step'), vv: q('.vol .v'), src: q('.src')};
+    const e = this._e, svc = (s, d = {}) => this._h.callService('media_player', s, {entity_id: this._p.entity, ...d});
+    press(e.ic, {tap: () => this._act({entity: this._p.entity, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: this._p.entity, hold_action: c.hold_action}, 'hold')});
+    if (e.pw) press(e.pw, {tap: () => { const s = this._st(); const on = s && !['off', 'standby'].includes(s.state); svc(!on ? 'turn_on' : hasF(s, MF.OFF) ? 'turn_off' : 'toggle'); }});
+    press(e.pp, {tap: () => svc(this._st()?.state === 'playing' && !hasF(this._st(), MF.PAUSE) ? 'media_stop' : 'media_play_pause')});
+    press(e.pv, {tap: () => svc('media_previous_track')});
+    press(e.nx, {tap: () => svc('media_next_track')});
+    if (e.mu) press(e.mu, {tap: () => svc('volume_mute', {is_volume_muted: !this._st()?.attributes.is_volume_muted})});
+    if (e.step) { press(e.step.children[0], {tap: () => svc('volume_down')}); press(e.step.children[1], {tap: () => svc('volume_up')}); }
+    if (e.vol) {
+      const show = () => { e.vol.style.setProperty('--p', `${e.vol.value}%`); e.vv.textContent = `${e.vol.value} %`; };
+      e.vol.addEventListener('pointerdown', () => { this._drag = true; });
+      e.vol.addEventListener('input', () => { this._drag = true; show(); });
+      e.vol.addEventListener('change', () => { this._drag = false; show(); svc('volume_set', {volume_level: +e.vol.value / 100}); });
+    }
+    if (e.bar) e.bar.querySelector('.tr').addEventListener('click', ev => {
+      const s = this._st(), d = s?.attributes.media_duration;
+      if (!d || !hasF(s, MF.SEEK)) return;
+      const b = ev.currentTarget.getBoundingClientRect();
+      svc('media_seek', {seek_position: Math.round(Math.min(1, Math.max(0, (ev.clientX - b.left) / b.width)) * d)});
+    });
+    if (e.pls) this._chips = this._all.map((o, i) => {
+      const el = document.createElement('div');
+      el.className = 'pill';
+      el.innerHTML = '<span class="i"></span><span class="t"></span><ha-icon class="eq" icon="mdi:equalizer"></ha-icon>';
+      press(el, {tap: () => { this._idx = i; this._manual = true; this._srcKey = null; this._update(); }, hold: () => fire(this, 'hass-more-info', {entityId: o.entity})});
+      e.pls.append(el);
+      return el;
+    });
+    this._srcKey = null;
+    this._tick();
+  }
+  _st() { return this._h?.states[this._p.entity]; }
+  _update() {
+    const h = this._h, c = this._c, e = this._e;
+    if (!h || !e) return;
+    // Automatisch zum Player wechseln, der gerade spielt – bis man selbst umschaltet
+    if (c.auto_switch !== false && !this._manual && this._all.length > 1 && h.states[this._p.entity]?.state !== 'playing') {
+      const i = this._all.findIndex(o => h.states[o.entity]?.state === 'playing');
+      if (i >= 0 && i !== this._idx) { this._idx = i; this._srcKey = null; }
+    }
+    const p = this._p, s = h.states[p.entity], a = s?.attributes || {};
+    const off = !s || ['off', 'unavailable', 'unknown', 'standby'].includes(s.state), play = s?.state === 'playing';
+    e.g.classList.toggle('na', !s || s.state === 'unavailable');
+    e.g.classList.toggle('off', off);
+    e.g.classList.toggle('play', play && c.glow !== false);
+    const app = a.app_name || a.source;
+    const logo = mapIcon(c.icon_map, c.icon_entity && h.states[c.icon_entity]?.state, a.app_name, a.source, a.media_channel);
+    e.name.textContent = p.name ?? a.friendly_name ?? p.entity;
+    e.sub.textContent = !s ? 'nicht gefunden' : off ? fmtState(h, s) : [app, play ? null : fmtState(h, s)].filter(Boolean).join(' · ') || fmtState(h, s);
+    setIcon(e.ic, logo || p.icon || a.icon || (a.device_class === 'tv' ? 'mdi:television' : a.device_class === 'speaker' ? 'mdi:speaker' : 'mdi:cast'));
+    e.ic.parentElement.classList.toggle('on', !off);
+    if (e.pw) { e.pw.classList.toggle('on', !off); e.pw.hidden = !!s && !hasF(s, MF.ON) && !hasF(s, MF.OFF); }
+    e.title.textContent = a.media_title || (off ? '' : app || fmtState(h, s));
+    e.artist.textContent = [a.media_artist || a.media_series_title, a.media_album_name].filter(Boolean).join(' · ') || (a.media_title ? '' : a.media_channel || '');
+    // Cover: nur neu laden, wenn sich das Bild ändert
+    const pic = !off && c.artwork !== 'none' ? a.entity_picture_local || a.entity_picture : null;
+    if (pic !== this._pic) {
+      this._pic = pic;
+      if (e.art) e.art.style.backgroundImage = pic ? cssUrl(pic) : '';
+      e.thumb.style.backgroundImage = pic ? cssUrl(pic) : '';
+    }
+    e.g.classList.toggle('has-art', !!pic);
+    setIcon(e.pp, play ? (hasF(s, MF.PAUSE) ? 'mdi:pause' : 'mdi:stop') : 'mdi:play');
+    e.pp.hidden = !!s && !hasF(s, MF.PAUSE) && !hasF(s, MF.PLAY) && !hasF(s, MF.STOP);
+    e.pv.hidden = !hasF(s, MF.PREV);
+    e.nx.hidden = !hasF(s, MF.NEXT);
+    if (e.mu) {
+      e.mu.hidden = !hasF(s, MF.MUTE);
+      e.mu.classList.toggle('on', !!a.is_volume_muted);
+      setIcon(e.mu, a.is_volume_muted ? 'mdi:volume-off' : 'mdi:volume-high');
+    }
+    if (e.vol) {
+      const set = hasF(s, MF.VOL_SET) && a.volume_level != null;
+      e.vol.hidden = e.vv.hidden = !set;
+      e.step.hidden = set || !hasF(s, MF.VOL_STEP);
+      if (set && !this._drag) {
+        const v = Math.round(a.volume_level * 100);
+        e.vol.value = v; e.vol.style.setProperty('--p', `${v}%`); e.vv.textContent = `${v} %`;
+      }
+    }
+    const vb = e.vol?.parentElement;
+    if (vb) vb.hidden = [...vb.children].every(x => x.hidden);
+    if (e.src) this._sources(s);
+    this._chips?.forEach((el, i) => {
+      const o = this._all[i], ps = h.states[o.entity], pa = ps?.attributes || {};
+      el.classList.toggle('on', i === this._idx);
+      el.classList.toggle('pl', ps?.state === 'playing');
+      el.classList.toggle('na', !ps || ps.state === 'unavailable');
+      setIcon(el.firstChild, o.icon || pa.icon || (pa.device_class === 'tv' ? 'mdi:television' : 'mdi:speaker'));
+      el.children[1].textContent = o.name ?? pa.friendly_name ?? o.entity;
+    });
+    this._progress();
+    this._tick();
+  }
+  _sources(s) {
+    const c = this._c, a = s?.attributes || {}, e = this._e;
+    const only = list(c.sources), all = hasF(s, MF.SOURCE) ? a.source_list || [] : [];
+    const srcs = only.length ? all.filter(x => only.includes(x)) : all;
+    const key = `${this._idx}|${srcs.join('\n')}`;
+    if (key !== this._srcKey) {
+      this._srcKey = key;
+      e.src.replaceChildren(...srcs.map(x => {
+        const el = document.createElement('div');
+        el.className = 'pill'; el.dataset.s = x;
+        el.innerHTML = '<span class="i"></span><span class="t"></span>';
+        setIcon(el.firstChild, mapIcon(c.icon_map, x) || 'mdi:import');
+        el.lastChild.textContent = x;
+        press(el, {tap: () => this._h.callService('media_player', 'select_source', {entity_id: this._p.entity, source: x})});
+        return el;
+      }));
+    }
+    e.src.hidden = !srcs.length;
+    [...e.src.children].forEach(el => el.classList.toggle('on', el.dataset.s === a.source));
+  }
+  _progress() {
+    const e = this._e, s = this._st();
+    if (!e?.bar || !s) return;
+    const d = s.attributes.media_duration, p = posOf(s);
+    e.bar.hidden = !(d > 0) || p == null;
+    if (e.bar.hidden) return;
+    e.bar.classList.toggle('seek', hasF(s, MF.SEEK));
+    e.fill.style.width = `${Math.min(100, p / d * 100)}%`;
+    e.ta.textContent = clock(Math.min(p, d));
+    e.tb.textContent = clock(d);
+  }
+  // Sekundentakt nur, solange etwas läuft und der Balken sichtbar ist
+  _tick() {
+    const run = this.isConnected && this._e?.bar && this._st()?.state === 'playing';
+    if (run && !this._tm) this._tm = setInterval(() => this._progress(), 1000);
+    if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
+  }
+}
+NovaMediaCard.prototype._act = NovaModularCard.prototype._act;
+define('nova-media-card', NovaMediaCard, {name: 'Nova Media Card', description: 'Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.', documentationURL: 'https://github.com/Blackstar9119/nova-cards#nova-media-card'});
+
+/* ---------- Editor Media Card ---------- */
+const MP = {domain: ['media_player']};
+const MPMAIN = [
+  {name: 'entity', required: true, selector: {entity: MP}},
+  g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
+  g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}),
+  g2(sel('artwork', [['background', 'Hintergrund'], ['cover', 'Cover + unscharfer Hintergrund'], ['none', 'Kein Cover']]), {name: 'glow', selector: {boolean: {}}}),
+  g2({name: 'show_progress', selector: {boolean: {}}}, {name: 'show_power', selector: {boolean: {}}}),
+  g2({name: 'show_volume', selector: {boolean: {}}}, {name: 'show_mute', selector: {boolean: {}}}),
+  {name: 'show_source', selector: {boolean: {}}},
+  {name: 'sources', selector: {text: {multiple: true}}},
+];
+const MPPLAY = [g2({name: 'show_players', selector: {boolean: {}}}, {name: 'auto_switch', selector: {boolean: {}}})];
+const MPITEM = [{name: 'entity', required: true, selector: {entity: MP}}, NAMEICON];
+const MPLOGO = [{name: 'icon_entity', selector: {entity: {}}}];
+const MPMAP = [g2({name: 'key', selector: T}, {name: 'value', selector: T})];
+const MPLABELS = {...MLABELS, artwork: 'Cover', glow: 'Leuchten beim Abspielen', show_progress: 'Fortschrittsbalken', show_power: 'Ein/Aus-Button',
+  show_volume: 'Lautstärke-Regler', show_mute: 'Stumm-Button', show_source: 'Quellenauswahl', sources: 'Nur diese Quellen zeigen',
+  show_players: 'Player-Umschalter anzeigen', auto_switch: 'Automatisch zum spielenden Player', icon_entity: 'Icon-Entität (optional)',
+  key: 'App / Quelle / Zustand', value: 'Icon oder Bild-URL', tap_action: 'Icon antippen', hold_action: 'Icon lange drücken'};
+const MPHELPERS = {
+  tap_action: 'Standard: Details des Players',
+  sources: 'Leer = alle Quellen des Players. Genaue Namen wie in source_list',
+  auto_switch: 'Bis man selbst einen Player antippt',
+  icon_entity: 'Leer = App-Name bzw. Quelle des Players. Sonst zählt der Zustand dieser Entität (z. B. sensor.tv_app)',
+  key: 'z. B. Netflix – Groß/Klein egal',
+  value: 'mdi:netflix oder /local/logos/netflix.svg',
+};
+
+class NovaMediaCardEditor extends NovaModularCardEditor {
+  _form(schema, data, cb) {
+    const f = super._form(schema, data, cb);
+    f.computeLabel = s => MPLABELS[s.name] ?? s.name;
+    f.computeHelper = s => MPHELPERS[s.name];
+    return f;
+  }
+  _h3(t) { const h = document.createElement('h3'); h.textContent = t; return h; }
+  _add(label, fn) {
+    const a = document.createElement('button');
+    a.className = 'add';
+    a.innerHTML = `<ha-icon icon="mdi:plus"></ha-icon>${esc(label)}`;
+    a.addEventListener('click', e => { e.preventDefault(); fn(); });
+    return a;
+  }
+  _players() { return [].concat(this._config.players || []).map(toObj); }
+  _setPlayers(arr) { const c = {...this._config}; if (arr.length) c.players = arr; else delete c.players; this._emit(c); }
+  _build() {
+    const r = this.shadowRoot, c0 = this._config;
+    r.innerHTML = `<style>${ECSS}${MECSS}.maprow{display:flex;gap:6px;align-items:center}.maprow ha-form{flex:1}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap'), strip = c => { Object.entries(MDEF).forEach(([k, x]) => c[k] === x && delete c[k]); if (c.glow === true) delete c.glow; return c; };
+    w.append(this._form(MPMAIN, {...MDEF, glow: true, ...c0}, v => this._emit(strip(merge(this._config, names(MPMAIN), v)))));
+
+    w.append(this._h3('Weitere Player (umschaltbar)'));
+    const pl = this._players();
+    if (pl.length) w.append(this._form(MPPLAY, {...MDEF, ...c0}, v => this._emit(strip({...this._config, ...v}))));
+    pl.forEach((it, j) => {
+      const m = {item: 'Player'};
+      const [d, s, body] = this._details(`p.${j}`, it.icon || 'mdi:speaker', this._ilabel(it, j, m), [
+        this._btn('mdi:arrow-up', 'Nach oben', () => this._pmove(j, -1), j === 0),
+        this._btn('mdi:arrow-down', 'Nach unten', () => this._pmove(j, 1), j === pl.length - 1),
+        this._btn('mdi:delete-outline', 'Löschen', () => { this._open = new Set(); this._setPlayers(this._players().filter((_, x) => x !== j)); this._rebuild(); })]);
+      body.append(this._form(MPITEM, it, v => {
+        const arr = this._players();
+        arr[j] = merge(arr[j], names(MPITEM), v);
+        this._setPlayers(arr);
+        s.querySelector('.lbl').textContent = this._ilabel(arr[j], j, m);
+      }));
+      w.append(d);
+    });
+    w.append(this._add('Player hinzufügen', () => { const n = [...this._players(), {}]; this._open = new Set([`p.${n.length - 1}`]); this._setPlayers(n); this._rebuild(); }));
+
+    // App-Logos: Zeilen bleiben im Editor, auch solange sie noch leer sind
+    w.append(this._h3('App-Logos (icon_map)'));
+    const p = document.createElement('p'); p.className = 'hint';
+    p.textContent = 'Ersetzt das Icon oben und bei den Quellen durch ein Logo, passend zu App oder Quelle.';
+    w.append(p, this._form(MPLOGO, c0, v => this._emit(merge(this._config, ['icon_entity'], v))));
+    const map = this._map ||= Object.entries(c0.icon_map || {});
+    const write = () => {
+      const o = Object.fromEntries(map.filter(([k, v]) => k && v)), c = {...this._config};
+      if (Object.keys(o).length) c.icon_map = o; else delete c.icon_map;
+      this._emit(c);
+    };
+    map.forEach(([k, v], j) => {
+      const row = document.createElement('div'); row.className = 'maprow';
+      row.append(this._form(MPMAP, {key: k, value: v}, x => { map[j] = [x.key ?? '', x.value ?? '']; write(); }),
+        this._btn('mdi:close', 'Entfernen', () => { map.splice(j, 1); write(); this._rebuild(); }));
+      w.append(row);
+    });
+    w.append(this._add('Logo hinzufügen', () => { map.push(['', '']); this._rebuild(); }));
+  }
+  setConfig(c) {
+    if (JSON.stringify(c) !== this._emitted) this._map = null;
+    super.setConfig(c);
+  }
+  _pmove(j, dir) {
+    const arr = this._players(), t = j + dir;
+    [arr[j], arr[t]] = [arr[t], arr[j]];
+    this._open = new Set([`p.${t}`]);
+    this._setPlayers(arr); this._rebuild();
+  }
+}
+define('nova-media-card-editor', NovaMediaCardEditor);
 
 console.info(`%c NOVA-CARDS %c v${VERSION} `, 'color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px', 'color:#fff;background:#1b2134;border-radius:0 4px 4px 0');
 })();
