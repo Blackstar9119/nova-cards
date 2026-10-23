@@ -1,0 +1,14 @@
+{
+  "name": "nova-cards",
+  "version": "0.9.0",
+  "description": "Nova Cards – Kartenfamilie für Home Assistant (Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter)",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
