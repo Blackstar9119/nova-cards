@@ -1,9 +1,9 @@
-/* Nova Cards v0.7.0 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.8.0 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter – alle als custom:nova-*. */
 
 /* ---------- Raum, Thermostat, Licht ---------- */
 (() => {
-var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.7.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
+var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.8.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
 --nv-fg:var(--nova-text-color,#fff);
@@ -155,7 +155,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 
 /* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card + Nova Media Card + Nova Saugroboter Card ---------- */
 (() => {
-const VERSION = '0.7.0';
+const VERSION = '0.8.0';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const OFF = new Set(['off','unavailable','unknown','idle','docked','standby','closed','paused','not_home','none','ready']);
 const isOn = s => !!s && !OFF.has(s.state);
@@ -1980,11 +1980,66 @@ const VCSS = `
 .vc.auto>.main{display:flex;flex-direction:column;gap:12px;min-width:0;padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
 .vc.auto .mpnl{padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
 .vc.auto .map{flex:1;min-height:var(--nova-vacuum-map-min-height,240px)}
-.vc.auto .map img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}}`;
+.vc.auto .map img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}}
+.scene{--rc:var(--nova-vacuum-robot-color,#3d4452);--sc:var(--nova-vacuum-station-color,#2f3542);--wc:var(--nova-vacuum-water-color,#6fb6f2);
+position:relative;order:0;height:var(--nova-vacuum-scene-height,120px)}
+.scene svg{display:block;width:100%;height:100%;overflow:visible}
+.scene .cap{position:absolute;left:0;top:0;padding:4px 10px;border-radius:999px;background:var(--nv-chip);font-size:11px;font-weight:500;letter-spacing:.02em;opacity:.85}
+.scene .cap:empty{display:none}
+.sc .floor{fill:currentColor;opacity:.1}
+.sc .trail{fill:var(--wc);opacity:0;transform-box:fill-box;transform-origin:left center}
+.sc .shd{fill:#000;opacity:.3}
+.sc .body{fill:url(#vgr);stroke:rgba(255,255,255,.14);stroke-width:.6}.sc .top{fill:rgba(255,255,255,.1)}.sc .bump{fill:rgba(0,0,0,.35)}
+.sc .lid{fill:color-mix(in srgb,var(--rc) 55%,#000);stroke:rgba(255,255,255,.12);stroke-width:.5}.sc .lidl{fill:rgba(255,255,255,.25)}
+.sc .mop{fill:var(--wc);opacity:0;transition:opacity .4s}
+.sc .br line{stroke:rgba(255,255,255,.35);stroke-width:1;stroke-linecap:round}
+.sc .br{transform-box:fill-box;transform-origin:center}
+.sc .led{fill:var(--nv-active);opacity:.9}
+.sc .bolt{fill:none;stroke:var(--nv-accent);stroke-width:1;stroke-linejoin:round;opacity:0}
+.sc .err{opacity:0}.sc .err circle{fill:none;stroke:var(--nv-error);stroke-width:1.2}.sc .err rect,.sc .err .dot{fill:var(--nv-error);stroke:none}
+.sc .dust circle{fill:currentColor;opacity:0}
+.sc .ramp{fill:color-mix(in srgb,var(--sc) 80%,#000)}.sc .tower{fill:url(#vgs);stroke:rgba(255,255,255,.12);stroke-width:.6}.sc .seam{fill:rgba(0,0,0,.35)}
+.sc .sled{fill:var(--nv-active);opacity:.35}
+.sc .tank{fill:rgba(0,0,0,.4)}.sc .tkc{fill:var(--wc)}.sc .tkd{fill:#a68a63}.sc .tkc,.sc .tkd{transition:all .6s}
+.sc .tkc.low,.sc .tkd.low{fill:var(--nv-error);animation:vc-blink 1.6s infinite}
+.sc .parts circle{fill:rgba(255,255,255,.5);opacity:0}
+.sc .water ellipse,.sc .water circle{fill:var(--wc);opacity:0;transform-box:fill-box;transform-origin:center}
+.sc .heat path{fill:none;stroke:color-mix(in srgb,var(--nv-accent) 70%,#fff);stroke-width:1;stroke-linecap:round;opacity:0}
+.sc .rob{transform:translateX(110px);transition:transform 1.4s ease-in-out}
+.sc.docked .rob{transform:translateX(240px)}
+.sc.cleaning .rob{animation:vc-drive 16s ease-in-out infinite}
+.sc.returning .rob{animation:vc-home 6s ease-in-out infinite}
+.sc.cleaning .br,.sc.returning .br{animation:vc-spin .35s linear infinite}
+.sc.cleaning:not(.mopping) .dust circle{animation:vc-dust 1.2s linear infinite}
+.sc .dust circle:nth-child(2),.sc .parts circle:nth-child(2),.sc .water ellipse:nth-child(2),.sc .heat path:nth-child(2){animation-delay:.4s}
+.sc .dust circle:nth-child(3),.sc .parts circle:nth-child(3),.sc .water ellipse:nth-child(3),.sc .heat path:nth-child(3){animation-delay:.8s}
+.sc.paused .led{animation:vc-blink 1.6s infinite}
+.sc.error .rb{transform:rotate(-3deg);transform-box:fill-box;transform-origin:center bottom}
+.sc.error .err{opacity:1;animation:vc-blink 1.6s infinite}.sc.error .led{fill:var(--nv-error);animation:vc-blink 1.6s infinite}
+.sc.mop .mop{opacity:.9}
+.sc.cleaning.mopping .trail{animation:vc-trail 16s ease-in-out infinite}
+.sc.chg .bolt{animation:vc-pulse 3s ease-in-out infinite}.sc.chg .led{animation:vc-pulse 3s ease-in-out infinite}
+.sc.empty .parts circle{animation:vc-up 1.2s linear infinite}
+.sc.wash .water ellipse{animation:vc-wave 1.4s ease-in-out infinite}.sc.wash .water circle{animation:vc-up 1.6s linear infinite}
+.sc .water circle:nth-child(5){animation-delay:.5s}.sc .water circle:nth-child(6){animation-delay:1s}
+.sc.dry .heat path{animation:vc-heat 2.4s ease-in-out infinite}
+.sc.empty .sled,.sc.wash .sled,.sc.dry .sled{opacity:1;animation:vc-pulse 2s ease-in-out infinite}
+.scene.still *{animation-play-state:paused!important}
+@media (prefers-reduced-motion:reduce){.scene *{animation:none!important}}
+@keyframes vc-drive{0%,100%{transform:translateX(20px)}45%,50%{transform:translateX(150px)}}
+@keyframes vc-home{0%{transform:translateX(90px)}85%,100%{transform:translateX(240px)}}
+@keyframes vc-spin{to{transform:rotate(360deg)}}
+@keyframes vc-blink{50%{opacity:.25}}
+@keyframes vc-pulse{0%,100%{opacity:.3}50%{opacity:.95}}
+@keyframes vc-dust{0%{opacity:0;transform:translateX(0)}30%{opacity:.35}100%{opacity:0;transform:translateX(12px)}}
+@keyframes vc-up{0%{opacity:0;transform:translateY(0)}20%{opacity:.85}100%{opacity:0;transform:translateY(-60px)}}
+@keyframes vc-wave{0%,100%{opacity:0;transform:scaleX(.4)}50%{opacity:.8;transform:scaleX(1)}}
+@keyframes vc-heat{0%{opacity:0;transform:translateY(6px)}40%{opacity:.75}100%{opacity:0;transform:translateY(-16px)}}
+@keyframes vc-trail{0%{transform:scaleX(.2);opacity:.4}45%,90%{transform:scaleX(.76);opacity:.4}100%{transform:scaleX(.2);opacity:0}}`;
 
 // supported_features von vacuum
 const VF = {PAUSE: 4, STOP: 8, RETURN: 16, FAN: 32, LOCATE: 512, SPOT: 1024, START: 8192};
-const VDEF = {layout: 'auto', controls: 'pills', battery_display: 'status', rooms_title: 'Raum reinigen', map_title: 'Karte', glow: true, show_stop: true, show_return: true, show_locate: true, show_spot: false, show_fan_speed: true,
+const VDEF = {scene: true, scene_auto: true, layout: 'auto', controls: 'pills', battery_display: 'status', rooms_title: 'Raum reinigen', map_title: 'Karte', glow: true, show_stop: true, show_return: true, show_locate: true, show_spot: false, show_fan_speed: true,
   map_aspect_ratio: 'auto', map_refresh: 5, map_action: 'more-info', segment_mode: 'roborock', segment_repeat: 1, consumables_layout: 'rows'};
 const VRUN = ['cleaning', 'returning'];
 // Steuer-Pillen: Schlüssel → [Icon, Text, Feature, Service]
@@ -2013,6 +2068,56 @@ const batOf = (h, id) => {
   if (!dev) return null;
   return Object.values(h.entities).find(e => e.device_id === dev && dom(e.entity_id) === 'sensor' && h.states[e.entity_id]?.attributes.device_class === 'battery')?.entity_id || null;
 };
+
+// Animation: Station hinten, Roboter davor, Effekte obendrauf (Seitenansicht, viewBox 320×120)
+const VSCENE = `<div class="scene sc"><svg viewBox="0 8 320 102" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+<defs><linearGradient id="vgr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,var(--rc) 75%,#fff)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--rc) 70%,#000)"/></linearGradient>
+<linearGradient id="vgs" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:color-mix(in srgb,var(--sc) 85%,#fff)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--sc) 80%,#000)"/></linearGradient>
+<clipPath id="vtc"><rect x="276" y="34" width="5" height="40" rx="2.5"/></clipPath><clipPath id="vtd"><rect x="300" y="34" width="5" height="40" rx="2.5"/></clipPath></defs>
+<rect class="floor" x="0" y="104" width="320" height="1"/><rect class="trail" x="10" y="104" width="230" height="1.6" rx=".8"/>
+<g class="stn"><path class="ramp" d="M236 104 L246 98 L320 98 L320 104 Z"/><rect class="tower" x="262" y="14" width="58" height="84" rx="6"/>
+<rect class="seam" x="262" y="26" width="58" height=".8"/><rect class="sled" x="282" y="19" width="18" height="1.6" rx=".8"/>
+<rect class="tank" x="276" y="34" width="5" height="40" rx="2.5"/><rect class="tank" x="300" y="34" width="5" height="40" rx="2.5"/>
+<rect class="tkc" clip-path="url(#vtc)" x="276" y="34" width="5" height="40"/><rect class="tkd" clip-path="url(#vtd)" x="300" y="34" width="5" height="40"/></g>
+<g class="rob"><ellipse class="shd" cx="35" cy="104" rx="34" ry="2.4"/><g class="rb"><rect class="mop" x="8" y="99.5" width="54" height="2.5" rx="1.2"/>
+<g transform="translate(5 101)"><g class="br"><line x1="-5" y1="0" x2="5" y2="0"/><line x1="0" y1="-1.6" x2="0" y2="1.6"/></g></g>
+<rect class="body" x="0" y="86" width="70" height="14" rx="7"/><rect class="top" x="4" y="85" width="62" height="2.2" rx="1.1"/><rect class="bump" x="1" y="93" width="68" height=".8"/>
+<rect class="lid" x="28" y="79" width="14" height="6.5" rx="2"/><rect class="lidl" x="30" y="81.2" width="10" height="1"/>
+<rect class="led" x="56" y="89.5" width="9" height="1.4" rx=".7"/><g class="dust"><circle cx="-5" cy="102" r="1"/><circle cx="-10" cy="101" r=".8"/><circle cx="-15" cy="102.5" r=".9"/></g>
+<path class="bolt" d="M37 62 l-4 7 h4 l-2 6 l6 -8 h-4 l2 -5 z"/><g class="err"><circle cx="35" cy="68" r="5.5"/><rect x="34.3" y="64.8" width="1.4" height="4" rx=".7"/><circle class="dot" cx="35" cy="70.9" r=".8"/></g></g></g>
+<g class="parts"><circle cx="291" cy="90" r="1.1"/><circle cx="294" cy="90" r=".9"/><circle cx="288" cy="90" r="1"/></g>
+<g class="water"><ellipse cx="256" cy="104" rx="11" ry="1.6"/><ellipse cx="280" cy="104" rx="11" ry="1.6"/><ellipse cx="304" cy="104" rx="11" ry="1.6"/><circle cx="266" cy="97" r="1.2"/><circle cx="290" cy="95" r="1"/><circle cx="308" cy="97" r="1.1"/></g>
+<g class="heat"><path d="M266 76 q2 -4 0 -8 q-2 -4 0 -8"/><path d="M280 76 q2 -4 0 -8 q-2 -4 0 -8"/><path d="M294 76 q2 -4 0 -8 q-2 -4 0 -8"/></g>
+</svg><div class="cap"></div></div>`;
+// Muster für Status-Texte (Roh-Zustand und übersetzt), z. B. emptying_the_bin, washing_the_mop, Trocknen
+const VPAT = {empty: /empty|evacuat|dust_?collect|collect_?dust|absaug|entleer/i, wash: /wash|wasch|wäsch|self_?clean|rinse/i, dry: /dry|trock/i, mop: /mop|wisch|wipe/i, chg: /charg|lädt/i};
+const VSTATES = ['docked', 'cleaning', 'returning', 'paused', 'error', 'idle'];
+// aktiv: Zahl > 0 (z. B. Rest-Trocknungszeit), sonst an/aus
+const vact = s => !!s && !['unavailable', 'unknown'].includes(s.state) && (NUMRE.test(s.state) ? +s.state > 0 : isOn(s));
+// Passende Entitäten am Gerät des Roboters finden (Entity-ID + translation_key, Deutsch/Englisch)
+function vauto(h, id) {
+  const dev = h?.entities?.[id]?.device_id, out = {};
+  if (!dev) return out;
+  const ents = Object.values(h.entities).filter(e => e.device_id === dev && e.entity_id !== id && !e.hidden);
+  const txt = e => `${e.translation_key || ''} ${e.entity_id}`;
+  const find = (doms, re, not) => ents.find(e => doms.includes(dom(e.entity_id)) && re.test(txt(e)) && !(not && not.test(txt(e))))?.entity_id;
+  const ERR = /error|fehler|fault/;
+  out.status = find(['sensor'], /^(vacuum_)?(status|state) |_(status|state)$/, /dock|station|base|error|fehler|fault/);
+  out.station = find(['sensor'], /(dock|station|base)\w*_(status|state)|(status|state)\w*_(dock|station)/, ERR);
+  out.mop_attached = find(['binary_sensor'], /mop\w*(attach|install)|(attach|install)\w*mop|mopp?_angebracht/);
+  out.mop_mode = ents.find(e => {
+    if (dom(e.entity_id) !== 'select') return false;
+    const o = (h.states[e.entity_id]?.attributes.options || []).map(String);
+    return o.some(x => VPAT.mop.test(x)) && o.some(x => !VPAT.mop.test(x));
+  })?.entity_id;
+  out.clean_water = find(['binary_sensor', 'sensor'], /clean_?water|fresh_?water|frischwasser/);
+  out.dirty_water = find(['binary_sensor', 'sensor'], /dirty_?water|waste_?water|schmutzwasser/);
+  out.drying = find(['sensor', 'binary_sensor'], /dry|trockn/, ERR);
+  out.charging = find(['binary_sensor'], /charg|ladestatus/);
+  out.emptying = find(['binary_sensor'], /empty|entleer|absaug/);
+  out.washing = find(['binary_sensor'], /wash|wasch|wäsch/);
+  return Object.fromEntries(Object.entries(out).filter(([, v]) => v));
+}
 
 class NovaVacuumCard extends HTMLElement {
   static getConfigElement() { return document.createElement('nova-vacuum-card-editor'); }
@@ -2054,6 +2159,7 @@ class NovaVacuumCard extends HTMLElement {
     const lay = c.map ? (['side', 'stack'].includes(c.layout) ? c.layout : 'auto') : 'stack';
     r.innerHTML = `<style>${MVARS}${MCSS}${VCSS}</style><div class="g vc ${lay}"><div class="main">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${c.all ? '<div class="pill all"><span class="i"></span><span class="t"></span></div>' : ''}<div class="bat" hidden><ha-icon></ha-icon><span></span></div></div>
+${c.scene !== false ? VSCENE : ''}
 ${pills ? `<div class="ctl pl pills">${Object.entries(VCTL).map(([k, [ic, t]]) => `<div class="pill c-${k}"><ha-icon icon="${ic}"></ha-icon><span>${t}</span></div>`).join('')}</div>`
     : '<div class="ctl"><div class="cb sp" title="Spot"><ha-icon icon="mdi:target-variant"></ha-icon></div><div class="cb st" title="Stopp"><ha-icon icon="mdi:stop"></ha-icon></div><div class="cb pp" title="Start/Pause"><ha-icon icon="mdi:play"></ha-icon></div><div class="cb hm" title="Zur Station"><ha-icon icon="mdi:home-import-outline"></ha-icon></div><div class="cb lo" title="Suchen"><ha-icon icon="mdi:map-marker-question-outline"></ha-icon></div></div>'}
 ${c.show_fan_speed !== false ? '<div class="pills fs"></div>' : ''}
@@ -2115,6 +2221,9 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
         return [el, o];
       });
     }
+    this._auto = vauto(this._h, c.entity);
+    e.sc = q('.scene');
+    if (e.sc) Object.assign(e, {cap: q('.scene .cap'), tkc: q('.tkc'), tkd: q('.tkd')});
     this._fsKey = this._mapKey = null;
     this._tick();
   }
@@ -2126,6 +2235,38 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     const [d, s, data] = fn(c.entity, seg, Math.max(1, +c.segment_repeat || 1));
     this._h.callService(d, s, data);
     this._sel.clear(); this._update();
+  }
+  // Animation: liefert true bei Tank-Warnung
+  _scene() {
+    const e = this._e, h = this._h, c = this._c;
+    if (!e.sc) return false;
+    const s = this._st(), st = s?.state, a = s?.attributes || {}, bv = this._bv;
+    const pick = k => c[k] === false ? null : c[k] || (c.scene_auto !== false ? this._auto[k] : null);
+    const S = k => { const id = pick(k); return id ? h.states[id] : null; };
+    const txt = [S('status'), S('station')].flatMap(x => x ? [x.state, fmtState(h, x)] : []).concat(a.status || [], st || []).join(' ');
+    const mm = S('mop_mode'), ma = S('mop_attached'), only = list(c.mop_states);
+    const mopping = mm ? (only.length ? only.includes(mm.state) : VPAT.mop.test(mm.state) && !/^(off|none|vacuum|aus)$/i.test(mm.state)) : null;
+    const attached = ma ? vact(ma) : !!(a.mop_attached ?? a.water_box_attached ?? mopping);
+    const empty = vact(S('emptying')) || VPAT.empty.test(txt);
+    const wash = !empty && (vact(S('washing')) || VPAT.wash.test(txt));
+    const dry = !empty && !wash && (vact(S('drying')) || VPAT.dry.test(txt));
+    const chg = !empty && !wash && !dry && !['cleaning', 'returning', 'error'].includes(st) && (vact(S('charging')) || VPAT.chg.test(txt) || (st === 'docked' && bv < 100));
+    const wet = attached && (mopping ?? true);
+    // Tanks: binary_sensor an = Problem, Zahl = Füllstand in %, Text mit leer/voll = Problem
+    const tank = (el, x, ok, bad) => {
+      let p = .55, low = false;
+      if (x && NUMRE.test(x.state)) p = Math.max(0, Math.min(100, +x.state)) / 100;
+      else if (x && !['unavailable', 'unknown'].includes(x.state)) { low = dom(x.entity_id) === 'binary_sensor' ? x.state === 'on' : /low|empty|leer|full|voll|lack|short|knapp|problem/i.test(x.state); p = low ? bad : ok; }
+      el.setAttribute('y', 34 + 40 * (1 - p)); el.setAttribute('height', 40 * p);
+      el.classList.toggle('low', low);
+      el.style.opacity = x ? '' : '.35';
+      return low;
+    };
+    const lowC = tank(e.tkc, S('clean_water'), .75, .08), lowD = tank(e.tkd, S('dirty_water'), .3, .95);
+    e.sc.className = ['scene', 'sc', VSTATES.includes(st) ? st : 'idle', attached && 'mop', wet && 'mopping', empty && 'empty', wash && 'wash', dry && 'dry', chg && 'chg', this._vis === false && 'still'].filter(Boolean).join(' ');
+    e.cap.textContent = empty ? 'Absaugen' : wash ? 'Mopp wird gewaschen' : dry ? 'Mopp trocknet' : st === 'cleaning' ? (wet ? 'Saugt & wischt' : 'Saugt')
+      : lowC ? 'Frischwasser leer' : lowD ? 'Schmutzwasser voll' : chg ? (bv >= 100 ? 'Voll geladen' : 'Lädt') : '';
+    return lowC || lowD;
   }
   _mapTap() {
     const a = this._c.map_action;
@@ -2211,6 +2352,8 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
       if (mx && !isNaN(n)) el.lastChild.firstChild.style.width = `${Math.max(0, Math.min(100, n / mx * 100))}%`;
     });
     e.g.classList.toggle('err', err && c.glow !== false);
+    this._bv = bv;
+    if (this._scene()) warn = true;
     e.g.classList.toggle('warn', !err && warn && c.glow !== false);
     this._mapSync();
     this._tick();
@@ -2248,6 +2391,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     e.img.src = stamp(p, dom(id) === 'image' ? ms.state : Date.now());
   }
   _tick() {
+    this._e?.sc?.classList.toggle('still', this._vis === false);
     const c = this._c, run = this._vis && c?.map && dom(c.map) === 'camera' && c.map_refresh > 0 && VRUN.includes(this._st()?.state);
     if (run && !this._tm) this._tm = setInterval(() => this._mapSync(true), c.map_refresh * 1000);
     if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
@@ -2269,6 +2413,15 @@ const VMAIN = [
   g2({name: 'show_stop', selector: {boolean: {}}}, {name: 'show_return', selector: {boolean: {}}}),
   g2({name: 'show_locate', selector: {boolean: {}}}, {name: 'show_spot', selector: {boolean: {}}}),
 ];
+const VSCN = [
+  g2({name: 'scene', selector: {boolean: {}}}, {name: 'scene_auto', selector: {boolean: {}}}),
+  g2({name: 'mop_attached', selector: {entity: {}}}, {name: 'mop_mode', selector: {entity: {}}}),
+  {name: 'mop_states', selector: {text: {multiple: true}}},
+  g2({name: 'clean_water', selector: {entity: {}}}, {name: 'dirty_water', selector: {entity: {}}}),
+  g2({name: 'emptying', selector: {entity: {}}}, {name: 'washing', selector: {entity: {}}}),
+  g2({name: 'drying', selector: {entity: {}}}, {name: 'charging', selector: {entity: {}}}),
+  {name: 'station', selector: {entity: {}}},
+];
 const VFAN = [{name: 'show_fan_speed', selector: {boolean: {}}}, {name: 'fan_speeds', selector: {text: {multiple: true}}}];
 const VMAP = [
   g2({name: 'map', selector: {entity: {domain: ['camera', 'image']}}}, {name: 'map_title', selector: T}),
@@ -2284,7 +2437,9 @@ const VSWL = [{name: 'switches_columns', selector: {number: {min: 1, max: 3, mod
 const VSW = [ENT, NAMEICON, {name: 'tap_action', selector: A}, {name: 'confirm', selector: T}];
 const VCONSL = [sel('consumables_layout', [['rows', 'Liste'], ['chips', 'Chips']])];
 const VCONS = [ENT, NAMEICON, g2({name: 'unit', selector: T}, {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}), g2(NUM('below'), NUM('max'))];
-const VLABELS = {...MLABELS, battery: 'Akku-Sensor', battery_display: 'Akku anzeigen', controls: 'Steuerung', layout: 'Layout',
+const VLABELS = {...MLABELS, scene: 'Animation anzeigen', scene_auto: 'Entitäten automatisch suchen', mop_attached: 'Mopp angebracht', mop_mode: 'Reinigungsmodus (Wischen?)',
+  mop_states: 'Zustände, die „wischt“ bedeuten', clean_water: 'Frischwassertank', dirty_water: 'Schmutzwassertank', emptying: 'Absaugen aktiv', washing: 'Moppwäsche aktiv',
+  drying: 'Trocknung aktiv', charging: 'Lädt', station: 'Stations-Status', battery: 'Akku-Sensor', battery_display: 'Akku anzeigen', controls: 'Steuerung', layout: 'Layout',
   map_title: 'Überschrift Karte', rooms_title: 'Überschrift Räume', room_sensor: 'Aktueller Raum (Sensor)', all: '„Überall“-Button: Entität',
   all_name: '„Überall“-Button: Text', all_icon: '„Überall“-Button: Icon', area: 'Bereich', switches_columns: 'Spalten', battery_low: 'Akku niedrig ab', status: 'Status-Entität (optional)', glow: 'Leuchten beim Reinigen / bei Warnung',
   show_stop: 'Stopp-Button', show_return: 'Zur-Station-Button', show_locate: 'Suchen-Button', show_spot: 'Spot-Reinigung',
@@ -2292,6 +2447,13 @@ const VLABELS = {...MLABELS, battery: 'Akku-Sensor', battery_display: 'Akku anze
   map_refresh: 'Aktualisieren alle', map_action: 'Karte antippen', segment_mode: 'Integration', segment_repeat: 'Durchgänge', segments: 'Segment-IDs',
   consumables_layout: 'Darstellung', below: 'Warnen unter', max: 'Maximum (für Balken)', tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken'};
 const VHELPERS = {
+  scene_auto: 'Sucht Mopp, Tanks, Absaugen, Waschen, Trocknen und Laden am Gerät des Roboters. Felder unten überschreiben das',
+  mop_mode: 'Select o. ä.: Zustand mit mop/wisch = wischt (z. B. vac_and_mop)',
+  mop_states: 'Optional, wenn die Erkennung nicht passt: genaue Zustände, z. B. vac_and_mop, mop',
+  clean_water: 'binary_sensor (an = leer), Füllstand in % oder Text',
+  dirty_water: 'binary_sensor (an = voll), Füllstand in % oder Text',
+  drying: 'An oder Zahl > 0 (z. B. Rest-Trocknungszeit) = trocknet',
+  station: 'Text-Sensor der Station; wird wie der Status nach Absaugen/Waschen/Trocknen durchsucht',
   battery: 'Leer = Akku-Sensor am Gerät des Roboters automatisch',
   status: 'Text unter dem Namen, z. B. sensor.robbi_status. Leer = Zustand des Roboters',
   tap_action: 'Standard: Details des Roboters',
@@ -2354,6 +2516,13 @@ class NovaVacuumCardEditor extends NovaMediaCardEditor {
     sec(VMAIN);
     sec(VFAN, 'Saugstärke');
     sec(VMAP, 'Karte');
+    sec(VSCN, 'Animation');
+    const au = Object.entries(vauto(this._hass, c0.entity));
+    if (au.length && c0.scene !== false && c0.scene_auto !== false) {
+      const p0 = document.createElement('p'); p0.className = 'hint';
+      p0.textContent = `Automatisch gefunden: ${au.map(([k, v]) => `${VLABELS[k] || k} = ${v}`).join(', ')}`;
+      w.append(p0);
+    }
     w.append(this._h3('Räume'));
     const p = document.createElement('p'); p.className = 'hint';
     p.textContent = 'Je Raum Segment-IDs (aus der App bzw. Integration) – oder ein Skript/eine Aktion für alles andere.';

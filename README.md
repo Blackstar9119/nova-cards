@@ -1,4 +1,4 @@
-# Nova Cards 0.7.0
+# Nova Cards 0.8.0
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -300,6 +300,7 @@ icon_map:                   # App/Quelle → Logo (Groß/Klein egal)
 ## Nova Saugroboter Card
 
 Saugroboter mit Status, Akku und Steuer-Pillen (Start, Pause, Stopp, Zur Station) – leuchtet beim Reinigen. Buttons erscheinen nur, wenn der Roboter sie kann (`supported_features`).
+Mit Animation von Roboter und Station: fährt beim Reinigen, wischt (nasse Spur), fährt zurück, lädt, saugt ab, wäscht und trocknet den Mopp, zeigt Frisch-/Schmutzwassertank. Die nötigen Entitäten sucht die Karte selbst am Gerät des Roboters – ohne sie läuft die Animation nur mit dem `vacuum`-Zustand, den jeder Roboter hat.
 Optional: Karte/Kamera-Bild (bei breiter Karte, z. B. im Popup, automatisch daneben), Saugstärke, Raumreinigung per Segment, Schalter (Staubentleerung, Moppwäsche …) sowie Infos und Verbrauchsteile. Alles im grafischen Editor einstellbar.
 
 ```yaml
@@ -358,6 +359,14 @@ consumables:                   # Infos & Verbrauchsteile
 | `show_stop`, `show_return`, `show_locate` | `true` | Stopp (nur während der Fahrt), Zur Station, Suchen |
 | `show_spot` | `false` | Spot-Reinigung |
 | `show_fan_speed` / `fan_speeds` | `true` / alle | Saugstärke als Pillen aus `fan_speed_list`; `fan_speeds` = nur diese. Icons per `fan_speed_icons` (wie `icon_map`) |
+| `scene` | `true` | Animation von Roboter und Station |
+| `scene_auto` | `true` | Entitäten für die Animation automatisch am Gerät suchen (Entity-ID bzw. `translation_key`, deutsch/englisch). Der Editor zeigt, was gefunden wurde |
+| `mop_attached` | auto | Mopp angebracht (`binary_sensor` o. ä.) – Mopp-Pad am Roboter |
+| `mop_mode` / `mop_states` | auto / – | Reinigungsmodus: Zustand mit `mop`/`wisch` (z. B. `vac_and_mop`) = wischt → nasse Spur. `mop_states` = genaue Zustände, falls die Erkennung nicht passt |
+| `clean_water`, `dirty_water` | auto | Tanks in der Station: `binary_sensor` an = leer bzw. voll (blinkt rot, Rahmen gelb), Zahl = Füllstand in %, Text mit leer/voll |
+| `emptying`, `washing`, `drying`, `charging` | auto | Aktiv bei an bzw. Zahl > 0 (z. B. Rest-Trocknungszeit). Zusätzlich werden `status` und `station` nach Absaugen/Waschen/Trocknen/Laden durchsucht (z. B. `emptying_the_bin`, `washing_the_mop`) |
+| `station` | auto | Status-Sensor der Station |
+| | | Jede dieser Entitäten mit `false` abschalten |
 | `map` / `map_title` | – / `Karte` | `image.*` (lädt bei Änderung neu) oder `camera.*`; Überschrift, `-` = ohne |
 | `map_aspect_ratio` | `auto` | Seitenverhältnis der Karte, sonst Bildgröße |
 | `map_refresh` | `5` | Nur `camera.*`: Aktualisieren alle x s, solange der Roboter fährt und die Karte sichtbar ist (`0` = aus) |
@@ -378,7 +387,7 @@ consumables:                   # Infos & Verbrauchsteile
 
 Alle Karten lesen diese Variablen (z. B. im Theme oder per card-mod):
 
-`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`, `--nova-media-min-height`, `--nova-media-artwork-opacity`, `--nova-vacuum-map-min-height`
+`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`, `--nova-media-min-height`, `--nova-media-artwork-opacity`, `--nova-vacuum-map-min-height`, `--nova-vacuum-scene-height`, `--nova-vacuum-robot-color`, `--nova-vacuum-station-color`, `--nova-vacuum-water-color`
 
 ## Lizenz
 
