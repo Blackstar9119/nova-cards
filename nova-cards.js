@@ -1,9 +1,9 @@
-/* Nova Cards v0.5.1 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media – alle als custom:nova-*. */
+/* Nova Cards v0.6.0 | MIT | https://github.com/Blackstar9119/nova-cards
+   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter – alle als custom:nova-*. */
 
 /* ---------- Raum, Thermostat, Licht ---------- */
 (() => {
-var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.5.1",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
+var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.6.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
 --nv-fg:var(--nova-text-color,#fff);
@@ -153,9 +153,9 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 </div>`,this._cnt=n.querySelector(".cnt"),this._all=n.querySelector(".all"),this._all?.addEventListener("click",()=>{let r=this._list.filter(l=>this._h.states[l]?.state==="on");r.length&&this._h.callService("light","turn_off",{entity_id:r})});let o=n.querySelector(".grid"),a=Object.fromEntries(t.entities.map(r=>[r.entity,r]));this._tiles=this._list.map(r=>{let l=a[r]||{entity:r},c=document.createElement("div");c.className="t",c.innerHTML='<div class="top" tabindex="0" role="button"><div class="ic"><ha-icon></ha-icon></div><div class="nm"><b></b><small></small></div></div><input type="range" min="1" max="100"><div class="dots"></div>';let p=c.querySelector(".top"),d=c.querySelector("input"),m=c.querySelector(".dots");return m.addEventListener("click",u=>{let f=u.composedPath().find(b=>b.dataset?.c)?.dataset.c;f&&this._h.callService("light","turn_on",{entity_id:r,...ht(f)})}),F(p,{tap:()=>l.tap_action?.action?w(this,{entity:r,tap_action:l.tap_action},"tap"):this._h.callService("light","toggle",{entity_id:r}),hold:()=>l.hold_action?.action?w(this,{entity:r,hold_action:l.hold_action},"hold"):$(this,r)}),d.addEventListener("pointerdown",()=>c._drag=!0),d.addEventListener("input",()=>c.style.setProperty("--p",`${d.value}%`)),d.addEventListener("change",()=>{this._h.callService("light","turn_on",{entity_id:r,brightness_pct:+d.value}),setTimeout(()=>c._drag=!1,800)}),o.appendChild(c),{id:r,o:l,t:c,ic:c.querySelector("ha-icon"),nm:c.querySelector("b"),st:c.querySelector("small"),sl:d,dots:m}})}_update(){if(!this._h||!this._tiles)return;let t=this._h,e=0;for(let n of this._tiles){let i=t.states[n.id],o=i?.attributes||{},a=i?.state==="on",r=!i||i.state==="unavailable";a&&e++;let l=(o.supported_color_modes||[]).some(f=>f!=="onoff"),c=a?Math.max(1,Math.round((o.brightness||0)/2.55)):0;n.t.classList.toggle("on",a),n.t.classList.toggle("na",r),n.ic.setAttribute("icon",n.o.icon||o.icon||(a?"mdi:lightbulb-on":"mdi:lightbulb-outline")),n.nm.textContent=n.o.name||this._strip(o.friendly_name||n.id),n.st.textContent=r?"nicht erreichbar":a?l?`${c} %`:"an":"aus";let p=this._c.use_light_color!==!1&&a&&o.rgb_color;p?n.t.style.setProperty("--lc",`rgb(${p.join(",")})`):n.t.style.removeProperty("--lc"),n.sl.style.display=l&&!r?"":"none",n.t._drag||(n.sl.value=c||1,n.t.style.setProperty("--p",`${c}%`));let m=!r&&(dt(o)||pt(o))&&this._c.show_colors!==!1?[...n.o.colors||[],...this._c.colors||[]].filter((f,b,x)=>x.indexOf(f)===b):[],u=m.join();n.dots._sig!==u&&(n.dots._sig=u,n.dots.innerHTML=m.map(f=>`<div class="dot" data-c="${g(f)}" style="background:${g(A(f))}"></div>`).join(""))}this._cnt&&(this._cnt.textContent=e?`${e} an`:""),this._all?.classList.toggle("show",!!this._c.show_all_off&&e>0)}_strip(t){let e=this._c.strip_prefix??this._c.title??(this._c.area?this._h.areas?.[this._c.area]?.name:"");return e&&t.toLowerCase().startsWith(e.toLowerCase()+" ")?t.slice(e.length+1):t}};_(gt,G,{name:"Nova Licht Card",description:"Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.",documentationURL:z("nova-licht-card")});
 })();
 
-/* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card + Nova Media Card ---------- */
+/* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card + Nova Media Card + Nova Saugroboter Card ---------- */
 (() => {
-const VERSION = '0.5.1';
+const VERSION = '0.6.0';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const OFF = new Set(['off','unavailable','unknown','idle','docked','standby','closed','paused','not_home','none','ready']);
 const isOn = s => !!s && !OFF.has(s.state);
@@ -1932,6 +1932,372 @@ class NovaMediaCardEditor extends NovaModularCardEditor {
   }
 }
 define('nova-media-card-editor', NovaMediaCardEditor);
+
+/* ---------- Nova Saugroboter Card ---------- */
+const VCSS = `
+.g.vc.run{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.vc.run .hd .ic ha-icon{animation:nv-vc 2.4s ease-in-out infinite}
+@keyframes nv-vc{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+.vc .hd small.er{color:var(--nv-error);opacity:1}
+.bat{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:var(--nv-chip);font-size:12.5px;font-weight:600;flex:none}
+.bat ha-icon{--mdc-icon-size:17px}
+.bat.low{background:color-mix(in srgb,var(--nv-error) 30%,transparent)}
+.bat.chg ha-icon{color:var(--nv-accent)}
+.map{position:relative;border-radius:calc(var(--nv-radius) - 8px);overflow:hidden;background:rgba(0,0,0,.25)}
+.map.ar{aspect-ratio:var(--ar)}
+.map img{display:block;width:100%;height:auto}
+.map.ar img{height:100%;object-fit:contain}
+.ctl{display:flex;align-items:center;justify-content:center;gap:14px}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:all .2s}
+.ctl .cb ha-icon{--mdc-icon-size:24px}
+.ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.ctl .cb.pp ha-icon{--mdc-icon-size:30px}
+.cb:active{transform:scale(.9)}
+.fs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:2px}.fs::-webkit-scrollbar{display:none}
+.rooms .pill.go{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent}
+.cons .kv{flex-wrap:wrap;row-gap:4px}
+.cons .kv .cbar{flex-basis:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.cons .kv .cbar i{display:block;height:100%;background:var(--nv-active);border-radius:2px}
+.cons .warn .cbar i{background:var(--nv-warn)}.cons .warn .v{color:var(--nv-warn);opacity:1}
+.cons .pill.warn{background:color-mix(in srgb,var(--nv-warn) 25%,transparent)}
+@container (max-width:300px){.ctl{gap:8px}.ctl .cb{width:38px;height:38px}.ctl .cb.pp{width:48px;height:48px}}`;
+
+// supported_features von vacuum
+const VF = {PAUSE: 4, STOP: 8, RETURN: 16, FAN: 32, LOCATE: 512, SPOT: 1024, START: 8192};
+const VDEF = {glow: true, show_stop: true, show_return: true, show_locate: true, show_spot: false, show_fan_speed: true,
+  map_aspect_ratio: 'auto', map_refresh: 5, map_action: 'more-info', segment_mode: 'roborock', segment_repeat: 1, consumables_layout: 'rows'};
+const VRUN = ['cleaning', 'returning'];
+const segId = x => NUMRE.test(x) ? +x : x;
+// Raumreinigung je Integration: [domain, service, data]
+const SEG = {
+  roborock: (id, s, n) => ['vacuum', 'send_command', {entity_id: id, command: 'app_segment_clean', params: [{segments: s.map(segId), repeat: n}]}],
+  valetudo: (id, s, n) => ['vacuum', 'send_command', {entity_id: id, command: 'segment_cleanup', params: {segment_ids: s.map(String), iterations: n, customOrder: true}}],
+  dreame: (id, s, n) => ['dreame_vacuum', 'vacuum_clean_segment', {entity_id: id, segments: s.map(segId), repeats: n}],
+  xiaomi: (id, s) => ['xiaomi_miio', 'vacuum_clean_segment', {entity_id: id, segments: s.map(segId)}],
+};
+const batIcon = (v, chg) => {
+  if (v == null || isNaN(v)) return 'mdi:battery-unknown';
+  const t = Math.round(v / 10) * 10;
+  if (chg) return t >= 100 ? 'mdi:battery-charging-100' : t < 10 ? 'mdi:battery-charging-outline' : `mdi:battery-charging-${t}`;
+  return t >= 100 ? 'mdi:battery' : t < 10 ? 'mdi:battery-outline' : `mdi:battery-${t}`;
+};
+// Akku-Sensor am selben Gerät (battery_level-Attribut ist bei neueren HA-Versionen weg)
+const batOf = (h, id) => {
+  const dev = h.entities?.[id]?.device_id;
+  if (!dev) return null;
+  return Object.values(h.entities).find(e => e.device_id === dev && dom(e.entity_id) === 'sensor' && h.states[e.entity_id]?.attributes.device_class === 'battery')?.entity_id || null;
+};
+
+class NovaVacuumCard extends HTMLElement {
+  static getConfigElement() { return document.createElement('nova-vacuum-card-editor'); }
+  static getStubConfig(h) {
+    const ids = Object.keys(h.states).filter(i => i.startsWith('vacuum.'));
+    return {entity: ids[0] || 'vacuum.'};
+  }
+  setConfig(c) {
+    if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
+    if (!c.entity || dom(c.entity) !== 'vacuum') throw new Error('entity muss eine vacuum.* Entität sein');
+    if (c.map && !['camera', 'image'].includes(dom(c.map))) throw new Error('map muss eine camera.* oder image.* Entität sein');
+    this._c = {...VDEF, ...c, rooms: [].concat(c.rooms || []).map(toObj).filter(o => o.name || o.icon || o.entity || o.segments != null || o.tap_action),
+      consumables: [].concat(c.consumables || []).map(toObj).filter(o => o.entity)};
+    this._built = false;
+    if (this._h) { this._build(); this._update(); }
+  }
+  set hass(h) {
+    this._h = h;
+    if (!this._c) return;
+    if (!this._built) this._build();
+    this._update();
+  }
+  getCardSize() { return 3 + (this._c?.map ? 4 : 0) + (this._c?.consumables.length ? 2 : 0); }
+  getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
+  connectedCallback() {
+    if ('IntersectionObserver' in window) {
+      this._io ||= new IntersectionObserver(es => { this._vis = es[es.length - 1].isIntersecting; this._tick(); }, {rootMargin: '100px'});
+      this._io.observe(this);
+    } else this._vis = true;
+    this._tick();
+  }
+  disconnectedCallback() { this._io?.disconnect(); this._vis = false; this._tick(); }
+  _build() {
+    this._built = true;
+    const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'});
+    this._bat = c.battery || batOf(this._h, c.entity);
+    const ar = String(c.map_aspect_ratio || 'auto').replace(':', '/');
+    r.innerHTML = `<style>${MVARS}${MCSS}${VCSS}</style><div class="g vc">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><div class="bat" hidden><ha-icon></ha-icon><span></span></div></div>
+${c.map ? `<div class="map${ar !== 'auto' ? ' ar' : ''}" style="--ar:${esc(ar)}"><img alt=""></div>` : ''}
+<div class="ctl"><div class="cb sp" title="Spot"><ha-icon icon="mdi:target-variant"></ha-icon></div><div class="cb st" title="Stopp"><ha-icon icon="mdi:stop"></ha-icon></div><div class="cb pp" title="Start/Pause"><ha-icon icon="mdi:play"></ha-icon></div><div class="cb hm" title="Zur Station"><ha-icon icon="mdi:home-import-outline"></ha-icon></div><div class="cb lo" title="Suchen"><ha-icon icon="mdi:map-marker-question-outline"></ha-icon></div></div>
+${c.show_fan_speed !== false ? '<div class="pills fs"></div>' : ''}
+${c.rooms.length ? '<div class="blk rooms"><div class="pills"></div></div>' : ''}
+${c.consumables.length ? `<div class="blk cons"><div class="${c.consumables_layout === 'chips' ? 'pills' : 'list'}"></div></div>` : ''}</div>`;
+    const q = s => r.querySelector(s);
+    this._e = {g: q('.g'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), bat: q('.bat'), map: q('.map'), img: q('.map img'),
+      pp: q('.pp'), st: q('.st'), hm: q('.hm'), lo: q('.lo'), sp: q('.sp'), fs: q('.fs'), rooms: q('.rooms .pills'), cons: q('.cons > div')};
+    const e = this._e, svc = (s, d = {}) => this._h.callService('vacuum', s, {entity_id: c.entity, ...d});
+    press(e.ic, {tap: () => this._act({entity: c.entity, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: c.entity, hold_action: c.hold_action}, 'hold')});
+    press(e.bat, {tap: () => this._bat && fire(this, 'hass-more-info', {entityId: this._bat})});
+    press(e.pp, {tap: () => { const s = this._st(); s?.state === 'cleaning' ? svc(hasF(s, VF.PAUSE) ? 'pause' : 'stop') : svc('start'); }});
+    press(e.st, {tap: () => svc('stop')});
+    press(e.hm, {tap: () => svc('return_to_base')});
+    press(e.lo, {tap: () => svc('locate')});
+    press(e.sp, {tap: () => svc('clean_spot')});
+    if (e.map) {
+      press(e.map, {tap: () => this._mapTap(), hold: () => fire(this, 'hass-more-info', {entityId: c.map})});
+    }
+    // Räume: mit Segmenten = auswählen und gesammelt reinigen, sonst Aktion/Entität direkt
+    this._sel = new Set();
+    if (e.rooms) {
+      this._rooms = c.rooms.map((o, i) => {
+        const el = document.createElement('div');
+        el.className = 'pill';
+        el.innerHTML = '<span class="i"></span><span class="t"></span>';
+        press(el, {tap: () => {
+          if (o.tap_action?.action || o.entity || !list(o.segments).length) return this._act(o, 'tap');
+          this._sel.has(i) ? this._sel.delete(i) : this._sel.add(i);
+          this._update();
+        }, hold: () => this._act(o, 'hold')});
+        e.rooms.append(el);
+        return el;
+      });
+      this._go = document.createElement('div');
+      this._go.className = 'pill go';
+      this._go.innerHTML = '<ha-icon icon="mdi:play"></ha-icon><span class="t"></span>';
+      press(this._go, {tap: () => this._clean()});
+      e.rooms.append(this._go);
+    }
+    if (e.cons) {
+      const chips = c.consumables_layout === 'chips';
+      this._cons = c.consumables.map(o => {
+        const el = document.createElement('div');
+        el.className = chips ? 'pill' : 'kv';
+        el.innerHTML = chips ? '<span class="i"></span><span class="t"></span>' : '<span class="i"></span><span class="k"></span><span class="v"></span><div class="cbar"><i></i></div>';
+        press(el, {tap: () => this._act(o, 'tap', true), hold: () => this._act(o, 'hold')});
+        e.cons.append(el);
+        return [el, o];
+      });
+    }
+    this._fsKey = this._mapKey = null;
+    this._tick();
+  }
+  _st() { return this._h?.states[this._c.entity]; }
+  _clean() {
+    const c = this._c, seg = [...this._sel].flatMap(i => list(c.rooms[i].segments));
+    const fn = SEG[c.segment_mode];
+    if (!seg.length || !fn) return;
+    const [d, s, data] = fn(c.entity, seg, Math.max(1, +c.segment_repeat || 1));
+    this._h.callService(d, s, data);
+    this._sel.clear(); this._update();
+  }
+  _mapTap() {
+    const a = this._c.map_action;
+    if (a === 'none') return;
+    if (a === 'vacuum') return fire(this, 'hass-more-info', {entityId: this._c.entity});
+    fire(this, 'hass-more-info', {entityId: this._c.map});
+  }
+  _update() {
+    const h = this._h, c = this._c, e = this._e;
+    if (!h || !e) return;
+    const s = this._st(), a = s?.attributes || {}, st = s?.state;
+    const run = VRUN.includes(st), err = st === 'error';
+    e.g.classList.toggle('na', !s || st === 'unavailable');
+    e.g.classList.toggle('run', run && c.glow !== false);
+    e.name.textContent = c.name ?? a.friendly_name ?? c.entity;
+    const ss = c.status && h.states[c.status];
+    e.sub.textContent = !s ? 'nicht gefunden' : ss ? fmtState(h, ss) : [fmtState(h, s), a.fan_speed && run ? a.fan_speed : null].filter(Boolean).join(' · ');
+    e.sub.classList.toggle('er', err);
+    setIcon(e.ic, c.icon || a.icon || 'mdi:robot-vacuum');
+    e.ic.parentElement.classList.toggle('on', run);
+    // Akku: eigener Sensor, sonst Sensor am Gerät, sonst Attribut
+    const bs = this._bat && h.states[this._bat], bv = parseFloat(bs ? bs.state : a.battery_level);
+    e.bat.hidden = isNaN(bv);
+    if (!isNaN(bv)) {
+      const chg = st === 'docked' && bv < 100;
+      setIcon(e.bat.firstChild, batIcon(bv, chg));
+      e.bat.lastChild.textContent = `${Math.round(bv)} %`;
+      e.bat.classList.toggle('chg', chg);
+      e.bat.classList.toggle('low', bv <= (c.battery_low ?? 20) && !chg);
+    }
+    setIcon(e.pp, st === 'cleaning' ? (hasF(s, VF.PAUSE) ? 'mdi:pause' : 'mdi:stop') : 'mdi:play');
+    e.pp.title = st === 'cleaning' ? 'Pause' : 'Start';
+    e.pp.hidden = !!s && !hasF(s, VF.START) && !hasF(s, VF.PAUSE);
+    e.st.hidden = c.show_stop === false || !hasF(s, VF.STOP) || !(run || st === 'paused');
+    e.hm.hidden = c.show_return === false || !hasF(s, VF.RETURN) || st === 'docked';
+    e.lo.hidden = c.show_locate === false || !hasF(s, VF.LOCATE);
+    e.sp.hidden = !c.show_spot || !hasF(s, VF.SPOT);
+    if (e.fs) this._fans(s);
+    this._rooms?.forEach((el, i) => {
+      const o = c.rooms[i], os = o.entity && h.states[o.entity];
+      el.classList.toggle('on', this._sel.has(i));
+      el.classList.toggle('na', !!o.entity && (!os || os.state === 'unavailable'));
+      setIcon(el.firstChild, o.icon || os?.attributes.icon || 'mdi:floor-plan');
+      el.lastChild.textContent = o.name ?? os?.attributes.friendly_name ?? (list(o.segments).join(', ') || '');
+    });
+    if (this._go) {
+      this._go.hidden = !this._sel.size;
+      this._go.lastChild.textContent = `${this._sel.size} ${this._sel.size === 1 ? 'Raum' : 'Räume'} reinigen`;
+    }
+    let warn = false;
+    this._cons?.forEach(([el, o]) => {
+      const cs = h.states[o.entity], n = cs ? parseFloat(cs.state) : NaN;
+      const low = o.below != null && !isNaN(n) && n < o.below;
+      warn ||= low;
+      el.classList.toggle('na', !cs || cs.state === 'unavailable');
+      el.classList.toggle('warn', low);
+      setIcon(el.firstChild, iconOf(h, o, 'mdi:wrench-clock'));
+      const v = valueOf(h, cs, o);
+      if (el.classList.contains('pill')) { el.lastChild.textContent = o.name === '' ? v : `${nameOf(h, o)} · ${v}`; return; }
+      el.children[1].textContent = nameOf(h, o);
+      el.children[2].textContent = v;
+      // Balken bei Prozent oder gesetztem Maximum
+      const mx = o.max ?? ((o.unit ?? cs?.attributes.unit_of_measurement) === '%' ? 100 : null);
+      el.lastChild.hidden = !mx || isNaN(n);
+      if (mx && !isNaN(n)) el.lastChild.firstChild.style.width = `${Math.max(0, Math.min(100, n / mx * 100))}%`;
+    });
+    e.g.classList.toggle('err', err && c.glow !== false);
+    e.g.classList.toggle('warn', !err && warn && c.glow !== false);
+    this._mapSync();
+    this._tick();
+  }
+  _fans(s) {
+    const c = this._c, a = s?.attributes || {}, e = this._e;
+    const only = list(c.fan_speeds), all = hasF(s, VF.FAN) ? a.fan_speed_list || [] : [];
+    const fs = only.length ? all.filter(x => only.includes(x)) : all;
+    const key = fs.join('\n');
+    if (key !== this._fsKey) {
+      this._fsKey = key;
+      e.fs.replaceChildren(...fs.map(x => {
+        const el = document.createElement('div');
+        el.className = 'pill'; el.dataset.s = x;
+        el.innerHTML = '<span class="i"></span><span class="t"></span>';
+        setIcon(el.firstChild, mapIcon(c.fan_speed_icons, x) || 'mdi:fan');
+        el.lastChild.textContent = x;
+        press(el, {tap: () => this._h.callService('vacuum', 'set_fan_speed', {entity_id: c.entity, fan_speed: x})});
+        return el;
+      }));
+    }
+    e.fs.hidden = !fs.length;
+    [...e.fs.children].forEach(el => el.classList.toggle('on', el.dataset.s === a.fan_speed));
+  }
+  // image.* bei Zustandswechsel neu laden, camera.* im Takt, solange der Roboter fährt
+  _mapSync(force) {
+    const e = this._e, id = this._c.map, ms = id && this._h?.states[id], p = ms?.attributes.entity_picture;
+    if (!e?.map) return;
+    e.map.hidden = !p;
+    if (!p) return;
+    const key = dom(id) === 'image' ? `${p}|${ms.state}` : p;
+    if (!force && key === this._mapKey) return;
+    if (!this._vis && this._mapKey) return;
+    this._mapKey = key;
+    e.img.src = stamp(p, dom(id) === 'image' ? ms.state : Date.now());
+  }
+  _tick() {
+    const c = this._c, run = this._vis && c?.map && dom(c.map) === 'camera' && c.map_refresh > 0 && VRUN.includes(this._st()?.state);
+    if (run && !this._tm) this._tm = setInterval(() => this._mapSync(true), c.map_refresh * 1000);
+    if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
+    if (this._vis) this._mapSync();
+  }
+}
+NovaVacuumCard.prototype._act = NovaModularCard.prototype._act;
+define('nova-vacuum-card', NovaVacuumCard, {name: 'Nova Saugroboter Card', description: 'Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte, Raumreinigung und Verbrauchsteilen.', documentationURL: 'https://github.com/Blackstar9119/nova-cards#nova-saugroboter-card'});
+
+/* ---------- Editor Saugroboter Card ---------- */
+const VMAIN = [
+  {name: 'entity', required: true, selector: {entity: {domain: ['vacuum']}}},
+  g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
+  g2({name: 'battery', selector: {entity: {domain: ['sensor'], device_class: 'battery'}}}, {name: 'battery_low', selector: {number: {min: 0, max: 100, mode: 'box', unit_of_measurement: '%'}}}),
+  {name: 'status', selector: {entity: {}}},
+  g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}),
+  {name: 'glow', selector: {boolean: {}}},
+  g2({name: 'show_stop', selector: {boolean: {}}}, {name: 'show_return', selector: {boolean: {}}}),
+  g2({name: 'show_locate', selector: {boolean: {}}}, {name: 'show_spot', selector: {boolean: {}}}),
+];
+const VFAN = [{name: 'show_fan_speed', selector: {boolean: {}}}, {name: 'fan_speeds', selector: {text: {multiple: true}}}];
+const VMAP = [
+  {name: 'map', selector: {entity: {domain: ['camera', 'image']}}},
+  g2(sel('map_aspect_ratio', [['auto', 'Automatisch'], ['1:1', '1:1'], ['4:3', '4:3'], ['16:9', '16:9'], ['3:4', '3:4']]),
+    {name: 'map_refresh', selector: {number: {min: 0, max: 60, mode: 'box', unit_of_measurement: 's'}}}),
+  sel('map_action', [['more-info', 'Karte groß öffnen'], ['vacuum', 'Details des Roboters'], ['none', 'Nichts']]),
+];
+const VSEG = [g2(sel('segment_mode', [['roborock', 'Roborock'], ['valetudo', 'Valetudo (MQTT)'], ['dreame', 'Dreame (HACS)'], ['xiaomi', 'Xiaomi Miio']]),
+  {name: 'segment_repeat', selector: {number: {min: 1, max: 3, mode: 'slider'}}})];
+const VROOM = [NAMEICON, {name: 'segments', selector: T}, {name: 'entity', selector: {entity: {}}}, {name: 'tap_action', selector: A}, {name: 'confirm', selector: T}];
+const VCONSL = [sel('consumables_layout', [['rows', 'Liste'], ['chips', 'Chips']])];
+const VCONS = [ENT, NAMEICON, g2({name: 'unit', selector: T}, {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}), g2(NUM('below'), NUM('max'))];
+const VLABELS = {...MLABELS, battery: 'Akku-Sensor', battery_low: 'Akku niedrig ab', status: 'Status-Entität (optional)', glow: 'Leuchten beim Reinigen / bei Warnung',
+  show_stop: 'Stopp-Button', show_return: 'Zur-Station-Button', show_locate: 'Suchen-Button', show_spot: 'Spot-Reinigung',
+  show_fan_speed: 'Saugstärke anzeigen', fan_speeds: 'Nur diese Stufen zeigen', map: 'Karte / Kamera', map_aspect_ratio: 'Seitenverhältnis',
+  map_refresh: 'Aktualisieren alle', map_action: 'Karte antippen', segment_mode: 'Integration', segment_repeat: 'Durchgänge', segments: 'Segment-IDs',
+  consumables_layout: 'Darstellung', below: 'Warnen unter', max: 'Maximum (für Balken)', tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken'};
+const VHELPERS = {
+  battery: 'Leer = Akku-Sensor am Gerät des Roboters automatisch',
+  status: 'Text unter dem Namen, z. B. sensor.robbi_status. Leer = Zustand des Roboters',
+  tap_action: 'Standard: Details des Roboters',
+  fan_speeds: 'Leer = alle Stufen des Roboters. Genaue Namen wie in fan_speed_list',
+  map: 'z. B. image.robbi_karte oder camera.robbi_map',
+  map_refresh: 'Nur camera.*: Takt beim Reinigen, 0 = aus. image.* lädt bei Änderung selbst neu',
+  segment_mode: 'Wie Räume mit Segment-IDs gereinigt werden',
+  segments: 'Komma-Liste, z. B. 16, 17. Antippen wählt aus, dann „Räume reinigen“',
+  entity: 'Optional statt Segmenten: Skript/Button wird ausgelöst',
+  confirm: 'Optional: Rückfrage vor dem Auslösen (Aktion/Entität)',
+  below: 'Eintrag und Rahmen färben sich, wenn der Wert darunter liegt',
+  max: 'Leer = 100 bei %, sonst kein Balken',
+};
+
+class NovaVacuumCardEditor extends NovaMediaCardEditor {
+  _form(schema, data, cb) {
+    const f = super._form(schema, data, cb);
+    f.computeLabel = s => VLABELS[s.name] ?? s.name;
+    f.computeHelper = s => VHELPERS[s.name];
+    return f;
+  }
+  _items(k) { return [].concat(this._config[k] || []).map(toObj); }
+  _setItems(k, arr) { const c = {...this._config}; if (arr.length) c[k] = arr; else delete c[k]; this._emit(c); }
+  // Liste mit Aufklapp-Einträgen: k = Konfig-Schlüssel, m = {item, icon}
+  _list(w, k, schema, m, label) {
+    const items = this._items(k);
+    items.forEach((it, j) => {
+      const [d, s, body] = this._details(`${k}.${j}`, it.icon || m.icon, this._ilabel(it, j, m), [
+        this._btn('mdi:arrow-up', 'Nach oben', () => this._imove(k, j, -1), j === 0),
+        this._btn('mdi:arrow-down', 'Nach unten', () => this._imove(k, j, 1), j === items.length - 1),
+        this._btn('mdi:delete-outline', 'Löschen', () => { this._open = new Set(); this._setItems(k, this._items(k).filter((_, x) => x !== j)); this._rebuild(); })]);
+      // Segmente aus YAML-Listen als Text zeigen
+      body.append(this._form(schema, {...it, ...(it.segments != null ? {segments: list(it.segments).join(', ')} : {})}, v => {
+        const arr = this._items(k);
+        arr[j] = merge(arr[j], names(schema), v);
+        this._setItems(k, arr);
+        s.querySelector('.lbl').textContent = this._ilabel(arr[j], j, m);
+      }));
+      w.append(d);
+    });
+    w.append(this._add(label, () => { const n = [...this._items(k), {}]; this._open = new Set([`${k}.${n.length - 1}`]); this._setItems(k, n); this._rebuild(); }));
+  }
+  _imove(k, j, dir) {
+    const arr = this._items(k), t = j + dir;
+    [arr[j], arr[t]] = [arr[t], arr[j]];
+    this._open = new Set([`${k}.${t}`]);
+    this._setItems(k, arr); this._rebuild();
+  }
+  _build() {
+    const r = this.shadowRoot, c0 = this._config;
+    r.innerHTML = `<style>${ECSS}${MECSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap'), strip = c => { Object.entries(VDEF).forEach(([k, x]) => c[k] === x && delete c[k]); return c; };
+    const sec = (schema, title) => { if (title) w.append(this._h3(title)); w.append(this._form(schema, {...VDEF, ...c0}, v => this._emit(strip(merge(this._config, names(schema), v))))); };
+    sec(VMAIN);
+    sec(VFAN, 'Saugstärke');
+    sec(VMAP, 'Karte');
+    w.append(this._h3('Räume'));
+    const p = document.createElement('p'); p.className = 'hint';
+    p.textContent = 'Je Raum Segment-IDs (aus der App bzw. Integration) – oder ein Skript/eine Aktion für alles andere.';
+    w.append(p);
+    if (this._items('rooms').length) w.append(this._form(VSEG, {...VDEF, ...c0}, v => this._emit(strip(merge(this._config, names(VSEG), v)))));
+    this._list(w, 'rooms', VROOM, {item: 'Raum', icon: 'mdi:floor-plan'}, 'Raum hinzufügen');
+    w.append(this._h3('Verbrauchsteile'));
+    if (this._items('consumables').length) sec(VCONSL);
+    this._list(w, 'consumables', VCONS, {item: 'Verbrauchsteil', icon: 'mdi:wrench-clock'}, 'Verbrauchsteil hinzufügen');
+  }
+}
+define('nova-vacuum-card-editor', NovaVacuumCardEditor);
 
 console.info(`%c NOVA-CARDS %c v${VERSION} `, 'color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px', 'color:#fff;background:#1b2134;border-radius:0 4px 4px 0');
 })();
