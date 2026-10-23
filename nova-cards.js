@@ -1959,9 +1959,12 @@ const VCSS = `
 .ctl.pl{justify-content:flex-start;gap:7px;flex-wrap:wrap}
 .fs .pill,.ctl.pl .pill{flex:none}
 .rooms .pill{background:color-mix(in srgb,var(--nv-active) 45%,transparent);border-color:color-mix(in srgb,var(--nv-active) 60%,transparent)}
-.rooms .pill.on{background:var(--nv-active);box-shadow:0 0 0 2px var(--nv-active-fg),0 0 14px color-mix(in srgb,var(--nv-active) 50%,transparent)}
+.rooms .pill.on{background:var(--nv-active);box-shadow:0 0 14px color-mix(in srgb,var(--nv-active) 50%,transparent)}
 .rooms .pill.go{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:none}
 .vc .sws .list{row-gap:2px}
+.rooms .pill.cur{box-shadow:0 0 0 2px var(--nv-accent),0 0 14px color-mix(in srgb,var(--nv-accent) 50%,transparent)}
+.hd .all{flex:none}
+.hd .all.on{background:var(--nv-active);color:var(--nv-active-fg);border-color:transparent}
 .cons .kv{flex-wrap:wrap;row-gap:4px}
 .cons .kv .cbar{flex-basis:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
 .cons .kv .cbar i{display:block;height:100%;background:var(--nv-active);border-radius:2px}
@@ -1969,12 +1972,12 @@ const VCSS = `
 .cons .pill.warn{background:color-mix(in srgb,var(--nv-warn) 25%,transparent)}
 @container (max-width:300px){.ctl{gap:8px}.ctl .cb{width:38px;height:38px}.ctl .cb.pp{width:48px;height:48px}}
 .g.vc.side{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:stretch}
-.vc.side>.main{display:flex;flex-direction:column;gap:12px;min-width:0}
+.vc.side>.main{display:flex;flex-direction:column;gap:12px;min-width:0;padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
 .vc.side .mpnl{padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
 .vc.side .map{flex:1;min-height:var(--nova-vacuum-map-min-height,240px)}
 .vc.side .map img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 @container (min-width:640px){.g.vc.auto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:stretch}
-.vc.auto>.main{display:flex;flex-direction:column;gap:12px;min-width:0}
+.vc.auto>.main{display:flex;flex-direction:column;gap:12px;min-width:0;padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
 .vc.auto .mpnl{padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
 .vc.auto .map{flex:1;min-height:var(--nova-vacuum-map-min-height,240px)}
 .vc.auto .map img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}}`;
@@ -2050,7 +2053,7 @@ class NovaVacuumCard extends HTMLElement {
     const pills = c.controls !== 'round', rt = vtitle(c.rooms_title), mt = vtitle(c.map_title);
     const lay = c.map ? (['side', 'stack'].includes(c.layout) ? c.layout : 'auto') : 'stack';
     r.innerHTML = `<style>${MVARS}${MCSS}${VCSS}</style><div class="g vc ${lay}"><div class="main">
-<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><div class="bat" hidden><ha-icon></ha-icon><span></span></div></div>
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${c.all ? '<div class="pill all"><span class="i"></span><span class="t"></span></div>' : ''}<div class="bat" hidden><ha-icon></ha-icon><span></span></div></div>
 ${pills ? `<div class="ctl pl pills">${Object.entries(VCTL).map(([k, [ic, t]]) => `<div class="pill c-${k}"><ha-icon icon="${ic}"></ha-icon><span>${t}</span></div>`).join('')}</div>`
     : '<div class="ctl"><div class="cb sp" title="Spot"><ha-icon icon="mdi:target-variant"></ha-icon></div><div class="cb st" title="Stopp"><ha-icon icon="mdi:stop"></ha-icon></div><div class="cb pp" title="Start/Pause"><ha-icon icon="mdi:play"></ha-icon></div><div class="cb hm" title="Zur Station"><ha-icon icon="mdi:home-import-outline"></ha-icon></div><div class="cb lo" title="Suchen"><ha-icon icon="mdi:map-marker-question-outline"></ha-icon></div></div>'}
 ${c.show_fan_speed !== false ? '<div class="pills fs"></div>' : ''}
@@ -2063,6 +2066,8 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
       pp: q('.pp'), st: q('.st'), hm: q('.hm'), lo: q('.lo'), sp: q('.sp'), fs: q('.fs'), rooms: q('.rooms .pills'), cons: q('.cons > div')};
     const e = this._e, svc = (s, d = {}) => this._h.callService('vacuum', s, {entity_id: c.entity, ...d});
     press(e.ic, {tap: () => this._act({entity: c.entity, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: c.entity, hold_action: c.hold_action}, 'hold')});
+    this._allEl = q('.hd .all');
+    if (this._allEl) press(this._allEl, {tap: () => this._act({entity: c.all, confirm: c.all_confirm}, 'tap'), hold: () => this._act({entity: c.all}, 'hold')});
     press(e.bat, {tap: () => this._bat && fire(this, 'hass-more-info', {entityId: this._bat})});
     if (pills) this._ctl = Object.entries(VCTL).map(([k, d]) => { const el = q(`.c-${k}`); press(el, {tap: () => svc(d[3])}); return [k, el, d]; });
     else {
@@ -2167,9 +2172,19 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     }
     this._swUp?.(h);
     if (e.fs) this._fans(s);
+    const rs = c.room_sensor && h.states[c.room_sensor], cur = rs && !['unknown', 'unavailable', ''].includes(rs.state) ? rs.state.toLowerCase() : null;
+    if (this._allEl) {
+      const as = h.states[c.all];
+      this._allEl.classList.toggle('on', isOn(as));
+      this._allEl.classList.toggle('na', !as || as.state === 'unavailable');
+      setIcon(this._allEl.firstChild, c.all_icon || as?.attributes.icon || 'mdi:check-all');
+      this._allEl.lastChild.textContent = c.all_name ?? 'Überall';
+    }
     this._rooms?.forEach((el, i) => {
       const o = c.rooms[i], os = o.entity && h.states[o.entity];
-      el.classList.toggle('on', this._sel.has(i));
+      // Raum-Entität (z. B. input_boolean „Raum einplanen“) leuchtet, wenn an
+      el.classList.toggle('on', this._sel.has(i) || (!!os && TOGGLE.includes(dom(o.entity)) && isOn(os)));
+      el.classList.toggle('cur', !!cur && [o.name, o.area, o.area && h.areas?.[o.area]?.name, ...list(o.segments)].some(x => x != null && String(x).toLowerCase() === cur));
       el.classList.toggle('na', !!o.entity && (!os || os.state === 'unavailable'));
       setIcon(el.firstChild, o.icon || os?.attributes.icon || 'mdi:floor-plan');
       el.lastChild.textContent = o.name ?? os?.attributes.friendly_name ?? (list(o.segments).join(', ') || '');
@@ -2261,15 +2276,17 @@ const VMAP = [
     {name: 'map_refresh', selector: {number: {min: 0, max: 60, mode: 'box', unit_of_measurement: 's'}}}),
   sel('map_action', [['more-info', 'Karte groß öffnen'], ['vacuum', 'Details des Roboters'], ['none', 'Nichts']]),
 ];
-const VSEG = [{name: 'rooms_title', selector: T}, g2(sel('segment_mode', [['roborock', 'Roborock'], ['valetudo', 'Valetudo (MQTT)'], ['dreame', 'Dreame (HACS)'], ['xiaomi', 'Xiaomi Miio']]),
+const VSEG = [{name: 'rooms_title', selector: T}, g2({name: 'room_sensor', selector: {entity: {domain: ['sensor', 'select', 'input_select']}}}, {name: 'all', selector: {entity: {}}}),
+  g2({name: 'all_name', selector: T}, {name: 'all_icon', selector: I}), g2(sel('segment_mode', [['roborock', 'Roborock'], ['valetudo', 'Valetudo (MQTT)'], ['dreame', 'Dreame (HACS)'], ['xiaomi', 'Xiaomi Miio']]),
   {name: 'segment_repeat', selector: {number: {min: 1, max: 3, mode: 'slider'}}})];
-const VROOM = [NAMEICON, {name: 'segments', selector: T}, {name: 'entity', selector: {entity: {}}}, {name: 'tap_action', selector: A}, {name: 'confirm', selector: T}];
+const VROOM = [NAMEICON, g2({name: 'segments', selector: T}, {name: 'area', selector: {area: {}}}), {name: 'entity', selector: {entity: {}}}, {name: 'tap_action', selector: A}, {name: 'confirm', selector: T}];
 const VSWL = [{name: 'switches_columns', selector: {number: {min: 1, max: 3, mode: 'slider'}}}];
 const VSW = [ENT, NAMEICON, {name: 'tap_action', selector: A}, {name: 'confirm', selector: T}];
 const VCONSL = [sel('consumables_layout', [['rows', 'Liste'], ['chips', 'Chips']])];
 const VCONS = [ENT, NAMEICON, g2({name: 'unit', selector: T}, {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}), g2(NUM('below'), NUM('max'))];
 const VLABELS = {...MLABELS, battery: 'Akku-Sensor', battery_display: 'Akku anzeigen', controls: 'Steuerung', layout: 'Layout',
-  map_title: 'Überschrift Karte', rooms_title: 'Überschrift Räume', switches_columns: 'Spalten', battery_low: 'Akku niedrig ab', status: 'Status-Entität (optional)', glow: 'Leuchten beim Reinigen / bei Warnung',
+  map_title: 'Überschrift Karte', rooms_title: 'Überschrift Räume', room_sensor: 'Aktueller Raum (Sensor)', all: '„Überall“-Button: Entität',
+  all_name: '„Überall“-Button: Text', all_icon: '„Überall“-Button: Icon', area: 'Bereich', switches_columns: 'Spalten', battery_low: 'Akku niedrig ab', status: 'Status-Entität (optional)', glow: 'Leuchten beim Reinigen / bei Warnung',
   show_stop: 'Stopp-Button', show_return: 'Zur-Station-Button', show_locate: 'Suchen-Button', show_spot: 'Spot-Reinigung',
   show_fan_speed: 'Saugstärke anzeigen', fan_speeds: 'Nur diese Stufen zeigen', map: 'Karte / Kamera', map_aspect_ratio: 'Seitenverhältnis',
   map_refresh: 'Aktualisieren alle', map_action: 'Karte antippen', segment_mode: 'Integration', segment_repeat: 'Durchgänge', segments: 'Segment-IDs',
@@ -2283,10 +2300,13 @@ const VHELPERS = {
   layout: 'Automatisch = Karte daneben, sobald die Karte breit genug ist (z. B. im Popup)',
   map_title: '„-“ = ohne Überschrift',
   rooms_title: '„-“ = ohne Überschrift',
+  room_sensor: 'Raum, in dem der Roboter gerade ist, bekommt einen gelben Ring (Vergleich mit Name, Bereich oder Segment)',
+  all: 'Optional, z. B. input_boolean.saugroboter_alles oder ein Skript – erscheint oben rechts',
+  area: 'Optional: für den Abgleich mit „Aktueller Raum“',
   map_refresh: 'Nur camera.*: Takt beim Reinigen, 0 = aus. image.* lädt bei Änderung selbst neu',
   segment_mode: 'Wie Räume mit Segment-IDs gereinigt werden',
   segments: 'Komma-Liste, z. B. 16, 17. Antippen wählt aus, dann „Räume reinigen“',
-  entity: 'Optional statt Segmenten: Skript/Button wird ausgelöst',
+  entity: 'Optional statt Segmenten: Skript/Button wird ausgelöst, Schalter/input_boolean umgeschaltet (leuchtet, wenn an)',
   confirm: 'Optional: Rückfrage vor dem Auslösen (Aktion/Entität)',
   below: 'Eintrag und Rahmen färben sich, wenn der Wert darunter liegt',
   max: 'Leer = 100 bei %, sonst kein Balken',
