@@ -1,9 +1,9 @@
-/* Nova Cards v0.8.3 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.8.4 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter – alle als custom:nova-*. */
 
 /* ---------- Raum, Thermostat, Licht ---------- */
 (() => {
-var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.8.3",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
+var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.8.4",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
 --nv-fg:var(--nova-text-color,#fff);
@@ -155,7 +155,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 
 /* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card + Nova Media Card + Nova Saugroboter Card ---------- */
 (() => {
-const VERSION = '0.8.3';
+const VERSION = '0.8.4';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const OFF = new Set(['off','unavailable','unknown','idle','docked','standby','closed','paused','not_home','none','ready']);
 const isOn = s => !!s && !OFF.has(s.state);
@@ -1947,8 +1947,8 @@ const VCSS = `
 .mpnl{display:flex;flex-direction:column;gap:8px;min-width:0}
 .mpnl .bt{margin:0}
 .map{position:relative;border-radius:calc(var(--nv-radius) - 8px);overflow:hidden;background:rgba(0,0,0,.25)}
-.map.ar{aspect-ratio:var(--ar)}
-.map img{display:block;width:100%;height:auto}
+.map.ar{aspect-ratio:var(--ar)}.map{max-height:var(--nv-map-max,280px)}
+.map img{display:block;width:100%;height:auto;max-height:var(--nv-map-max,280px);object-fit:contain}
 .map.ar img{height:100%;object-fit:contain}
 .ctl{display:flex;align-items:center;justify-content:center;gap:14px}
 .ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:all .2s}
@@ -1970,19 +1970,20 @@ const VCSS = `
 .cons .kv .cbar i{display:block;height:100%;background:var(--nv-active);border-radius:2px}
 .cons .warn .cbar i{background:var(--nv-warn)}.cons .warn .v{color:var(--nv-warn);opacity:1}
 .cons .pill.warn{background:color-mix(in srgb,var(--nv-warn) 25%,transparent)}
-@container (max-width:300px){.ctl{gap:8px}.ctl .cb{width:38px;height:38px}.ctl .cb.pp{width:48px;height:48px}}
+.vc.narrow .ctl{gap:8px}.vc.narrow .ctl .cb{width:38px;height:38px}.vc.narrow .ctl .cb.pp{width:48px;height:48px}
+:host{height:auto;container-type:normal}.g.vc{height:auto}
 .g.vc.side{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:stretch}
 .vc.side>.main{display:flex;flex-direction:column;gap:12px;min-width:0;padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
 .vc.side .mpnl{padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
-.vc.side .map{flex:1;min-height:var(--nova-vacuum-map-min-height,240px)}
-.vc.side .map img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-@container (min-width:640px){.g.vc.auto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:stretch}
-.vc.auto>.main{display:flex;flex-direction:column;gap:12px;min-width:0;padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
-.vc.auto .mpnl{padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
-.vc.auto .map{flex:1;min-height:var(--nova-vacuum-map-min-height,240px)}
-.vc.auto .map img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}}
+.vc.side .map{flex:1;min-height:var(--nova-vacuum-map-min-height,240px);max-height:none;aspect-ratio:auto}
+.vc.side .map img{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain}
+.g.vc.auto.wide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:stretch}
+.vc.auto.wide>.main{display:flex;flex-direction:column;gap:12px;min-width:0;padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.vc.auto.wide .mpnl{padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.vc.auto.wide .map{flex:1;min-height:var(--nova-vacuum-map-min-height,240px);max-height:none;aspect-ratio:auto}
+.vc.auto.wide .map img{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain}
 .scene{--rc:var(--nova-vacuum-robot-color,#3d4452);--sc:var(--nova-vacuum-station-color,#2f3542);--wc:var(--nova-vacuum-water-color,#6fb6f2);
-position:relative;order:0;height:var(--nova-vacuum-scene-height,120px)}
+position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
 .scene svg{display:block;width:100%;height:100%;overflow:visible}
 .scene .cap{position:absolute;left:0;top:0;padding:4px 10px;border-radius:999px;background:var(--nv-chip);font-size:11px;font-weight:500;letter-spacing:.02em;opacity:.85}
 .scene .cap:empty{display:none}
@@ -2063,7 +2064,7 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,120px)}
 
 // supported_features von vacuum
 const VF = {PAUSE: 4, STOP: 8, RETURN: 16, FAN: 32, LOCATE: 512, SPOT: 1024, START: 8192, AREA: 16384};
-const VDEF = {scene: true, scene_auto: true, station_type: 'auto', layout: 'auto', controls: 'pills', battery_display: 'status', rooms_title: 'Raum reinigen', map_title: 'Karte', glow: true, show_stop: true, show_return: true, show_locate: true, show_spot: false, show_fan_speed: true,
+const VDEF = {map_max_height: 280, scene: true, scene_auto: true, station_type: 'auto', layout: 'auto', controls: 'pills', battery_display: 'status', rooms_title: 'Raum reinigen', map_title: 'Karte', glow: true, show_stop: true, show_return: true, show_locate: true, show_spot: false, show_fan_speed: true,
   map_aspect_ratio: 'auto', map_refresh: 5, map_action: 'more-info', segment_mode: 'roborock', segment_repeat: 1, consumables_layout: 'rows'};
 const VRUN = ['cleaning', 'returning'];
 // Steuer-Pillen: Schlüssel → [Icon, Text, Feature, Service]
@@ -2204,9 +2205,21 @@ class NovaVacuumCard extends HTMLElement {
       this._io ||= new IntersectionObserver(es => { this._vis = es[es.length - 1].isIntersecting; this._tick(); }, {rootMargin: '100px'});
       this._io.observe(this);
     } else this._vis = true;
+    if ('ResizeObserver' in window) {
+      this._ro ||= new ResizeObserver(es => this._width(Math.round(es[es.length - 1].contentRect.width)));
+      this._ro.observe(this);
+    }
     this._tick();
   }
-  disconnectedCallback() { this._io?.disconnect(); this._vis = false; this._tick(); }
+  disconnectedCallback() { this._io?.disconnect(); this._ro?.disconnect(); this._vis = false; this._tick(); }
+  // Layout nach Kartenbreite – mit Puffer (ab 640 px daneben, erst unter 600 px wieder darunter), damit es nie hin- und herkippt
+  _width(w) {
+    const g = this._e?.g;
+    if (!g || !w) return;
+    const wide = g.classList.contains('wide') ? w >= 600 : w >= 640;
+    g.classList.toggle('wide', wide);
+    g.classList.toggle('narrow', w <= 300);
+  }
   _build() {
     this._built = true;
     const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'});
@@ -2223,7 +2236,7 @@ ${c.show_fan_speed !== false ? '<div class="pills fs"></div>' : ''}
 ${c.rooms.length ? `<div class="blk rooms">${rt ? `<div class="bt">${esc(rt)}</div>` : ''}<div class="pills"></div></div>` : ''}
 ${c.switches.length ? '<div class="blk sws"></div>' : ''}
 ${c.consumables.length ? `<div class="blk cons"><div class="${c.consumables_layout === 'chips' ? 'pills' : 'list'}"></div></div>` : ''}</div>
-${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div class="map${ar !== 'auto' ? ' ar' : ''}" style="--ar:${esc(ar)}"><img alt=""></div></div>` : ''}</div>`;
+${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div class="map${ar !== 'auto' ? ' ar' : ''}" style="--ar:${esc(ar)};--nv-map-max:${c.map_max_height > 0 ? +c.map_max_height + 'px' : 'none'}"><img alt=""></div></div>` : ''}</div>`;
     const q = s => r.querySelector(s);
     this._e = {g: q('.g'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), bat: q('.bat'), map: q('.map'), img: q('.map img'),
       pp: q('.pp'), st: q('.st'), hm: q('.hm'), lo: q('.lo'), sp: q('.sp'), fs: q('.fs'), rooms: q('.rooms .pills'), cons: q('.cons > div')};
@@ -2247,6 +2260,12 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     this._swUp = sw ? BLOCKS.entities.call(this, {entities: c.switches, columns: c.switches_columns}, sw) : null;
     if (e.map) {
       press(e.map, {tap: () => this._mapTap(), hold: () => fire(this, 'hass-more-info', {entityId: c.map})});
+      // Feste Höhe nach dem ersten Bild: neue Kartenbilder beim Reinigen verschieben das Layout nicht (Safari kennt keinen Scroll-Anker)
+      e.img.addEventListener('load', () => {
+        if (e.map.classList.contains('ar') || !e.img.naturalWidth) return;
+        e.map.style.setProperty('--ar', `${e.img.naturalWidth}/${e.img.naturalHeight}`);
+        e.map.classList.add('ar');
+      });
     }
     // Räume: mit Segmenten = auswählen und gesammelt reinigen, sonst Aktion/Entität direkt
     this._sel = new Set();
@@ -2290,6 +2309,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
       Object.entries({x: lx, y: ly, width: lw}).forEach(([k, v]) => led.setAttribute(k, v));
     }
     this._fsKey = this._mapKey = null;
+    this._width(Math.round(this.getBoundingClientRect().width));
     this._tick();
   }
   _st() { return this._h?.states[this._c.entity]; }
@@ -2463,7 +2483,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
   _mapSync(force) {
     const e = this._e, id = this._c.map, ms = id && this._h?.states[id], p = ms?.attributes.entity_picture;
     if (!e?.map) return;
-    e.map.parentElement.hidden = !p;
+    if (!this._mapKey) e.map.parentElement.hidden = !p;
     if (!p) return;
     const key = dom(id) === 'image' ? `${p}|${ms.state}` : p;
     if (!force && key === this._mapKey) return;
@@ -2509,7 +2529,8 @@ const VMAP = [
   g2({name: 'map', selector: {entity: {domain: ['camera', 'image']}}}, {name: 'map_title', selector: T}),
   g2(sel('map_aspect_ratio', [['auto', 'Automatisch'], ['1:1', '1:1'], ['4:3', '4:3'], ['16:9', '16:9'], ['3:4', '3:4']]),
     {name: 'map_refresh', selector: {number: {min: 0, max: 60, mode: 'box', unit_of_measurement: 's'}}}),
-  sel('map_action', [['more-info', 'Karte groß öffnen'], ['vacuum', 'Details des Roboters'], ['none', 'Nichts']]),
+  g2(sel('map_action', [['more-info', 'Karte groß öffnen'], ['vacuum', 'Details des Roboters'], ['none', 'Nichts']]),
+    {name: 'map_max_height', selector: {number: {min: 0, max: 800, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
 ];
 const VSEG = [{name: 'rooms_title', selector: T}, g2({name: 'room_sensor', selector: {entity: {domain: ['sensor', 'select', 'input_select']}}}, {name: 'all', selector: {entity: {}}}),
   g2({name: 'all_name', selector: T}, {name: 'all_icon', selector: I}), g2(sel('segment_mode', [['roborock', 'Roborock'], ['valetudo', 'Valetudo (MQTT)'], ['dreame', 'Dreame (HACS)'], ['xiaomi', 'Xiaomi Miio']]),
@@ -2526,7 +2547,7 @@ const VLABELS = {...MLABELS, station_type: 'Station', scene: 'Animation anzeigen
   all_name: '„Überall“-Button: Text', all_icon: '„Überall“-Button: Icon', area: 'Bereich', switches_columns: 'Spalten', battery_low: 'Akku niedrig ab', status: 'Status-Entität (optional)', glow: 'Leuchten beim Reinigen / bei Warnung',
   show_stop: 'Stopp-Button', show_return: 'Zur-Station-Button', show_locate: 'Suchen-Button', show_spot: 'Spot-Reinigung',
   show_fan_speed: 'Saugstärke anzeigen', fan_speeds: 'Nur diese Stufen zeigen', map: 'Karte / Kamera', map_aspect_ratio: 'Seitenverhältnis',
-  map_refresh: 'Aktualisieren alle', map_action: 'Karte antippen', segment_mode: 'Integration', segment_repeat: 'Durchgänge', segments: 'Segment-IDs',
+  map_max_height: 'Max. Höhe (untereinander)', map_refresh: 'Aktualisieren alle', map_action: 'Karte antippen', segment_mode: 'Integration', segment_repeat: 'Durchgänge', segments: 'Segment-IDs',
   consumables_layout: 'Darstellung', below: 'Warnen unter', max: 'Maximum (für Balken)', tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken'};
 const VHELPERS = {
   station_type: 'Automatisch = nach den Entitäten des Roboters (Absaugen → Staubbeutel, Wasser/Moppwäsche → Tanks)',
@@ -2548,6 +2569,7 @@ const VHELPERS = {
   room_sensor: 'Raum, in dem der Roboter gerade ist, bekommt einen gelben Ring (Vergleich mit Name, Bereich oder Segment)',
   all: 'Optional, z. B. input_boolean.saugroboter_alles oder ein Skript – erscheint oben rechts',
   area: 'Empfohlen: Reinigung über vacuum.clean_area (in den Roboter-Einstellungen Segmente den Bereichen zuordnen). Auch für „Aktueller Raum“',
+  map_max_height: 'Nur wenn die Karte über den Bedienelementen steht. 0 = ohne Grenze',
   map_refresh: 'Nur camera.*: Takt beim Reinigen, 0 = aus. image.* lädt bei Änderung selbst neu',
   segment_mode: 'Nur für Räume mit Segment-IDs statt Bereich',
   segments: 'Nur, wenn die Integration keine Bereiche kann: Komma-Liste, z. B. 16, 17',

@@ -1,4 +1,4 @@
-# Nova Cards 0.8.3
+# Nova Cards 0.8.4
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -370,6 +370,7 @@ consumables:                   # Infos & Verbrauchsteile
 | | | Jede dieser Entitäten mit `false` abschalten |
 | `map` / `map_title` | – / `Karte` | `image.*` (lädt bei Änderung neu) oder `camera.*`; Überschrift, `-` = ohne |
 | `map_aspect_ratio` | `auto` | Seitenverhältnis der Karte, sonst Bildgröße |
+| `map_max_height` | `280` | Max. Höhe der Karte in px, wenn sie über den Bedienelementen steht (`0` = ohne Grenze). Die Höhe bleibt nach dem ersten Bild fest, neue Kartenbilder verschieben das Layout nicht |
 | `map_refresh` | `5` | Nur `camera.*`: Aktualisieren alle x s, solange der Roboter fährt und die Karte sichtbar ist (`0` = aus) |
 | `map_action` | `more-info` | Karte antippen: `more-info` (Karte groß), `vacuum` (Roboter-Details), `none` |
 | `rooms[]` | – | `name`, `icon`, `area` (HA-Bereich). Antippen plant den Raum ein (bzw. schaltet die `entity`, z. B. `input_boolean`, die dann das Einplanen übernimmt). **Start** reinigt alle eingeplanten Räume per `vacuum.clean_area` – herstellerunabhängig, dafür in den Einstellungen der Roboter-Entität die Segmente den Bereichen zuordnen (HA 2026.3+). Nichts eingeplant, „Überall“ an oder Pause = normal starten bzw. fortsetzen. Kann der Roboter keine Bereiche: `segments` (Komma-Liste) über `segment_mode`. `entity` als Skript/Button bzw. `tap_action` (+ `confirm`) = direkt auslösen |
