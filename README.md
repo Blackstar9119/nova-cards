@@ -363,7 +363,7 @@ consumables:                   # Infos & Verbrauchsteile
 | `scene_auto` | `true` | Entitäten für die Animation automatisch am Gerät suchen (Entity-ID bzw. `translation_key`, deutsch/englisch). Der Editor zeigt, was gefunden wurde |
 | `mop_attached` | auto | Mopp angebracht (`binary_sensor` o. ä.) – Mopp-Pad am Roboter |
 | `mop_mode` / `mop_states` | auto / – | Reinigungsmodus: Zustand mit `mop`/`wisch` (z. B. `vac_and_mop`) = wischt → nasse Spur. `mop_states` = genaue Zustände, falls die Erkennung nicht passt |
-| `clean_water`, `dirty_water` | auto | Tanks in der Station: `binary_sensor` an = leer bzw. voll (blinkt rot, Rahmen gelb), Zahl = Füllstand in %, Text mit leer/voll |
+| `clean_water`, `dirty_water` | auto | Tanks in der Station (Schmutzwasser oben links, Frischwasser oben rechts, darunter der Staubbeutel): `binary_sensor` an = leer bzw. voll (blinkt rot, Rahmen gelb), Zahl = Füllstand in %, Text mit leer/voll |
 | `emptying`, `washing`, `drying`, `charging` | auto | Aktiv bei an bzw. Zahl > 0 (z. B. Rest-Trocknungszeit). Zusätzlich werden `status` und `station` nach Absaugen/Waschen/Trocknen/Laden durchsucht (z. B. `emptying_the_bin`, `washing_the_mop`) |
 | `station` | auto | Status-Sensor der Station |
 | | | Jede dieser Entitäten mit `false` abschalten |
