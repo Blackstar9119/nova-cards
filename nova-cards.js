@@ -1,9 +1,9 @@
-/* Nova Cards v0.8.1 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.8.2 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter – alle als custom:nova-*. */
 
 /* ---------- Raum, Thermostat, Licht ---------- */
 (() => {
-var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.8.1",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
+var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.8.2",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
 --nv-fg:var(--nova-text-color,#fff);
@@ -155,7 +155,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 
 /* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card + Nova Media Card + Nova Saugroboter Card ---------- */
 (() => {
-const VERSION = '0.8.1';
+const VERSION = '0.8.2';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const OFF = new Set(['off','unavailable','unknown','idle','docked','standby','closed','paused','not_home','none','ready']);
 const isOn = s => !!s && !OFF.has(s.state);
@@ -2124,11 +2124,24 @@ const VPAT = {empty: /empty|evacuat|dust_?collect|collect_?dust|absaug|entleer/i
 const VSTATES = ['docked', 'cleaning', 'returning', 'paused', 'error', 'idle'];
 // aktiv: Zahl > 0 (z. B. Rest-Trocknungszeit), sonst an/aus
 const vact = s => !!s && !['unavailable', 'unknown'].includes(s.state) && (NUMRE.test(s.state) ? +s.state > 0 : isOn(s));
-// Passende Entitäten am Gerät des Roboters finden (Entity-ID + translation_key, Deutsch/Englisch)
+// Gerät des Roboters plus zugehörige Geräte (z. B. eigene „Dock“-Station bei Roborock): via_device in beide Richtungen,
+// oder gleicher Integrationseintrag und Name/Kennung beginnt gleich – so bleiben zwei Roboter im selben Konto getrennt
+function vdevs(h, id) {
+  const dev = h?.entities?.[id]?.device_id, D = h?.devices || {}, me = D[dev];
+  if (!dev) return [];
+  if (!me) return [dev];
+  const idf = d => (d.identifiers || []).map(x => String(Array.isArray(x) ? x[1] : x));
+  const mine = idf(me), ce = me.config_entries || [];
+  return Object.values(D).filter(d => d.id === dev || d.via_device_id === dev || me.via_device_id === d.id ||
+    ((d.config_entries || []).some(e => ce.includes(e)) && (idf(d).some(x => mine.some(m => x !== m && x.startsWith(m))) || (!!d.name && !!me.name && d.name.startsWith(me.name) && /^\s*(dock|station|base|ladestation|basis)\b/i.test(d.name.slice(me.name.length))))))
+    .map(d => d.id);
+}
+const vents = (h, id) => { const ds = vdevs(h, id); return ds.length ? Object.values(h.entities).filter(e => ds.includes(e.device_id) && e.entity_id !== id) : []; };
+// Passende Entitäten am Roboter und seiner Station finden (Entity-ID + translation_key, Deutsch/Englisch)
 function vauto(h, id) {
-  const dev = h?.entities?.[id]?.device_id, out = {};
-  if (!dev) return out;
-  const ents = Object.values(h.entities).filter(e => e.device_id === dev && e.entity_id !== id && !e.hidden);
+  const out = {};
+  const ents = vents(h, id).filter(e => !e.hidden);
+  if (!ents.length) return out;
   const txt = e => `${e.translation_key || ''} ${e.entity_id}`;
   const find = (doms, re, not) => ents.find(e => doms.includes(dom(e.entity_id)) && re.test(txt(e)) && !(not && not.test(txt(e))))?.entity_id;
   const ERR = /error|fehler|fault/;
@@ -2140,8 +2153,8 @@ function vauto(h, id) {
     const o = (h.states[e.entity_id]?.attributes.options || []).map(String);
     return o.some(x => VPAT.mop.test(x)) && o.some(x => !VPAT.mop.test(x));
   })?.entity_id;
-  out.clean_water = find(['binary_sensor', 'sensor'], /clean_?water|fresh_?water|frischwasser/);
-  out.dirty_water = find(['binary_sensor', 'sensor'], /dirty_?water|waste_?water|schmutzwasser/);
+  out.clean_water = find(['binary_sensor', 'sensor'], /clean_?(water|box|tank)|fresh_?water|frischwasser/);
+  out.dirty_water = find(['binary_sensor', 'sensor'], /dirty_?(water|box|tank)|waste_?water|schmutzwasser/);
   out.drying = find(['sensor', 'binary_sensor'], /dry|trockn/, ERR);
   out.charging = find(['binary_sensor'], /charg|ladestatus/);
   out.emptying = find(['binary_sensor'], /empty|entleer|absaug/);
@@ -2151,11 +2164,10 @@ function vauto(h, id) {
 
 // Stationstyp: dock (nur Laden), empty (Absaugen), wash (Wassertanks/Moppwäsche), full (beides)
 const VBAG = /empty|entleer|absaug|evacuat|dust_?(bag|bin|collect)|staubbeutel/;
-const VTANK = /mop_?wash|wash_?mop|moppw|wäsch|wash|self_?clean|clean_?water|dirty_?water|frischwasser|schmutzwasser|dry|trockn/;
+const VTANK = /mop_?wash|wash_?mop|moppw|wäsch|wash|self_?clean|clean_?(water|box|tank)|dirty_?(water|box|tank)|frischwasser|schmutzwasser|dry|trockn/;
 function vstation(h, id, c, auto) {
   if (['dock', 'empty', 'wash', 'full'].includes(c.station_type)) return c.station_type;
-  const dev = h?.entities?.[id]?.device_id;
-  const t = dev ? Object.values(h.entities).filter(e => e.device_id === dev && e.entity_id !== id).map(e => `${e.translation_key || ''} ${e.entity_id}`) : [];
+  const t = h?.entities ? vents(h, id).map(e => `${e.translation_key || ''} ${e.entity_id}`) : [];
   const has = k => c[k] !== false && !!(c[k] || (c.scene_auto !== false && auto[k]));
   const bag = has('emptying') || (c.scene_auto !== false && t.some(x => VBAG.test(x)));
   const tank = ['clean_water', 'dirty_water', 'washing', 'drying'].some(has) || (c.scene_auto !== false && t.some(x => VTANK.test(x)));
