@@ -1,4 +1,4 @@
-# Nova Cards 0.5.1
+# Nova Cards 0.6.0
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -12,6 +12,7 @@ Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
 | [Nova Modular Card](#nova-modular-card) | `custom:nova-modular-card` |
 | [Nova Kamera Card](#nova-kamera-card) | `custom:nova-camera-card` |
 | [Nova Media Card](#nova-media-card) | `custom:nova-media-card` |
+| [Nova Saugroboter Card](#nova-saugroboter-card) | `custom:nova-vacuum-card` |
 
 ## Installation (HACS)
 
@@ -295,6 +296,62 @@ icon_map:                   # App/Quelle → Logo (Groß/Klein egal)
 | `auto_switch` | `true` | Wechselt zum Player, der gerade spielt – bis man selbst umschaltet |
 | `music_assistant` | automatisch | Findet den Music-Assistant-Player mit gleichem Namen. Spielt der, kommen Titel, Cover und Vor/Zurück von dort (das nackte Gerät, z. B. ESPHome, kennt die nicht). Fest: Entität angeben, `false` = aus. Auch je Eintrag in `players[]` |
 | `icon_map` + `icon_entity` | – | Logo statt Icon: Schlüssel = App-Name, Quelle oder Kanal des Players; mit `icon_entity` zählt deren Zustand (wie bei der Raum Card). Gilt auch für die Quellen-Pillen |
+
+## Nova Saugroboter Card
+
+Saugroboter mit Status, Akku und runden Steuer-Buttons – leuchtet beim Reinigen. Buttons erscheinen nur, wenn der Roboter sie kann (`supported_features`).
+Optional: Karte/Kamera-Bild, Saugstärke, Raumreinigung per Segment und Verbrauchsteile. Alles im grafischen Editor einstellbar.
+
+```yaml
+type: custom:nova-vacuum-card
+entity: vacuum.robbi
+name: Robbi
+battery: sensor.robbi_akku     # optional, sonst automatisch vom Gerät
+status: sensor.robbi_status    # optional: genauerer Statustext
+map: image.robbi_karte         # oder camera.*
+map_aspect_ratio: auto         # 1:1, 4:3, 16:9, 3:4
+fan_speeds: [Leise, Standard, Turbo]   # optional: nur diese Stufen
+segment_mode: roborock         # valetudo | dreame | xiaomi
+segment_repeat: 1
+rooms:
+  - name: Küche
+    icon: mdi:countertop
+    segments: 16
+  - name: Bad
+    segments: 17, 18
+  - name: Wischen Flur         # alles andere per Skript/Aktion
+    icon: mdi:water
+    entity: script.robbi_flur_wischen
+    confirm: Flur wischen?
+consumables:
+  - entity: sensor.robbi_filter_verbleibend
+    name: Filter
+    below: 10
+  - entity: sensor.robbi_hauptbuerste_stunden
+    name: Hauptbürste
+    max: 300
+```
+
+| Option | Standard | Bedeutung |
+|---|---|---|
+| `entity` | – | `vacuum.*` (Pflicht) |
+| `name`, `icon` | Entität | Kopfzeile |
+| `tap_action`, `hold_action` | more-info | Icon antippen / lange drücken |
+| `battery` / `battery_low` | automatisch / `20` | Akku-Sensor (leer = Akku-Sensor am selben Gerät, sonst Attribut `battery_level`); darunter rot. Beim Laden auf der Station: Lade-Icon |
+| `status` | – | Entität für den Text unter dem Namen statt des Roboter-Zustands |
+| `glow` | `true` | Rahmen leuchtet beim Reinigen, gelb/rot bei Warnung bzw. Fehler |
+| `show_stop`, `show_return`, `show_locate` | `true` | Stopp (nur während der Fahrt), Zur Station, Suchen |
+| `show_spot` | `false` | Spot-Reinigung |
+| `show_fan_speed` / `fan_speeds` | `true` / alle | Saugstärke als Pillen aus `fan_speed_list`; `fan_speeds` = nur diese. Icons per `fan_speed_icons` (wie `icon_map`) |
+| `map` | – | `image.*` (lädt bei Änderung neu) oder `camera.*` |
+| `map_aspect_ratio` | `auto` | Seitenverhältnis der Karte, sonst Bildgröße |
+| `map_refresh` | `5` | Nur `camera.*`: Aktualisieren alle x s, solange der Roboter fährt und die Karte sichtbar ist (`0` = aus) |
+| `map_action` | `more-info` | Karte antippen: `more-info` (Karte groß), `vacuum` (Roboter-Details), `none` |
+| `rooms[]` | – | `name`, `icon` und `segments` (Komma-Liste) – antippen wählt aus, dann „Räume reinigen“. Oder `entity` (Skript/Button) bzw. `tap_action` (+ `confirm`) = direkt auslösen |
+| `segment_mode` | `roborock` | Wie Segmente gereinigt werden: `roborock` (`vacuum.send_command` → `app_segment_clean`), `valetudo` (`segment_cleanup`), `dreame` (`dreame_vacuum.vacuum_clean_segment`), `xiaomi` (`xiaomi_miio.vacuum_clean_segment`). Andere Integrationen: Raum per `tap_action` |
+| `segment_repeat` | `1` | Durchgänge je Raum |
+| `consumables[]` | – | Verbrauchsteile: `entity`, `name`, `icon`, `unit`, `decimals`, `below` (darunter Warnung + Rahmen), `max` (Balken; bei `%` automatisch 100) |
+| `consumables_layout` | `rows` | `rows` = Liste mit Balken, `chips` |
 
 ---
 
