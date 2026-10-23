@@ -1,9 +1,9 @@
-/* Nova Cards v0.3.0 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular – alle als custom:nova-*. */
+/* Nova Cards v0.4.0 | MIT | https://github.com/Blackstar9119/nova-cards
+   Raum, Thermostat, Licht, Dock, Modular, Kamera – alle als custom:nova-*. */
 
 /* ---------- Raum, Thermostat, Licht ---------- */
 (() => {
-var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.3.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
+var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.4.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
 --nv-fg:var(--nova-text-color,#fff);
@@ -153,9 +153,9 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 </div>`,this._cnt=n.querySelector(".cnt"),this._all=n.querySelector(".all"),this._all?.addEventListener("click",()=>{let r=this._list.filter(l=>this._h.states[l]?.state==="on");r.length&&this._h.callService("light","turn_off",{entity_id:r})});let o=n.querySelector(".grid"),a=Object.fromEntries(t.entities.map(r=>[r.entity,r]));this._tiles=this._list.map(r=>{let l=a[r]||{entity:r},c=document.createElement("div");c.className="t",c.innerHTML='<div class="top" tabindex="0" role="button"><div class="ic"><ha-icon></ha-icon></div><div class="nm"><b></b><small></small></div></div><input type="range" min="1" max="100"><div class="dots"></div>';let p=c.querySelector(".top"),d=c.querySelector("input"),m=c.querySelector(".dots");return m.addEventListener("click",u=>{let f=u.composedPath().find(b=>b.dataset?.c)?.dataset.c;f&&this._h.callService("light","turn_on",{entity_id:r,...ht(f)})}),F(p,{tap:()=>l.tap_action?.action?w(this,{entity:r,tap_action:l.tap_action},"tap"):this._h.callService("light","toggle",{entity_id:r}),hold:()=>l.hold_action?.action?w(this,{entity:r,hold_action:l.hold_action},"hold"):$(this,r)}),d.addEventListener("pointerdown",()=>c._drag=!0),d.addEventListener("input",()=>c.style.setProperty("--p",`${d.value}%`)),d.addEventListener("change",()=>{this._h.callService("light","turn_on",{entity_id:r,brightness_pct:+d.value}),setTimeout(()=>c._drag=!1,800)}),o.appendChild(c),{id:r,o:l,t:c,ic:c.querySelector("ha-icon"),nm:c.querySelector("b"),st:c.querySelector("small"),sl:d,dots:m}})}_update(){if(!this._h||!this._tiles)return;let t=this._h,e=0;for(let n of this._tiles){let i=t.states[n.id],o=i?.attributes||{},a=i?.state==="on",r=!i||i.state==="unavailable";a&&e++;let l=(o.supported_color_modes||[]).some(f=>f!=="onoff"),c=a?Math.max(1,Math.round((o.brightness||0)/2.55)):0;n.t.classList.toggle("on",a),n.t.classList.toggle("na",r),n.ic.setAttribute("icon",n.o.icon||o.icon||(a?"mdi:lightbulb-on":"mdi:lightbulb-outline")),n.nm.textContent=n.o.name||this._strip(o.friendly_name||n.id),n.st.textContent=r?"nicht erreichbar":a?l?`${c} %`:"an":"aus";let p=this._c.use_light_color!==!1&&a&&o.rgb_color;p?n.t.style.setProperty("--lc",`rgb(${p.join(",")})`):n.t.style.removeProperty("--lc"),n.sl.style.display=l&&!r?"":"none",n.t._drag||(n.sl.value=c||1,n.t.style.setProperty("--p",`${c}%`));let m=!r&&(dt(o)||pt(o))&&this._c.show_colors!==!1?[...n.o.colors||[],...this._c.colors||[]].filter((f,b,x)=>x.indexOf(f)===b):[],u=m.join();n.dots._sig!==u&&(n.dots._sig=u,n.dots.innerHTML=m.map(f=>`<div class="dot" data-c="${g(f)}" style="background:${g(A(f))}"></div>`).join(""))}this._cnt&&(this._cnt.textContent=e?`${e} an`:""),this._all?.classList.toggle("show",!!this._c.show_all_off&&e>0)}_strip(t){let e=this._c.strip_prefix??this._c.title??(this._c.area?this._h.areas?.[this._c.area]?.name:"");return e&&t.toLowerCase().startsWith(e.toLowerCase()+" ")?t.slice(e.length+1):t}};_(gt,G,{name:"Nova Licht Card",description:"Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.",documentationURL:z("nova-licht-card")});
 })();
 
-/* ---------- Nova Dock Card + Nova Modular Card ---------- */
+/* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card ---------- */
 (() => {
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const OFF = new Set(['off','unavailable','unknown','idle','docked','standby','closed','paused','not_home','none','ready']);
 const isOn = s => !!s && !OFF.has(s.state);
@@ -1093,6 +1093,347 @@ class NovaModularCardEditor extends NovaDockCardEditor {
 // Kurzschreibweise "- sensor.x" im Editor als Objekt behandeln
 const normItems = b => { const k = ITEMS[b.type]; return k && Array.isArray(b[k]) ? {...b, [k]: b[k].map(x => typeof x === 'string' ? {entity: x} : x)} : {...b}; };
 define('nova-modular-card-editor', NovaModularCardEditor);
+
+/* ---------- Nova Kamera Card ---------- */
+const CCSS = `
+.g.cam{padding:12px;gap:10px}
+.media{position:relative;border-radius:calc(var(--nv-radius) - 8px);overflow:hidden;background:rgba(0,0,0,.35);aspect-ratio:var(--ar,16/9);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.media>img,.media .live,.media .live>*{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:var(--fit,cover);border:none}
+.media .live>*{--video-max-height:100%;--ha-card-border-radius:0;--ha-card-background:transparent}
+.media .live:empty{display:none}
+.media .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:.45}
+.media .ph ha-icon{--mdc-icon-size:40px}
+.ovl{position:absolute;display:flex;gap:6px;flex-wrap:wrap;z-index:2;pointer-events:none}
+.ovl>*{pointer-events:auto}
+.ovl.tl{top:8px;left:8px;right:40%}.ovl.tr{top:8px;right:8px;justify-content:flex-end;max-width:58%}
+.ovl.bot{left:8px;right:8px;bottom:8px;justify-content:center}
+.ovl .pill,.ovl .al{background:rgba(10,14,24,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-color:rgba(255,255,255,.14)}
+.ovl .pill{padding:5px 10px;font-size:12px}
+.ovl .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:none}
+.ovl .al{background:color-mix(in srgb,var(--c) 55%,rgba(10,14,24,.6))}
+.ovl .al ha-icon{color:inherit}
+.cb{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.16)}
+.cb.on{background:var(--nv-active);color:var(--nv-active-fg)}
+.cb:active,.pill:active{transform:scale(.92)}
+.dot{position:absolute;left:10px;bottom:10px;z-index:1;display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:999px;background:rgba(10,14,24,.55)}
+.dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--nv-error)}
+.has-ov .dot{display:none}
+.x{display:none;position:absolute;top:10px;right:10px;z-index:3}
+.media.fs{position:fixed;inset:0;z-index:9;border-radius:0;aspect-ratio:auto;background:#000}
+.media.fs>img,.media.fs .live>*,.media:fullscreen>img,.media:fullscreen .live>*{object-fit:contain}
+.media.fs .x,.media:fullscreen .x{display:flex}`;
+
+const RATIO = {'16:9': '16/9', '4:3': '4/3', '1:1': '1/1', '21:9': '21/9', '9:16': '9/16'};
+const CDEF = {aspect_ratio: '16:9', fit: 'cover', image_action: 'more-info', stream: 'auto', refresh: 10, buttons_position: 'overlay', show_header: true};
+const CLISTS = ['buttons', 'chips', 'alerts'];
+const toObj = x => typeof x === 'string' ? {entity: x} : {...x};
+const hasCond = o => o.state != null || o.state_not != null || o.above != null || o.below != null;
+const stamp = (u, v) => u + (u.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(v);
+
+// ha-camera-stream ist lazy – einmal über eine Bildkarte nachladen
+let camPre;
+const camStream = () => customElements.get('ha-camera-stream') ? Promise.resolve(true) : (camPre ||= (async () => {
+  try { (await window.loadCardHelpers()).createCardElement({type: 'picture-entity', entity: 'camera.nova', camera_view: 'live'}); } catch {}
+  return Promise.race([customElements.whenDefined('ha-camera-stream').then(() => true), new Promise(r => setTimeout(() => r(false), 3000))]);
+})());
+
+class NovaCameraCard extends HTMLElement {
+  static getConfigElement() { return document.createElement('nova-camera-card-editor'); }
+  static getStubConfig(h) {
+    const ids = Object.keys(h.states);
+    return {entity: ids.find(i => i.startsWith('camera.')) || ids.find(i => i.startsWith('image.')) || 'camera.'};
+  }
+  constructor() {
+    super();
+    this._vis = false;
+    this._onVis = () => this._sync();
+  }
+  setConfig(c) {
+    if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
+    if (!c.entity || !['camera', 'image'].includes(dom(c.entity))) throw new Error('entity muss eine camera.* oder image.* Entität sein');
+    this._c = {...CDEF, ...c};
+    CLISTS.forEach(k => { this._c[k] = [].concat(c[k] || []).map(toObj).filter(o => o.entity || o.tap_action); });
+    this._built = false;
+    this._stopLive();
+    if (this._h) { this._build(); this._update(); }
+  }
+  set hass(h) {
+    this._h = h;
+    if (!this._c) return;
+    if (!this._built) this._build();
+    this._update();
+  }
+  getCardSize() { return 5; }
+  getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
+  connectedCallback() {
+    document.addEventListener('visibilitychange', this._onVis);
+    if ('IntersectionObserver' in window) {
+      this._io ||= new IntersectionObserver(es => { this._vis = es[es.length - 1].isIntersecting; this._sync(); }, {rootMargin: '100px'});
+      this._io.observe(this);
+    } else { this._vis = true; this._sync(); }
+  }
+  disconnectedCallback() {
+    document.removeEventListener('visibilitychange', this._onVis);
+    this._io?.disconnect();
+    this._vis = false;
+    this._sync();
+  }
+  _build() {
+    this._built = true;
+    const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'});
+    const hb = c.button_icon || (c.button_action?.action && c.button_action.action !== 'none');
+    const ov = c.buttons_position !== 'below';
+    r.innerHTML = `<style>${MVARS}${MCSS}${CCSS}</style><div class="g cam">
+${c.show_header !== false ? `<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${hb ? '<div class="hb"></div>' : ''}</div>` : ''}
+<div class="media${ov && c.buttons.length ? ' has-ov' : ''}"><div class="ph"><ha-icon icon="mdi:cctv-off"></ha-icon></div><img class="still" alt=""><div class="live"></div>
+<span class="dot" hidden>LIVE</span><div class="ovl tl"></div><div class="ovl tr"></div>${ov ? '<div class="ovl bot"></div>' : ''}<div class="cb x" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></div></div>
+${!ov && c.buttons.length ? '<div class="pills below"></div>' : ''}</div>`;
+    const q = s => r.querySelector(s);
+    this._e = {g: q('.g'), hd: q('.hd'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), media: q('.media'), still: q('.still'), live: q('.live'), ph: q('.ph'), dot: q('.dot')};
+    const m = this._e.media;
+    m.style.setProperty('--ar', RATIO[c.aspect_ratio] || String(c.aspect_ratio).replace(':', '/'));
+    m.style.setProperty('--fit', c.fit === 'contain' ? 'contain' : 'cover');
+    this._e.still.addEventListener('load', () => { this._e.ph.hidden = true; });
+    this._e.still.addEventListener('error', () => { this._e.ph.hidden = false; });
+    if (this._e.hd) {
+      press(this._e.ic, {tap: () => this._act({entity: c.entity, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: c.entity, hold_action: c.hold_action}, 'hold')});
+      if (hb) { setIcon(q('.hb'), c.button_icon || 'mdi:dots-horizontal'); press(q('.hb'), {tap: () => this._act({entity: c.status || c.entity, tap_action: c.button_action}, 'tap', true)}); }
+    }
+    m.addEventListener('click', e => { if (!e.composedPath().some(x => x.classList?.contains('tap'))) this._tapImage(); });
+    press(q('.x'), {tap: () => this._fullscreen(false)});
+    this._btns = c.buttons.map(o => {
+      const el = document.createElement('div');
+      el.className = ov ? 'cb' : 'pill';
+      el.innerHTML = ov ? '<span class="i"></span>' : '<span class="i"></span><span class="t"></span>';
+      press(el, {tap: () => this._act(o, 'tap'), hold: () => this._act(o, 'hold')});
+      q(ov ? '.ovl.bot' : '.below').append(el);
+      return [el, o];
+    });
+    this._chips = c.chips.map(o => { const el = document.createElement('div'); el.className = 'pill'; el.innerHTML = '<span class="i"></span><span class="t"></span>'; press(el, {tap: () => this._act(o, 'tap', true)}); q('.ovl.tl').append(el); return [el, o]; });
+    this._alerts = c.alerts.map(o => { const el = document.createElement('div'); el.className = `al ${o.level || 'warning'}`; el.innerHTML = '<span class="i"></span><span class="t"></span>'; press(el, {tap: () => this._act(o, 'tap', true)}); q('.ovl.tr').append(el); return [el, o]; });
+    this._stillKey = null;
+    this._sync();
+  }
+  _update() {
+    const h = this._h, c = this._c, e = this._e;
+    if (!h || !e) return;
+    const s = h.states[c.entity], st = c.status && h.states[c.status];
+    e.g.classList.toggle('na', !s || s.state === 'unavailable');
+    if (e.hd) {
+      e.name.textContent = c.name ?? s?.attributes.friendly_name ?? c.entity;
+      setIcon(e.ic, c.icon || st?.attributes.icon || s?.attributes.icon || (dom(c.entity) === 'image' ? 'mdi:image' : 'mdi:cctv'));
+      e.sub.textContent = st ? fmtState(h, st) : !s ? 'nicht gefunden' : this._mode ? 'Live' : '';
+      e.hd.classList.toggle('on', st ? isOn(st) : !!this._mode);
+    }
+    this._btns.forEach(([el, o]) => {
+      const bs = o.entity && h.states[o.entity];
+      el.classList.toggle('na', !!o.entity && (!bs || bs.state === 'unavailable'));
+      el.classList.toggle('on', !!bs && TOGGLE.includes(dom(o.entity)) && isOn(bs));
+      setIcon(el.firstChild, iconOf(h, o, 'mdi:gesture-tap-button'));
+      el.title = nameOf(h, o);
+      if (el.children[1]) el.children[1].textContent = o.name ?? (bs?.attributes.friendly_name || '');
+    });
+    this._chips.forEach(([el, o]) => {
+      const cs = h.states[o.entity];
+      el.hidden = !cs || (hasCond(o) && !alertHit(o, cs));
+      if (el.hidden) return;
+      el.classList.toggle('on', dom(o.entity) === 'binary_sensor' && cs.state === 'on');
+      setIcon(el.firstChild, iconOf(h, o, 'mdi:information-outline'));
+      const v = valueOf(h, cs, o);
+      el.lastChild.textContent = o.name ? `${o.name} · ${v}` : v;
+    });
+    let lvl = 0;
+    this._alerts.forEach(([el, o]) => {
+      const as = h.states[o.entity], hit = alertHit(o, as);
+      el.hidden = !hit;
+      if (!hit) return;
+      lvl = Math.max(lvl, o.level === 'error' ? 2 : o.level === 'info' ? 0 : 1);
+      setIcon(el.firstChild, o.icon || (o.level === 'error' ? 'mdi:alert-octagon' : o.level === 'info' ? 'mdi:information' : 'mdi:alert'));
+      el.lastChild.textContent = o.message ? o.message.replace('{state}', fmtState(h, as)) : `${nameOf(h, o)}: ${fmtState(h, as)}`;
+    });
+    if (c.glow === false) lvl = 0;
+    e.g.classList.toggle('warn', lvl === 1);
+    e.g.classList.toggle('err', lvl === 2);
+    // image.* bekommt ein neues Bild, wenn sich der Zustand ändert
+    if (dom(c.entity) === 'image' && s && this._stillKey !== s.state) this._still();
+    if (this._liveEl && 'hass' in this._liveEl) this._liveEl.hass = h;
+  }
+  _still() {
+    const s = this._h?.states[this._c.entity], p = s?.attributes.entity_picture;
+    if (!p) return;
+    this._stillKey = s.state;
+    this._e.still.src = stamp(p, dom(this._c.entity) === 'image' ? s.state : Date.now());
+  }
+  // Stream nur, wenn Karte sichtbar und Tab aktiv – sonst Standbild
+  _sync() {
+    if (!this._e || !this._h) return;
+    const show = this._vis && !document.hidden && this.isConnected;
+    const live = show && dom(this._c.entity) === 'camera' && this._c.stream !== 'snapshot';
+    if (live && !this._mode && !this._starting) this._startLive();
+    if (!live) this._stopLive();
+    clearInterval(this._tm); this._tm = null;
+    if (show && dom(this._c.entity) === 'camera' && !this._mode) {
+      if (!this._e.still.src) this._still();
+      if (this._c.refresh > 0) this._tm = setInterval(() => !this._mode && this._still(), this._c.refresh * 1000);
+    }
+  }
+  async _startLive() {
+    const c = this._c, id = this._lid = (this._lid || 0) + 1;
+    this._starting = true;
+    let mode = c.stream;
+    if (mode === 'webrtc' && !customElements.get('webrtc-camera')) mode = 'auto';
+    if (mode === 'auto') mode = await camStream() ? 'ha' : 'mjpeg';
+    this._starting = false;
+    if (id !== this._lid || !this._vis || document.hidden) return;
+    const s = this._h.states[c.entity];
+    if (!s) return;
+    let el;
+    if (mode === 'webrtc') {
+      el = document.createElement('webrtc-camera');
+      try { el.setConfig({entity: c.entity, ui: false, muted: true, ...(c.webrtc || {})}); } catch (e) { console.warn('[nova-cards] webrtc-camera', e); }
+      el.hass = this._h;
+    } else if (mode === 'ha') {
+      el = document.createElement('ha-camera-stream');
+      Object.assign(el, {hass: this._h, stateObj: s, muted: true, controls: false, fitMode: c.fit === 'contain' ? 'contain' : 'cover'});
+    } else {
+      const p = s.attributes.entity_picture;
+      if (!p) return;
+      el = document.createElement('img');
+      el.alt = '';
+      el.src = p.replace('/api/camera_proxy/', '/api/camera_proxy_stream/');
+      el.addEventListener('error', () => { if (this._liveEl !== el) return; this._stopLive(); this._retry = setTimeout(() => this._sync(), 10000); });
+    }
+    this._mode = mode;
+    this._liveEl = el;
+    this._e.live.replaceChildren(el);
+    this._e.dot.hidden = false;
+    this._e.ph.hidden = true;
+    this._sync(); this._update();
+  }
+  _stopLive() {
+    this._lid = (this._lid || 0) + 1;
+    this._starting = false;
+    clearTimeout(this._retry);
+    if (!this._mode) return;
+    if (this._liveEl?.tagName === 'IMG') this._liveEl.src = ''; // MJPEG-Verbindung wirklich schließen
+    this._liveEl = null; this._mode = null;
+    if (this._e) { this._e.live.replaceChildren(); this._e.dot.hidden = true; this._still(); this._update(); }
+  }
+  _tapImage() {
+    const a = this._c.image_action;
+    if (a === 'none') return;
+    if (a === 'fullscreen') return this._fullscreen(!this._isFs());
+    fire(this, 'hass-more-info', {entityId: this._c.entity});
+  }
+  _isFs() { return this._e.media.classList.contains('fs') || this.shadowRoot.fullscreenElement === this._e.media; }
+  _fullscreen(on) {
+    const m = this._e.media;
+    if (!on) { m.classList.remove('fs'); if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); return; }
+    // iOS/ältere WebViews: Fallback auf festes Overlay
+    const p = m.requestFullscreen?.();
+    if (p?.catch) p.catch(() => m.classList.add('fs')); else if (!p) m.classList.add('fs');
+  }
+}
+NovaCameraCard.prototype._act = NovaModularCard.prototype._act;
+define('nova-camera-card', NovaCameraCard, {name: 'Nova Kamera Card', description: 'Live-Bild von camera.* oder image.* mit Kopfzeile, frei belegbaren Steuer-Buttons (PTZ, Licht, Sirene …), Info-Chips und Warnungen.', documentationURL: 'https://github.com/Blackstar9119/nova-cards#nova-kamera-card'});
+
+/* ---------- Editor Kamera Card ---------- */
+const CMAIN = [
+  {name: 'entity', required: true, selector: {entity: {domain: ['camera', 'image']}}},
+  g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
+  {name: 'status', selector: {entity: {}}},
+  g2({name: 'show_header', selector: {boolean: {}}}, {name: 'glow', selector: {boolean: {}}}),
+  {name: 'tap_action', selector: A},
+  g2({name: 'button_icon', selector: I}, {name: 'button_action', selector: A}),
+  g2(sel('aspect_ratio', [['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '1:1']]), sel('fit', [['cover', 'Füllen'], ['contain', 'Ganzes Bild']])),
+  g2(sel('image_action', [['more-info', 'Details (more-info)'], ['fullscreen', 'Vollbild'], ['none', 'Nichts']]),
+     sel('stream', [['auto', 'Automatisch'], ['mjpeg', 'MJPEG'], ['webrtc', 'WebRTC-Karte'], ['snapshot', 'Nur Standbild']])),
+  g2({name: 'refresh', selector: {number: {min: 0, max: 300, mode: 'box', unit_of_measurement: 's'}}}, sel('buttons_position', [['overlay', 'Über dem Bild'], ['below', 'Darunter']])),
+];
+const CM = {
+  buttons: {label: 'Steuer-Buttons', item: 'Button', icon: 'mdi:gesture-tap-button',
+    items: [NAMEICON, {name: 'entity', selector: {entity: {}}}, {name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}, {name: 'confirm', selector: T}]},
+  chips: {label: 'Info-Chips', item: 'Chip', icon: 'mdi:information-outline',
+    items: [ENT, NAMEICON, g2({name: 'unit', selector: T}, {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}),
+      g2({name: 'state', selector: T}, {name: 'state_not', selector: T}), g2(NUM('above'), NUM('below'))]},
+  alerts: {label: 'Warn-Badges', item: 'Warnung', icon: 'mdi:alert-outline',
+    items: [ENT, g2({name: 'state', selector: T}, {name: 'state_not', selector: T}), g2(NUM('above'), NUM('below')),
+      {name: 'message', selector: T}, g2({name: 'icon', selector: I}, sel('level', [['warning', 'Warnung'], ['error', 'Fehler'], ['info', 'Hinweis']]))]},
+};
+const CLABELS = {...MLABELS, status: 'Status-Entität (optional)', show_header: 'Kopfzeile anzeigen', glow: 'Kartenrahmen bei Warnung einfärben',
+  tap_action: 'Aktion beim Antippen', aspect_ratio: 'Seitenverhältnis', fit: 'Bild einpassen', image_action: 'Bild antippen',
+  stream: 'Live-Stream', refresh: 'Standbild aktualisieren alle', buttons_position: 'Buttons', state: 'Bedingung: Zustand', state_not: 'Bedingung: außer Zustand',
+  above: 'Bedingung: über', below: 'Bedingung: unter'};
+const CHELPERS = {
+  entity: 'camera.* = Live-Stream, image.* = Bild (z. B. 3D-Drucker)',
+  stream: 'Automatisch = HA-Stream (HLS/WebRTC), sonst MJPEG. Läuft nur, solange die Karte sichtbar ist',
+  refresh: 'Nur ohne Live-Stream. 0 = aus',
+  state: 'Komma-Liste. Chips: leer = immer sichtbar · Warnungen: leer = bei „on“/„problem“',
+  tap_action: 'Gilt für das Icon oben. Standard: Details der Kamera',
+  message: 'Leer = Name: Zustand. {state} wird ersetzt',
+};
+
+class NovaCameraCardEditor extends NovaModularCardEditor {
+  _form(schema, data, cb) {
+    const f = super._form(schema, data, cb);
+    f.computeLabel = s => CLABELS[s.name] ?? s.name;
+    f.computeHelper = s => CHELPERS[s.name];
+    return f;
+  }
+  _list(k) { return [].concat(this._config[k] || []).map(toObj); }
+  _setList(k, arr) { const c = {...this._config}; if (arr.length) c[k] = arr; else delete c[k]; this._emit(c); }
+  _build() {
+    const r = this.shadowRoot;
+    r.innerHTML = `<style>${ECSS}${MECSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap');
+    w.append(this._form(CMAIN, {...CDEF, glow: true, ...this._config}, v => {
+      const c = merge(this._config, names(CMAIN), v);
+      Object.entries(CDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
+      if (c.glow === true) delete c.glow;
+      this._emit(c);
+    }));
+    Object.entries(CM).forEach(([k, m]) => {
+      const h = document.createElement('h3'); h.textContent = m.label; w.append(h);
+      const arr = this._list(k);
+      arr.forEach((it, j) => w.append(this._citem(k, m, it, j, arr.length)));
+      const a = document.createElement('button');
+      a.className = 'add';
+      a.innerHTML = `<ha-icon icon="mdi:plus"></ha-icon>${esc(m.item)} hinzufügen`;
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const n = [...this._list(k), {}];
+        this._open = new Set([`${k}.${n.length - 1}`]);
+        this._setList(k, n); this._rebuild();
+      });
+      w.append(a);
+    });
+  }
+  _citem(k, m, it, j, n) {
+    const [d, s, body] = this._details(`${k}.${j}`, it.icon || m.icon, this._ilabel(it, j, m), [
+      this._btn('mdi:arrow-up', 'Nach oben', () => this._cmove(k, j, -1), j === 0),
+      this._btn('mdi:arrow-down', 'Nach unten', () => this._cmove(k, j, 1), j === n - 1),
+      this._btn('mdi:delete-outline', 'Löschen', () => this._cdel(k, j))]);
+    const keys = names(m.items);
+    body.append(this._form(m.items, it, v => {
+      const arr = this._list(k);
+      arr[j] = merge(arr[j], keys, v);
+      this._setList(k, arr);
+      s.querySelector('.lbl').textContent = this._ilabel(arr[j], j, m);
+    }));
+    return d;
+  }
+  _cmove(k, j, dir) {
+    const arr = this._list(k), t = j + dir;
+    [arr[j], arr[t]] = [arr[t], arr[j]];
+    this._open = new Set([`${k}.${t}`]);
+    this._setList(k, arr); this._rebuild();
+  }
+  _cdel(k, j) {
+    this._open = new Set();
+    this._setList(k, this._list(k).filter((_, x) => x !== j)); this._rebuild();
+  }
+}
+define('nova-camera-card-editor', NovaCameraCardEditor);
 
 console.info(`%c NOVA-CARDS %c v${VERSION} `, 'color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px', 'color:#fff;background:#1b2134;border-radius:0 4px 4px 0');
 })();

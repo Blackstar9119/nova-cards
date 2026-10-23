@@ -1,4 +1,4 @@
-# Nova Cards 0.3.1
+# Nova Cards 0.4.0
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -10,6 +10,7 @@ Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
 | [Nova Licht Card](#nova-licht-card) | `custom:nova-light-card` |
 | [Nova Dock Card](#nova-dock-card) | `custom:nova-dock-card` |
 | [Nova Modular Card](#nova-modular-card) | `custom:nova-modular-card` |
+| [Nova Kamera Card](#nova-kamera-card) | `custom:nova-camera-card` |
 
 ## Installation (HACS)
 
@@ -200,6 +201,53 @@ blocks:
 | `alerts` | `alerts[]`: `entity`, `state` / `state_not` (Komma-Liste), `above` / `below`, `message` (`{state}` wird ersetzt), `icon`, `level: warning\|error\|info` · `layout: list\|chips`, `glow` (Kartenrahmen, Standard `true`) |
 
 Alle Bausteine außer `header` haben optional `title`. Einträge dürfen auch als Kurzform `- sensor.xyz` angegeben werden.
+
+## Nova Kamera Card
+
+Live-Bild von `camera.*` (Stream) oder `image.*` (z. B. 3D-Drucker) mit Kopfzeile, frei belegbaren Steuer-Buttons, Info-Chips und Warn-Badges. Der Stream läuft nur, solange die Karte sichtbar ist – sonst Standbild (schont das Wandpanel).
+
+```yaml
+type: custom:nova-camera-card
+entity: camera.wohnzimmer_cam_live_ansicht
+name: Wohnzimmer
+status: binary_sensor.wohnzimmer_bewegung
+aspect_ratio: "16:9"        # 4:3, 1:1
+image_action: fullscreen    # more-info | fullscreen | none
+buttons_position: overlay   # oder below
+buttons:
+  - entity: button.wohnzimmer_cam_schwenk_nach_links
+    icon: mdi:arrow-left
+  - entity: button.wohnzimmer_cam_schwenk_nach_rechts
+    icon: mdi:arrow-right
+  - entity: light.wohnzimmer_decke
+    name: Licht
+chips:
+  - entity: binary_sensor.wohnzimmer_bewegung
+    name: Bewegung
+    icon: mdi:motion-sensor
+    state: "on"             # nur anzeigen, wenn Bewegung
+  - entity: sensor.cam_akku
+alerts:
+  - entity: sensor.cam_akku
+    below: 20
+    message: Akku {state}
+    level: error
+```
+
+| Option | Standard | Bedeutung |
+|---|---|---|
+| `entity` | – | `camera.*` oder `image.*` (Pflicht) |
+| `name`, `icon`, `status` | Entität | Kopfzeile; `status` = Text unter dem Namen |
+| `tap_action`, `button_icon` + `button_action` | more-info | Icon antippen / Touch-Button oben rechts |
+| `show_header` | `true` | Kopfzeile anzeigen |
+| `aspect_ratio` / `fit` | `16:9` / `cover` | Seitenverhältnis, `contain` = ganzes Bild |
+| `image_action` | `more-info` | Bild antippen: `more-info`, `fullscreen`, `none` |
+| `stream` | `auto` | `auto` (HA-Stream, sonst MJPEG), `mjpeg`, `webrtc` (braucht webrtc-camera, Optionen unter `webrtc:`), `snapshot` |
+| `refresh` | `10` | Standbild-Intervall in s ohne Stream (`0` = aus) |
+| `buttons[]` | – | `entity` (button/script/scene werden ausgelöst, Licht/Schalter umgeschaltet) oder `tap_action`, `name`, `icon`, `hold_action`, `confirm` |
+| `buttons_position` | `overlay` | `overlay` = runde Buttons im Bild, `below` = Pillen darunter |
+| `chips[]` | – | `entity`, `name`, `icon`, `unit`, `decimals`; optional `state` / `state_not` / `above` / `below` = nur dann zeigen |
+| `alerts[]` | – | wie bei der Modular Card; Badge oben rechts, `glow: false` = Rahmen nicht einfärben |
 
 ---
 
