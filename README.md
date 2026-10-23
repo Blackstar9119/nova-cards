@@ -1,4 +1,4 @@
-# Nova Cards
+# Nova Cards 0.3.1
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
