@@ -1137,11 +1137,18 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
 .below .zm>i{background:var(--nv-chip)}
 .pad>i.act,.zm>i.act{background:var(--nv-active);color:var(--nv-active-fg)}
 .has-ptz .ovl.bot{right:calc(var(--nova-camera-ptz-size,108px) + 64px);justify-content:flex-start}
-@container (max-width:320px){.pad{--nova-camera-ptz-size:88px}}`;
+@container (max-width:320px){.pad{--nova-camera-ptz-size:88px}}
+.split{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));--nova-camera-ptz-size:84px}
+.split.row{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:minmax(0,1fr)}
+.split.column{grid-template-columns:1fr}
+.split>nova-camera-card{display:block;min-width:0}
+@container (max-width:420px){.split{grid-template-columns:1fr;grid-auto-flow:row}}
+.g.bare{padding:0;background:none;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0;overflow:visible}
+.pill.lbl{font-weight:600}`;
 
 const RATIO = {'16:9': '16/9', '4:3': '4/3', '1:1': '1/1', '21:9': '21/9', '9:16': '9/16'};
-const CDEF = {aspect_ratio: '16:9', fit: 'cover', image_action: 'more-info', stream: 'auto', refresh: 10, buttons_position: 'overlay', show_header: true, ptz: 'auto', ptz_position: 'overlay'};
-const CLISTS = ['buttons', 'chips', 'alerts'];
+const CDEF = {aspect_ratio: '16:9', fit: 'cover', image_action: 'more-info', stream: 'auto', refresh: 10, buttons_position: 'overlay', show_header: true, ptz: 'auto', ptz_position: 'overlay', split_layout: 'grid'};
+const CLISTS = ['buttons', 'chips', 'alerts', 'split'];
 const toObj = x => typeof x === 'string' ? {entity: x} : {...x};
 const hasCond = o => o.state != null || o.state_not != null || o.above != null || o.below != null;
 const stamp = (u, v) => u + (u.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(v);
@@ -1216,7 +1223,7 @@ class NovaCameraCard extends HTMLElement {
     if (!this._built) this._build();
     this._update();
   }
-  getCardSize() { return 5; }
+  getCardSize() { return 5 + (this._c?.split.length ? 3 : 0); }
   getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
   connectedCallback() {
     document.addEventListener('visibilitychange', this._onVis);
@@ -1238,7 +1245,7 @@ class NovaCameraCard extends HTMLElement {
     const ov = c.buttons_position !== 'below';
     this._ptz = ptzMap(this._h, c);
     const pk = Object.keys(this._ptz), pov = c.ptz_position !== 'below';
-    r.innerHTML = `<style>${MVARS}${MCSS}${CCSS}</style><div class="g cam">
+    r.innerHTML = `<style>${MVARS}${MCSS}${CCSS}</style><div class="g cam${c.bare ? ' bare' : ''}">
 ${c.show_header !== false ? `<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${hb ? '<div class="hb"></div>' : ''}</div>` : ''}
 <div class="media${ov && c.buttons.length ? ' has-ov' : ''}${pk.length && pov ? ' has-ptz' : ''}"><div class="ph"><ha-icon icon="mdi:cctv-off"></ha-icon></div><img class="still" alt=""><div class="live"></div>
 <span class="dot" hidden>LIVE</span><div class="ovl tl"></div><div class="ovl tr"></div>${ov ? '<div class="ovl bot"></div>' : ''}<div class="cb x" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></div>${pk.length && pov ? '<div class="ptz ovl-ptz"></div>' : ''}</div>
@@ -1273,6 +1280,26 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
       if (zm.length) { const z = document.createElement('div'); z.className = 'zm'; z.append(...zm.map(mk)); box.append(z); }
       this._ptzEls = [...box.querySelectorAll('[data-k]')];
     } else this._ptzEls = [];
+    const lbl = c.label ?? (c.split.length ? this._h.states[c.entity]?.attributes.friendly_name : null);
+    if (lbl) { const l = document.createElement('div'); l.className = 'pill lbl'; l.textContent = lbl; q('.ovl.tl').prepend(l); }
+    // Splitscreen: weitere Kameras als schlanke Kacheln neben dem Hauptbild
+    this._kids = [];
+    if (c.split.length) {
+      const sp = document.createElement('div');
+      sp.className = `split ${c.split_layout}`;
+      m.before(sp); sp.append(m);
+      this._kids = c.split.map(o => {
+        const k = document.createElement('nova-camera-card');
+        try {
+          k.setConfig({entity: o.entity, bare: true, show_header: false, label: o.name ?? this._h.states[o.entity]?.attributes.friendly_name ?? o.entity,
+            aspect_ratio: c.aspect_ratio, fit: c.fit, stream: c.stream, refresh: c.refresh, image_action: o.image_action || c.image_action,
+            ptz: o.ptz === 'off' ? false : o.ptz ?? 'auto', ...(o.ptz_onvif ? {ptz_onvif: o.ptz_onvif} : {})});
+        } catch (e) { console.warn('[nova-cards] Splitscreen', o.entity, e.message); return null; }
+        k.hass = this._h;
+        sp.append(k);
+        return k;
+      }).filter(Boolean);
+    }
     this._stillKey = null;
     this._sync();
   }
@@ -1320,6 +1347,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
     // image.* bekommt ein neues Bild, wenn sich der Zustand ändert
     if (dom(c.entity) === 'image' && s && this._stillKey !== s.state) this._still();
     if (this._liveEl && 'hass' in this._liveEl) this._liveEl.hass = h;
+    this._kids.forEach(k => { k.hass = h; });
   }
   _ptzGo(k) {
     const v = this._ptz[k], c = this._c;
@@ -1404,7 +1432,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
   }
 }
 NovaCameraCard.prototype._act = NovaModularCard.prototype._act;
-define('nova-camera-card', NovaCameraCard, {name: 'Nova Kamera Card', description: 'Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.', documentationURL: 'https://github.com/Blackstar9119/nova-cards#nova-kamera-card'});
+define('nova-camera-card', NovaCameraCard, {name: 'Nova Kamera Card', description: 'Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.', documentationURL: 'https://github.com/Blackstar9119/nova-cards#nova-kamera-card'});
 
 /* ---------- Editor Kamera Card ---------- */
 const CMAIN = [
@@ -1419,6 +1447,7 @@ const CMAIN = [
      sel('stream', [['auto', 'Automatisch'], ['mjpeg', 'MJPEG'], ['webrtc', 'WebRTC-Karte'], ['snapshot', 'Nur Standbild']])),
   g2({name: 'refresh', selector: {number: {min: 0, max: 300, mode: 'box', unit_of_measurement: 's'}}}, sel('buttons_position', [['overlay', 'Über dem Bild'], ['below', 'Darunter']])),
 ];
+CMAIN.push(sel('split_layout', [['grid', 'Raster (2 Spalten)'], ['row', 'Nebeneinander'], ['column', 'Untereinander']]));
 const CPTZ = [g2(sel('ptz', [['auto', 'Automatisch (Geräte-Buttons)'], ['manual', 'Manuell'], ['onvif', 'ONVIF'], ['off', 'Aus']]), sel('ptz_position', [['overlay', 'Über dem Bild'], ['below', 'Darunter']]))];
 const PBTN = {entity: {domain: ['button', 'input_button', 'script', 'scene']}};
 const CPTZM = [g2({name: 'up', selector: PBTN}, {name: 'down', selector: PBTN}), g2({name: 'left', selector: PBTN}, {name: 'right', selector: PBTN}),
@@ -1429,6 +1458,9 @@ const CM = {
   chips: {label: 'Info-Chips', item: 'Chip', icon: 'mdi:information-outline',
     items: [ENT, NAMEICON, g2({name: 'unit', selector: T}, {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}),
       g2({name: 'state', selector: T}, {name: 'state_not', selector: T}), g2(NUM('above'), NUM('below'))]},
+  split: {label: 'Splitscreen (weitere Kameras)', item: 'Kamera', icon: 'mdi:view-split-vertical',
+    items: [{name: 'entity', required: true, selector: {entity: {domain: ['camera', 'image']}}},
+      g2({name: 'name', selector: T}, sel('ptz', [['auto', 'Automatisch'], ['onvif', 'ONVIF'], ['off', 'Aus']]))]},
   alerts: {label: 'Warn-Badges', item: 'Warnung', icon: 'mdi:alert-outline',
     items: [ENT, g2({name: 'state', selector: T}, {name: 'state_not', selector: T}), g2(NUM('above'), NUM('below')),
       {name: 'message', selector: T}, g2({name: 'icon', selector: I}, sel('level', [['warning', 'Warnung'], ['error', 'Fehler'], ['info', 'Hinweis']]))]},
@@ -1436,7 +1468,7 @@ const CM = {
 const CLABELS = {...MLABELS, status: 'Status-Entität (optional)', show_header: 'Kopfzeile anzeigen', glow: 'Kartenrahmen bei Warnung einfärben',
   tap_action: 'Aktion beim Antippen', aspect_ratio: 'Seitenverhältnis', fit: 'Bild einpassen', image_action: 'Bild antippen',
   stream: 'Live-Stream', refresh: 'Standbild aktualisieren alle', buttons_position: 'Buttons', state: 'Bedingung: Zustand', state_not: 'Bedingung: außer Zustand',
-  above: 'Bedingung: über', below: 'Bedingung: unter', ptz: 'Steuerkreuz', ptz_position: 'Steuerkreuz-Position',
+  above: 'Bedingung: über', below: 'Bedingung: unter', ptz: 'Steuerkreuz', ptz_position: 'Steuerkreuz-Position', split_layout: 'Splitscreen-Anordnung',
   up: 'Hoch (neigen)', down: 'Runter (neigen)', left: 'Links (schwenken)', right: 'Rechts (schwenken)', home: 'Mitte / Ausgangsposition', zoom_in: 'Zoom +', zoom_out: 'Zoom −'};
 const CHELPERS = {
   entity: 'camera.* = Live-Stream, image.* = Bild (z. B. 3D-Drucker)',
@@ -1445,6 +1477,7 @@ const CHELPERS = {
   state: 'Komma-Liste. Chips: leer = immer sichtbar · Warnungen: leer = bei „on“/„problem“',
   tap_action: 'Gilt für das Icon oben. Standard: Details der Kamera',
   message: 'Leer = Name: Zustand. {state} wird ersetzt',
+  split_layout: 'Nur mit weiteren Kameras unter „Splitscreen“. Schmale Karten stapeln automatisch',
   ptz: 'Automatisch sucht Schwenk-/Neige-Buttons am Gerät der Kamera. Gedrückt halten = weiterfahren',
 };
 
