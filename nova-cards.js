@@ -1,9 +1,9 @@
-/* Nova Cards v0.5.0 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.5.1 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Dock, Modular, Kamera, Media – alle als custom:nova-*. */
 
 /* ---------- Raum, Thermostat, Licht ---------- */
 (() => {
-var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.5.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
+var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.5.1",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
 --nv-fg:var(--nova-text-color,#fff);
@@ -155,7 +155,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 
 /* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card + Nova Media Card ---------- */
 (() => {
-const VERSION = '0.5.0';
+const VERSION = '0.5.1';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const OFF = new Set(['off','unavailable','unknown','idle','docked','standby','closed','paused','not_home','none','ready']);
 const isOn = s => !!s && !OFF.has(s.state);
@@ -1623,6 +1623,17 @@ const mapIcon = (map, ...keys) => {
   for (const k of keys) if (k != null && m[String(k).toLowerCase()]) return m[String(k).toLowerCase()];
   return null;
 };
+// Music Assistant legt je Gerät einen eigenen Player an – nur der kennt Titel, Cover und Vor/Zurück
+const MA_ON = ['playing', 'paused', 'buffering'];
+function maOf(h, id, ma) {
+  if (ma === false || !id) return null;
+  if (typeof ma === 'string') return ma;
+  if (h.entities?.[id]?.platform === 'music_assistant') return null;
+  const n = h.states[id]?.attributes.friendly_name;
+  const hits = Object.values(h.entities || {}).map(e => e.entity_id)
+    .filter(x => x !== id && dom(x) === 'media_player' && h.entities[x].platform === 'music_assistant' && h.states[x]?.attributes.friendly_name === n);
+  return hits.find(x => x.startsWith(id)) || hits.find(x => MA_ON.includes(h.states[x].state)) || hits[0] || null;
+}
 const cssUrl = u => `url("${String(u).replace(/["\\\n]/g, encodeURIComponent)}")`;
 
 class NovaMediaCard extends HTMLElement {
@@ -1651,9 +1662,13 @@ class NovaMediaCard extends HTMLElement {
   connectedCallback() { if (this._built) this._tick(); }
   disconnectedCallback() { clearInterval(this._tm); this._tm = null; }
   get _p() { return this._all[this._idx]; }
+  // Spielt der Music-Assistant-Zwilling, kommen Anzeige und Steuerung von dort
+  _eidOf(i) { const ma = this._ma?.[i], s = ma && this._h?.states[ma]; return s && MA_ON.includes(s.state) ? ma : this._all[i].entity; }
+  get _eid() { return this._eidOf(this._idx); }
   _build() {
     this._built = true;
     const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'});
+    this._ma = this._all.map(o => maOf(this._h, o.entity, o.music_assistant ?? c.music_assistant));
     const multi = this._all.length > 1 && c.show_players !== false;
     r.innerHTML = `<style>${MVARS}${MCSS}${MPCSS}</style><div class="g mp${c.artwork === 'cover' ? ' cover' : ''}">
 ${c.artwork !== 'none' ? '<div class="art"></div><div class="shade"></div>' : ''}
@@ -1668,9 +1683,9 @@ ${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
     this._e = {g: q('.g'), art: q('.art'), thumb: q('.thumb'), pls: q('.pls'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), pw: q('.pw'),
       title: q('.tt b'), artist: q('.tt span'), bar: q('.bar'), fill: q('.bar i'), ta: q('.bar .a'), tb: q('.bar .b'),
       pv: q('.pv'), pp: q('.pp'), nx: q('.nx'), mu: q('.mu'), vol: q('.vol input'), step: q('.vol .step'), vv: q('.vol .v'), src: q('.src')};
-    const e = this._e, svc = (s, d = {}) => this._h.callService('media_player', s, {entity_id: this._p.entity, ...d});
-    press(e.ic, {tap: () => this._act({entity: this._p.entity, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: this._p.entity, hold_action: c.hold_action}, 'hold')});
-    if (e.pw) press(e.pw, {tap: () => { const s = this._st(); const on = s && !['off', 'standby'].includes(s.state); svc(!on ? 'turn_on' : hasF(s, MF.OFF) ? 'turn_off' : 'toggle'); }});
+    const e = this._e, svc = (s, d = {}, id = this._eid) => this._h.callService('media_player', s, {entity_id: id, ...d});
+    press(e.ic, {tap: () => this._act({entity: this._eid, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: this._eid, hold_action: c.hold_action}, 'hold')});
+    if (e.pw) press(e.pw, {tap: () => { const id = this._p.entity, s = this._h.states[id], on = s && !['off', 'standby'].includes(s.state); svc(!on ? 'turn_on' : hasF(s, MF.OFF) ? 'turn_off' : 'toggle', {}, id); }});
     press(e.pp, {tap: () => svc(this._st()?.state === 'playing' && !hasF(this._st(), MF.PAUSE) ? 'media_stop' : 'media_play_pause')});
     press(e.pv, {tap: () => svc('media_previous_track')});
     press(e.nx, {tap: () => svc('media_next_track')});
@@ -1699,27 +1714,27 @@ ${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
     this._srcKey = null;
     this._tick();
   }
-  _st() { return this._h?.states[this._p.entity]; }
+  _st() { return this._h?.states[this._eid]; }
   _update() {
     const h = this._h, c = this._c, e = this._e;
     if (!h || !e) return;
     // Automatisch zum Player wechseln, der gerade spielt – bis man selbst umschaltet
-    if (c.auto_switch !== false && !this._manual && this._all.length > 1 && h.states[this._p.entity]?.state !== 'playing') {
-      const i = this._all.findIndex(o => h.states[o.entity]?.state === 'playing');
+    if (c.auto_switch !== false && !this._manual && this._all.length > 1 && h.states[this._eid]?.state !== 'playing') {
+      const i = this._all.findIndex((o, j) => h.states[this._eidOf(j)]?.state === 'playing');
       if (i >= 0 && i !== this._idx) { this._idx = i; this._srcKey = null; }
     }
-    const p = this._p, s = h.states[p.entity], a = s?.attributes || {};
+    const p = this._p, n = h.states[p.entity], s = h.states[this._eid], a = s?.attributes || {};
     const off = !s || ['off', 'unavailable', 'unknown', 'standby'].includes(s.state), play = s?.state === 'playing';
     e.g.classList.toggle('na', !s || s.state === 'unavailable');
     e.g.classList.toggle('off', off);
     e.g.classList.toggle('play', play && c.glow !== false);
-    const app = a.app_name || a.source;
-    const logo = mapIcon(c.icon_map, c.icon_entity && h.states[c.icon_entity]?.state, a.app_name, a.source, a.media_channel);
-    e.name.textContent = p.name ?? a.friendly_name ?? p.entity;
+    const app = a.app_name || (a.app_id === 'music_assistant' ? 'Music Assistant' : a.source);
+    const logo = mapIcon(c.icon_map, c.icon_entity && h.states[c.icon_entity]?.state, a.app_name, a.app_id, a.source, a.media_channel);
+    e.name.textContent = p.name ?? n?.attributes.friendly_name ?? a.friendly_name ?? p.entity;
     e.sub.textContent = !s ? 'nicht gefunden' : off ? fmtState(h, s) : [app, play ? null : fmtState(h, s)].filter(Boolean).join(' · ') || fmtState(h, s);
     setIcon(e.ic, logo || p.icon || a.icon || (a.device_class === 'tv' ? 'mdi:television' : a.device_class === 'speaker' ? 'mdi:speaker' : 'mdi:cast'));
     e.ic.parentElement.classList.toggle('on', !off);
-    if (e.pw) { e.pw.classList.toggle('on', !off); e.pw.hidden = !!s && !hasF(s, MF.ON) && !hasF(s, MF.OFF); }
+    if (e.pw) { e.pw.classList.toggle('on', !off); e.pw.hidden = !!n && !hasF(n, MF.ON) && !hasF(n, MF.OFF); }
     e.title.textContent = a.media_title || (off ? '' : app || fmtState(h, s));
     e.artist.textContent = [a.media_artist || a.media_series_title, a.media_album_name].filter(Boolean).join(' · ') || (a.media_title ? '' : a.media_channel || '');
     // Cover: nur neu laden, wenn sich das Bild ändert
@@ -1750,11 +1765,11 @@ ${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
     }
     const vb = e.vol?.parentElement;
     if (vb) vb.hidden = [...vb.children].every(x => x.hidden);
-    if (e.src) this._sources(s);
+    if (e.src) this._sources(n);
     this._chips?.forEach((el, i) => {
       const o = this._all[i], ps = h.states[o.entity], pa = ps?.attributes || {};
       el.classList.toggle('on', i === this._idx);
-      el.classList.toggle('pl', ps?.state === 'playing');
+      el.classList.toggle('pl', h.states[this._eidOf(i)]?.state === 'playing');
       el.classList.toggle('na', !ps || ps.state === 'unavailable');
       setIcon(el.firstChild, o.icon || pa.icon || (pa.device_class === 'tv' ? 'mdi:television' : 'mdi:speaker'));
       el.children[1].textContent = o.name ?? pa.friendly_name ?? o.entity;
@@ -1815,20 +1830,24 @@ const MPMAIN = [
   {name: 'show_source', selector: {boolean: {}}},
   {name: 'sources', selector: {text: {multiple: true}}},
 ];
+const MPMA = [g2({name: 'ma_auto', selector: {boolean: {}}}, {name: 'ma_entity', selector: {entity: {domain: 'media_player', integration: 'music_assistant'}}})];
 const MPPLAY = [g2({name: 'show_players', selector: {boolean: {}}}, {name: 'auto_switch', selector: {boolean: {}}})];
-const MPITEM = [{name: 'entity', required: true, selector: {entity: MP}}, NAMEICON];
+const MPITEM = [{name: 'entity', required: true, selector: {entity: MP}}, NAMEICON, {name: 'music_assistant', selector: {entity: {domain: 'media_player', integration: 'music_assistant'}}}];
 const MPLOGO = [{name: 'icon_entity', selector: {entity: {}}}];
 const MPMAP = [g2({name: 'key', selector: T}, {name: 'value', selector: T})];
 const MPLABELS = {...MLABELS, artwork: 'Cover', glow: 'Leuchten beim Abspielen', show_progress: 'Fortschrittsbalken', show_power: 'Ein/Aus-Button',
   show_volume: 'Lautstärke-Regler', show_mute: 'Stumm-Button', show_source: 'Quellenauswahl', sources: 'Nur diese Quellen zeigen',
   show_players: 'Player-Umschalter anzeigen', auto_switch: 'Automatisch zum spielenden Player', icon_entity: 'Icon-Entität (optional)',
+  ma_auto: 'Automatisch suchen', ma_entity: 'Oder fest: Music-Assistant-Player', music_assistant: 'Music-Assistant-Player (optional)',
   key: 'App / Quelle / Zustand', value: 'Icon oder Bild-URL', tap_action: 'Icon antippen', hold_action: 'Icon lange drücken'};
 const MPHELPERS = {
   tap_action: 'Standard: Details des Players',
   sources: 'Leer = alle Quellen des Players. Genaue Namen wie in source_list',
   auto_switch: 'Bis man selbst einen Player antippt',
   icon_entity: 'Leer = App-Name bzw. Quelle des Players. Sonst zählt der Zustand dieser Entität (z. B. sensor.tv_app)',
-  key: 'z. B. Netflix – Groß/Klein egal',
+  ma_auto: 'Findet den Music-Assistant-Player mit gleichem Namen. Spielt der, kommen Titel, Cover und Steuerung von dort',
+  music_assistant: 'Leer = automatisch (wie oben eingestellt)',
+  key: 'z. B. Netflix oder music_assistant – Groß/Klein egal',
   value: 'mdi:netflix oder /local/logos/netflix.svg',
 };
 
@@ -1854,6 +1873,14 @@ class NovaMediaCardEditor extends NovaModularCardEditor {
     r.innerHTML = `<style>${ECSS}${MECSS}.maprow{display:flex;gap:6px;align-items:center}.maprow ha-form{flex:1}</style><div class="wrap"></div>`;
     const w = r.querySelector('.wrap'), strip = c => { Object.entries(MDEF).forEach(([k, x]) => c[k] === x && delete c[k]); if (c.glow === true) delete c.glow; return c; };
     w.append(this._form(MPMAIN, {...MDEF, glow: true, ...c0}, v => this._emit(strip(merge(this._config, names(MPMAIN), v)))));
+
+    w.append(this._h3('Music Assistant'));
+    const ma = c0.music_assistant;
+    w.append(this._form(MPMA, {ma_auto: ma !== false, ma_entity: typeof ma === 'string' ? ma : undefined}, v => {
+      const c = {...this._config};
+      if (v.ma_entity) c.music_assistant = v.ma_entity; else if (v.ma_auto === false) c.music_assistant = false; else delete c.music_assistant;
+      this._emit(c);
+    }));
 
     w.append(this._h3('Weitere Player (umschaltbar)'));
     const pl = this._players();

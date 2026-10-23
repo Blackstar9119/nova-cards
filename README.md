@@ -1,4 +1,4 @@
-# Nova Cards 0.5.0
+# Nova Cards 0.5.1
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -260,7 +260,7 @@ split_layout: grid          # grid | row | column
 ## Nova Media Card
 
 Media-Player-Karte im Look der Modular Card: Cover als Hintergrund, Titel, Interpret, App-Logo – leuchtet beim Abspielen.
-Buttons erscheinen nur, wenn der Player sie kann (`supported_features`).
+Buttons erscheinen nur, wenn der Player sie kann (`supported_features`). Music Assistant wird automatisch erkannt.
 
 ```yaml
 type: custom:nova-media-card
@@ -293,6 +293,7 @@ icon_map:                   # App/Quelle → Logo (Groß/Klein egal)
 | `players[]` | – | Weitere Player: `entity`, `name`, `icon`. Antippen = umschalten, lange drücken = Details |
 | `show_players` | `true` | Umschalter anzeigen |
 | `auto_switch` | `true` | Wechselt zum Player, der gerade spielt – bis man selbst umschaltet |
+| `music_assistant` | automatisch | Findet den Music-Assistant-Player mit gleichem Namen. Spielt der, kommen Titel, Cover und Vor/Zurück von dort (das nackte Gerät, z. B. ESPHome, kennt die nicht). Fest: Entität angeben, `false` = aus. Auch je Eintrag in `players[]` |
 | `icon_map` + `icon_entity` | – | Logo statt Icon: Schlüssel = App-Name, Quelle oder Kanal des Players; mit `icon_entity` zählt deren Zustand (wie bei der Raum Card). Gilt auch für die Quellen-Pillen |
 
 ---
