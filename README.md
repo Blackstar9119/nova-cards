@@ -204,7 +204,7 @@ Alle Bausteine außer `header` haben optional `title`. Einträge dürfen auch al
 
 ## Nova Kamera Card
 
-Live-Bild von `camera.*` (Stream) oder `image.*` (z. B. 3D-Drucker) mit Kopfzeile, rundem Steuerkreuz zum Schwenken/Neigen, frei belegbaren Buttons, Info-Chips und Warn-Badges. Der Stream läuft nur, solange die Karte sichtbar ist – sonst Standbild (schont das Wandpanel).
+Live-Bild von `camera.*` (Stream) oder `image.*` (z. B. 3D-Drucker) mit Kopfzeile, rundem Steuerkreuz zum Schwenken/Neigen, Splitscreen, frei belegbaren Buttons, Info-Chips und Warn-Badges. Der Stream läuft nur, solange die Karte sichtbar ist – sonst Standbild (schont das Wandpanel).
 
 ```yaml
 type: custom:nova-camera-card
@@ -229,6 +229,10 @@ alerts:
     below: 20
     message: Akku {state}
     level: error
+split:                      # optional: Splitscreen mit weiteren Kameras
+  - entity: image.katzenhohle_p1s_01p09c542801466_kamera
+    name: 3D-Drucker
+split_layout: grid          # grid | row | column
 ```
 
 | Option | Standard | Bedeutung |
@@ -246,6 +250,8 @@ alerts:
 | `ptz_position` | `overlay` | `overlay` = unten rechts im Bild, `below` = darunter |
 | `buttons_position` | `overlay` | `overlay` = runde Buttons im Bild, `below` = Pillen darunter |
 | `chips[]` | – | `entity`, `name`, `icon`, `unit`, `decimals`; optional `state` / `state_not` / `above` / `below` = nur dann zeigen |
+| `split[]` | – | Splitscreen: weitere Kameras als Kacheln, je `entity`, `name`, `ptz` (`auto`/`onvif`/`off`), `image_action`. Jede Kachel streamt nur, wenn sichtbar |
+| `split_layout` | `grid` | `grid` (2 Spalten), `row` (nebeneinander), `column` (untereinander); schmale Karten stapeln automatisch |
 | `alerts[]` | – | wie bei der Modular Card; Badge oben rechts, `glow: false` = Rahmen nicht einfärben |
 
 ---
