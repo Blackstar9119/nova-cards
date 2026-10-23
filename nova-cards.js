@@ -1,9 +1,9 @@
-/* Nova Cards v0.8.1 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.9.0 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter – alle als custom:nova-*. */
 
 /* ---------- Raum, Thermostat, Licht ---------- */
 (() => {
-var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.8.1",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
+var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.9.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
 --nv-fg:var(--nova-text-color,#fff);
@@ -155,7 +155,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 
 /* ---------- Nova Dock Card + Nova Modular Card + Nova Kamera Card + Nova Media Card + Nova Saugroboter Card ---------- */
 (() => {
-const VERSION = '0.8.1';
+const VERSION = '0.9.0';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const OFF = new Set(['off','unavailable','unknown','idle','docked','standby','closed','paused','not_home','none','ready']);
 const isOn = s => !!s && !OFF.has(s.state);
@@ -1960,7 +1960,7 @@ const VCSS = `
 .fs .pill,.ctl.pl .pill{flex:none}
 .rooms .pill{background:color-mix(in srgb,var(--nv-active) 45%,transparent);border-color:color-mix(in srgb,var(--nv-active) 60%,transparent)}
 .rooms .pill.on{background:var(--nv-active);box-shadow:0 0 14px color-mix(in srgb,var(--nv-active) 50%,transparent)}
-.rooms .pill.go{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:none}
+.rooms .pill.go{order:99;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:none}
 .vc .sws .list{row-gap:2px}
 .rooms .pill.cur{box-shadow:0 0 0 2px var(--nv-accent),0 0 14px color-mix(in srgb,var(--nv-accent) 50%,transparent)}
 .hd .all{flex:none}
@@ -2062,7 +2062,7 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,120px)}
 @keyframes vc-trail{0%{transform:scaleX(.2);opacity:.4}45%,90%{transform:scaleX(.76);opacity:.4}100%{transform:scaleX(.2);opacity:0}}`;
 
 // supported_features von vacuum
-const VF = {PAUSE: 4, STOP: 8, RETURN: 16, FAN: 32, LOCATE: 512, SPOT: 1024, START: 8192};
+const VF = {PAUSE: 4, STOP: 8, RETURN: 16, FAN: 32, LOCATE: 512, SPOT: 1024, START: 8192, AREA: 16384};
 const VDEF = {scene: true, scene_auto: true, station_type: 'auto', layout: 'auto', controls: 'pills', battery_display: 'status', rooms_title: 'Raum reinigen', map_title: 'Karte', glow: true, show_stop: true, show_return: true, show_locate: true, show_spot: false, show_fan_speed: true,
   map_aspect_ratio: 'auto', map_refresh: 5, map_action: 'more-info', segment_mode: 'roborock', segment_repeat: 1, consumables_layout: 'rows'};
 const VRUN = ['cleaning', 'returning'];
@@ -2220,9 +2220,11 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     this._allEl = q('.hd .all');
     if (this._allEl) press(this._allEl, {tap: () => this._act({entity: c.all, confirm: c.all_confirm}, 'tap'), hold: () => this._act({entity: c.all}, 'hold')});
     press(e.bat, {tap: () => this._bat && fire(this, 'hass-more-info', {entityId: this._bat})});
-    if (pills) this._ctl = Object.entries(VCTL).map(([k, d]) => { const el = q(`.c-${k}`); press(el, {tap: () => svc(d[3])}); return [k, el, d]; });
+    // Start: eingeplante Räume reinigen; nichts eingeplant, „Überall“ an oder Pause = normal starten bzw. fortsetzen
+    const start = () => { const p = this._picked(); p.length && this._st()?.state !== 'paused' ? this._clean(p) : svc('start'); };
+    if (pills) this._ctl = Object.entries(VCTL).map(([k, d]) => { const el = q(`.c-${k}`); press(el, {tap: () => k === 'start' ? start() : svc(d[3])}); return [k, el, d]; });
     else {
-      press(e.pp, {tap: () => { const s = this._st(); s?.state === 'cleaning' ? svc(hasF(s, VF.PAUSE) ? 'pause' : 'stop') : svc('start'); }});
+      press(e.pp, {tap: () => { const s = this._st(); s?.state === 'cleaning' ? svc(hasF(s, VF.PAUSE) ? 'pause' : 'stop') : start(); }});
       press(e.st, {tap: () => svc('stop')});
       press(e.hm, {tap: () => svc('return_to_base')});
       press(e.lo, {tap: () => svc('locate')});
@@ -2242,7 +2244,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
         el.className = 'pill';
         el.innerHTML = '<span class="i"></span><span class="t"></span>';
         press(el, {tap: () => {
-          if (o.tap_action?.action || o.entity || !list(o.segments).length) return this._act(o, 'tap');
+          if (o.tap_action?.action || o.entity || (!o.area && !list(o.segments).length)) return this._act(o, 'tap');
           this._sel.has(i) ? this._sel.delete(i) : this._sel.add(i);
           this._update();
         }, hold: () => this._act(o, 'hold')});
@@ -2252,7 +2254,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
       this._go = document.createElement('div');
       this._go.className = 'pill go';
       this._go.innerHTML = '<ha-icon icon="mdi:play"></ha-icon><span class="t"></span>';
-      press(this._go, {tap: () => this._clean()});
+      press(this._go, {tap: () => this._clean(this._picked())});
       e.rooms.append(this._go);
     }
     if (e.cons) {
@@ -2279,12 +2281,23 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     this._tick();
   }
   _st() { return this._h?.states[this._c.entity]; }
-  _clean() {
-    const c = this._c, seg = [...this._sel].flatMap(i => list(c.rooms[i].segments));
-    const fn = SEG[c.segment_mode];
-    if (!seg.length || !fn) return;
-    const [d, s, data] = fn(c.entity, seg, Math.max(1, +c.segment_repeat || 1));
-    this._h.callService(d, s, data);
+  // Eingeplant: angetippt oder Raum-Entität an – nur Räume mit Bereich oder Segmenten; „Überall“ an = nichts (alles)
+  _picked() {
+    const c = this._c, h = this._h;
+    if (c.all && isOn(h?.states[c.all])) return [];
+    return c.rooms.map((o, i) => i).filter(i => {
+      const o = c.rooms[i], os = o.entity && h?.states[o.entity];
+      return (o.area || list(o.segments).length) && (this._sel.has(i) || (!!os && TOGGLE.includes(dom(o.entity)) && isOn(os)));
+    });
+  }
+  // Bereiche über vacuum.clean_area (HA-Bereiche, herstellerunabhängig), sonst Segmente je Integration
+  _clean(idx) {
+    const c = this._c, rooms = idx.map(i => c.rooms[i]), ok = hasF(this._st(), VF.AREA);
+    const byArea = o => ok && o.area;
+    const areas = [...new Set(rooms.filter(byArea).map(o => o.area))];
+    const seg = rooms.filter(o => !byArea(o)).flatMap(o => list(o.segments)), fn = SEG[c.segment_mode];
+    if (areas.length) this._h.callService('vacuum', 'clean_area', {cleaning_area_id: areas}, {entity_id: c.entity});
+    if (seg.length && fn) { const [d, s, data] = fn(c.entity, seg, Math.max(1, +c.segment_repeat || 1)); this._h.callService(d, s, data); }
     this._sel.clear(); this._update();
   }
   // Animation: liefert true bei Tank-Warnung
@@ -2384,8 +2397,9 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
       el.lastChild.textContent = o.name ?? os?.attributes.friendly_name ?? (list(o.segments).join(', ') || '');
     });
     if (this._go) {
-      this._go.hidden = !this._sel.size;
-      this._go.lastChild.textContent = `${this._sel.size} ${this._sel.size === 1 ? 'Raum' : 'Räume'} reinigen`;
+      const n = this._picked().length;
+      this._go.hidden = !n;
+      this._go.lastChild.textContent = `${n} ${n === 1 ? 'Raum' : 'Räume'} reinigen`;
     }
     let warn = false;
     this._cons?.forEach(([el, o]) => {
@@ -2519,11 +2533,11 @@ const VHELPERS = {
   rooms_title: '„-“ = ohne Überschrift',
   room_sensor: 'Raum, in dem der Roboter gerade ist, bekommt einen gelben Ring (Vergleich mit Name, Bereich oder Segment)',
   all: 'Optional, z. B. input_boolean.saugroboter_alles oder ein Skript – erscheint oben rechts',
-  area: 'Optional: für den Abgleich mit „Aktueller Raum“',
+  area: 'Empfohlen: Reinigung über vacuum.clean_area (in den Roboter-Einstellungen Segmente den Bereichen zuordnen). Auch für „Aktueller Raum“',
   map_refresh: 'Nur camera.*: Takt beim Reinigen, 0 = aus. image.* lädt bei Änderung selbst neu',
-  segment_mode: 'Wie Räume mit Segment-IDs gereinigt werden',
-  segments: 'Komma-Liste, z. B. 16, 17. Antippen wählt aus, dann „Räume reinigen“',
-  entity: 'Optional statt Segmenten: Skript/Button wird ausgelöst, Schalter/input_boolean umgeschaltet (leuchtet, wenn an)',
+  segment_mode: 'Nur für Räume mit Segment-IDs statt Bereich',
+  segments: 'Nur, wenn die Integration keine Bereiche kann: Komma-Liste, z. B. 16, 17',
+  entity: 'Optional: input_boolean/Schalter = Raum einplanen (an = Start reinigt ihn), Skript/Button = direkt auslösen',
   confirm: 'Optional: Rückfrage vor dem Auslösen (Aktion/Entität)',
   below: 'Eintrag und Rahmen färben sich, wenn der Wert darunter liegt',
   max: 'Leer = 100 bei %, sonst kein Balken',
@@ -2581,7 +2595,7 @@ class NovaVacuumCardEditor extends NovaMediaCardEditor {
     }
     w.append(this._h3('Räume'));
     const p = document.createElement('p'); p.className = 'hint';
-    p.textContent = 'Je Raum Segment-IDs (aus der App bzw. Integration) – oder ein Skript/eine Aktion für alles andere.';
+    p.textContent = 'Je Raum einen HA-Bereich wählen: antippen plant ein, Start reinigt die eingeplanten Räume (vacuum.clean_area). Nichts eingeplant = alles.';
     w.append(p);
     if (this._items('rooms').length) w.append(this._form(VSEG, {...VDEF, ...c0}, v => this._emit(strip(merge(this._config, names(VSEG), v)))));
     this._list(w, 'rooms', VROOM, {item: 'Raum', icon: 'mdi:floor-plan'}, 'Raum hinzufügen');
