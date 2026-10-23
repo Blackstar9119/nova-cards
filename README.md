@@ -314,12 +314,18 @@ map_aspect_ratio: auto         # 1:1, 4:3, 16:9, 3:4
 fan_speeds: [Leise, Standard, Turbo]   # optional: nur diese Stufen
 segment_mode: roborock         # valetudo | dreame | xiaomi
 segment_repeat: 1
+room_sensor: sensor.robbi_aktueller_raum
+all: input_boolean.saugroboter_alles
 rooms:
   - name: Küche
     icon: mdi:countertop
     segments: 16
   - name: Bad
     segments: 17, 18
+  - name: Wohnzimmer           # oder per input_boolean einplanen (leuchtet, wenn an)
+    icon: mdi:sofa
+    entity: input_boolean.saugroboter_wohnzimmer
+    area: wohnzimmer
   - name: Wischen Flur         # alles andere per Skript/Aktion
     icon: mdi:water
     entity: script.robbi_flur_wischen
@@ -356,7 +362,9 @@ consumables:                   # Infos & Verbrauchsteile
 | `map_aspect_ratio` | `auto` | Seitenverhältnis der Karte, sonst Bildgröße |
 | `map_refresh` | `5` | Nur `camera.*`: Aktualisieren alle x s, solange der Roboter fährt und die Karte sichtbar ist (`0` = aus) |
 | `map_action` | `more-info` | Karte antippen: `more-info` (Karte groß), `vacuum` (Roboter-Details), `none` |
-| `rooms[]` | – | `name`, `icon` und `segments` (Komma-Liste) – antippen wählt aus, dann „Räume reinigen“. Oder `entity` (Skript/Button) bzw. `tap_action` (+ `confirm`) = direkt auslösen |
+| `rooms[]` | – | `name`, `icon` und `segments` (Komma-Liste) – antippen wählt aus, dann „Räume reinigen“. Oder `entity` (Skript/Button = auslösen, `input_boolean`/Schalter = umschalten und leuchten, wenn an) bzw. `tap_action` (+ `confirm`). Optional `area` für den Abgleich mit `room_sensor` |
+| `room_sensor` | – | Sensor mit dem aktuellen Raum – passender Raum (Name, Bereich oder Segment) bekommt einen Ring |
+| `all` (+ `all_name`, `all_icon`, `all_confirm`) | – / `Überall` | Pille oben rechts, z. B. `input_boolean.saugroboter_alles` oder ein Skript |
 | `segment_mode` | `roborock` | Wie Segmente gereinigt werden: `roborock` (`vacuum.send_command` → `app_segment_clean`), `valetudo` (`segment_cleanup`), `dreame` (`dreame_vacuum.vacuum_clean_segment`), `xiaomi` (`xiaomi_miio.vacuum_clean_segment`). Andere Integrationen: Raum per `tap_action` |
 | `segment_repeat` | `1` | Durchgänge je Raum |
 | `rooms_title` | `Raum reinigen` | Überschrift über den Räumen, `-` = ohne |
