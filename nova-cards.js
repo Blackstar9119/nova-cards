@@ -2002,8 +2002,10 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,120px)}
 .sc .sled{fill:var(--nv-active);opacity:.35}
 .sc .tank{fill:rgba(0,0,0,.4)}.sc .tkc{fill:var(--wc)}.sc .tkd{fill:#a68a63}.sc .tkc,.sc .tkd{transition:all .6s}
 .sc .tkc.low,.sc .tkd.low{fill:var(--nv-error);animation:vc-blink 1.6s infinite}
-.sc .parts circle{fill:rgba(255,255,255,.5);opacity:0}
+.sc .parts circle{fill:#b8a993;opacity:0}
+.sc .duct{fill:rgba(0,0,0,.35);transition:fill .4s}.sc.empty .duct{fill:rgba(184,169,147,.55)}
 .sc .water ellipse,.sc .water circle{fill:var(--wc);opacity:0;transform-box:fill-box;transform-origin:center}
+.sc .bubl circle{fill:none;stroke:color-mix(in srgb,var(--wc) 60%,#fff);stroke-width:.5}
 .sc .heat path{fill:none;stroke:color-mix(in srgb,var(--nv-accent) 70%,#fff);stroke-width:1;stroke-linecap:round;opacity:0}
 .sc .rob{transform:translateX(110px);transition:transform 1.4s ease-in-out}
 .sc.docked .rob{transform:translateX(240px)}
@@ -2019,11 +2021,19 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,120px)}
 .sc.mop .mop{opacity:.9}
 .sc.cleaning.mopping .trail{animation:vc-trail 16s ease-in-out infinite}
 .sc.chg .bolt{animation:vc-pulse 3s ease-in-out infinite}.sc.chg .led{animation:vc-pulse 3s ease-in-out infinite}
-.sc.empty .parts circle{animation:vc-up 1.2s linear infinite}
-.sc.wash .water ellipse{animation:vc-wave 1.4s ease-in-out infinite}.sc.wash .water circle{animation:vc-up 1.6s linear infinite}
-.sc .water circle:nth-child(5){animation-delay:.5s}.sc .water circle:nth-child(6){animation-delay:1s}
+.sc.empty .parts circle{animation:vc-suck .9s cubic-bezier(.5,0,1,1) infinite}
+.sc .parts circle:nth-child(4){animation-delay:.2s}.sc .parts circle:nth-child(5){animation-delay:.6s}
+.sc.empty .stn,.sc.empty .rb{animation:vc-jit .09s linear infinite}
+.sc.wash .water ellipse{animation:vc-wave 1.4s ease-in-out infinite}
+.sc.wash .drops circle{animation:vc-drop 1.1s ease-in infinite}
+.sc.wash .bubl circle{animation:vc-bubl 2s ease-out infinite}
+.sc.wash .spl circle{animation:vc-spl .9s ease-out infinite}
+.sc.wash .mop{opacity:1;animation:vc-scrub .35s ease-in-out infinite alternate}
+.sc .drops circle:nth-child(2),.sc .bubl circle:nth-child(2),.sc .spl circle:nth-child(2){animation-delay:.35s}
+.sc .drops circle:nth-child(3),.sc .bubl circle:nth-child(3),.sc .spl circle:nth-child(3){animation-delay:.7s}
 .sc.dry .heat path{animation:vc-heat 2.4s ease-in-out infinite}
 .sc.empty .sled,.sc.wash .sled,.sc.dry .sled{opacity:1;animation:vc-pulse 2s ease-in-out infinite}
+.sc.empty .sled{fill:#b8a993}.sc.wash .sled{fill:var(--wc)}.sc.dry .sled{fill:var(--nv-accent)}
 .scene.still *{animation-play-state:paused!important}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important}}
 @keyframes vc-drive{0%,100%{transform:translateX(20px)}45%,50%{transform:translateX(150px)}}
@@ -2032,7 +2042,12 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,120px)}
 @keyframes vc-blink{50%{opacity:.25}}
 @keyframes vc-pulse{0%,100%{opacity:.3}50%{opacity:.95}}
 @keyframes vc-dust{0%{opacity:0;transform:translateX(0)}30%{opacity:.35}100%{opacity:0;transform:translateX(12px)}}
-@keyframes vc-up{0%{opacity:0;transform:translateY(0)}20%{opacity:.85}100%{opacity:0;transform:translateY(-60px)}}
+@keyframes vc-suck{0%{opacity:0;transform:translateY(0)}15%{opacity:.95}85%{opacity:.8}100%{opacity:0;transform:translateY(-60px)}}
+@keyframes vc-jit{0%,100%{transform:translateX(0)}50%{transform:translateX(.35px)}}
+@keyframes vc-drop{0%{opacity:0;transform:translateY(0)}15%{opacity:.95}100%{opacity:.3;transform:translateY(20px)}}
+@keyframes vc-bubl{0%{opacity:0;transform:translateY(0)}20%{opacity:.9}100%{opacity:0;transform:translateY(-30px)}}
+@keyframes vc-spl{0%{opacity:0;transform:translate(0,0)}30%{opacity:.9}100%{opacity:0;transform:translate(2px,-7px)}}
+@keyframes vc-scrub{from{transform:translateX(-1.5px)}to{transform:translateX(1.5px)}}
 @keyframes vc-wave{0%,100%{opacity:0;transform:scaleX(.4)}50%{opacity:.8;transform:scaleX(1)}}
 @keyframes vc-heat{0%{opacity:0;transform:translateY(6px)}40%{opacity:.75}100%{opacity:0;transform:translateY(-16px)}}
 @keyframes vc-trail{0%{transform:scaleX(.2);opacity:.4}45%,90%{transform:scaleX(.76);opacity:.4}100%{transform:scaleX(.2);opacity:0}}`;
@@ -2077,7 +2092,7 @@ const VSCENE = `<div class="scene sc"><svg viewBox="0 8 320 102" preserveAspectR
 <rect class="floor" x="0" y="104" width="320" height="1"/><rect class="trail" x="10" y="104" width="230" height="1.6" rx=".8"/>
 <g class="stn"><path class="ramp" d="M236 104 L246 98 L320 98 L320 104 Z"/><rect class="tower" x="262" y="14" width="58" height="84" rx="6"/>
 <rect class="seam" x="262" y="26" width="58" height=".8"/><rect class="sled" x="282" y="19" width="18" height="1.6" rx=".8"/>
-<rect class="tank" x="276" y="34" width="5" height="40" rx="2.5"/><rect class="tank" x="300" y="34" width="5" height="40" rx="2.5"/>
+<rect class="tank" x="276" y="34" width="5" height="40" rx="2.5"/><rect class="tank" x="300" y="34" width="5" height="40" rx="2.5"/><rect class="duct" x="288.8" y="30" width="2.4" height="62" rx="1.2"/>
 <rect class="tkc" clip-path="url(#vtc)" x="276" y="34" width="5" height="40"/><rect class="tkd" clip-path="url(#vtd)" x="300" y="34" width="5" height="40"/></g>
 <g class="rob"><ellipse class="shd" cx="35" cy="104" rx="34" ry="2.4"/><g class="rb"><rect class="mop" x="8" y="99.5" width="54" height="2.5" rx="1.2"/>
 <g transform="translate(5 101)"><g class="br"><line x1="-5" y1="0" x2="5" y2="0"/><line x1="0" y1="-1.6" x2="0" y2="1.6"/></g></g>
@@ -2085,8 +2100,11 @@ const VSCENE = `<div class="scene sc"><svg viewBox="0 8 320 102" preserveAspectR
 <rect class="lid" x="28" y="79" width="14" height="6.5" rx="2"/><rect class="lidl" x="30" y="81.2" width="10" height="1"/>
 <rect class="led" x="56" y="89.5" width="9" height="1.4" rx=".7"/><g class="dust"><circle cx="-5" cy="102" r="1"/><circle cx="-10" cy="101" r=".8"/><circle cx="-15" cy="102.5" r=".9"/></g>
 <path class="bolt" d="M37 62 l-4 7 h4 l-2 6 l6 -8 h-4 l2 -5 z"/><g class="err"><circle cx="35" cy="68" r="5.5"/><rect x="34.3" y="64.8" width="1.4" height="4" rx=".7"/><circle class="dot" cx="35" cy="70.9" r=".8"/></g></g></g>
-<g class="parts"><circle cx="291" cy="90" r="1.1"/><circle cx="294" cy="90" r=".9"/><circle cx="288" cy="90" r="1"/></g>
-<g class="water"><ellipse cx="256" cy="104" rx="11" ry="1.6"/><ellipse cx="280" cy="104" rx="11" ry="1.6"/><ellipse cx="304" cy="104" rx="11" ry="1.6"/><circle cx="266" cy="97" r="1.2"/><circle cx="290" cy="95" r="1"/><circle cx="308" cy="97" r="1.1"/></g>
+<g class="parts"><circle cx="290" cy="90" r="1.4"/><circle cx="290" cy="90" r="1.1"/><circle cx="290" cy="90" r="1.3"/><circle cx="290" cy="90" r="1"/><circle cx="290" cy="90" r="1.2"/></g>
+<g class="water"><ellipse cx="256" cy="104" rx="11" ry="1.6"/><ellipse cx="280" cy="104" rx="11" ry="1.6"/><ellipse cx="304" cy="104" rx="11" ry="1.6"/>
+<g class="drops"><circle cx="278.5" cy="76" r="1"/><circle cx="278.5" cy="76" r=".9"/><circle cx="278.5" cy="76" r="1"/></g>
+<g class="bubl"><circle cx="302.5" cy="72" r=".9"/><circle cx="302" cy="72" r=".7"/><circle cx="303" cy="72" r=".8"/></g>
+<g class="spl"><circle cx="250" cy="100" r=".9"/><circle cx="270" cy="99" r="1"/><circle cx="296" cy="100" r=".8"/></g></g>
 <g class="heat"><path d="M266 76 q2 -4 0 -8 q-2 -4 0 -8"/><path d="M280 76 q2 -4 0 -8 q-2 -4 0 -8"/><path d="M294 76 q2 -4 0 -8 q-2 -4 0 -8"/></g>
 </svg><div class="cap"></div></div>`;
 // Muster für Status-Texte (Roh-Zustand und übersetzt), z. B. emptying_the_bin, washing_the_mop, Trocknen
