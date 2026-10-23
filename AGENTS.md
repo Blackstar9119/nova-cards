@@ -51,5 +51,6 @@ hacs.json             HACS-Metadaten
   Texte, Icons, Farben kommen aus der Konfiguration oder werden automatisch erkannt).
 - **Alles auf Deutsch:** Beschriftungen, Hilfetexte, Fehlermeldungen, Kommentare, README.
 - **Für Nutzer darf sich bei Umbauten nichts ändern:** gleiche Kartentypen, Optionen, Optik und Editoren.
-- **Commits, Branches und PRs:** keine `Co-Authored-By`-Zeilen und keine Erwähnung von Claude oder anderen
-  KI-Tools (auch nicht in Branch-Namen wie `claude/...`).
+- **Commits, Branches und PRs:** keine `Co-Authored-By`-Zeilen und keine Erwähnung von KI-Tools
+  (auch nicht in Branch-Namen; Branches heißen `feature/...`).
+- **Commits immer als Blackstar9119 mit 209100092+Blackstar9119@users.noreply.github.com, nie mit privater Mail.**
