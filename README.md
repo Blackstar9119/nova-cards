@@ -1,4 +1,4 @@
-# Nova Cards 0.8.0
+# Nova Cards 0.8.1
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -360,6 +360,7 @@ consumables:                   # Infos & Verbrauchsteile
 | `show_spot` | `false` | Spot-Reinigung |
 | `show_fan_speed` / `fan_speeds` | `true` / alle | Saugstärke als Pillen aus `fan_speed_list`; `fan_speeds` = nur diese. Icons per `fan_speed_icons` (wie `icon_map`) |
 | `scene` | `true` | Animation von Roboter und Station |
+| `station_type` | `auto` | Station: `dock` (nur Laden), `empty` (Absaugstation mit Staubbeutel), `wash` (Waschstation mit Tanks), `full` (beides). `auto` = nach den Entitäten des Roboters |
 | `scene_auto` | `true` | Entitäten für die Animation automatisch am Gerät suchen (Entity-ID bzw. `translation_key`, deutsch/englisch). Der Editor zeigt, was gefunden wurde |
 | `mop_attached` | auto | Mopp angebracht (`binary_sensor` o. ä.) – Mopp-Pad am Roboter |
 | `mop_mode` / `mop_states` | auto / – | Reinigungsmodus: Zustand mit `mop`/`wisch` (z. B. `vac_and_mop`) = wischt → nasse Spur. `mop_states` = genaue Zustände, falls die Erkennung nicht passt |
