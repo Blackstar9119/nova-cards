@@ -1,4 +1,4 @@
-# Nova Cards 0.8.0
+# Nova Cards 0.8.1
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -318,15 +318,15 @@ segment_repeat: 1
 room_sensor: sensor.robbi_aktueller_raum
 all: input_boolean.saugroboter_alles
 rooms:
-  - name: Küche
+  - name: Küche                # HA-Bereich → vacuum.clean_area (empfohlen)
     icon: mdi:countertop
-    segments: 16
-  - name: Bad
-    segments: 17, 18
-  - name: Wohnzimmer           # oder per input_boolean einplanen (leuchtet, wenn an)
+    area: kuche
+  - name: Wohnzimmer           # per input_boolean einplanen (leuchtet, wenn an)
     icon: mdi:sofa
     entity: input_boolean.saugroboter_wohnzimmer
     area: wohnzimmer
+  - name: Bad                  # Integration ohne Bereiche: Segment-IDs
+    segments: 17, 18
   - name: Wischen Flur         # alles andere per Skript/Aktion
     icon: mdi:water
     entity: script.robbi_flur_wischen
@@ -360,6 +360,7 @@ consumables:                   # Infos & Verbrauchsteile
 | `show_spot` | `false` | Spot-Reinigung |
 | `show_fan_speed` / `fan_speeds` | `true` / alle | Saugstärke als Pillen aus `fan_speed_list`; `fan_speeds` = nur diese. Icons per `fan_speed_icons` (wie `icon_map`) |
 | `scene` | `true` | Animation von Roboter und Station |
+| `station_type` | `auto` | Station: `dock` (nur Laden), `empty` (Absaugstation mit Staubbeutel), `wash` (Waschstation mit Tanks), `full` (beides). `auto` = nach den Entitäten des Roboters |
 | `scene_auto` | `true` | Entitäten für die Animation automatisch am Gerät suchen (Entity-ID bzw. `translation_key`, deutsch/englisch). Der Editor zeigt, was gefunden wurde |
 | `mop_attached` | auto | Mopp angebracht (`binary_sensor` o. ä.) – Mopp-Pad am Roboter |
 | `mop_mode` / `mop_states` | auto / – | Reinigungsmodus: Zustand mit `mop`/`wisch` (z. B. `vac_and_mop`) = wischt → nasse Spur. `mop_states` = genaue Zustände, falls die Erkennung nicht passt |
@@ -371,10 +372,10 @@ consumables:                   # Infos & Verbrauchsteile
 | `map_aspect_ratio` | `auto` | Seitenverhältnis der Karte, sonst Bildgröße |
 | `map_refresh` | `5` | Nur `camera.*`: Aktualisieren alle x s, solange der Roboter fährt und die Karte sichtbar ist (`0` = aus) |
 | `map_action` | `more-info` | Karte antippen: `more-info` (Karte groß), `vacuum` (Roboter-Details), `none` |
-| `rooms[]` | – | `name`, `icon` und `segments` (Komma-Liste) – antippen wählt aus, dann „Räume reinigen“. Oder `entity` (Skript/Button = auslösen, `input_boolean`/Schalter = umschalten und leuchten, wenn an) bzw. `tap_action` (+ `confirm`). Optional `area` für den Abgleich mit `room_sensor` |
+| `rooms[]` | – | `name`, `icon`, `area` (HA-Bereich). Antippen plant den Raum ein (bzw. schaltet die `entity`, z. B. `input_boolean`, die dann das Einplanen übernimmt). **Start** reinigt alle eingeplanten Räume per `vacuum.clean_area` – herstellerunabhängig, dafür in den Einstellungen der Roboter-Entität die Segmente den Bereichen zuordnen (HA 2026.3+). Nichts eingeplant, „Überall“ an oder Pause = normal starten bzw. fortsetzen. Kann der Roboter keine Bereiche: `segments` (Komma-Liste) über `segment_mode`. `entity` als Skript/Button bzw. `tap_action` (+ `confirm`) = direkt auslösen |
 | `room_sensor` | – | Sensor mit dem aktuellen Raum – passender Raum (Name, Bereich oder Segment) bekommt einen Ring |
 | `all` (+ `all_name`, `all_icon`, `all_confirm`) | – / `Überall` | Pille oben rechts, z. B. `input_boolean.saugroboter_alles` oder ein Skript |
-| `segment_mode` | `roborock` | Wie Segmente gereinigt werden: `roborock` (`vacuum.send_command` → `app_segment_clean`), `valetudo` (`segment_cleanup`), `dreame` (`dreame_vacuum.vacuum_clean_segment`), `xiaomi` (`xiaomi_miio.vacuum_clean_segment`). Andere Integrationen: Raum per `tap_action` |
+| `segment_mode` | `roborock` | Nur für Räume mit `segments` statt Bereich: `roborock` (`vacuum.send_command` → `app_segment_clean`), `valetudo` (`segment_cleanup`), `dreame` (`dreame_vacuum.vacuum_clean_segment`), `xiaomi` (`xiaomi_miio.vacuum_clean_segment`). Andere Integrationen: Raum per `tap_action` |
 | `segment_repeat` | `1` | Durchgänge je Raum |
 | `rooms_title` | `Raum reinigen` | Überschrift über den Räumen, `-` = ohne |
 | `switches[]` / `switches_columns` | – / `1` | Schalter wie bei der Modular Card: `entity`, `name`, `icon`, `tap_action`, `confirm`. Antippen schaltet, Buttons/Skripte werden ausgelöst |
