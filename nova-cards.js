@@ -1,25 +1,25 @@
-/* Nova Cards v0.2.0 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock – alle als custom:nova-*. */
+/* Nova Cards v0.3.0 | MIT | https://github.com/Blackstar9119/nova-cards
+   Raum, Thermostat, Licht, Dock, Modular – alle als custom:nova-*. */
 
 /* ---------- Raum, Thermostat, Licht ---------- */
 (() => {
-var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.2.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
---bs-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
---bs-border:var(--nova-border-color,rgba(255,255,255,.14));
---bs-fg:var(--nova-text-color,#fff);
---bs-accent:var(--nova-accent-color,#f5b83d);
---bs-accent-fg:var(--nova-accent-text-color,#3a2a00);
---bs-active:var(--nova-active-color,#3d8bf5);
---bs-active-fg:var(--nova-active-text-color,#fff);
---bs-warn:var(--nova-warning-color,#7cc4ff);
---bs-chip:var(--nova-chip-color,rgba(255,255,255,.13));
---bs-radius:var(--nova-radius,24px);
---bs-blur:var(--nova-blur,20px)}`,C=`${vt}
+var _t=Object.defineProperty;var bt=(s,t,e)=>t in s?_t(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var v=(s,t,e)=>bt(s,typeof t!="symbol"?t+"":t,e);var J="0.3.0",xt="https://github.com/Blackstar9119/nova-cards",z=s=>`${xt}#${s}`;var g=s=>String(s??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),yt=new Set(["off","unavailable","unknown","idle","docked","standby","closed","paused","not_home","none","ready"]),B=s=>!!s&&!yt.has(s.state),q=s=>String(s||"").split(".")[0],D=(s,t,e)=>s.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0})),$=(s,t)=>D(s,"hass-more-info",{entityId:t}),w=(s,t,e)=>D(s,"hass-action",{config:t,action:e}),X=(s,t)=>{try{return s.formatEntityState?s.formatEntityState(t):`${t.state}${t.attributes.unit_of_measurement?" "+t.attributes.unit_of_measurement:""}`}catch{return t.state}},T=(s,t)=>{let e=s.entities?.[t];return e&&(e.area_id||s.devices?.[e.device_id]?.area_id)||null},Y=s=>typeof s=="string"&&/^(\/|https?:|data:image)/.test(s),Q={light:"mdi:lightbulb",switch:"mdi:power-socket-eu",fan:"mdi:fan",vacuum:"mdi:robot-vacuum",input_boolean:"mdi:toggle-switch-outline",media_player:"mdi:speaker",button:"mdi:gesture-tap-button",input_button:"mdi:gesture-tap-button",script:"mdi:script-text-outline",scene:"mdi:palette",climate:"mdi:thermostat",cover:"mdi:window-shutter",lock:"mdi:lock",sensor:"mdi:eye"};function F(s,{tap:t,hold:e,holdMs:n=500}){let i,o=!1,a=()=>clearTimeout(i);s.addEventListener("pointerdown",()=>{o=!1,i=setTimeout(()=>{o=!0,e&&e()},n)}),s.addEventListener("pointerup",r=>{a(),!o&&t&&t(),r.stopPropagation()}),s.addEventListener("pointerleave",a),s.addEventListener("pointercancel",a),s.addEventListener("contextmenu",r=>r.preventDefault()),s.addEventListener("click",r=>r.stopPropagation()),s.addEventListener("keydown",r=>{(r.key==="Enter"||r.key===" ")&&(r.preventDefault(),r.stopPropagation(),t&&t())})}function _(s,t,e){customElements.get(s)||customElements.define(s,t),e&&(window.customCards=window.customCards||[],window.customCards.some(n=>n.type===s)||window.customCards.push({type:s,preview:!0,...e}))}var vt=`:host{
+--nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
+--nv-border:var(--nova-border-color,rgba(255,255,255,.14));
+--nv-fg:var(--nova-text-color,#fff);
+--nv-accent:var(--nova-accent-color,#f5b83d);
+--nv-accent-fg:var(--nova-accent-text-color,#3a2a00);
+--nv-active:var(--nova-active-color,#3d8bf5);
+--nv-active-fg:var(--nova-active-text-color,#fff);
+--nv-warn:var(--nova-warning-color,#7cc4ff);
+--nv-chip:var(--nova-chip-color,rgba(255,255,255,.13));
+--nv-radius:var(--nova-radius,24px);
+--nv-blur:var(--nova-blur,20px)}`,C=`${vt}
 :host{display:block;height:100%}
-.g{height:100%;box-sizing:border-box;border-radius:var(--bs-radius);background:var(--bs-bg);
-backdrop-filter:blur(var(--bs-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--bs-blur)) saturate(150%);
-border:1px solid var(--bs-border);box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12);
-color:var(--bs-fg);overflow:hidden;position:relative;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);background:var(--nv-bg);
+backdrop-filter:blur(var(--nv-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(150%);
+border:1px solid var(--nv-border);box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12);
+color:var(--nv-fg);overflow:hidden;position:relative;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 ha-icon{--mdc-icon-size:20px;display:flex}`;var wt;function kt(){return customElements.get("ha-form")?Promise.resolve():wt||(wt=(async()=>{try{await(await(await window.loadCardHelpers()).createCardElement({type:"button",entity:"sun.sun"}))?.constructor?.getConfigElement?.()}catch(s){console.warn("[nova-cards] Editor-Komponenten nicht vorgeladen",s)}await Promise.race([customElements.whenDefined("ha-form"),new Promise(s=>setTimeout(s,3e3))])})())}var k=s=>s.flatMap(t=>t.schema?k(t.schema):t.name?[t.name]:[]),Et=s=>s==null||s===""||Array.isArray(s)&&!s.length;function L(s,t,e){let n={...s};return t.forEach(i=>Et(e[i])?delete n[i]:n[i]=e[i]),n}var S=class extends HTMLElement{constructor(){super(),this.attachShadow({mode:"open"}),this._forms=[]}set hass(t){this._hass=t,this._forms.forEach(e=>e.hass=t)}setConfig(t){let e=JSON.stringify(t);if(e===this._emitted){this._config=t;return}this._config=JSON.parse(e),this._onExternalConfig?.(),this._rebuild()}async _rebuild(){let t=this._bid=(this._bid||0)+1;await kt(),t===this._bid&&(this._forms=[],this._build())}_emit(t){this._config=t,this._emitted=JSON.stringify(t),D(this,"config-changed",{config:t})}_form(t,e,n){let i=document.createElement("ha-form");return i.hass=this._hass,i.schema=t,i.data=e,i.computeLabel=o=>this.constructor.labels?.[o.name]??o.name,i.computeHelper=o=>this.constructor.helpers?.[o.name],i.addEventListener("value-changed",o=>{o.stopPropagation(),i.data=o.detail.value,n(o.detail.value)}),this._forms.push(i),i}},M=`
 .wrap{display:flex;flex-direction:column;gap:16px}
 h3{margin:8px 0 0;font-size:15px;font-weight:600}
@@ -37,20 +37,20 @@ summary .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow
 .room.click{cursor:pointer}
 .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.45;filter:grayscale(.7);transition:all .5s}
 .bgi{position:absolute;right:-14px;top:4px;--mdc-icon-size:130px;opacity:.07;transition:all .5s}
-.room.lit .bgi{opacity:.18;color:var(--bs-accent)}.room.lit .bg{opacity:.85;filter:none}
-.room.lit{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--bs-accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
-.room.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--bs-warn) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.room.lit .bgi{opacity:.18;color:var(--nv-accent)}.room.lit .bg{opacity:.85;filter:none}
+.room.lit{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.room.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
 .head{display:flex;align-items:center;gap:2px;position:relative;font-weight:600;font-size:15px;text-shadow:0 1px 4px rgba(0,0,0,.4)}
 .head .chev{--mdc-icon-size:18px;opacity:.6}
 .t{margin-left:auto;font-weight:500;font-size:13px;opacity:.85;display:flex;gap:8px;align-items:center}
-.w{display:none;--mdc-icon-size:16px;color:var(--bs-warn)}.room.warn .w{display:flex}
+.w{display:none;--mdc-icon-size:16px;color:var(--nv-warn)}.room.warn .w{display:flex}
 .btns{display:flex;gap:9px;flex-wrap:wrap;position:relative}
-.b{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bs-chip);border:1px solid rgba(255,255,255,.1);transition:all .25s;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
-.b:focus-visible{box-shadow:0 0 0 2px var(--bs-active)}
+.b{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.1);transition:all .25s;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
+.b:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .b:active{transform:scale(.9)}
 .b img{width:24px;height:24px;object-fit:contain}
-.b.on{background:var(--bs-accent);color:var(--bs-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--bs-accent) 55%,transparent)}
-.b.on.alt{background:var(--bs-active);color:var(--bs-active-fg);box-shadow:0 0 16px color-mix(in srgb,var(--bs-active) 55%,transparent)}
+.b.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 55%,transparent)}
+.b.on.alt{background:var(--nv-active);color:var(--nv-active-fg);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 55%,transparent)}
 .b.na{opacity:.3}`;function Tt(s){if(!s||typeof s!="object")throw new Error("Ung\xFCltige Konfiguration");let t={glow_domains:["light","switch"],temperature_decimals:1,...s};return!t.tap_action&&t.navigation_path&&(t.tap_action={action:"navigate",navigation_path:t.navigation_path}),t.windows=[].concat(t.windows||[]).filter(Boolean),t.buttons=(t.buttons||[]).filter(e=>e&&e.entity).map(e=>{let n={...e};return!n.tap_action&&n.action==="more-info"&&(n.tap_action={action:"more-info"}),n}),t}var P=class extends HTMLElement{static getConfigElement(){return document.createElement(`${st}-editor`)}static getStubConfig(t){let e=Object.keys(t.states);for(let n of Object.values(t.areas||{})){let i=e.filter(a=>a.startsWith("light.")&&T(t,a)===n.area_id).slice(0,4);if(!i.length)continue;let o=e.find(a=>a.startsWith("sensor.")&&T(t,a)===n.area_id&&t.states[a].attributes.device_class==="temperature");return{name:n.name,icon:n.icon||"mdi:home",...o?{temperature:o}:{},buttons:i.map(a=>({entity:a}))}}return{name:"Wohnzimmer",icon:"mdi:sofa",buttons:[]}}setConfig(t){this._c=Tt(t),this._built=!1,this._h&&(this._build(),this._update())}set hass(t){this._h=t,this._built||this._build(),this._update()}getCardSize(){return 3}getGridOptions(){return{columns:12,rows:3,min_rows:2,min_columns:6}}_build(){if(!this._c)return;this._built=!0;let t=this._c,e=this.shadowRoot||this.attachShadow({mode:"open"}),n=t.tap_action?.action;e.innerHTML=`<style>${C}${zt}</style>
 <div class="g room ${n&&n!=="none"?"click":""}">
   ${t.image?`<div class="bg" style="background-image:url('${g(t.image)}')"></div>`:""}
@@ -58,29 +58,29 @@ summary .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow
   <div class="head"><span>${g(t.name||"")}</span>${n==="navigate"?'<ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>':""}
     <span class="t"><ha-icon class="w" icon="${g(t.window_icon||"mdi:window-open-variant")}"></ha-icon><span class="tv"></span></span></div>
   <div class="btns"></div>
-</div>`,this._room=e.querySelector(".room"),this._tv=e.querySelector(".tv");let i=e.querySelector(".btns");this._room.addEventListener("click",()=>{!n||n==="none"||w(this,{entity:t.temperature||t.info,tap_action:t.tap_action},"tap")}),this._btns=t.buttons.map(o=>{let a=document.createElement("div");return a.className="b",a.tabIndex=0,a.setAttribute("role","button"),F(a,{tap:()=>this._tap(o),hold:()=>this._hold(o)}),i.appendChild(a),[a,o]})}_tap(t){let e=t.tap_action;if(e&&e.action&&e.action!=="default")return w(this,{entity:t.entity,tap_action:e},"tap");let n=this._h,i=q(t.entity),o={entity_id:t.entity};if(it[i])return n.callService(...it[i],o);if(i==="media_player")return n.callService("media_player","toggle",o);if(Lt.includes(i))return n.callService("homeassistant","toggle",o);$(this,t.entity)}_hold(t){if(t.hold_action?.action)return w(this,{entity:t.entity,hold_action:t.hold_action},"hold");$(this,t.entity)}_icon(t){let e=this._h;if(t.icon_entity&&t.icon_map){let n=e.states[t.icon_entity],i=n&&t.icon_map[n.state];if(i)return i}return t.icon||e.states[t.entity]?.attributes.icon||Q[q(t.entity)]||"mdi:power"}_info(){let t=this._h,e=this._c;if(e.info){let o=t.states[e.info];if(!o)return"";let a=parseFloat(o.state);return(e.info_round&&!isNaN(a)?Math.round(a):X(t,o))+(e.info_suffix||"")}let n=e.temperature&&t.states[e.temperature],i=n?n.attributes.current_temperature??n.state:null;return i!==null&&!isNaN(parseFloat(i))?`${parseFloat(i).toFixed(e.temperature_decimals)}\xB0`:""}_update(){if(!this._h||!this._btns)return;let t=this._h,e=this._c;this._tv.textContent=this._info(),this._room.classList.toggle("warn",e.windows.some(i=>t.states[i]?.state==="on"));let n=!1;for(let[i,o]of this._btns){let a=t.states[o.entity],r=q(o.entity),l=o.state_entity?B(t.states[o.state_entity]):B(a),c=e.glow_domains.includes(r);i.classList.toggle("na",!a||a.state==="unavailable"),i.classList.toggle("on",l&&!$t.includes(r)),i.classList.toggle("alt",!c),l&&c&&(n=!0);let p=this._icon(o);i._ic!==p&&(i._ic=p,i.innerHTML=Y(p)?`<img src="${g(p)}" alt="">`:`<ha-icon icon="${g(p)}"></ha-icon>`),i.title=o.name||a?.attributes.friendly_name||o.entity}this._room.classList.toggle("lit",n)}};_(st,P,{name:"Nova Raum Card",description:"Raumkachel mit Temperatur, Fenster-Warnung und frei belegbaren Buttons.",documentationURL:z("nova-raum-card")});var I={};function ot(s,t,e,n){let i=`${t}|${e}`,o=I[i];if(o&&(o.loading||Date.now()-o.t<6e5))return o.data;I[i]={t:Date.now(),data:o?.data||null,loading:!0};let a=new Date(Date.now()-e*36e5).toISOString();return s.callApi("GET",`history/period/${a}?filter_entity_id=${t}&minimal_response&no_attributes`).then(r=>{let l=(r[0]||[]).map(c=>[new Date(c.last_changed).getTime(),parseFloat(c.state)]).filter(c=>!isNaN(c[1]));I[i]={t:Date.now(),data:l},n&&n()}).catch(()=>{I[i]={t:Date.now(),data:[]}}),I[i].data}var Ct=0;function at(s,{w:t=300,h:e=64,color:n="var(--bs-accent)"}={}){if(!s||s.length<2)return'<svg class="spk"></svg>';let i=s[0][0],o=Math.max(s[s.length-1][0],Date.now()),a=s.map(u=>u[1]),r=Math.min(...a),l=Math.max(...a),c=l-r||1,d="M"+s.concat([[o,s[s.length-1][1]]]).map(u=>[(u[0]-i)/(o-i||1)*t,e-6-(u[1]-r)/c*(e-14)]).map(u=>u[0].toFixed(1)+","+u[1].toFixed(1)).join("L"),m=`nvg${++Ct}`;return`<svg class="spk" viewBox="0 0 ${t} ${e}" preserveAspectRatio="none"><defs><linearGradient id="${m}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${n}" stop-opacity=".45"/><stop offset="1" stop-color="${n}" stop-opacity="0"/></linearGradient></defs><path d="${d}L${t},${e}L0,${e}Z" fill="url(#${m})"/><path d="${d}" fill="none" stroke="${n}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`}var Mt=(s,t)=>{let e=s?.states[t]?.attributes.hvac_modes||Object.keys(H);return[{name:"entity",required:!0,selector:{entity:{domain:"climate"}}},{type:"grid",name:"",schema:[{name:"name",selector:{text:{}}},{name:"icon",selector:{icon:{}},context:{icon_entity:"entity"}}]},{name:"sensor",selector:{entity:{domain:"sensor",device_class:"temperature"}}},{name:"windows",selector:{entity:{multiple:!0,domain:"binary_sensor"}}},{type:"grid",name:"",schema:[{name:"show_graph",selector:{boolean:{}}},{name:"graph_hours",selector:{number:{min:1,max:168,mode:"box",unit_of_measurement:"h"}}}]},{type:"grid",name:"",schema:[{name:"show_modes",selector:{boolean:{}}},{name:"show_presets",selector:{boolean:{}}}]},{name:"compact",selector:{boolean:{}}},{name:"modes",selector:{select:{multiple:!0,options:e.map(n=>({value:n,label:H[n]||n}))}}},{type:"grid",name:"",schema:[{name:"step",selector:{number:{min:.1,max:5,step:.1,mode:"box",unit_of_measurement:"\xB0"}}},{name:"humidity",selector:{entity:{domain:"sensor",device_class:"humidity"}}}]},{name:"tap_action",selector:{ui_action:{}}}]},rt={show_graph:!0,graph_hours:24,show_modes:!0,show_presets:!1,compact:!0},j=class extends S{_build(){let t=this.shadowRoot;t.innerHTML=`<style>${M}</style><div class="wrap"></div>`;let e=Mt(this._hass,this._config.entity),n=k(e);t.querySelector(".wrap").append(this._form(e,{...rt,...this._config},i=>{let o=this._config.entity,a=L(this._config,n,i);Object.entries(rt).forEach(([r,l])=>a[r]===l&&delete a[r]),this._emit(a),a.entity!==o&&this._rebuild()}))}};v(j,"labels",{entity:"Thermostat",name:"Name",icon:"Icon",sensor:"Raumsensor (optional, genauer als Thermostat)",windows:"Fenster & T\xFCren",show_graph:"Verlauf anzeigen",graph_hours:"Verlauf (Stunden)",show_modes:"Modi anzeigen",show_presets:"Presets anzeigen",compact:"Kompakt",modes:"Nur diese Modi (leer = alle)",step:"Schrittweite",humidity:"Luftfeuchte-Sensor",tap_action:"Aktion beim Antippen des Kopfes"}),v(j,"helpers",{sensor:"F\xFCr Anzeige und Verlauf. Ohne: Ist-Temperatur des Thermostats",step:"Leer = Wert vom Thermostat (meist 0,5\xB0)"});_("nova-thermostat-card-editor",j);var ct="nova-thermostat-card",H={off:"Aus",heat:"Heizen",auto:"Auto",cool:"K\xFChlen",heat_cool:"Heizen/K\xFChlen",dry:"Trocknen",fan_only:"L\xFCften"},Ot={heating:"heizt",cooling:"k\xFChlt",idle:"Ziel erreicht",off:"aus",drying:"trocknet",fan:"l\xFCftet",preheating:"heizt vor"},At={off:"mdi:power",heat:"mdi:fire",auto:"mdi:thermostat-auto",cool:"mdi:snowflake",heat_cool:"mdi:sun-snowflake-variant",dry:"mdi:water-percent",fan_only:"mdi:fan"},Nt=`
+</div>`,this._room=e.querySelector(".room"),this._tv=e.querySelector(".tv");let i=e.querySelector(".btns");this._room.addEventListener("click",()=>{!n||n==="none"||w(this,{entity:t.temperature||t.info,tap_action:t.tap_action},"tap")}),this._btns=t.buttons.map(o=>{let a=document.createElement("div");return a.className="b",a.tabIndex=0,a.setAttribute("role","button"),F(a,{tap:()=>this._tap(o),hold:()=>this._hold(o)}),i.appendChild(a),[a,o]})}_tap(t){let e=t.tap_action;if(e&&e.action&&e.action!=="default")return w(this,{entity:t.entity,tap_action:e},"tap");let n=this._h,i=q(t.entity),o={entity_id:t.entity};if(it[i])return n.callService(...it[i],o);if(i==="media_player")return n.callService("media_player","toggle",o);if(Lt.includes(i))return n.callService("homeassistant","toggle",o);$(this,t.entity)}_hold(t){if(t.hold_action?.action)return w(this,{entity:t.entity,hold_action:t.hold_action},"hold");$(this,t.entity)}_icon(t){let e=this._h;if(t.icon_entity&&t.icon_map){let n=e.states[t.icon_entity],i=n&&t.icon_map[n.state];if(i)return i}return t.icon||e.states[t.entity]?.attributes.icon||Q[q(t.entity)]||"mdi:power"}_info(){let t=this._h,e=this._c;if(e.info){let o=t.states[e.info];if(!o)return"";let a=parseFloat(o.state);return(e.info_round&&!isNaN(a)?Math.round(a):X(t,o))+(e.info_suffix||"")}let n=e.temperature&&t.states[e.temperature],i=n?n.attributes.current_temperature??n.state:null;return i!==null&&!isNaN(parseFloat(i))?`${parseFloat(i).toFixed(e.temperature_decimals)}\xB0`:""}_update(){if(!this._h||!this._btns)return;let t=this._h,e=this._c;this._tv.textContent=this._info(),this._room.classList.toggle("warn",e.windows.some(i=>t.states[i]?.state==="on"));let n=!1;for(let[i,o]of this._btns){let a=t.states[o.entity],r=q(o.entity),l=o.state_entity?B(t.states[o.state_entity]):B(a),c=e.glow_domains.includes(r);i.classList.toggle("na",!a||a.state==="unavailable"),i.classList.toggle("on",l&&!$t.includes(r)),i.classList.toggle("alt",!c),l&&c&&(n=!0);let p=this._icon(o);i._ic!==p&&(i._ic=p,i.innerHTML=Y(p)?`<img src="${g(p)}" alt="">`:`<ha-icon icon="${g(p)}"></ha-icon>`),i.title=o.name||a?.attributes.friendly_name||o.entity}this._room.classList.toggle("lit",n)}};_(st,P,{name:"Nova Raum Card",description:"Raumkachel mit Temperatur, Fenster-Warnung und frei belegbaren Buttons.",documentationURL:z("nova-raum-card")});var I={};function ot(s,t,e,n){let i=`${t}|${e}`,o=I[i];if(o&&(o.loading||Date.now()-o.t<6e5))return o.data;I[i]={t:Date.now(),data:o?.data||null,loading:!0};let a=new Date(Date.now()-e*36e5).toISOString();return s.callApi("GET",`history/period/${a}?filter_entity_id=${t}&minimal_response&no_attributes`).then(r=>{let l=(r[0]||[]).map(c=>[new Date(c.last_changed).getTime(),parseFloat(c.state)]).filter(c=>!isNaN(c[1]));I[i]={t:Date.now(),data:l},n&&n()}).catch(()=>{I[i]={t:Date.now(),data:[]}}),I[i].data}var Ct=0;function at(s,{w:t=300,h:e=64,color:n="var(--nv-accent)"}={}){if(!s||s.length<2)return'<svg class="spk"></svg>';let i=s[0][0],o=Math.max(s[s.length-1][0],Date.now()),a=s.map(u=>u[1]),r=Math.min(...a),l=Math.max(...a),c=l-r||1,d="M"+s.concat([[o,s[s.length-1][1]]]).map(u=>[(u[0]-i)/(o-i||1)*t,e-6-(u[1]-r)/c*(e-14)]).map(u=>u[0].toFixed(1)+","+u[1].toFixed(1)).join("L"),m=`nvg${++Ct}`;return`<svg class="spk" viewBox="0 0 ${t} ${e}" preserveAspectRatio="none"><defs><linearGradient id="${m}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${n}" stop-opacity=".45"/><stop offset="1" stop-color="${n}" stop-opacity="0"/></linearGradient></defs><path d="${d}L${t},${e}L0,${e}Z" fill="url(#${m})"/><path d="${d}" fill="none" stroke="${n}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`}var Mt=(s,t)=>{let e=s?.states[t]?.attributes.hvac_modes||Object.keys(H);return[{name:"entity",required:!0,selector:{entity:{domain:"climate"}}},{type:"grid",name:"",schema:[{name:"name",selector:{text:{}}},{name:"icon",selector:{icon:{}},context:{icon_entity:"entity"}}]},{name:"sensor",selector:{entity:{domain:"sensor",device_class:"temperature"}}},{name:"windows",selector:{entity:{multiple:!0,domain:"binary_sensor"}}},{type:"grid",name:"",schema:[{name:"show_graph",selector:{boolean:{}}},{name:"graph_hours",selector:{number:{min:1,max:168,mode:"box",unit_of_measurement:"h"}}}]},{type:"grid",name:"",schema:[{name:"show_modes",selector:{boolean:{}}},{name:"show_presets",selector:{boolean:{}}}]},{name:"compact",selector:{boolean:{}}},{name:"modes",selector:{select:{multiple:!0,options:e.map(n=>({value:n,label:H[n]||n}))}}},{type:"grid",name:"",schema:[{name:"step",selector:{number:{min:.1,max:5,step:.1,mode:"box",unit_of_measurement:"\xB0"}}},{name:"humidity",selector:{entity:{domain:"sensor",device_class:"humidity"}}}]},{name:"tap_action",selector:{ui_action:{}}}]},rt={show_graph:!0,graph_hours:24,show_modes:!0,show_presets:!1,compact:!0},j=class extends S{_build(){let t=this.shadowRoot;t.innerHTML=`<style>${M}</style><div class="wrap"></div>`;let e=Mt(this._hass,this._config.entity),n=k(e);t.querySelector(".wrap").append(this._form(e,{...rt,...this._config},i=>{let o=this._config.entity,a=L(this._config,n,i);Object.entries(rt).forEach(([r,l])=>a[r]===l&&delete a[r]),this._emit(a),a.entity!==o&&this._rebuild()}))}};v(j,"labels",{entity:"Thermostat",name:"Name",icon:"Icon",sensor:"Raumsensor (optional, genauer als Thermostat)",windows:"Fenster & T\xFCren",show_graph:"Verlauf anzeigen",graph_hours:"Verlauf (Stunden)",show_modes:"Modi anzeigen",show_presets:"Presets anzeigen",compact:"Kompakt",modes:"Nur diese Modi (leer = alle)",step:"Schrittweite",humidity:"Luftfeuchte-Sensor",tap_action:"Aktion beim Antippen des Kopfes"}),v(j,"helpers",{sensor:"F\xFCr Anzeige und Verlauf. Ohne: Ist-Temperatur des Thermostats",step:"Leer = Wert vom Thermostat (meist 0,5\xB0)"});_("nova-thermostat-card-editor",j);var ct="nova-thermostat-card",H={off:"Aus",heat:"Heizen",auto:"Auto",cool:"K\xFChlen",heat_cool:"Heizen/K\xFChlen",dry:"Trocknen",fan_only:"L\xFCften"},Ot={heating:"heizt",cooling:"k\xFChlt",idle:"Ziel erreicht",off:"aus",drying:"trocknet",fan:"l\xFCftet",preheating:"heizt vor"},At={off:"mdi:power",heat:"mdi:fire",auto:"mdi:thermostat-auto",cool:"mdi:snowflake",heat_cool:"mdi:sun-snowflake-variant",dry:"mdi:water-percent",fan_only:"mdi:fan"},Nt=`
 .th{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.th.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--bs-warn) 60%,transparent)}
+.th.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent)}
 .hd{display:flex;align-items:center;gap:10px;cursor:pointer}
-.ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--bs-chip);transition:all .3s}
-.ic.on{background:var(--bs-accent);color:var(--bs-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--bs-accent) 50%,transparent)}
-.ic.cool{background:var(--bs-active);color:var(--bs-active-fg)}
+.ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:all .3s}
+.ic.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 50%,transparent)}
+.ic.cool{background:var(--nv-active);color:var(--nv-active-fg)}
 .nm{flex:1;min-width:0}.nm b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nm small{display:block;font-size:12px;opacity:.65}
-.w{display:none;--mdc-icon-size:18px;color:var(--bs-warn)}.th.warn .w{display:flex}
+.w{display:none;--mdc-icon-size:18px;color:var(--nv-warn)}.th.warn .w{display:flex}
 .main{display:flex;align-items:center;gap:10px}
 .cur{font-size:40px;font-weight:300;line-height:1;letter-spacing:-1px}
 .hum{font-size:12px;opacity:.65;margin-top:4px}
 .stp{display:flex;align-items:center;gap:8px;margin-left:auto;background:rgba(0,0,0,.25);border-radius:999px;padding:5px;font-weight:600;font-size:16px}
 .stp span{min-width:52px;text-align:center}
-.sb{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bs-chip);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.sb{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .sb:active{transform:scale(.9)}.sb ha-icon{--mdc-icon-size:18px}
-.stp.pend span{color:var(--bs-accent)}
+.stp.pend span{color:var(--nv-accent)}
 .spk{width:100%;height:56px;display:block}
 .pills{display:flex;flex-wrap:wrap;gap:7px}
-.pill{padding:7px 12px;border-radius:999px;background:var(--bs-chip);font-size:12.5px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;border:1px solid rgba(255,255,255,.08);white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.pill{padding:7px 12px;border-radius:999px;background:var(--nv-chip);font-size:12.5px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;border:1px solid rgba(255,255,255,.08);white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .pill:active{transform:scale(.94)}.pill ha-icon{--mdc-icon-size:16px}
-.pill.on{background:var(--bs-accent);color:var(--bs-accent-fg)}.pill.on.off{background:var(--bs-active);color:var(--bs-active-fg)}
+.pill.on{background:var(--nv-accent);color:var(--nv-accent-fg)}.pill.on.off{background:var(--nv-active);color:var(--nv-active-fg)}
 .na{opacity:.4;pointer-events:none}`,It=`:host{container-type:inline-size}
 .th{padding:10px 12px;gap:6px;min-width:0}.ic{width:30px;height:30px}.ic ha-icon{--mdc-icon-size:17px}.nm b{font-size:13px}.nm small{font-size:11px}
 .cur{font-size:28px;white-space:nowrap}.hum{font-size:11px;margin-top:2px;white-space:nowrap}
@@ -124,20 +124,20 @@ ha-icon{--mdc-icon-size:18px;display:flex}`,V=class extends HTMLElement{connecte
 .lc{padding:12px;display:flex;flex-direction:column;gap:10px}
 .hd{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;padding:0 4px}
 .hd ha-icon{--mdc-icon-size:18px;opacity:.8}.hd .cnt{opacity:.6;font-weight:500;font-size:12px}
-.hd .all{margin-left:auto;padding:4px 10px;border-radius:999px;background:var(--bs-chip);font-size:11.5px;font-weight:500;cursor:pointer;display:none}
+.hd .all{margin-left:auto;padding:4px 10px;border-radius:999px;background:var(--nv-chip);font-size:11.5px;font-weight:500;cursor:pointer;display:none}
 .hd .all.show{display:block}.hd .all:active{transform:scale(.94)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-light-min-width,150px),1fr));gap:8px}
-.t{position:relative;border-radius:16px;background:var(--bs-chip);border:1px solid rgba(255,255,255,.08);padding:10px;display:flex;flex-direction:column;gap:8px;overflow:hidden;transition:background .3s,box-shadow .3s;min-width:0}
-.t.on{background:color-mix(in srgb,var(--lc,var(--bs-accent)) 22%,rgba(255,255,255,.08));box-shadow:0 0 18px color-mix(in srgb,var(--lc,var(--bs-accent)) 30%,transparent);border-color:color-mix(in srgb,var(--lc,var(--bs-accent)) 45%,transparent)}
+.t{position:relative;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);padding:10px;display:flex;flex-direction:column;gap:8px;overflow:hidden;transition:background .3s,box-shadow .3s;min-width:0}
+.t.on{background:color-mix(in srgb,var(--lc,var(--nv-accent)) 22%,rgba(255,255,255,.08));box-shadow:0 0 18px color-mix(in srgb,var(--lc,var(--nv-accent)) 30%,transparent);border-color:color-mix(in srgb,var(--lc,var(--nv-accent)) 45%,transparent)}
 .t.na{opacity:.35}
 .top{display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
 .ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);transition:all .3s}
 .ic ha-icon{--mdc-icon-size:18px}
-.t.on .ic{background:var(--lc,var(--bs-accent));color:var(--bs-accent-fg);box-shadow:0 0 12px color-mix(in srgb,var(--lc,var(--bs-accent)) 60%,transparent)}
+.t.on .ic{background:var(--lc,var(--nv-accent));color:var(--nv-accent-fg);box-shadow:0 0 12px color-mix(in srgb,var(--lc,var(--nv-accent)) 60%,transparent)}
 .top:active .ic{transform:scale(.9)}
 .nm{flex:1;min-width:0}.nm b{display:block;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nm small{display:block;font-size:11px;opacity:.6}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;border-radius:11px;margin:0;outline:none;
-background:linear-gradient(90deg,var(--lc,var(--bs-accent)) 0 var(--p,0%),rgba(255,255,255,.14) var(--p,0%) 100%)}
+background:linear-gradient(90deg,var(--lc,var(--nv-accent)) 0 var(--p,0%),rgba(255,255,255,.14) var(--p,0%) 100%)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:none}
 .t:not(.on) input[type=range]{opacity:.5}
@@ -145,7 +145,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .dot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.45);box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .dot:active{transform:scale(.88)}
 .single .lc,.lc.single{padding:0}.single .grid{display:block}
-.single .t{border:none;border-radius:var(--bs-radius);background:transparent;padding:12px;height:100%;box-sizing:border-box}
+.single .t{border:none;border-radius:var(--nv-radius);background:transparent;padding:12px;height:100%;box-sizing:border-box}
 @container (max-width:300px){.grid{grid-template-columns:1fr}}`,Pt=s=>typeof s=="string"?s:s?.entity;function Kt(s){if(!s||typeof s!="object")throw new Error("Ung\xFCltige Konfiguration");let t=[].concat(s.entity?[s.entity]:[],s.entities||[]).filter(Pt).map(e=>typeof e=="string"?{entity:e}:{...e});if(!t.length&&!s.area)throw new Error("entities oder area angeben");return{show_all_off:!0,show_header:!0,...s,entities:t}}var G=class extends HTMLElement{static getConfigElement(){return document.createElement(`${gt}-editor`)}static getStubConfig(t){for(let e of Object.values(t.areas||{}))if(Object.keys(t.states).filter(i=>i.startsWith("light.")&&T(t,i)===e.area_id).length)return{title:e.name,area:e.area_id};return{entities:Object.keys(t.states).filter(e=>e.startsWith("light.")).slice(0,4)}}setConfig(t){this._c=Kt(t),this._built=!1,this._h&&(this._build(),this._update())}set hass(t){let e=this._list;if(this._h=t,!this._c)return;let n=this._lights();(!this._built||n.join()!==(e||[]).join())&&this._build(),this._update()}getCardSize(){return 1+Math.ceil((this._list?.length||2)/2)*2}get _single(){return this._c&&!this._c.area&&this._c.entities.length===1}getGridOptions(){return this._single?{columns:6,rows:"auto",min_columns:3}:{columns:12,rows:"auto",min_columns:4}}_lights(){let t=this._c,e=this._h,n=t.entities.map(i=>i.entity);if(t.area&&e){let i=new Set(t.exclude||[]);Object.keys(e.states).filter(o=>o.startsWith("light.")&&T(e,o)===t.area&&!i.has(o)&&!n.includes(o)).filter(o=>{let a=e.entities?.[o];return!a||!a.hidden&&!a.entity_category}).sort((o,a)=>(e.states[o].attributes.friendly_name||o).localeCompare(e.states[a].attributes.friendly_name||a)).forEach(o=>n.push(o))}return n}_build(){if(!this._c||!this._h)return;this._built=!0;let t=this._c,e=this._h;this._list=this._lights();let n=this.shadowRoot||this.attachShadow({mode:"open"}),i=t.title??(t.area?e.areas?.[t.area]?.name:"")??"";n.innerHTML=`<style>${C}${Bt}</style>
 <div class="g lc ${this._single?"single":""}">
   ${!this._single&&t.show_header&&(i||t.show_all_off)?`<div class="hd"><ha-icon icon="${g(t.icon||"mdi:lightbulb-group")}"></ha-icon><span>${g(i)}</span><span class="cnt"></span><div class="all">Alle aus</div></div>`:""}
@@ -153,9 +153,9 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 </div>`,this._cnt=n.querySelector(".cnt"),this._all=n.querySelector(".all"),this._all?.addEventListener("click",()=>{let r=this._list.filter(l=>this._h.states[l]?.state==="on");r.length&&this._h.callService("light","turn_off",{entity_id:r})});let o=n.querySelector(".grid"),a=Object.fromEntries(t.entities.map(r=>[r.entity,r]));this._tiles=this._list.map(r=>{let l=a[r]||{entity:r},c=document.createElement("div");c.className="t",c.innerHTML='<div class="top" tabindex="0" role="button"><div class="ic"><ha-icon></ha-icon></div><div class="nm"><b></b><small></small></div></div><input type="range" min="1" max="100"><div class="dots"></div>';let p=c.querySelector(".top"),d=c.querySelector("input"),m=c.querySelector(".dots");return m.addEventListener("click",u=>{let f=u.composedPath().find(b=>b.dataset?.c)?.dataset.c;f&&this._h.callService("light","turn_on",{entity_id:r,...ht(f)})}),F(p,{tap:()=>l.tap_action?.action?w(this,{entity:r,tap_action:l.tap_action},"tap"):this._h.callService("light","toggle",{entity_id:r}),hold:()=>l.hold_action?.action?w(this,{entity:r,hold_action:l.hold_action},"hold"):$(this,r)}),d.addEventListener("pointerdown",()=>c._drag=!0),d.addEventListener("input",()=>c.style.setProperty("--p",`${d.value}%`)),d.addEventListener("change",()=>{this._h.callService("light","turn_on",{entity_id:r,brightness_pct:+d.value}),setTimeout(()=>c._drag=!1,800)}),o.appendChild(c),{id:r,o:l,t:c,ic:c.querySelector("ha-icon"),nm:c.querySelector("b"),st:c.querySelector("small"),sl:d,dots:m}})}_update(){if(!this._h||!this._tiles)return;let t=this._h,e=0;for(let n of this._tiles){let i=t.states[n.id],o=i?.attributes||{},a=i?.state==="on",r=!i||i.state==="unavailable";a&&e++;let l=(o.supported_color_modes||[]).some(f=>f!=="onoff"),c=a?Math.max(1,Math.round((o.brightness||0)/2.55)):0;n.t.classList.toggle("on",a),n.t.classList.toggle("na",r),n.ic.setAttribute("icon",n.o.icon||o.icon||(a?"mdi:lightbulb-on":"mdi:lightbulb-outline")),n.nm.textContent=n.o.name||this._strip(o.friendly_name||n.id),n.st.textContent=r?"nicht erreichbar":a?l?`${c} %`:"an":"aus";let p=this._c.use_light_color!==!1&&a&&o.rgb_color;p?n.t.style.setProperty("--lc",`rgb(${p.join(",")})`):n.t.style.removeProperty("--lc"),n.sl.style.display=l&&!r?"":"none",n.t._drag||(n.sl.value=c||1,n.t.style.setProperty("--p",`${c}%`));let m=!r&&(dt(o)||pt(o))&&this._c.show_colors!==!1?[...n.o.colors||[],...this._c.colors||[]].filter((f,b,x)=>x.indexOf(f)===b):[],u=m.join();n.dots._sig!==u&&(n.dots._sig=u,n.dots.innerHTML=m.map(f=>`<div class="dot" data-c="${g(f)}" style="background:${g(A(f))}"></div>`).join(""))}this._cnt&&(this._cnt.textContent=e?`${e} an`:""),this._all?.classList.toggle("show",!!this._c.show_all_off&&e>0)}_strip(t){let e=this._c.strip_prefix??this._c.title??(this._c.area?this._h.areas?.[this._c.area]?.name:"");return e&&t.toLowerCase().startsWith(e.toLowerCase()+" ")?t.slice(e.length+1):t}};_(gt,G,{name:"Nova Licht Card",description:"Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.",documentationURL:z("nova-licht-card")});
 })();
 
-/* ---------- Nova Dock Card ---------- */
+/* ---------- Nova Dock Card + Nova Modular Card ---------- */
 (() => {
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const OFF = new Set(['off','unavailable','unknown','idle','docked','standby','closed','paused','not_home','none','ready']);
 const isOn = s => !!s && !OFF.has(s.state);
@@ -567,6 +567,532 @@ class NovaDockCardEditor extends HTMLElement {
   }
 }
 define('nova-dock-card-editor', NovaDockCardEditor);
+
+/* ---------- Nova Modular Card ---------- */
+const MVARS = `:host{
+--nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
+--nv-border:var(--nova-border-color,rgba(255,255,255,.14));
+--nv-fg:var(--nova-text-color,#fff);
+--nv-accent:var(--nova-accent-color,#f5b83d);
+--nv-accent-fg:var(--nova-accent-text-color,#3a2a00);
+--nv-active:var(--nova-active-color,#3d8bf5);
+--nv-active-fg:var(--nova-active-text-color,#fff);
+--nv-warn:var(--nova-warning-color,#7cc4ff);
+--nv-error:var(--nova-error-color,#ff6b6b);
+--nv-chip:var(--nova-chip-color,rgba(255,255,255,.13));
+--nv-radius:var(--nova-radius,24px);
+--nv-blur:var(--nova-blur,20px)}`;
+const MCSS = `
+:host{display:block;height:100%;container-type:inline-size}
+.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);background:var(--nv-bg);
+backdrop-filter:blur(var(--nv-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(150%);
+border:1px solid var(--nv-border);box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12);
+color:var(--nv-fg);overflow:hidden;position:relative;font-family:var(--ha-font-family-body,Roboto,sans-serif);
+padding:14px 16px;display:flex;flex-direction:column;gap:12px;transition:box-shadow .4s}
+.g.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.g.err{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-error) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+ha-icon{--mdc-icon-size:20px;display:flex}
+img{object-fit:contain}
+.blk[hidden],[hidden]{display:none!important}
+.bt{font-size:11.5px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.tap{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
+.tap:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.na{opacity:.4}
+.ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:all .25s}
+.ic ha-icon{--mdc-icon-size:18px}.ic img{width:20px;height:20px}
+.on>.ic{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 55%,transparent)}
+.nm{flex:1;min-width:0}.nm b,.nm small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm b{font-weight:500;font-size:13.5px}.nm small{font-size:11.5px;opacity:.6}
+.hd{display:flex;align-items:center;gap:10px}
+.hd .ic{width:44px;height:44px}.hd .ic ha-icon{--mdc-icon-size:24px}.hd .ic img{width:26px;height:26px}
+.hd .nm b{font-weight:600;font-size:15px}.hd .nm small{font-size:12px;opacity:.65}
+.pct{font-weight:600;font-size:14px}
+.hb{width:36px;height:36px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
+.hb:active,.hd .ic:active,.pill:active,.row:active .ic{transform:scale(.92)}
+.prog{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;width:0;background:var(--nv-accent);border-radius:3px;transition:width 1s}
+.list{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));column-gap:14px}
+.kv{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 0;border-top:1px solid rgba(255,255,255,.08);min-width:0}
+.kv ha-icon{--mdc-icon-size:17px;opacity:.7}.kv img{width:17px;height:17px}
+.kv .k{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kv .v{opacity:.8;text-align:right;white-space:nowrap}
+.pills{display:flex;flex-wrap:wrap;gap:7px}
+.pill{padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:12.5px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap;transition:all .2s;min-width:0}
+.pill ha-icon{--mdc-icon-size:16px}.pill img{width:16px;height:16px}
+.pill.on{background:var(--nv-active);color:var(--nv-active-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--nv-active) 50%,transparent)}
+.pills.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-modular-button-width,104px),1fr));gap:8px}
+.pills.grid .pill{flex-direction:column;justify-content:center;border-radius:16px;padding:10px 8px;white-space:normal;text-align:center}
+.pills.grid .pill ha-icon{--mdc-icon-size:22px}.pills.grid .pill img{width:22px;height:22px}
+.row{display:flex;align-items:center;gap:10px;padding:5px 0;min-width:0}
+.sw{width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,.18);position:relative;flex:none;transition:background .25s}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s}
+.row.on .sw{background:var(--nv-active)}.row.on .sw::after{transform:translateX(16px)}
+.sl{display:flex;flex-direction:column;gap:6px;padding:6px 0}
+.sl .kv{border:none;padding:0}
+.sl .v{font-weight:600;opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;border-radius:11px;margin:0;outline:none;
+background:linear-gradient(90deg,var(--nv-accent) 0 var(--p,0%),rgba(255,255,255,.14) var(--p,0%) 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:none}
+.als{display:flex;flex-direction:column;gap:6px}.als.chips{flex-direction:row;flex-wrap:wrap}
+.al{--c:var(--nv-warn);display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;font-size:13px;
+background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.al.error{--c:var(--nv-error)}.al.info{--c:var(--nv-active)}
+.al ha-icon{color:var(--c);--mdc-icon-size:18px}
+.chips .al{border-radius:999px;padding:5px 10px;font-size:12px}
+@container (max-width:280px){.list{grid-template-columns:1fr}.g{padding:12px}}`;
+
+const DICON = {light: 'mdi:lightbulb', switch: 'mdi:power-socket-eu', fan: 'mdi:fan', input_boolean: 'mdi:toggle-switch-outline', button: 'mdi:gesture-tap-button', input_button: 'mdi:gesture-tap-button', script: 'mdi:script-text-outline', scene: 'mdi:palette', automation: 'mdi:robot', climate: 'mdi:thermostat', cover: 'mdi:window-shutter', media_player: 'mdi:speaker', number: 'mdi:ray-vertex', input_number: 'mdi:ray-vertex', select: 'mdi:format-list-bulleted', binary_sensor: 'mdi:checkbox-blank-circle-outline', sensor: 'mdi:eye'};
+const TOGGLE = ['light', 'switch', 'input_boolean', 'fan', 'cover', 'group', 'siren', 'humidifier', 'automation', 'media_player', 'valve'];
+const PRESS = {button: ['button', 'press'], input_button: ['input_button', 'press'], script: ['script', 'turn_on'], scene: ['scene', 'turn_on']};
+const dom = id => String(id || '').split('.')[0];
+const isImg = s => typeof s === 'string' && /^(\/|https?:|data:image)/.test(s);
+const setIcon = (el, ic) => { if (el._ic === ic) return; el._ic = ic; el.innerHTML = isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`; };
+const fmtState = (h, s) => { try { return h.formatEntityState ? h.formatEntityState(s) : s.state + (s.attributes.unit_of_measurement ? ' ' + s.attributes.unit_of_measurement : ''); } catch { return s.state; } };
+const unitJoin = (v, u) => !u ? `${v}` : u.startsWith('°') ? `${v}${u}` : `${v} ${u}`;
+const decOf = st => (String(st).split('.')[1] || '').length;
+const nameOf = (h, o) => o.name ?? h.states[o.entity]?.attributes.friendly_name ?? o.entity ?? '';
+const iconOf = (h, o, fb) => o.icon || h.states[o.entity]?.attributes.icon || DICON[dom(o.entity)] || fb;
+const list = v => [].concat(v ?? []).flatMap(x => String(x).split(',')).map(x => x.trim()).filter(Boolean);
+const NUMRE = /^-?\d+(\.\d+)?$/;
+
+function valueOf(h, s, o) {
+  if (!s) return '–';
+  if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
+    const n = o.decimals != null ? (+s.state).toFixed(o.decimals) : s.state;
+    return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
+  }
+  return fmtState(h, s);
+}
+
+function press(el, {tap, hold}) {
+  let t, held = false;
+  const clr = () => clearTimeout(t);
+  el.tabIndex = 0; el.setAttribute('role', 'button'); el.classList.add('tap');
+  el.addEventListener('pointerdown', () => { held = false; t = setTimeout(() => { held = true; hold && hold(); }, 500); });
+  el.addEventListener('pointerup', e => { clr(); if (!held && tap) tap(); e.stopPropagation(); });
+  el.addEventListener('pointerleave', clr);
+  el.addEventListener('pointercancel', clr);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap && tap(); } });
+}
+
+// Schieberegler je Domain: v = aktueller Wert, r = [min, max, step], u = Einheit, set = Service
+const SLIDE = {
+  number: {v: s => +s.state, r: a => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService('number', 'set_value', {entity_id: id, value: v})},
+  input_number: {v: s => +s.state, r: a => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService('input_number', 'set_value', {entity_id: id, value: v})},
+  light: {v: s => s.state === 'on' ? Math.max(1, Math.round((s.attributes.brightness || 0) / 2.55)) : 0, r: () => [0, 100, 1], u: '%',
+    set: (h, id, v) => v > 0 ? h.callService('light', 'turn_on', {entity_id: id, brightness_pct: v}) : h.callService('light', 'turn_off', {entity_id: id})},
+  fan: {v: s => s.state === 'on' ? s.attributes.percentage ?? 0 : 0, r: a => [0, 100, a.percentage_step || 1], u: '%', set: (h, id, v) => h.callService('fan', 'set_percentage', {entity_id: id, percentage: Math.round(v)})},
+  cover: {v: s => s.attributes.current_position ?? 0, r: () => [0, 100, 1], u: '%', set: (h, id, v) => h.callService('cover', 'set_cover_position', {entity_id: id, position: v})},
+  media_player: {v: s => Math.round((s.attributes.volume_level ?? 0) * 100), r: () => [0, 100, 1], u: '%', set: (h, id, v) => h.callService('media_player', 'volume_set', {entity_id: id, volume_level: v / 100})},
+  climate: {v: s => s.attributes.temperature ?? 0, r: a => [a.min_temp ?? 7, a.max_temp ?? 35, a.target_temp_step ?? .5], u: '°', set: (h, id, v) => h.callService('climate', 'set_temperature', {entity_id: id, temperature: v})},
+  water_heater: {v: s => s.attributes.temperature ?? 0, r: a => [a.min_temp ?? 30, a.max_temp ?? 70, a.target_temp_step ?? 1], u: '°', set: (h, id, v) => h.callService('water_heater', 'set_temperature', {entity_id: id, temperature: v})},
+};
+const duration = m => m >= 60 ? `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')} h` : `${m} min`;
+
+function alertHit(a, s) {
+  if (!s) return false;
+  const v = s.state, n = parseFloat(v);
+  if (a.state != null) return list(a.state).includes(v);
+  if (a.state_not != null) return !['unavailable', 'unknown'].includes(v) && !list(a.state_not).includes(v);
+  if (a.above != null || a.below != null) return NUMRE.test(v) && (a.above == null || n > a.above) && (a.below == null || n < a.below);
+  return ['on', 'problem'].includes(v);
+}
+
+const ITEMS = {info: 'entities', entities: 'entities', sliders: 'entities', buttons: 'buttons', alerts: 'alerts'};
+const normBlock = b => {
+  const k = ITEMS[b.type];
+  if (!k) return {...b};
+  const it = (b[k] || []).map(x => typeof x === 'string' ? {entity: x} : {...x});
+  return {...b, [k]: it.filter(x => k === 'buttons' ? x.entity || x.tap_action : x.entity)};
+};
+
+// Bausteine: bekommen Block-Konfig + Container, liefern update(hass) → optional Warnstufe
+const BLOCKS = {
+  header(b, w) {
+    const ent = b.status || b.active;
+    const btn = b.button_icon || (b.button_action?.action && b.button_action.action !== 'none');
+    w.innerHTML = `<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="pct"></span>${btn ? '<div class="hb"></div>' : ''}</div><div class="prog" hidden><i></i></div>`;
+    const q = s => w.querySelector(s), hd = q('.hd'), ic = q('.ic'), sm = q('small'), pct = q('.pct'), pg = q('.prog'), pi = q('.prog i');
+    q('b').textContent = b.name ?? '';
+    press(ic, {tap: () => this._act({entity: ent, tap_action: b.tap_action}, 'tap', true), hold: () => this._act({entity: ent, hold_action: b.hold_action}, 'hold')});
+    if (btn) { setIcon(q('.hb'), b.button_icon || 'mdi:dots-horizontal'); press(q('.hb'), {tap: () => this._act({entity: ent, tap_action: b.button_action}, 'tap', true)}); }
+    return h => {
+      const s = b.status && h.states[b.status];
+      const on = b.active ? isOn(h.states[b.active]) : isOn(s);
+      if (!b.name && ent) q('b').textContent = h.states[ent]?.attributes.friendly_name || '';
+      setIcon(ic, b.icon || s?.attributes.icon || 'mdi:devices');
+      hd.classList.toggle('on', on);
+      sm.textContent = s ? fmtState(h, s) : b.active ? (on ? 'an' : 'aus') : '';
+      const pr = b.progress && h.states[b.progress], p = pr ? parseFloat(pr.state) : NaN;
+      const show = !isNaN(p) && p > 0 && (on || p < 100);
+      pg.hidden = !show; pct.textContent = show ? `${Math.round(p)} %` : '';
+      if (show) pi.style.width = `${Math.min(100, p)}%`;
+    };
+  },
+  info(b, w) {
+    const chips = b.layout === 'chips';
+    const box = document.createElement('div');
+    box.className = chips ? 'pills' : 'list';
+    if (b.columns > 1) box.style.setProperty('--cols', b.columns);
+    const els = b.entities.map(o => {
+      const el = document.createElement('div');
+      el.className = chips ? 'pill' : 'kv';
+      el.innerHTML = chips ? '<span class="i"></span><span class="t"></span>' : '<span class="i"></span><span class="k"></span><span class="v"></span>';
+      press(el, {tap: () => this._act(o, 'tap', true), hold: () => this._act(o, 'hold')});
+      box.append(el);
+      return [el, o];
+    });
+    w.append(box);
+    return h => els.forEach(([el, o]) => {
+      const s = h.states[o.entity];
+      el.classList.toggle('na', !s || s.state === 'unavailable');
+      setIcon(el.firstChild, iconOf(h, o, 'mdi:information-outline'));
+      const v = valueOf(h, s, o);
+      if (chips) el.lastChild.textContent = o.name === '' ? v : `${nameOf(h, o)} · ${v}`;
+      else { el.children[1].textContent = nameOf(h, o); el.children[2].textContent = v; }
+    });
+  },
+  entities(b, w) {
+    const box = document.createElement('div');
+    box.className = 'list';
+    if (b.columns > 1) box.style.setProperty('--cols', b.columns);
+    const els = b.entities.map(o => {
+      const el = document.createElement('div');
+      el.className = 'row';
+      el.innerHTML = `<div class="ic"></div><div class="nm"><b></b><small></small></div>${TOGGLE.includes(dom(o.entity)) ? '<div class="sw"></div>' : ''}`;
+      press(el, {tap: () => this._act(o, 'tap'), hold: () => this._act(o, 'hold')});
+      box.append(el);
+      return [el, o];
+    });
+    w.append(box);
+    return h => els.forEach(([el, o]) => {
+      const s = h.states[o.entity];
+      el.classList.toggle('na', !s || s.state === 'unavailable');
+      el.classList.toggle('on', isOn(s) && !PRESS[dom(o.entity)]);
+      setIcon(el.firstChild, iconOf(h, o, 'mdi:power'));
+      el.querySelector('b').textContent = nameOf(h, o);
+      el.querySelector('small').textContent = s ? valueOf(h, s, o) : 'nicht gefunden';
+    });
+  },
+  sliders(b, w) {
+    const els = b.entities.map(o => {
+      const el = document.createElement('div');
+      el.className = 'sl';
+      el.innerHTML = '<div class="kv"><span class="i"></span><span class="k"></span><span class="v"></span></div><input type="range">';
+      const top = el.firstChild, inp = el.lastChild, v = el.querySelector('.v');
+      press(top, {tap: () => this._act(o, 'tap', true), hold: () => this._act(o, 'hold')});
+      const paint = () => {
+        const mn = +inp.min, mx = +inp.max, n = +inp.value;
+        inp.style.setProperty('--p', `${mx > mn ? (n - mn) / (mx - mn) * 100 : 0}%`);
+        v.textContent = o.format === 'duration' ? duration(n) : unitJoin(n.toFixed(decOf(inp.step)), el._u);
+      };
+      inp.addEventListener('pointerdown', () => { el._drag = true; });
+      inp.addEventListener('input', () => { el._drag = true; paint(); });
+      inp.addEventListener('change', () => {
+        SLIDE[dom(o.entity)]?.set(this._h, o.entity, +inp.value);
+        clearTimeout(el._t); el._t = setTimeout(() => { el._drag = false; }, 1500);
+      });
+      w.append(el);
+      return {el, o, inp, paint};
+    });
+    return h => els.forEach(({el, o, inp, paint}) => {
+      const s = h.states[o.entity], D = SLIDE[dom(o.entity)];
+      el.classList.toggle('na', !s || !D || s.state === 'unavailable');
+      setIcon(el.querySelector('.i'), iconOf(h, o, 'mdi:tune-variant'));
+      el.querySelector('.k').textContent = nameOf(h, o);
+      inp.disabled = !s || !D || s.state === 'unavailable';
+      if (!s || !D) { el.querySelector('.v').textContent = s ? fmtState(h, s) : '–'; return; }
+      const [mn, mx, st] = D.r(s.attributes);
+      inp.min = o.min ?? mn; inp.max = o.max ?? mx; inp.step = o.step ?? st;
+      el._u = o.unit ?? D.u ?? s.attributes.unit_of_measurement;
+      if (!el._drag) inp.value = D.v(s);
+      paint();
+    });
+  },
+  buttons(b, w) {
+    const box = document.createElement('div');
+    box.className = `pills${b.layout === 'grid' ? ' grid' : ''}`;
+    const els = b.buttons.map(o => {
+      const el = document.createElement('div');
+      el.className = 'pill';
+      el.innerHTML = '<span class="i"></span><span class="t"></span>';
+      press(el, {tap: () => this._act(o, 'tap'), hold: () => this._act(o, 'hold')});
+      box.append(el);
+      return [el, o];
+    });
+    w.append(box);
+    return h => els.forEach(([el, o]) => {
+      const s = o.entity && h.states[o.entity];
+      el.classList.toggle('na', !!o.entity && (!s || s.state === 'unavailable'));
+      el.classList.toggle('on', !!s && TOGGLE.includes(dom(o.entity)) && isOn(s));
+      setIcon(el.firstChild, iconOf(h, o, 'mdi:gesture-tap-button'));
+      el.lastChild.textContent = o.name ?? (s?.attributes.friendly_name || '');
+    });
+  },
+  alerts(b, w) {
+    const box = document.createElement('div');
+    box.className = `als${b.layout === 'chips' ? ' chips' : ''}`;
+    const els = b.alerts.map(o => {
+      const el = document.createElement('div');
+      el.className = `al ${o.level || 'warning'}`;
+      el.innerHTML = '<span class="i"></span><span class="t"></span>';
+      press(el, {tap: () => this._act(o, 'tap', true), hold: () => this._act(o, 'hold')});
+      box.append(el);
+      return [el, o];
+    });
+    w.append(box);
+    return h => {
+      let lvl = 0;
+      els.forEach(([el, o]) => {
+        const s = h.states[o.entity], hit = alertHit(o, s);
+        el.hidden = !hit;
+        if (!hit) return;
+        lvl = Math.max(lvl, o.level === 'error' ? 2 : o.level === 'info' ? 0 : 1);
+        setIcon(el.firstChild, o.icon || (o.level === 'error' ? 'mdi:alert-octagon' : o.level === 'info' ? 'mdi:information' : 'mdi:alert'));
+        el.lastChild.textContent = o.message ? o.message.replace('{state}', fmtState(h, s)) : `${nameOf(h, o)}: ${fmtState(h, s)}`;
+      });
+      w.hidden = !els.some(([el]) => !el.hidden);
+      return b.glow === false ? 0 : lvl;
+    };
+  },
+};
+
+class NovaModularCard extends HTMLElement {
+  static getConfigElement() { return document.createElement('nova-modular-card-editor'); }
+  static getStubConfig(h) {
+    const ids = Object.keys(h.states);
+    const sensor = ids.find(i => i.startsWith('sensor.')), sw = ids.find(i => i.startsWith('switch.'));
+    return {blocks: [
+      {type: 'header', name: 'Gerät', icon: 'mdi:devices', ...(sensor ? {status: sensor} : {})},
+      ...(sw ? [{type: 'entities', entities: [{entity: sw}]}] : []),
+    ]};
+  }
+  setConfig(c) {
+    if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
+    if (!Array.isArray(c.blocks)) throw new Error('blocks (Liste der Bausteine) fehlt');
+    this._c = {...c, blocks: c.blocks.filter(b => b && BLOCKS[b.type]).map(normBlock)};
+    this._built = false;
+    if (this._h) { this._build(); this._update(); }
+  }
+  set hass(h) {
+    this._h = h;
+    if (!this._c) return;
+    if (!this._built) this._build();
+    this._update();
+  }
+  getCardSize() { return 1 + (this._c?.blocks.length || 1); }
+  getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
+  _build() {
+    this._built = true;
+    const r = this.shadowRoot || this.attachShadow({mode: 'open'});
+    r.innerHTML = `<style>${MVARS}${MCSS}</style><div class="g"></div>`;
+    this._g = r.querySelector('.g');
+    this._ups = this._c.blocks.map(b => {
+      const w = document.createElement('div');
+      w.className = `blk ${b.type}`;
+      if (b.title) { const t = document.createElement('div'); t.className = 'bt'; t.textContent = b.title; w.append(t); }
+      const up = BLOCKS[b.type].call(this, b, w);
+      this._g.append(w);
+      return up;
+    });
+  }
+  _update() {
+    if (!this._h || !this._ups) return;
+    const lvl = Math.max(0, ...this._ups.map(up => up(this._h) || 0));
+    this._g.classList.toggle('warn', lvl === 1);
+    this._g.classList.toggle('err', lvl === 2);
+  }
+  // info = Standard ist more-info statt Schalten
+  _act(o, kind, info) {
+    const a = o[`${kind}_action`], id = o.entity;
+    if (a?.action === 'none') return;
+    const custom = a?.action && a.action !== 'default';
+    const d = dom(id), canRun = !!(PRESS[d] || TOGGLE.includes(d));
+    if (kind === 'tap' && o.confirm && (custom || (!info && canRun)) && !window.confirm(o.confirm)) return;
+    if (custom) return fire(this, 'hass-action', {config: {entity: id, [`${kind}_action`]: a}, action: kind});
+    if (!id) return;
+    if (kind === 'hold' || info || !canRun) return fire(this, 'hass-more-info', {entityId: id});
+    if (PRESS[d]) return this._h.callService(...PRESS[d], {entity_id: id});
+    this._h.callService('homeassistant', 'toggle', {entity_id: id});
+  }
+}
+define('nova-modular-card', NovaModularCard, {name: 'Nova Modular Card', description: 'Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.', documentationURL: 'https://github.com/Blackstar9119/nova-cards#nova-modular-card'});
+
+/* ---------- Editor Modular Card ---------- */
+const g2 = (...schema) => ({type: 'grid', name: '', schema});
+const T = {text: {}}, I = {icon: {}}, A = {ui_action: {}};
+const ENT = {name: 'entity', required: true, selector: {entity: {}}};
+const TITLE = {name: 'title', selector: T};
+const COLS = {name: 'columns', selector: {number: {min: 1, max: 4, mode: 'slider'}}};
+const NUM = n => ({name: n, selector: {number: {mode: 'box', step: 'any'}}});
+const sel = (n, opts) => ({name: n, selector: {select: {mode: 'dropdown', options: opts.map(([value, label]) => ({value, label}))}}});
+const NAMEICON = g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}});
+const BM = {
+  header: {label: 'Kopfzeile', icon: 'mdi:page-layout-header', schema: [
+    g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'status'}}),
+    {name: 'status', selector: {entity: {}}},
+    g2({name: 'active', selector: {entity: {}}}, {name: 'progress', selector: {entity: {domain: ['sensor', 'number', 'input_number']}}}),
+    {name: 'tap_action', selector: A},
+    {name: 'button_icon', selector: I},
+    {name: 'button_action', selector: A},
+  ]},
+  info: {label: 'Info-Entitäten', icon: 'mdi:information-outline', item: 'Entität', plural: 'Entitäten', defaults: {layout: 'rows', columns: 1},
+    schema: [TITLE, g2(sel('layout', [['rows', 'Liste'], ['chips', 'Chips']]), COLS)],
+    items: [ENT, NAMEICON, g2({name: 'unit', selector: T}, {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}), {name: 'tap_action', selector: A}]},
+  entities: {label: 'Schalter & Entitäten', icon: 'mdi:toggle-switch-outline', item: 'Entität', plural: 'Entitäten', defaults: {columns: 1},
+    schema: [TITLE, COLS],
+    items: [ENT, NAMEICON, {name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}, {name: 'confirm', selector: T}]},
+  sliders: {label: 'Schieberegler', icon: 'mdi:tune-variant', item: 'Regler', plural: 'Regler',
+    schema: [TITLE],
+    items: [{...ENT, selector: {entity: {domain: Object.keys(SLIDE)}}}, NAMEICON, g2(NUM('min'), NUM('max'), NUM('step')),
+      g2({name: 'unit', selector: T}, sel('format', [['value', 'Zahl'], ['duration', 'Minuten → Std:Min']]))]},
+  buttons: {label: 'Aktionsbuttons', icon: 'mdi:gesture-tap-button', item: 'Button', plural: 'Buttons', key: 'buttons', defaults: {layout: 'pills'},
+    schema: [TITLE, sel('layout', [['pills', 'Pillen'], ['grid', 'Kacheln']])],
+    items: [NAMEICON, {name: 'entity', selector: {entity: {}}}, {name: 'tap_action', selector: A}, {name: 'confirm', selector: T}]},
+  alerts: {label: 'Warnungen', icon: 'mdi:alert-outline', item: 'Warnung', plural: 'Warnungen', key: 'alerts', defaults: {layout: 'list', glow: true},
+    schema: [TITLE, g2(sel('layout', [['list', 'Balken'], ['chips', 'Badges']]), {name: 'glow', selector: {boolean: {}}})],
+    items: [ENT, g2({name: 'state', selector: T}, {name: 'state_not', selector: T}), g2(NUM('above'), NUM('below')),
+      {name: 'message', selector: T}, g2({name: 'icon', selector: I}, sel('level', [['warning', 'Warnung'], ['error', 'Fehler'], ['info', 'Hinweis']]))]},
+};
+const MLABELS = {
+  name: 'Name', icon: 'Icon', status: 'Status-Entität', active: 'Aktiv-Entität', progress: 'Fortschritt (%)',
+  tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken', button_icon: 'Touch-Button oben: Icon', button_action: 'Touch-Button oben: Aktion',
+  title: 'Überschrift (optional)', layout: 'Darstellung', columns: 'Spalten', entity: 'Entität', unit: 'Einheit', decimals: 'Nachkommastellen',
+  min: 'Min', max: 'Max', step: 'Schritt', format: 'Anzeige', confirm: 'Sicherheitsabfrage', state: 'Warnen bei Zustand', state_not: 'Warnen außer bei',
+  above: 'Warnen über', below: 'Warnen unter', message: 'Meldung', level: 'Stufe', glow: 'Kartenrahmen einfärben',
+};
+const MHELPERS = {
+  status: 'Text unter dem Namen. Aus/Standby/Idle = inaktiv',
+  active: 'Optional: bestimmt, ob das Icon leuchtet (statt Status-Entität)',
+  button_icon: 'Button erscheint, sobald Icon oder Aktion gesetzt ist',
+  unit: 'Überschreibt die Einheit der Entität',
+  confirm: 'Optional: Text der Rückfrage vor dem Auslösen',
+  state: 'Mehrere mit Komma trennen. Ohne Bedingung: Warnung bei „on“ bzw. „problem“',
+  message: 'Leer = Name: Zustand. {state} wird ersetzt',
+  min: 'Leer = Werte der Entität',
+};
+const MECSS = `
+.adds{display:flex;flex-wrap:wrap;gap:8px}
+details.item details.item>summary{background:none}
+h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
+
+class NovaModularCardEditor extends NovaDockCardEditor {
+  _form(schema, data, cb) {
+    const f = super._form(schema, data, cb);
+    f.computeLabel = s => MLABELS[s.name] ?? s.name;
+    f.computeHelper = s => MHELPERS[s.name];
+    return f;
+  }
+  _blocks() { return (this._config.blocks || []).map(normItems); }
+  _set(bl) { this._emit({...this._config, blocks: bl}); }
+  _build() {
+    const r = this.shadowRoot;
+    r.innerHTML = `<style>${ECSS}${MECSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap'), bl = this._blocks();
+    const h = document.createElement('h3'); h.textContent = 'Bausteine';
+    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Frei kombinierbar – die Reihenfolge hier ist die Reihenfolge auf der Karte.';
+    w.append(h, p);
+    bl.forEach((b, i) => w.append(this._block(b, i, bl.length)));
+    const adds = document.createElement('div'); adds.className = 'adds';
+    Object.entries(BM).forEach(([type, m]) => {
+      const a = document.createElement('button');
+      a.className = 'add';
+      a.innerHTML = `<ha-icon icon="mdi:plus"></ha-icon>${esc(m.label)}`;
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const k = BM[type].items && (m.key || 'entities');
+        const n = [...bl, {type, ...(k ? {[k]: [{}]} : {})}];
+        this._open = new Set([`${n.length - 1}`, `${n.length - 1}.0`]);
+        this._set(n); this._rebuild();
+      });
+      adds.append(a);
+    });
+    w.append(adds);
+  }
+  _details(key, icon, label, btns) {
+    const d = document.createElement('details');
+    d.className = 'item'; d.open = this._open.has(key);
+    d.addEventListener('toggle', e => { e.stopPropagation(); d.open ? this._open.add(key) : this._open.delete(key); });
+    const s = document.createElement('summary');
+    s.innerHTML = `<ha-icon icon="${esc(icon)}"></ha-icon><span class="lbl"></span>`;
+    s.querySelector('.lbl').textContent = label;
+    s.append(...btns);
+    const body = document.createElement('div'); body.className = 'body';
+    d.append(s, body);
+    return [d, s, body];
+  }
+  _blabel(b, i) { const m = BM[b.type]; return `${i + 1}. ${m ? m.label : b.type}${b.title || b.name ? ' · ' + (b.title || b.name) : ''}`; }
+  _block(b, i, n) {
+    const m = BM[b.type];
+    const [d, s, body] = this._details(`${i}`, m?.icon || 'mdi:help-circle-outline', this._blabel(b, i), [
+      this._btn('mdi:arrow-up', 'Nach oben', () => this._move(null, i, -1), i === 0),
+      this._btn('mdi:arrow-down', 'Nach unten', () => this._move(null, i, 1), i === n - 1),
+      this._btn('mdi:delete-outline', 'Löschen', () => this._del(null, i))]);
+    if (!m) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = `Unbekannter Baustein „${b.type}“ – nur per YAML bearbeitbar.`; body.append(p); return d; }
+    const keys = names(m.schema), def = m.defaults || {};
+    body.append(this._form(m.schema, {...def, ...b}, v => {
+      const bl = this._blocks(), nb = merge(bl[i], keys, v);
+      Object.entries(def).forEach(([k, x]) => nb[k] === x && delete nb[k]);
+      bl[i] = nb; this._set(bl);
+      s.querySelector('.lbl').textContent = this._blabel(nb, i);
+    }));
+    if (m.items) {
+      const k = m.key || 'entities', items = b[k] || [];
+      const h = document.createElement('h4'); h.textContent = m.plural;
+      body.append(h);
+      items.forEach((it, j) => body.append(this._sub(i, j, it, items.length, m, k)));
+      const a = document.createElement('button');
+      a.className = 'add';
+      a.innerHTML = `<ha-icon icon="mdi:plus"></ha-icon>${esc(m.item)} hinzufügen`;
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const bl = this._blocks();
+        bl[i] = {...bl[i], [k]: [...(bl[i][k] || []), {}]};
+        this._open = new Set([`${i}`, `${i}.${bl[i][k].length - 1}`]);
+        this._set(bl); this._rebuild();
+      });
+      body.append(a);
+    }
+    return d;
+  }
+  _ilabel(it, j, m) { return `${j + 1}. ${it.name || it.message || (it.entity && this._hass?.states[it.entity]?.attributes.friendly_name) || it.entity || `Neu: ${m.item}`}`; }
+  _sub(i, j, it, n, m, k) {
+    const [d, s, body] = this._details(`${i}.${j}`, it.icon || m.icon, this._ilabel(it, j, m), [
+      this._btn('mdi:arrow-up', 'Nach oben', () => this._move(i, j, -1), j === 0),
+      this._btn('mdi:arrow-down', 'Nach unten', () => this._move(i, j, 1), j === n - 1),
+      this._btn('mdi:delete-outline', 'Löschen', () => this._del(i, j))]);
+    const keys = names(m.items);
+    body.append(this._form(m.items, it, v => {
+      const bl = this._blocks(), arr = [...bl[i][k]];
+      arr[j] = merge(arr[j], keys, v);
+      bl[i] = {...bl[i], [k]: arr}; this._set(bl);
+      s.querySelector('.lbl').textContent = this._ilabel(arr[j], j, m);
+    }));
+    return d;
+  }
+  // i = null: Block verschieben/löschen, sonst Eintrag j in Block i
+  _move(i, j, dir) {
+    const bl = this._blocks(), t = j + dir;
+    if (i === null) { [bl[j], bl[t]] = [bl[t], bl[j]]; this._open = new Set([`${t}`]); }
+    else {
+      const k = BM[bl[i].type].key || 'entities', arr = [...bl[i][k]];
+      [arr[j], arr[t]] = [arr[t], arr[j]];
+      bl[i] = {...bl[i], [k]: arr}; this._open = new Set([`${i}`, `${i}.${t}`]);
+    }
+    this._set(bl); this._rebuild();
+  }
+  _del(i, j) {
+    const bl = this._blocks();
+    if (i === null) { bl.splice(j, 1); this._open = new Set(); }
+    else { const k = BM[bl[i].type].key || 'entities'; bl[i] = {...bl[i], [k]: bl[i][k].filter((_, x) => x !== j)}; this._open = new Set([`${i}`]); }
+    this._set(bl); this._rebuild();
+  }
+}
+// Kurzschreibweise "- sensor.x" im Editor als Objekt behandeln
+const normItems = b => { const k = ITEMS[b.type]; return k && Array.isArray(b[k]) ? {...b, [k]: b[k].map(x => typeof x === 'string' ? {entity: x} : x)} : {...b}; };
+define('nova-modular-card-editor', NovaModularCardEditor);
 
 console.info(`%c NOVA-CARDS %c v${VERSION} `, 'color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px', 'color:#fff;background:#1b2134;border-radius:0 4px 4px 0');
 })();
