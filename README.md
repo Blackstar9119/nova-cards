@@ -1,4 +1,4 @@
-# Nova Cards 0.8.1
+# Nova Cards 0.8.2
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -300,7 +300,7 @@ icon_map:                   # App/Quelle → Logo (Groß/Klein egal)
 ## Nova Saugroboter Card
 
 Saugroboter mit Status, Akku und Steuer-Pillen (Start, Pause, Stopp, Zur Station) – leuchtet beim Reinigen. Buttons erscheinen nur, wenn der Roboter sie kann (`supported_features`).
-Mit Animation von Roboter und Station: fährt beim Reinigen, wischt (nasse Spur), fährt zurück, lädt, saugt ab, wäscht und trocknet den Mopp, zeigt Frisch-/Schmutzwassertank. Die nötigen Entitäten sucht die Karte selbst am Gerät des Roboters – ohne sie läuft die Animation nur mit dem `vacuum`-Zustand, den jeder Roboter hat.
+Mit Animation von Roboter und Station: fährt beim Reinigen, wischt (nasse Spur), fährt zurück, lädt, saugt ab, wäscht und trocknet den Mopp, zeigt Frisch-/Schmutzwassertank. Die nötigen Entitäten sucht die Karte selbst am Gerät des Roboters und seiner Station (auch wenn die Station ein eigenes Gerät ist, wie bei Roborock) – ohne sie läuft die Animation nur mit dem `vacuum`-Zustand, den jeder Roboter hat.
 Optional: Karte/Kamera-Bild (bei breiter Karte, z. B. im Popup, automatisch daneben), Saugstärke, Raumreinigung per Segment, Schalter (Staubentleerung, Moppwäsche …) sowie Infos und Verbrauchsteile. Alles im grafischen Editor einstellbar.
 
 ```yaml
