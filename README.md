@@ -1,4 +1,4 @@
-# Nova Cards 0.6.1
+# Nova Cards 0.7.0
 
 Kostenlose Kartenfamilie für Home Assistant – Glas-Look, grafischer Editor, nichts hartkodiert.
 Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
@@ -299,8 +299,8 @@ icon_map:                   # App/Quelle → Logo (Groß/Klein egal)
 
 ## Nova Saugroboter Card
 
-Saugroboter mit Status, Akku und runden Steuer-Buttons – leuchtet beim Reinigen. Buttons erscheinen nur, wenn der Roboter sie kann (`supported_features`).
-Optional: Karte/Kamera-Bild, Saugstärke, Raumreinigung per Segment und Verbrauchsteile. Alles im grafischen Editor einstellbar.
+Saugroboter mit Status, Akku und Steuer-Pillen (Start, Pause, Stopp, Zur Station) – leuchtet beim Reinigen. Buttons erscheinen nur, wenn der Roboter sie kann (`supported_features`).
+Optional: Karte/Kamera-Bild (bei breiter Karte, z. B. im Popup, automatisch daneben), Saugstärke, Raumreinigung per Segment, Schalter (Staubentleerung, Moppwäsche …) sowie Infos und Verbrauchsteile. Alles im grafischen Editor einstellbar.
 
 ```yaml
 type: custom:nova-vacuum-card
@@ -309,6 +309,7 @@ name: Robbi
 battery: sensor.robbi_akku     # optional, sonst automatisch vom Gerät
 status: sensor.robbi_status    # optional: genauerer Statustext
 map: image.robbi_karte         # oder camera.*
+layout: auto                   # side = Karte immer daneben, stack = darüber
 map_aspect_ratio: auto         # 1:1, 4:3, 16:9, 3:4
 fan_speeds: [Leise, Standard, Turbo]   # optional: nur diese Stufen
 segment_mode: roborock         # valetudo | dreame | xiaomi
@@ -323,7 +324,12 @@ rooms:
     icon: mdi:water
     entity: script.robbi_flur_wischen
     confirm: Flur wischen?
-consumables:
+switches:
+  - switch.robbi_staubentleerung
+  - switch.robbi_moppwaesche
+consumables:                   # Infos & Verbrauchsteile
+  - entity: select.robbi_modus
+    name: Modus
   - entity: sensor.robbi_filter_verbleibend
     name: Filter
     below: 10
@@ -338,19 +344,24 @@ consumables:
 | `name`, `icon` | Entität | Kopfzeile |
 | `tap_action`, `hold_action` | more-info | Icon antippen / lange drücken |
 | `battery` / `battery_low` | automatisch / `20` | Akku-Sensor (leer = Akku-Sensor am selben Gerät, sonst Attribut `battery_level`); darunter rot. Beim Laden auf der Station: Lade-Icon |
+| `battery_display` | `status` | Akku `status` (im Text unter dem Namen), `chip` (Pille rechts), `none` |
 | `status` | – | Entität für den Text unter dem Namen statt des Roboter-Zustands |
+| `controls` | `pills` | `pills` = Pillen mit Text (aktive leuchtet), `round` = runde Buttons mit großem Start/Pause |
+| `layout` | `auto` | `auto` = Karte daneben ab 640 px Kartenbreite, sonst darüber; `side` = immer daneben; `stack` = immer darüber |
 | `glow` | `true` | Rahmen leuchtet beim Reinigen, gelb/rot bei Warnung bzw. Fehler |
 | `show_stop`, `show_return`, `show_locate` | `true` | Stopp (nur während der Fahrt), Zur Station, Suchen |
 | `show_spot` | `false` | Spot-Reinigung |
 | `show_fan_speed` / `fan_speeds` | `true` / alle | Saugstärke als Pillen aus `fan_speed_list`; `fan_speeds` = nur diese. Icons per `fan_speed_icons` (wie `icon_map`) |
-| `map` | – | `image.*` (lädt bei Änderung neu) oder `camera.*` |
+| `map` / `map_title` | – / `Karte` | `image.*` (lädt bei Änderung neu) oder `camera.*`; Überschrift, `-` = ohne |
 | `map_aspect_ratio` | `auto` | Seitenverhältnis der Karte, sonst Bildgröße |
 | `map_refresh` | `5` | Nur `camera.*`: Aktualisieren alle x s, solange der Roboter fährt und die Karte sichtbar ist (`0` = aus) |
 | `map_action` | `more-info` | Karte antippen: `more-info` (Karte groß), `vacuum` (Roboter-Details), `none` |
 | `rooms[]` | – | `name`, `icon` und `segments` (Komma-Liste) – antippen wählt aus, dann „Räume reinigen“. Oder `entity` (Skript/Button) bzw. `tap_action` (+ `confirm`) = direkt auslösen |
 | `segment_mode` | `roborock` | Wie Segmente gereinigt werden: `roborock` (`vacuum.send_command` → `app_segment_clean`), `valetudo` (`segment_cleanup`), `dreame` (`dreame_vacuum.vacuum_clean_segment`), `xiaomi` (`xiaomi_miio.vacuum_clean_segment`). Andere Integrationen: Raum per `tap_action` |
 | `segment_repeat` | `1` | Durchgänge je Raum |
-| `consumables[]` | – | Verbrauchsteile: `entity`, `name`, `icon`, `unit`, `decimals`, `below` (darunter Warnung + Rahmen), `max` (Balken; bei `%` automatisch 100) |
+| `rooms_title` | `Raum reinigen` | Überschrift über den Räumen, `-` = ohne |
+| `switches[]` / `switches_columns` | – / `1` | Schalter wie bei der Modular Card: `entity`, `name`, `icon`, `tap_action`, `confirm`. Antippen schaltet, Buttons/Skripte werden ausgelöst |
+| `consumables[]` | – | Infos & Verbrauchsteile (z. B. Modus, Wassertank, Filter): `entity`, `name`, `icon`, `unit`, `decimals`, `below` (darunter Warnung + Rahmen), `max` (Balken; bei `%` automatisch 100) |
 | `consumables_layout` | `rows` | `rows` = Liste mit Balken, `chips` |
 
 ---
@@ -359,7 +370,7 @@ consumables:
 
 Alle Karten lesen diese Variablen (z. B. im Theme oder per card-mod):
 
-`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`, `--nova-media-min-height`, `--nova-media-artwork-opacity`
+`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`, `--nova-media-min-height`, `--nova-media-artwork-opacity`, `--nova-vacuum-map-min-height`
 
 ## Lizenz
 
