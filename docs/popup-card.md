@@ -24,6 +24,10 @@ Schließen: X oben rechts, Tipp auf den dunklen Hintergrund, nach unten wischen 
 
 ## Kopfzeile & Info-Leiste
 
+**Badges** sitzen in der Kopfzeile rechts neben dem Titel. Pro Badge: Entität, eigener Name, Icon, Zustand anzeigen
+ja/nein, Farbe (Nova-Farbrolle) und optional „Nur anzeigen bei Zustand“ (z. B. `on` für ein offenes Fenster).
+Auf schmalen Bildschirmen zeigen Badges nur Icon und Zustand und scrollen bei Platzmangel, Titel und X bleiben frei.
+
 Unter **Kopfzeile & Info-Leiste** Entitäten hinzufügen, z. B. Temperatur, Luftfeuchtigkeit, Fenster, Tür.
 Pro Eintrag: Icon (Standard: Icon der Entität), eigener Name, Nachkommastellen. Mit **Bei Achtung hervorheben**
 wird der Chip farbig, z. B. wenn ein Fenster offen ist (ohne weitere Angabe bei „an“ bzw. „Problem“).

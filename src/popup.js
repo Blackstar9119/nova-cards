@@ -1,5 +1,5 @@
 import {define, docUrl, tag} from './shared/define.js';
-import {esc, setIcon} from './shared/utils.js';
+import {esc, setIcon, list} from './shared/utils.js';
 import {iconOf, nameOf, valueOf, alertHit} from './shared/state.js';
 import {moreInfo} from './shared/actions.js';
 import {NOVA_VARS, roleVars, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from './shared/styles.js';
@@ -27,6 +27,18 @@ const helpers = () => helpersP ||= Promise.resolve()
   .then(() => { if (typeof window.loadCardHelpers !== 'function') throw new Error('loadCardHelpers nicht verfügbar'); return window.loadCardHelpers(); })
   .catch(e => { helpersP = null; throw e; });
 const wait = ms => new Promise(r => setTimeout(r, ms));
+// HA-INTERN: hui-card-picker und hui-card-element-editor lädt HA erst bei Bedarf nach. Der Editor der Stapel-Karte
+// (vertical-stack) bringt beide mit – deshalb einmal dessen Editor anfordern und kurz auf die Elemente warten.
+let haEdP;
+const HA_ED = ['hui-card-picker', 'hui-card-element-editor'];
+const loadHaEditors = () => HA_ED.every(n => customElements.get(n)) ? Promise.resolve() : (haEdP ||= (async () => {
+  try {
+    (await helpers()).createCardElement({type: 'vertical-stack', cards: []});
+    await Promise.race([customElements.whenDefined('hui-vertical-stack-card'), wait(3000)]);
+    await customElements.get('hui-vertical-stack-card')?.getConfigElement?.();
+  } catch (e) { console.warn('[nova-cards] Kartenauswahl von HA nicht vorgeladen', e); }
+  await Promise.race([Promise.all(HA_ED.map(n => customElements.whenDefined(n))), wait(3000)]);
+})());
 
 /* ---------- Nova Pop-up Card ---------- */
 const PCSS = `${NOVA_VARS}
@@ -48,7 +60,12 @@ box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:trans
 .hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
 background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .hi:empty{display:none}
-.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bdg{display:flex;gap:6px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.bdg::-webkit-scrollbar{display:none}.bdg:empty{display:none}
+.bd{display:inline-flex;align-items:center;gap:5px;flex:none;padding:5px 10px;border-radius:999px;background:var(--c,var(--nv-chip));color:var(--cf,inherit);font-size:12px;white-space:nowrap;cursor:pointer;outline:none}
+.bd ha-icon{--mdc-icon-size:15px}.bd img{width:15px;height:15px}.bd:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.bd:active{transform:scale(.95)}
+.bd .bn:empty,.bd .bv:empty{display:none}.bd .bn:not(:empty)+.bv:not(:empty)::before{content:'· '}
+.bd[hidden]{display:none}
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
 .info{display:flex;flex-wrap:wrap;gap:7px;padding:0 14px 12px;flex:none}
@@ -71,6 +88,7 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
 .hint{font-size:13px;opacity:.7;padding:8px 2px;grid-column:1/-1}
 @media(max-width:600px){
 .pop{align-items:flex-end}
+.bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
 .sh{width:100vw;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
 .grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
 .body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
@@ -97,9 +115,9 @@ class NovaPopupCard extends HTMLElement {
 <div class="ph"><ha-icon icon="mdi:card-multiple-outline"></ha-icon><span class="t"></span></div>
 <div class="pop" hidden><div class="ov"></div><div class="sh" role="dialog" aria-modal="true">
 <div class="grip"><i></i></div>
-<div class="hd"><span class="hi"></span><span class="tt"></span><button type="button" class="x" aria-label="Schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
+<div class="hd"><span class="hi"></span><span class="tt"></span><div class="bdg"></div><button type="button" class="x" aria-label="Schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
 <div class="info" hidden></div><div class="body"></div></div></div>`;
-    this._pop = r.querySelector('.pop'); this._sh = r.querySelector('.sh'); this._body = r.querySelector('.body'); this._infoEl = r.querySelector('.info');
+    this._pop = r.querySelector('.pop'); this._sh = r.querySelector('.sh'); this._body = r.querySelector('.body'); this._infoEl = r.querySelector('.info'); this._bdgEl = r.querySelector('.bdg');
     this._mode = 'live';
     r.querySelector('.x').addEventListener('click', () => this.close());
     r.querySelector('.ov').addEventListener('click', () => this.close());
@@ -119,7 +137,8 @@ class NovaPopupCard extends HTMLElement {
   setConfig(c) {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     const old = this._cfg?.hash;
-    this._cfg = {...DEF, ...c, hash: cleanHash(c.hash), info: [].concat(c.info || []).map(x => typeof x === 'string' ? {entity: x} : x)};
+    this._cfg = {...DEF, ...c, hash: cleanHash(c.hash), info: [].concat(c.info || []).map(x => typeof x === 'string' ? {entity: x} : x),
+      badges: [].concat(c.badges || []).map(x => typeof x === 'string' ? {entity: x} : x).filter(x => x?.entity)};
     this._rows = normRows(c);
     this._cols = Math.min(4, Math.max(1, +this._cfg.columns || 2));
     if (this.isConnected && old !== this._cfg.hash) { this._unreg(old); this._reg(); }
@@ -255,15 +274,44 @@ class NovaPopupCard extends HTMLElement {
     r.querySelector('.ph .t').textContent = c.title || (c.hash ? `#${c.hash}` : 'Kein Hash eingestellt');
     r.querySelector('.ph ha-icon').setAttribute('icon', c.icon || 'mdi:card-multiple-outline');
     this._sh.style.setProperty('--pw', `${+c.width || DEF.width}px`);
-    this._sh.classList.toggle('tint', !!c.color);
-    if (c.color) this._sh.style.setProperty('--tc', roleVars(c.color).c);
+    const tint = c.tint || c.color;
+    this._sh.classList.toggle('tint', !!tint);
+    if (tint) this._sh.style.setProperty('--tc', roleVars(tint).c);
     if (c.title || c.hash) this._sh.setAttribute('aria-label', c.title || c.hash); else this._sh.removeAttribute('aria-label');
     this._body.style.setProperty('--cols', this._cols);
     this._infoEl.classList.toggle('scroll', c.info_layout === 'scroll');
-    this._chips = null;
+    this._chips = null; this._bds = null;
     if (this._h) this._info();
   }
+  // Badges in der Kopfzeile: optional nur bei bestimmtem Zustand, Farbe aus den Farbrollen
+  _badges() {
+    const items = this._cfg.badges, h = this._h, bar = this._bdgEl;
+    if (!this._bds || this._bds.length !== items.length) {
+      bar.innerHTML = '';
+      this._bds = items.map(o => {
+        const d = document.createElement('div');
+        d.className = 'bd'; d.tabIndex = 0; d.setAttribute('role', 'button');
+        d.innerHTML = '<span class="ci"></span><span class="bn"></span><span class="bv"></span>';
+        if (o.color) { const v = roleVars(o.color); d.style.setProperty('--c', v.c); d.style.setProperty('--cf', v.fg); }
+        const open = () => moreInfo(this, o.entity);
+        d.addEventListener('click', e => { e.stopPropagation(); open(); });
+        d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        bar.appendChild(d);
+        return d;
+      });
+    }
+    items.forEach((o, i) => {
+      const d = this._bds[i], s = h.states[o.entity];
+      d.hidden = !s || (o.state != null && o.state !== '' && !list(o.state).includes(s.state));
+      if (d.hidden) return;
+      setIcon(d.querySelector('.ci'), iconOf(h, o, 'mdi:information-outline'));
+      d.querySelector('.bn').textContent = o.name || '';
+      d.querySelector('.bv').textContent = o.show_state === false ? '' : valueOf(h, s, o);
+      d.title = `${nameOf(h, o)}: ${valueOf(h, s, o)}`;
+    });
+  }
   _info() {
+    this._badges();
     const items = this._cfg.info, h = this._h, bar = this._infoEl;
     bar.hidden = !items.length;
     if (!this._chips || this._chips.length !== items.length) {
@@ -372,9 +420,14 @@ const cardIcon = (h, c) => c.icon || (c.entity && h ? iconOf(h, {entity: c.entit
 const GENERAL = [
   {name: 'hash', required: true, selector: T},
   g2({name: 'title', selector: T}, {name: 'icon', selector: I}),
-  ROLE('color'),
+  ROLE('tint'),
   g2({name: 'width', selector: {number: {min: 320, max: 1600, step: 10, mode: 'box', unit_of_measurement: 'px'}}},
     {name: 'stack_below', selector: {number: {min: 0, max: 1200, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
+];
+const BADGE = [
+  ENT, NAMEICON,
+  g2({name: 'show_state', selector: {boolean: {}}}, ROLE('color')),
+  {name: 'state', selector: T},
 ];
 const HEAD = [sel('info_layout', [['wrap', 'Umbrechen'], ['scroll', 'Waagrecht scrollen']])];
 const INFO = [
@@ -385,7 +438,7 @@ const INFO = [
 ];
 const COLS = [{name: 'columns', selector: {number: {min: 1, max: 4, mode: 'slider'}}}];
 const LABELS = {
-  hash: 'Hash (ohne #)', title: 'Titel', icon: 'Icon', color: 'Farbton (leer = Nova-Glas)', width: 'Max. Breite (Desktop)', stack_below: 'Untereinander unter Breite',
+  hash: 'Hash (ohne #)', title: 'Titel', icon: 'Icon', tint: 'Farbton (leer = Nova-Glas)', color: 'Farbe', show_state: 'Zustand anzeigen', state: 'Nur anzeigen bei Zustand', width: 'Max. Breite (Desktop)', stack_below: 'Untereinander unter Breite',
   info_layout: 'Info-Leiste bei vielen Einträgen', entity: 'Entität', name: 'Eigener Name (optional)', decimals: 'Nachkommastellen',
   alert: 'Bei Achtung hervorheben', alert_state: 'Achtung bei Zustand', alert_color: 'Farbe', alert_above: 'Achtung über', alert_below: 'Achtung unter',
   columns: 'Spalten',
@@ -394,6 +447,8 @@ const HELPERS = {
   hash: 'Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.',
   title: 'Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.',
   stack_below: 'Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).',
+  state: 'Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.',
+  color: 'Leer = neutral.',
   alert_state: 'z. B. on oder open, mehrere mit Komma. Leer = an bzw. Problem (z. B. Fenster offen).',
 };
 
@@ -425,11 +480,8 @@ display:flex;align-items:center;gap:6px;padding:8px 10px 8px 2px;cursor:pointer;
 .tpl{display:flex;flex-direction:column;gap:6px;align-items:center;padding:8px 6px;border-radius:12px;border:1px solid var(--divider-color,#444);background:none;color:inherit;cursor:pointer;font:inherit;font-size:11.5px;text-align:center}
 .tpl:hover{border-color:var(--primary-color)}
 .tp{display:grid;gap:3px;width:56px}.tp i{display:block;height:13px;border-radius:3px;background:var(--primary-color);opacity:.55}
-.pick{max-height:460px;overflow:auto}
-.plist{display:flex;flex-wrap:wrap;gap:6px}
-.plist button{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--divider-color,#444);background:none;color:inherit;font:inherit;font-size:12.5px;cursor:pointer}
-.plist button:hover{border-color:var(--primary-color)}.plist ha-icon{--mdc-icon-size:16px}
-.search,textarea.json{width:100%;box-sizing:border-box;background:var(--card-background-color,transparent);color:inherit;border:1px solid var(--divider-color,#444);border-radius:8px;padding:8px;font:inherit}
+.pick{max-height:640px;overflow:auto}
+textarea.json{width:100%;box-sizing:border-box;background:var(--card-background-color,transparent);color:inherit;border:1px solid var(--divider-color,#444);border-radius:8px;padding:8px;font:inherit}
 textarea.json{min-height:200px;font-family:monospace;font-size:12px}
 textarea.bad{border-color:var(--error-color,#db4437)}
 .lnk{background:none;border:none;color:var(--primary-color);cursor:pointer;font:inherit;font-size:12px;padding:0;align-self:flex-start}`;
@@ -445,6 +497,7 @@ class NovaPopupCardEditor extends NovaEditorBase {
   set lovelace(l) { this._ll = l; }
   get lovelace() { return this._ll; }
 
+  async _rebuild() { await loadHaEditors(); return super._rebuild(); }
   _rows() { return normRows(this._config); }
   _colsN() { return Math.min(4, Math.max(1, +this._config.columns || DEF.columns)); }
   _emitRows(rows, keep) {
@@ -476,9 +529,11 @@ class NovaPopupCardEditor extends NovaEditorBase {
   _secGeneral() {
     const [d, b] = this._sec('sec.general', 'mdi:cog-outline', 'Allgemein');
     const data = {...this._config};
-    delete data.rows; delete data.info;
+    delete data.rows; delete data.info; delete data.badges;
+    if (data.color && !data.tint) data.tint = data.color;
     const f = this._form(GENERAL, data, v => {
       const c = merge(this._config, names(GENERAL), v);
+      delete c.color;
       if (v.hash != null) { const h = cleanHash(v.hash); if (h !== v.hash) f.data = {...v, hash: h}; if (h) c.hash = h; else delete c.hash; }
       this._emit(c);
     });
@@ -488,12 +543,16 @@ class NovaPopupCardEditor extends NovaEditorBase {
   }
   _secHead() {
     const [d, b] = this._sec('sec.header', 'mdi:information-outline', 'Kopfzeile & Info-Leiste');
-    b.append(this._hint('Titel und Icon stehen unter „Allgemein“. Info-Entitäten erscheinen als kleine Chips unter dem Titel, Antippen öffnet die Details.'));
+    b.append(this._hint('Titel und Icon stehen unter „Allgemein“. Badges sitzen in der Kopfzeile, Info-Entitäten als Chips darunter. Antippen öffnet die Details.'));
     b.append(this._form(HEAD, {info_layout: DEF.info_layout, ...this._config}, v => {
       const c = merge(this._config, names(HEAD), v);
       if (c.info_layout === DEF.info_layout) delete c.info_layout;
       this._emit(c);
     }));
+    b.append(Object.assign(document.createElement('h4'), {textContent: 'Badges'}));
+    b.append(this._hint('Kleine Anzeigen rechts neben dem Titel. Auf schmalen Bildschirmen nur Icon und Zustand, bei Platzmangel waagrecht scrollbar.'));
+    this._itemList(b, 'badges', BADGE, {item: 'Badge', icon: 'mdi:label-outline'}, 'Badge hinzufügen', it => ({show_state: true, ...it}));
+    b.append(Object.assign(document.createElement('h4'), {textContent: 'Info-Leiste'}));
     this._itemList(b, 'info', INFO, {item: 'Info', icon: 'mdi:information-outline'}, 'Info-Entität hinzufügen');
     return d;
   }
@@ -630,66 +689,27 @@ class NovaPopupCardEditor extends NovaEditorBase {
     if (b && !b.classList.contains('slot')) this._label(b, x, this._colsN());
   }
 
-  // HA-INTERN: hui-card-picker (Kartenauswahl von HA). Fehlt sie, gibt es eine eigene Liste.
+  // HA-INTERN: hui-card-picker (Kartenauswahl von HA mit Vorschaubildern und Suche), geladen über loadHaEditors().
+  // Fehlt sie trotzdem, kann die neue Karte als YAML eingetragen werden.
   _picker(box, ri, ci) {
     box.append(this._hint('Karte auswählen – sie kommt in diesen Platz.'));
-    const host = el('div', 'pick');
-    const ha = !this._simple && customElements.get('hui-card-picker');
-    let ok = false;
-    if (ha) {
+    if (customElements.get('hui-card-picker')) {
       try {
+        const host = el('div', 'pick');
         const p = document.createElement('hui-card-picker');
         p.hass = this._hass;
         if (this._ll) p.lovelace = this._ll;
         p.addEventListener('config-changed', e => { e.stopPropagation(); const c = e.detail?.config; if (c?.type) this._setCard(ri, ci, c, true); });
         host.append(p);
+        box.append(host);
         this._pick = p;
-        ok = true;
-      } catch (e) { console.warn('[nova-cards] Kartenauswahl von HA nicht nutzbar', e); host.innerHTML = ''; }
+        return;
+      } catch (e) { console.warn('[nova-cards] Kartenauswahl von HA nicht nutzbar', e); }
     }
-    if (!ok) this._simplePicker(host, ri, ci);
-    box.append(host);
-    if (ha) {
-      const l = el('button', 'lnk');
-      l.type = 'button';
-      l.textContent = this._simple ? 'Kartenauswahl von Home Assistant zeigen' : 'Einfache Liste zeigen';
-      l.addEventListener('click', e => { e.preventDefault(); this._simple = !this._simple; this._rebuild(); });
-      box.append(l);
-    }
-  }
-  _simplePicker(host, ri, ci) {
-    const q = el('input', 'search');
-    q.placeholder = 'Karte suchen …';
-    const list = el('div', 'plist');
-    const all = [
-      ...customs().map(c => ({type: `custom:${c.type}`, name: (c.name || c.type).replace(/ \(Dev\)$/, ''), icon: 'mdi:puzzle-outline'})),
-      ...Object.entries(HA_CARDS).map(([type, [name, icon]]) => ({type, name, icon})),
-    ];
-    const draw = () => {
-      const s = q.value.trim().toLowerCase();
-      list.innerHTML = '';
-      all.filter(x => !s || x.name.toLowerCase().includes(s) || x.type.includes(s)).forEach(x => {
-        const b = el('button', '', `<ha-icon icon="${esc(x.icon)}"></ha-icon><span></span>`);
-        b.type = 'button';
-        b.lastChild.textContent = x.name;
-        b.addEventListener('click', async e => { e.preventDefault(); this._setCard(ri, ci, await this._stub(x.type), true); });
-        list.append(b);
-      });
-    };
-    q.addEventListener('input', draw);
-    draw();
-    host.append(q, list);
-  }
-  // HA-INTERN: getStubConfig() der Kartenklasse (bei HA-Karten hui-<typ>-card). Klappt es nicht, nur {type}.
-  async _stub(type) {
-    const ents = Object.keys(this._hass?.states || {});
-    try {
-      const custom = type.startsWith('custom:'), name = custom ? type.slice(7) : `hui-${type}-card`;
-      if (!custom) { try { (await helpers()).createCardElement({type}); } catch { /* nur zum Nachladen */ } }
-      await Promise.race([customElements.whenDefined(name), wait(2000)]);
-      const s = await customElements.get(name)?.getStubConfig?.(this._hass, ents, ents);
-      return {...(s && typeof s === 'object' ? s : {}), type};
-    } catch { return {type}; }
+    box.append(this._hint('Die Kartenauswahl von Home Assistant ist hier nicht verfügbar. Karte als YAML eintragen (z. B. type: tile) und übernehmen.'));
+    let pending = null;
+    this._yamlField(box, null, v => { pending = v; });
+    box.append(this._add('Übernehmen', () => { if (pending) this._setCard(ri, ci, pending, true); }));
   }
 
   // HA-INTERN: hui-card-element-editor (Karteneditor von HA mit eigenem GUI/YAML-Umschalter). Fehler → YAML-Feld.
@@ -717,8 +737,11 @@ class NovaPopupCardEditor extends NovaEditorBase {
   // HA-INTERN: ha-yaml-editor. Fehlt er, ein Textfeld im JSON-Format (JSON ist auch gültiges YAML).
   _yamlEd(box, ri, ci, auto) {
     if (auto) box.append(this._hint('Der grafische Editor ist hier nicht verfügbar – Karte direkt als YAML bearbeiten.'));
-    const cfg = this._rows()[ri].cells[ci].card;
-    const take = v => { if (v && typeof v === 'object' && !Array.isArray(v) && v.type) { this._setCard(ri, ci, v, false); return true; } return false; };
+    this._yamlField(box, this._rows()[ri].cells[ci].card, v => this._setCard(ri, ci, v, false));
+  }
+  // YAML-Feld für eine Kartenkonfiguration; cb bekommt nur gültige Karten (mit type)
+  _yamlField(box, cfg, cb) {
+    const take = v => { if (v && typeof v === 'object' && !Array.isArray(v) && v.type) { cb(v); return true; } return false; };
     if (customElements.get('ha-yaml-editor')) {
       try {
         const y = document.createElement('ha-yaml-editor');
@@ -731,7 +754,7 @@ class NovaPopupCardEditor extends NovaEditorBase {
       } catch (e) { console.warn('[nova-cards] YAML-Editor von HA nicht nutzbar', e); }
     }
     const ta = el('textarea', 'json');
-    ta.value = JSON.stringify(cfg, null, 2);
+    ta.value = JSON.stringify(cfg || {type: ''}, null, 2);
     ta.spellcheck = false;
     ta.addEventListener('input', () => { let ok = false; try { ok = take(JSON.parse(ta.value)); } catch { /* ungültig */ } ta.classList.toggle('bad', !ok); });
     box.append(this._hint('JSON-Format, „type“ ist Pflicht.'), ta);
