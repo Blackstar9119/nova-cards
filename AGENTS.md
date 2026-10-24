@@ -37,7 +37,8 @@ src/
 docs/
   popup-card.md       Anleitung Nova Pop-up Card
 dev/
-  nova-dev-cards.js   ERZEUGT von „npm run dev“ – Dev-Build zum Testen, gitignored, nie committen
+  nova-dev-cards.js   ERZEUGT von „npm run dev“ – gitignored, nur Zwischenablage
+nova-dev-cards.js     Kopie des Dev-Builds für jsDelivr – nur auf Feature-Branches, nie nach main mergen
 build.mjs             esbuild-Build → nova-cards.js („npm run dev“ → dev/nova-dev-cards.js)
 package.json          Versionsnummer (einzige Stelle), „npm run build“ und „npm run dev [-- <karte>]“
 nova-cards.js         ERZEUGT – nicht von Hand bearbeiten
@@ -92,15 +93,17 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 - **Dev-Build „dev“:** alle Karten mit Präfix `nova-dev-` statt `nova-`, damit sie sich nicht mit der HACS-Version
   beißen. `npm run dev` baut alle Karten nach `dev/nova-dev-cards.js`, `npm run dev -- <karte>` bzw. mehrere mit Komma wie `popup,dock` (Dateiname in `src/`
   ohne `.js`, z. B. `waste`) nur diese eine. In der Kartenauswahl tragen die Karten „ (Dev)“ im Namen.
-- **Nach jeder Änderung, die der Nutzer testen soll:** Dev-Build erstellen und über den HA-MCP mit
-  `ha_config_set_dashboard_resource` (`content` = Build, `resource_type` = `module`) als Inline-Modul-Ressource
-  hochladen. **Immer dieselbe Ressource aktualisieren** (`resource_id`), nie eine neue anlegen.
+- **Nach jeder Änderung, die der Nutzer testen soll:** Dev-Build erstellen, als `nova-dev-cards.js` in den Repo-Root
+  des Feature-Branches kopieren, committen und pushen. Dann die Dev-Ressource über den HA-MCP mit
+  `ha_config_set_dashboard_resource` (`url` = `https://cdn.jsdelivr.net/gh/Blackstar9119/nova-cards@<commit>/nova-dev-cards.js`,
+  `resource_type` = `module`) auf den neuen Commit-Hash umstellen. **Immer dieselbe Ressource aktualisieren**
+  (`resource_id`), nie eine neue anlegen. Laufen mehrere Feature-Branches parallel, alle getesteten Karten in einen
+  Build packen (`npm run dev -- weather,popup,dock`), damit kein Test verloren geht.
 - **resource_id der Dev-Ressource:** `4cc06e00074c416590e298ace68fe3a7`
   Fehlt sie oder ist sie ungültig, zuerst per `ha_config_list_dashboard_resources` nach einer bestehenden
-  Inline-Ressource suchen, die mit `/* Nova Cards v… DEV` beginnt, und deren ID hier eintragen. Nur wenn es keine
-  gibt, eine neue anlegen.
-- **Liegt der Build über 128 KB** (Grenze für Inline-Ressourcen, der Build bricht dann mit Exit 2 ab): nur die Karte
-  bauen, an der gerade gearbeitet wird.
+  Ressource suchen, die auf `nova-dev-cards.js` zeigt (oder inline mit `/* Nova Cards v… DEV` beginnt), und deren ID
+  hier eintragen. Nur wenn es keine gibt, eine neue anlegen.
+- **Liegt der Build über 128 KB** (bricht mit Exit 2 ab): nur die Karten bauen, an denen gerade gearbeitet wird.
 - **Danach dem Nutzer sagen,** welche Karte (`custom:nova-dev-…`) er testen soll und dass er hart neu laden muss
   (Strg/Cmd+Shift+R bzw. App-Cache leeren).
 - **Keine Releases dafür.** Releases (Versionssprung, Tag, GitHub-Release) nur, wenn der Nutzer es ausdrücklich sagt.
