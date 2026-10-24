@@ -1,4 +1,4 @@
-import {define, docUrl} from './shared/define.js';
+import {define, docUrl, tag} from './shared/define.js';
 import {esc} from './shared/utils.js';
 import {areaOf} from './shared/state.js';
 import {moreInfo, hassAction} from './shared/actions.js';
@@ -72,7 +72,7 @@ class NovaColorInput extends HTMLElement {
     add.addEventListener('click', e => { e.preventDefault(); if (this._v) this.dispatchEvent(new CustomEvent('color-add', {detail: {value: this._v}})); });
   }
 }
-define('nova-color-input', NovaColorInput);
+define('color-input', NovaColorInput);
 
 /* ---------- Editor Licht Card ---------- */
 const MAIN = [
@@ -201,7 +201,7 @@ class NovaLightCardEditor extends NovaEditorBase {
       this._rebuild();
     }));
     if (open) {
-      const a = entity && this._hass?.states[entity]?.attributes, picker = document.createElement('nova-color-input');
+      const a = entity && this._hass?.states[entity]?.attributes, picker = document.createElement(tag('color-input'));
       if (a?.min_color_temp_kelvin) picker.setAttribute('kmin', a.min_color_temp_kelvin);
       if (a?.max_color_temp_kelvin) picker.setAttribute('kmax', a.max_color_temp_kelvin);
       picker.addEventListener('color-add', e => {
@@ -227,10 +227,10 @@ class NovaLightCardEditor extends NovaEditorBase {
     this._rebuild();
   }
 }
-define('nova-light-card-editor', NovaLightCardEditor);
+define('light-card-editor', NovaLightCardEditor);
 
 /* ---------- Nova Licht Card ---------- */
-const TAG = 'nova-light-card';
+const TAG = 'light-card';
 const LIGHT_CSS = `
 :host{container-type:inline-size}
 .lc{padding:12px;display:flex;flex-direction:column;gap:10px}
@@ -269,7 +269,7 @@ function normalize(c) {
 }
 
 class NovaLightCard extends HTMLElement {
-  static getConfigElement() { return document.createElement(`${TAG}-editor`); }
+  static getConfigElement() { return document.createElement(tag(`${TAG}-editor`)); }
   // Erster Bereich mit Lampen, sonst die ersten 4 Lampen
   static getStubConfig(h) {
     for (const area of Object.values(h.areas || {})) {

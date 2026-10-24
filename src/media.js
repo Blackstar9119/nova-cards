@@ -1,4 +1,4 @@
-import {define, docUrl} from './shared/define.js';
+import {define, docUrl, tag} from './shared/define.js';
 import {dom, setIcon, list, toObj, mapIcon} from './shared/utils.js';
 import {fmtState, hasF} from './shared/state.js';
 import {moreInfo, runAction} from './shared/actions.js';
@@ -75,7 +75,7 @@ function maOf(h, id, ma) {
 const cssUrl = u => `url("${String(u).replace(/["\\\n]/g, encodeURIComponent)}")`;
 
 class NovaMediaCard extends HTMLElement {
-  static getConfigElement() { return document.createElement('nova-media-card-editor'); }
+  static getConfigElement() { return document.createElement(tag('media-card-editor')); }
   static getStubConfig(h) {
     const ids = Object.keys(h.states).filter(i => i.startsWith('media_player.'));
     return {entity: ids.find(i => h.states[i].state === 'playing') || ids[0] || 'media_player.'};
@@ -254,7 +254,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('nova-media-card', NovaMediaCard, {name: 'Nova Media Card', description: 'Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.', documentationURL: docUrl('nova-media-card')});
+define('media-card', NovaMediaCard, {name: 'Nova Media Card', description: 'Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.', documentationURL: docUrl('nova-media-card')});
 
 /* ---------- Editor Media Card ---------- */
 const MP = {domain: ['media_player']};
@@ -330,4 +330,4 @@ class NovaMediaCardEditor extends NovaEditorBase {
     w.append(this._add('Logo hinzufügen', () => { map.push(['', '']); this._rebuild(); }));
   }
 }
-define('nova-media-card-editor', NovaMediaCardEditor);
+define('media-card-editor', NovaMediaCardEditor);

@@ -1,4 +1,4 @@
-import {define, docUrl} from './shared/define.js';
+import {define, docUrl, tag} from './shared/define.js';
 import {dom, esc, list, setIcon} from './shared/utils.js';
 import {moreInfo} from './shared/actions.js';
 import {press} from './shared/long-press.js';
@@ -83,7 +83,7 @@ const ruleOf = (types, summary) => {
 };
 
 class NovaWasteCard extends HTMLElement {
-  static getConfigElement() { return document.createElement('nova-waste-card-editor'); }
+  static getConfigElement() { return document.createElement(tag('waste-card-editor')); }
   static getStubConfig(h) {
     const cal = Object.keys(h.states).find(id => id.startsWith('calendar.'));
     return {...(cal ? {entities: [cal]} : {}), types: WTYPES.map(t => ({...t}))};
@@ -268,7 +268,7 @@ class NovaWasteCard extends HTMLElement {
     return el;
   }
 }
-define('nova-waste-card', NovaWasteCard, {name: 'Nova Müllkalender Card', description: 'Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.', documentationURL: docUrl('nova-müllkalender-card')});
+define('waste-card', NovaWasteCard, {name: 'Nova Müllkalender Card', description: 'Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.', documentationURL: docUrl('nova-müllkalender-card')});
 
 /* ---------- Editor Müllkalender Card ---------- */
 const WMAIN = [
@@ -313,4 +313,4 @@ class NovaWasteCardEditor extends NovaEditorBase {
     if (!this._items('types').length) w.append(this._add('Standard-Müllarten einfügen', () => { this._setItems('types', WTYPES.map(t => ({...t}))); this._rebuild(); }));
   }
 }
-define('nova-waste-card-editor', NovaWasteCardEditor);
+define('waste-card-editor', NovaWasteCardEditor);

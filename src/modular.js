@@ -1,4 +1,4 @@
-import {define, docUrl} from './shared/define.js';
+import {define, docUrl, tag} from './shared/define.js';
 import {dom, setIcon} from './shared/utils.js';
 import {isOn, TOGGLE, PRESS, fmtState, unitJoin, decOf, nameOf, iconOf, valueOf, alertHit} from './shared/state.js';
 import {runAction} from './shared/actions.js';
@@ -183,7 +183,7 @@ export const BLOCKS = {
 };
 
 class NovaModularCard extends HTMLElement {
-  static getConfigElement() { return document.createElement('nova-modular-card-editor'); }
+  static getConfigElement() { return document.createElement(tag('modular-card-editor')); }
   static getStubConfig(h) {
     const ids = Object.keys(h.states);
     const sensor = ids.find(i => i.startsWith('sensor.')), sw = ids.find(i => i.startsWith('switch.'));
@@ -229,7 +229,7 @@ class NovaModularCard extends HTMLElement {
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('nova-modular-card', NovaModularCard, {name: 'Nova Modular Card', description: 'Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.', documentationURL: docUrl('nova-modular-card')});
+define('modular-card', NovaModularCard, {name: 'Nova Modular Card', description: 'Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.', documentationURL: docUrl('nova-modular-card')});
 
 /* ---------- Editor Modular Card ---------- */
 
@@ -354,4 +354,4 @@ class NovaModularCardEditor extends NovaEditorBase {
     this._set(bl); this._rebuild();
   }
 }
-define('nova-modular-card-editor', NovaModularCardEditor);
+define('modular-card-editor', NovaModularCardEditor);

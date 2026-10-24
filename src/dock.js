@@ -1,4 +1,4 @@
-import {define, docUrl} from './shared/define.js';
+import {define, docUrl, tag} from './shared/define.js';
 import {esc, isImg} from './shared/utils.js';
 import {isOn} from './shared/state.js';
 import {moreInfo, hassAction, navigate} from './shared/actions.js';
@@ -54,7 +54,7 @@ class NovaDockPopup extends HTMLElement {
   }
   set hass(h) { this._h = h; this._cards.forEach(c => { c.hass = h; }); }
 }
-define('nova-dock-popup', NovaDockPopup);
+define('dock-popup', NovaDockPopup);
 
 /* ---------- Dock ---------- */
 const DCSS = `
@@ -83,13 +83,13 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
 const SRC = {};
 const findDock = o => {
   if (!o || typeof o !== 'object') return null;
-  if ((o.type === 'custom:nova-dock-card' || o.type === 'custom:nz-dock-card') && Array.isArray(o.items) && o.items.length) return o;
+  if ((o.type === `custom:${tag('dock-card')}` || o.type === 'custom:nz-dock-card') && Array.isArray(o.items) && o.items.length) return o;
   for (const v of Object.values(o)) { const r = findDock(v); if (r) return r; }
   return null;
 };
 
 class NovaDockCard extends HTMLElement {
-  static getConfigElement() { return document.createElement('nova-dock-card-editor'); }
+  static getConfigElement() { return document.createElement(tag('dock-card-editor')); }
   static getStubConfig() {
     return {items: [
       {icon: 'mdi:home', label: 'Start', tap_action: {action: 'navigate', navigation_path: location.pathname}},
@@ -209,7 +209,7 @@ class NovaDockCard extends HTMLElement {
   }
 
   _openCards(i, it) {
-    const p = document.createElement('nova-dock-popup');
+    const p = document.createElement(tag('dock-popup'));
     p.onclose = () => this._close();
     p.cfg = {title: it.popup_title || it.label || '', icon: it.icon, cards: it.cards};
     p.hass = this._h;
@@ -239,7 +239,7 @@ class NovaDockCard extends HTMLElement {
     this._update();
   }
 }
-define('nova-dock-card', NovaDockCard, {name: 'Nova Dock Card', description: 'Schwebende Leiste unten mit Buttons: navigieren, Aktion auslösen oder Popup mit beliebigen Karten öffnen.', documentationURL: docUrl('nova-dock-card')});
+define('dock-card', NovaDockCard, {name: 'Nova Dock Card', description: 'Schwebende Leiste unten mit Buttons: navigieren, Aktion auslösen oder Popup mit beliebigen Karten öffnen.', documentationURL: docUrl('nova-dock-card')});
 
 /* ---------- Editor Dock Card ---------- */
 
@@ -334,4 +334,4 @@ class NovaDockCardEditor extends NovaEditorBase {
     this._emit(c); this._rebuild();
   }
 }
-define('nova-dock-card-editor', NovaDockCardEditor);
+define('dock-card-editor', NovaDockCardEditor);
