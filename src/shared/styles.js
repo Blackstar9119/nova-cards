@@ -22,7 +22,17 @@ export const NOVA_VARS = `:host{
 --nv-error:var(--nova-error-color,#ff6b6b);
 --nv-chip:var(--nova-chip-color,rgba(255,255,255,.13));
 --nv-radius:var(--nova-radius,24px);
---nv-blur:var(--nova-blur,20px)}`;
+--nv-blur:var(--nova-blur,20px);
+--nv-a1:var(--nova-accent-1,#3d8bf5);--nv-a1-fg:var(--nova-accent-1-text,#fff);
+--nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
+--nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
+--nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff)}`;
+
+// Farbrollen: Karten wählen nur eine Rolle, die Farbe selbst kommt aus den Variablen oben (Theme-fähig)
+export const ROLES = {neutral: 'neutral', 'accent-1': 'a1', 'accent-2': 'a2', 'accent-3': 'a3', 'accent-4': 'a4'};
+// Rolle → {c, fg} als CSS-Variablen; unbekannt/leer = neutral
+export const roleVars = r => { const k = ROLES[r] || ROLES.neutral; return {c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`}; };
 
 // Glas-Hintergrund für Raum, Thermostat, Licht
 export const CARD_CSS = `${NOVA_VARS}

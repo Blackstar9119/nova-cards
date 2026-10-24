@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Dock,
-Modular, Kamera, Media und Saugroboter – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter und Müllkalender – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -20,6 +20,7 @@ src/
   camera.js           Nova Kamera Card + Editor
   media.js            Nova Media Card + Editor
   vacuum.js           Nova Saugroboter Card + Editor
+  waste.js            Nova Müllkalender Card + Editor (Termine aus calendar.*-Entitäten)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl()
     utils.js          Escaping (esc), Domain, Icons/Bilder, Listen, Hilfsfunktionen
@@ -49,8 +50,12 @@ hacs.json             HACS-Metadaten
   Editoren erben von `NovaEditorBase`, nicht voneinander.
 - **Grafischer Editor für alles:** jede Option ist im Editor einstellbar, nichts hartkodiert (Entitäten,
   Texte, Icons, Farben kommen aus der Konfiguration oder werden automatisch erkannt).
+- **Keine festen Farben in Karten:** wählbare Farben sind Farbrollen (`neutral`, `accent-1` … `accent-4`), im Editor
+  per `ROLE()` aus `editor-schema.js`, in der Karte per `roleVars()` aus `styles.js`. Die Standardfarben stehen nur
+  zentral in `NOVA_VARS` (`--nova-accent-1` …) und werden vom Theme überschrieben.
 - **Alles auf Deutsch:** Beschriftungen, Hilfetexte, Fehlermeldungen, Kommentare, README.
 - **Für Nutzer darf sich bei Umbauten nichts ändern:** gleiche Kartentypen, Optionen, Optik und Editoren.
 - **Commits, Branches und PRs:** keine `Co-Authored-By`-Zeilen und keine Erwähnung von KI-Tools
   (auch nicht in Branch-Namen; Branches heißen `feature/...`).
 - **Commits immer als Blackstar9119 mit 209100092+Blackstar9119@users.noreply.github.com, nie mit privater Mail.**
+- **Pushen und PRs immer über `git` und `gh`** (`git push`, `gh pr create`), nie über den Browser.
