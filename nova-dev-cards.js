@@ -1757,7 +1757,6 @@ display:flex;align-items:center;gap:6px;padding:8px 10px 8px 2px;cursor:pointer;
 .tpl{display:flex;flex-direction:column;gap:6px;align-items:center;padding:8px 6px;border-radius:12px;border:1px solid var(--divider-color,#444);background:none;color:inherit;cursor:pointer;font:inherit;font-size:11.5px;text-align:center}
 .tpl:hover{border-color:var(--primary-color)}
 .tp{display:flex;flex-direction:column;gap:3px;width:56px}.tp>span{display:flex;gap:3px}.tp i{display:block;height:13px;border-radius:3px;background:var(--primary-color);opacity:.55}
-.pick{max-height:640px;overflow:auto}
 textarea.json{width:100%;box-sizing:border-box;background:var(--card-background-color,transparent);color:inherit;border:1px solid var(--divider-color,#444);border-radius:8px;padding:8px;font:inherit}
 textarea.json{min-height:200px;font-family:monospace;font-size:12px}
 textarea.bad{border-color:var(--error-color,#db4437)}
@@ -1769,10 +1768,17 @@ textarea.bad{border-color:var(--error-color,#db4437)}
     return e;
   };
   var clone = (o) => o == null ? o : JSON.parse(JSON.stringify(o));
+  var canPick = () => !!(customElements.get("ha-dialog") && customElements.get("hui-card-picker"));
+  var PICK_CSS = `
+ha-dialog{--dialog-content-padding:0}
+@media(min-width:451px) and (min-height:501px){ha-dialog{--ha-dialog-min-height:min(900px,80vh);--ha-dialog-max-height:var(--ha-dialog-min-height)}}
+ha-dialog::part(body){overflow:hidden}
+.body{display:flex;flex-direction:column;flex:1;min-height:0;height:100%}
+hui-card-picker{flex:1;min-height:0}`;
   var NovaPopupCardEditor = class extends NovaEditorBase {
     set hass(h) {
       super.hass = h;
-      [this._sub, this._pick].forEach((x) => {
+      [this._sub, this._pick, this._dlgPick].forEach((x) => {
         if (x) try {
           x.hass = h;
         } catch {
@@ -1789,6 +1795,9 @@ textarea.bad{border-color:var(--error-color,#db4437)}
     async _rebuild() {
       await loadHaEditors();
       return super._rebuild();
+    }
+    disconnectedCallback() {
+      this._dlg?.close();
     }
     _rows() {
       return normRows(this._config);
@@ -1897,17 +1906,23 @@ textarea.bad{border-color:var(--error-color,#db4437)}
       if (this._sel && !rows[this._sel[0]]?.cells[this._sel[1]]) this._sel = null;
       b.append(this._hint("So sieht das Raster im Pop-up aus. Spalten einer Zeile stehen nebeneinander. Antippen zum Bearbeiten, am Griff ziehen zum Verschieben (am PC geht auch der ganze Block)."));
       const mini = this._mini = el("div", "mini");
-      const addCell = (ri) => {
-        const rs = this._rows(), x = { width: "auto", card: null };
-        rs[ri].cells.forEach((k) => {
-          if (k.width === "1") k.width = "auto";
-        });
-        rs[ri].cells.push(x);
-        this._picking = true;
+      const insert = (fn, card) => {
+        const rs = this._rows(), x = { width: "auto", card: card ?? null };
+        fn(rs, x);
+        this._picking = !card;
         this._yaml = false;
         this._emitRows(rs, x);
         this._rebuild();
       };
+      const add = (fn) => {
+        if (!this._openPicker((c) => insert(fn, c))) insert(fn);
+      };
+      const addCell = (ri) => add((rs, x) => {
+        rs[ri].cells.forEach((k) => {
+          if (k.width === "1") k.width = "auto";
+        });
+        rs[ri].cells.push(x);
+      });
       const rowOp = (fn) => {
         const rs = this._rows(), keep = this._sel ? rs[this._sel[0]]?.cells[this._sel[1]] : void 0;
         fn(rs);
@@ -1936,14 +1951,7 @@ textarea.bad{border-color:var(--error-color,#db4437)}
       });
       mini.append(Object.assign(el("div", "gap"), { _i: rows.length }));
       b.append(mini);
-      b.append(this._add("Zeile hinzufügen", () => {
-        const rs = this._rows(), x = { width: "auto", card: null };
-        rs.push({ cells: [x] });
-        this._picking = true;
-        this._yaml = false;
-        this._emitRows(rs, x);
-        this._rebuild();
-      }));
+      b.append(this._add("Zeile hinzufügen", () => add((rs, x) => rs.push({ cells: [x] }))));
       return d;
     }
     _block(cell, ri, ci) {
@@ -1972,6 +1980,7 @@ textarea.bad{border-color:var(--error-color,#db4437)}
         this._yaml = false;
         this._sel = sel2 && cell.card ? null : [ri, ci];
         this._rebuild();
+        if (!cell.card) this._pickFor(ri, ci);
       };
       b.addEventListener("click", (e) => {
         e.preventDefault();
@@ -2038,8 +2047,10 @@ textarea.bad{border-color:var(--error-color,#db4437)}
           this._rebuild();
         }),
         this._btn("mdi:swap-horizontal", "Andere Karte wählen", () => {
-          this._picking = !this._picking;
-          this._rebuild();
+          if (!this._pickFor(ri, ci)) {
+            this._picking = !this._picking;
+            this._rebuild();
+          }
         }),
         this._btn("mdi:content-copy", "Duplizieren", () => set((rs, x) => {
           const k = { width: x.width, card: clone(x.card) };
@@ -2083,28 +2094,12 @@ textarea.bad{border-color:var(--error-color,#db4437)}
       const b = this._blocks[`${ri}.${ci}`];
       if (b && !b.classList.contains("slot")) this._label(b, x);
     }
-    // HA-INTERN: hui-card-picker (Kartenauswahl von HA mit Vorschaubildern und Suche), geladen über loadHaEditors().
-    // Fehlt sie trotzdem, kann die neue Karte als YAML eingetragen werden.
+    // Leerer Platz: Kartenauswahl im eigenen Fenster öffnen. Ohne Kartenauswahl von HA die Karte als YAML eintragen.
     _picker(box, ri, ci) {
-      box.append(this._hint("Karte auswählen – sie kommt in diesen Platz."));
-      if (customElements.get("hui-card-picker")) {
-        try {
-          const host = el("div", "pick");
-          const p = document.createElement("hui-card-picker");
-          p.hass = this._hass;
-          if (this._ll) p.lovelace = this._ll;
-          p.addEventListener("config-changed", (e) => {
-            e.stopPropagation();
-            const c = e.detail?.config;
-            if (c?.type) this._setCard(ri, ci, c, true);
-          });
-          host.append(p);
-          box.append(host);
-          this._pick = p;
-          return;
-        } catch (e) {
-          console.warn("[nova-cards] Kartenauswahl von HA nicht nutzbar", e);
-        }
+      if (canPick()) {
+        box.append(this._hint("Die Kartenauswahl öffnet sich in einem eigenen Fenster. Die gewählte Karte kommt in diesen Platz."));
+        box.append(this._add("Karte wählen", () => this._pickFor(ri, ci)));
+        return;
       }
       box.append(this._hint("Die Kartenauswahl von Home Assistant ist hier nicht verfügbar. Karte als YAML eintragen (z. B. type: tile) und übernehmen."));
       let pending = null;
@@ -2114,6 +2109,68 @@ textarea.bad{border-color:var(--error-color,#db4437)}
       box.append(this._add("Übernehmen", () => {
         if (pending) this._setCard(ri, ci, pending, true);
       }));
+    }
+    _pickFor(ri, ci) {
+      return this._openPicker((c) => this._setCard(ri, ci, c, true));
+    }
+    // HA-INTERN: ha-dialog (Dialogfenster von HA, aufgebaut wie „Karte hinzufügen“ in einer Ansicht) mit hui-card-picker
+    // (Kartenauswahl mit Suche und Vorschaubildern, geladen über loadHaEditors()). done(karte) nur bei Auswahl,
+    // Schließen/Abbrechen ändert nichts. Fehlt eins der Elemente → false, dann bleibt der YAML-Weg im Block.
+    _openPicker(done) {
+      if (!canPick()) return false;
+      this._dlg?.close();
+      const host = document.createElement("div");
+      try {
+        const r = host.attachShadow({ mode: "open" });
+        r.innerHTML = `<style>${PICK_CSS}</style><ha-dialog width="large" flexcontent header-title="Karte wählen"><div class="body"></div>
+<ha-dialog-footer slot="footer"></ha-dialog-footer></ha-dialog>`;
+        const d = r.querySelector("ha-dialog"), p = document.createElement("hui-card-picker");
+        const cancel = document.createElement(customElements.get("ha-button") ? "ha-button" : "button");
+        cancel.slot = "secondaryAction";
+        cancel.setAttribute("appearance", "plain");
+        cancel.textContent = "Abbrechen";
+        r.querySelector("ha-dialog-footer").append(cancel);
+        p.hass = this._hass;
+        if (this._ll) p.lovelace = this._ll;
+        p.setAttribute("hide-clipboard", "");
+        r.querySelector(".body").append(p);
+        let taken = false, gone = false;
+        const shut = () => {
+          d.open = false;
+        };
+        const end = () => {
+          if (gone) return;
+          gone = true;
+          host.remove();
+          if (this._dlg?.host === host) this._dlg = this._dlgPick = null;
+        };
+        cancel.addEventListener("click", shut);
+        p.addEventListener("config-changed", (e) => {
+          e.stopPropagation();
+          const c = e.detail?.config;
+          if (!c?.type || taken) return;
+          taken = true;
+          shut();
+          done(c);
+        });
+        d.addEventListener("closed", (e) => {
+          if (e.target === d) end();
+        });
+        host.addEventListener("keydown", (e) => e.stopPropagation());
+        document.body.append(host);
+        this._dlg = { host, close: () => {
+          shut();
+          setTimeout(end, 400);
+        } };
+        this._dlgPick = p;
+        d.open = true;
+        return true;
+      } catch (e) {
+        console.warn("[nova-cards] Kartenauswahl-Fenster von HA nicht nutzbar", e);
+        host.remove();
+        this._dlg = this._dlgPick = null;
+        return false;
+      }
     }
     // HA-INTERN: hui-card-element-editor (Karteneditor von HA mit eigenem GUI/YAML-Umschalter). Fehler → YAML-Feld.
     _cardEditor(box, ri, ci) {

@@ -84,6 +84,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 |---|---|---|
 | `window.loadCardHelpers()` → `createCardElement` | `popup.js` (Karten in Zellen), `editor-base.js` | Fehler nur in der betroffenen Zelle |
 | `hui-card-picker` (Kartenauswahl) | `popup.js` | neue Karte als YAML eintragen |
+| `ha-dialog` (Fenster für die Kartenauswahl, Slots `footer`, Attribut `header-title`, Event `closed`) und `ha-dialog-footer` | `popup.js` (`_openPicker`) | neue Karte als YAML eintragen |
 | Nachladen von Picker/Karteneditor über `getConfigElement()` der `vertical-stack`-Karte | `popup.js` (`loadHaEditors`) | nach 3 s ohne, dann greifen die Fallbacks |
 | `hui-card-element-editor` (Karteneditor) | `popup.js` | YAML-Feld |
 | `ha-yaml-editor` | `popup.js` | Textfeld im JSON-Format |

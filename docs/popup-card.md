@@ -37,7 +37,9 @@ wird der Chip farbig, z. B. wenn ein Fenster offen ist (ohne weitere Angabe bei 
 1. Unter **Layout & Vorlage** eine Vorlage wählen, z. B. „Groß oben, zwei klein darunter“. Sie legt leere Plätze an.
 2. Unter **Inhalt** steht jede Zeile als eigener Block („Zeile 1“, „Zeile 2“ …). **Spalte hinzufügen** setzt eine
    weitere Karte neben die vorhandenen in dieselbe Zeile, **Zeile hinzufügen** ganz unten legt eine neue Zeile an.
-3. Einen leeren Platz (**Karte wählen**) antippen und eine Karte aus der Kartenauswahl von HA nehmen.
+3. Einen leeren Platz (**Karte wählen**) antippen: Die Kartenauswahl von HA öffnet sich in einem eigenen Fenster
+   (mit Suche und Vorschaubildern). Nach der Auswahl schließt es sich und die Karte sitzt im Platz. Auch
+   **Spalte hinzufügen** und **Zeile hinzufügen** öffnen das Fenster; Schließen oder **Abbrechen** ändert nichts.
 4. Einen Block antippen öffnet darunter seine Einstellungen: **Breite** (Auto, 1/4, 1/3, 1/2, 2/3, 3/4, Voll),
    nach links/rechts verschieben, Karte bearbeiten (grafisch oder YAML), andere Karte wählen, duplizieren, löschen.
    „Auto“ teilt sich den freien Platz mit den anderen Spalten der Zeile.
