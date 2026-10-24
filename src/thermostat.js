@@ -1,10 +1,10 @@
-import {define, docUrl} from './shared/define.js';
+import {define, docUrl, tag} from './shared/define.js';
 import {esc} from './shared/utils.js';
 import {moreInfo, hassAction} from './shared/actions.js';
 import {CARD_CSS, EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 
-const TAG = 'nova-thermostat-card';
+const TAG = 'thermostat-card';
 const MODE_NAMES = {off: 'Aus', heat: 'Heizen', auto: 'Auto', cool: 'Kühlen', heat_cool: 'Heizen/Kühlen', dry: 'Trocknen', fan_only: 'Lüften'};
 const ACTION_NAMES = {heating: 'heizt', cooling: 'kühlt', idle: 'Ziel erreicht', off: 'aus', drying: 'trocknet', fan: 'lüftet', preheating: 'heizt vor'};
 const MODE_ICONS = {off: 'mdi:power', heat: 'mdi:fire', auto: 'mdi:thermostat-auto', cool: 'mdi:snowflake', heat_cool: 'mdi:sun-snowflake-variant', dry: 'mdi:water-percent', fan_only: 'mdi:fan'};
@@ -80,7 +80,7 @@ class NovaThermostatCardEditor extends NovaEditorBase {
     }));
   }
 }
-define('nova-thermostat-card-editor', NovaThermostatCardEditor);
+define('thermostat-card-editor', NovaThermostatCardEditor);
 
 /* ---------- Nova Thermostat Card ---------- */
 const THERMO_CSS = `
@@ -124,7 +124,7 @@ function normalize(c) {
 }
 
 class NovaThermostatCard extends HTMLElement {
-  static getConfigElement() { return document.createElement(`${TAG}-editor`); }
+  static getConfigElement() { return document.createElement(tag(`${TAG}-editor`)); }
   static getStubConfig(h) { return {entity: Object.keys(h.states).find(id => id.startsWith('climate.')) || 'climate.wohnzimmer'}; }
   setConfig(c) {
     this._c = normalize(c);

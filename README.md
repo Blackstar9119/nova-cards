@@ -391,7 +391,7 @@ consumables:                   # Infos & Verbrauchsteile
 Nächste Müllabholungen aus einem oder mehreren Kalendern (z. B. iCal-Abfallkalender) – mit Müllart, Icon, Farbe, Datum und
 „heute / morgen / in X Tagen“. Abholungen heute und morgen werden hervorgehoben, der Rahmen leuchtet in der Farbe der Müllart.
 Farben werden nicht frei gewählt, sondern als Farbrolle – so färbt ein Theme alle Karten einheitlich um.
-Die Termine kommen über die Kalender-API von Home Assistant und werden regelmäßig sowie beim Tageswechsel neu geladen.
+Die Termine kommen über die Kalender-API von Home Assistant: beim Laden der Karte, danach stündlich und direkt nach Mitternacht.
 
 ```yaml
 type: custom:nova-waste-card
@@ -420,7 +420,6 @@ types:                      # erste passende Regel gewinnt
 | `layout` | `list` | `list` = nächste Termine untereinander, `compact` = nur der nächste Abholtag (mehrere Müllarten an dem Tag nebeneinander) |
 | `count` | `5` | Anzahl Termine in der Liste |
 | `days` | `30` | Zeitraum in Tagen ab heute |
-| `refresh` | `60` | Minuten bis zum erneuten Laden (mindestens 5). Beim Tageswechsel wird immer neu geladen |
 | `types[]` | – | Regeln: `match` (Stichwort, mehrere mit Komma), `name` (leer = Termintitel), `icon`, `color` (Farbrolle, siehe [Theming](#theming); Standard `neutral`) |
 | `hide_unmatched` | `false` | Termine ohne passende Regel ausblenden |
 | `glow` | `true` | Rahmen leuchtet bei einer Abholung heute oder morgen |

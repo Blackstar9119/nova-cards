@@ -1,4 +1,4 @@
-import {define, docUrl} from './shared/define.js';
+import {define, docUrl, tag} from './shared/define.js';
 import {dom, setIcon, toObj, stamp} from './shared/utils.js';
 import {isOn, TOGGLE, fmtState, nameOf, iconOf, valueOf, alertHit} from './shared/state.js';
 import {moreInfo, runAction} from './shared/actions.js';
@@ -54,7 +54,7 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
 .split{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));--nova-camera-ptz-size:84px}
 .split.row{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:minmax(0,1fr)}
 .split.column{grid-template-columns:1fr}
-.split>nova-camera-card{display:block;min-width:0}
+.split>${tag('camera-card')}{display:block;min-width:0}
 @container (max-width:420px){.split{grid-template-columns:1fr;grid-auto-flow:row}}
 .g.bare{padding:0;background:none;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0;overflow:visible}
 .pill.lbl{font-weight:600}`;
@@ -110,7 +110,7 @@ const camStream = () => customElements.get('ha-camera-stream') ? Promise.resolve
 })());
 
 class NovaCameraCard extends HTMLElement {
-  static getConfigElement() { return document.createElement('nova-camera-card-editor'); }
+  static getConfigElement() { return document.createElement(tag('camera-card-editor')); }
   static getStubConfig(h) {
     const ids = Object.keys(h.states);
     return {entity: ids.find(i => i.startsWith('camera.')) || ids.find(i => i.startsWith('image.')) || 'camera.'};
@@ -201,7 +201,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
       sp.className = `split ${c.split_layout}`;
       m.before(sp); sp.append(m);
       this._kids = c.split.map(o => {
-        const k = document.createElement('nova-camera-card');
+        const k = document.createElement(tag('camera-card'));
         try {
           k.setConfig({entity: o.entity, bare: true, show_header: false, label: o.name ?? this._h.states[o.entity]?.attributes.friendly_name ?? o.entity,
             aspect_ratio: c.aspect_ratio, fit: c.fit, stream: c.stream, refresh: c.refresh, image_action: o.image_action || c.image_action,
@@ -344,7 +344,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('nova-camera-card', NovaCameraCard, {name: 'Nova Kamera Card', description: 'Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.', documentationURL: docUrl('nova-kamera-card')});
+define('camera-card', NovaCameraCard, {name: 'Nova Kamera Card', description: 'Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.', documentationURL: docUrl('nova-kamera-card')});
 
 /* ---------- Editor Kamera Card ---------- */
 const CMAIN = [
@@ -430,4 +430,4 @@ class NovaCameraCardEditor extends NovaEditorBase {
     });
   }
 }
-define('nova-camera-card-editor', NovaCameraCardEditor);
+define('camera-card-editor', NovaCameraCardEditor);

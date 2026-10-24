@@ -1,4 +1,4 @@
-import {define, docUrl} from './shared/define.js';
+import {define, docUrl, tag} from './shared/define.js';
 import {esc, dom, setIcon} from './shared/utils.js';
 import {isOn, fmtState, areaOf} from './shared/state.js';
 import {moreInfo, hassAction} from './shared/actions.js';
@@ -119,10 +119,10 @@ class NovaRoomCardEditor extends NovaEditorBase {
     this._rebuild();
   }
 }
-define('nova-room-card-editor', NovaRoomCardEditor);
+define('room-card-editor', NovaRoomCardEditor);
 
 /* ---------- Nova Raum Card ---------- */
-const TAG = 'nova-room-card';
+const TAG = 'room-card';
 const TOGGLE_DOMAINS = ['light', 'switch', 'input_boolean', 'fan', 'cover', 'group', 'siren', 'humidifier', 'automation'];
 const PRESS_SERVICE = {scene: ['scene', 'turn_on'], script: ['script', 'turn_on'], button: ['button', 'press'], input_button: ['input_button', 'press']};
 // Diese Domains haben keinen An-Zustand – Button leuchtet nie
@@ -165,7 +165,7 @@ function normalize(c) {
 }
 
 class NovaRoomCard extends HTMLElement {
-  static getConfigElement() { return document.createElement(`${TAG}-editor`); }
+  static getConfigElement() { return document.createElement(tag(`${TAG}-editor`)); }
   // Erster Bereich mit Lampen: bis zu 4 Lampen + Temperatursensor
   static getStubConfig(h) {
     const ids = Object.keys(h.states);

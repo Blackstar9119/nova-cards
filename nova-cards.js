@@ -1,4 +1,4 @@
-/* Nova Cards v0.10.0 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.10.1 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
@@ -7,11 +7,15 @@
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
   // src/shared/define.js
-  var define = (tag, cls, meta) => {
-    if (!customElements.get(tag)) customElements.define(tag, cls);
+  var DEV = false;
+  var tag = (name) => `${DEV ? "nova-dev-" : "nova-"}${name}`;
+  var define = (name, cls, meta) => {
+    const t = tag(name);
+    if (!customElements.get(t)) customElements.define(t, cls);
     if (meta) {
       window.customCards = window.customCards || [];
-      if (!window.customCards.some((c) => c.type === tag)) window.customCards.push({ type: tag, preview: true, ...meta });
+      if (DEV) meta = { ...meta, name: `${meta.name} (Dev)` };
+      if (!window.customCards.some((c) => c.type === t)) window.customCards.push({ type: t, preview: true, ...meta });
     }
   };
   var REPO = "https://github.com/Blackstar9119/nova-cards";
@@ -564,8 +568,8 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     icon_entity: "Optional: Icon wechselt je nach Zustand dieser Entität (z. B. aktuelle TV-App)",
     image: "z. B. /local/raeume/wohnzimmer.jpg"
   });
-  define("nova-room-card-editor", NovaRoomCardEditor);
-  var TAG = "nova-room-card";
+  define("room-card-editor", NovaRoomCardEditor);
+  var TAG = "room-card";
   var TOGGLE_DOMAINS = ["light", "switch", "input_boolean", "fan", "cover", "group", "siren", "humidifier", "automation"];
   var PRESS_SERVICE = { scene: ["scene", "turn_on"], script: ["script", "turn_on"], button: ["button", "press"], input_button: ["input_button", "press"] };
   var STATELESS = ["button", "input_button", "script", "scene"];
@@ -604,7 +608,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   }
   var NovaRoomCard = class extends HTMLElement {
     static getConfigElement() {
-      return document.createElement(`${TAG}-editor`);
+      return document.createElement(tag(`${TAG}-editor`));
     }
     // Erster Bereich mit Lampen: bis zu 4 Lampen + Temperatursensor
     static getStubConfig(h) {
@@ -718,7 +722,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   define(TAG, NovaRoomCard, { name: "Nova Raum Card", description: "Raumkachel mit Temperatur, Fenster-Warnung und frei belegbaren Buttons.", documentationURL: docUrl("nova-raum-card") });
 
   // src/thermostat.js
-  var TAG2 = "nova-thermostat-card";
+  var TAG2 = "thermostat-card";
   var MODE_NAMES = { off: "Aus", heat: "Heizen", auto: "Auto", cool: "Kühlen", heat_cool: "Heizen/Kühlen", dry: "Trocknen", fan_only: "Lüften" };
   var ACTION_NAMES = { heating: "heizt", cooling: "kühlt", idle: "Ziel erreicht", off: "aus", drying: "trocknet", fan: "lüftet", preheating: "heizt vor" };
   var MODE_ICONS = { off: "mdi:power", heat: "mdi:fire", auto: "mdi:thermostat-auto", cool: "mdi:snowflake", heat_cool: "mdi:sun-snowflake-variant", dry: "mdi:water-percent", fan_only: "mdi:fan" };
@@ -795,7 +799,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     sensor: "Für Anzeige und Verlauf. Ohne: Ist-Temperatur des Thermostats",
     step: "Leer = Wert vom Thermostat (meist 0,5°)"
   });
-  define("nova-thermostat-card-editor", NovaThermostatCardEditor);
+  define("thermostat-card-editor", NovaThermostatCardEditor);
   var THERMO_CSS = `
 .th{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .th.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent)}
@@ -835,7 +839,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   }
   var NovaThermostatCard = class extends HTMLElement {
     static getConfigElement() {
-      return document.createElement(`${TAG2}-editor`);
+      return document.createElement(tag(`${TAG2}-editor`));
     }
     static getStubConfig(h) {
       return { entity: Object.keys(h.states).find((id) => id.startsWith("climate.")) || "climate.wohnzimmer" };
@@ -1057,7 +1061,7 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
       });
     }
   };
-  define("nova-color-input", NovaColorInput);
+  define("color-input", NovaColorInput);
   var MAIN2 = [
     { type: "grid", name: "", schema: [{ name: "title", selector: { text: {} } }, { name: "icon", selector: { icon: {} } }] },
     { name: "area", selector: { area: {} } },
@@ -1188,7 +1192,7 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
         this._rebuild();
       }));
       if (open) {
-        const a = entity && this._hass?.states[entity]?.attributes, picker = document.createElement("nova-color-input");
+        const a = entity && this._hass?.states[entity]?.attributes, picker = document.createElement(tag("color-input"));
         if (a?.min_color_temp_kelvin) picker.setAttribute("kmin", a.min_color_temp_kelvin);
         if (a?.max_color_temp_kelvin) picker.setAttribute("kmax", a.max_color_temp_kelvin);
         picker.addEventListener("color-add", (e) => {
@@ -1229,8 +1233,8 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     hold_action: "Aktion bei langem Drücken"
   });
   __publicField(NovaLightCardEditor, "helpers", { area: "Optional. Neue Lampen im Bereich erscheinen von selbst" });
-  define("nova-light-card-editor", NovaLightCardEditor);
-  var TAG3 = "nova-light-card";
+  define("light-card-editor", NovaLightCardEditor);
+  var TAG3 = "light-card";
   var LIGHT_CSS = `
 :host{container-type:inline-size}
 .lc{padding:12px;display:flex;flex-direction:column;gap:10px}
@@ -1268,7 +1272,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   }
   var NovaLightCard = class extends HTMLElement {
     static getConfigElement() {
-      return document.createElement(`${TAG3}-editor`);
+      return document.createElement(tag(`${TAG3}-editor`));
     }
     // Erster Bereich mit Lampen, sonst die ersten 4 Lampen
     static getStubConfig(h) {
@@ -1453,7 +1457,7 @@ ha-icon{--mdc-icon-size:20px;display:flex}
       });
     }
   };
-  define("nova-dock-popup", NovaDockPopup);
+  define("dock-popup", NovaDockPopup);
   var DCSS = `
 :host{display:block;height:var(--nova-dock-space,64px)}
 .dock.inline{max-width:100%}
@@ -1479,7 +1483,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   var SRC = {};
   var findDock = (o) => {
     if (!o || typeof o !== "object") return null;
-    if ((o.type === "custom:nova-dock-card" || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
+    if ((o.type === `custom:${tag("dock-card")}` || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
     for (const v of Object.values(o)) {
       const r = findDock(v);
       if (r) return r;
@@ -1488,7 +1492,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   var NovaDockCard = class extends HTMLElement {
     static getConfigElement() {
-      return document.createElement("nova-dock-card-editor");
+      return document.createElement(tag("dock-card-editor"));
     }
     static getStubConfig() {
       return { items: [
@@ -1638,7 +1642,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       if (it.entity) moreInfo(this, it.entity);
     }
     _openCards(i, it) {
-      const p = document.createElement("nova-dock-popup");
+      const p = document.createElement(tag("dock-popup"));
       p.onclose = () => this._close();
       p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
       p.hass = this._h;
@@ -1673,7 +1677,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       this._update();
     }
   };
-  define("nova-dock-card", NovaDockCard, { name: "Nova Dock Card", description: "Schwebende Leiste unten mit Buttons: navigieren, Aktion auslösen oder Popup mit beliebigen Karten öffnen.", documentationURL: docUrl("nova-dock-card") });
+  define("dock-card", NovaDockCard, { name: "Nova Dock Card", description: "Schwebende Leiste unten mit Buttons: navigieren, Aktion auslösen oder Popup mit beliebigen Karten öffnen.", documentationURL: docUrl("nova-dock-card") });
   var MAIN3 = [
     { type: "grid", name: "", schema: [
       { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
@@ -1777,7 +1781,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   __publicField(NovaDockCardEditor, "labels", LABELS);
   __publicField(NovaDockCardEditor, "helpers", HELPERS);
-  define("nova-dock-card-editor", NovaDockCardEditor);
+  define("dock-card-editor", NovaDockCardEditor);
 
   // src/shared/editor-schema.js
   var g2 = (...schema2) => ({ type: "grid", name: "", schema: schema2 });
@@ -2016,7 +2020,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   var NovaModularCard = class extends HTMLElement {
     static getConfigElement() {
-      return document.createElement("nova-modular-card-editor");
+      return document.createElement(tag("modular-card-editor"));
     }
     static getStubConfig(h) {
       const ids = Object.keys(h.states);
@@ -2077,7 +2081,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       return runAction(this, o, kind, info);
     }
   };
-  define("nova-modular-card", NovaModularCard, { name: "Nova Modular Card", description: "Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.", documentationURL: docUrl("nova-modular-card") });
+  define("modular-card", NovaModularCard, { name: "Nova Modular Card", description: "Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.", documentationURL: docUrl("nova-modular-card") });
   var BM = {
     header: { label: "Kopfzeile", icon: "mdi:page-layout-header", schema: [
       g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "status" } }),
@@ -2273,7 +2277,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   __publicField(NovaModularCardEditor, "labels", BASE_LABELS);
   __publicField(NovaModularCardEditor, "helpers", MHELPERS);
-  define("nova-modular-card-editor", NovaModularCardEditor);
+  define("modular-card-editor", NovaModularCardEditor);
 
   // src/camera.js
   var CCSS = `
@@ -2322,7 +2326,7 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
 .split{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr));--nova-camera-ptz-size:84px}
 .split.row{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:minmax(0,1fr)}
 .split.column{grid-template-columns:1fr}
-.split>nova-camera-card{display:block;min-width:0}
+.split>${tag("camera-card")}{display:block;min-width:0}
 @container (max-width:420px){.split{grid-template-columns:1fr;grid-auto-flow:row}}
 .g.bare{padding:0;background:none;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0;overflow:visible}
 .pill.lbl{font-weight:600}`;
@@ -2397,7 +2401,7 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
   })();
   var NovaCameraCard = class extends HTMLElement {
     static getConfigElement() {
-      return document.createElement("nova-camera-card-editor");
+      return document.createElement(tag("camera-card-editor"));
     }
     static getStubConfig(h) {
       const ids = Object.keys(h.states);
@@ -2549,7 +2553,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
         m.before(sp);
         sp.append(m);
         this._kids = c.split.map((o) => {
-          const k = document.createElement("nova-camera-card");
+          const k = document.createElement(tag("camera-card"));
           try {
             k.setConfig({
               entity: o.entity,
@@ -2734,7 +2738,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
       return runAction(this, o, kind, info);
     }
   };
-  define("nova-camera-card", NovaCameraCard, { name: "Nova Kamera Card", description: "Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.", documentationURL: docUrl("nova-kamera-card") });
+  define("camera-card", NovaCameraCard, { name: "Nova Kamera Card", description: "Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.", documentationURL: docUrl("nova-kamera-card") });
   var CMAIN = [
     { name: "entity", required: true, selector: { entity: { domain: ["camera", "image"] } } },
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
@@ -2877,7 +2881,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
   };
   __publicField(NovaCameraCardEditor, "labels", CLABELS);
   __publicField(NovaCameraCardEditor, "helpers", CHELPERS);
-  define("nova-camera-card-editor", NovaCameraCardEditor);
+  define("camera-card-editor", NovaCameraCardEditor);
 
   // src/media.js
   var MPCSS = `
@@ -2945,7 +2949,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
   var cssUrl = (u) => `url("${String(u).replace(/["\\\n]/g, encodeURIComponent)}")`;
   var NovaMediaCard = class extends HTMLElement {
     static getConfigElement() {
-      return document.createElement("nova-media-card-editor");
+      return document.createElement(tag("media-card-editor"));
     }
     static getStubConfig(h) {
       const ids = Object.keys(h.states).filter((i) => i.startsWith("media_player."));
@@ -3203,7 +3207,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
       return runAction(this, o, kind, info);
     }
   };
-  define("nova-media-card", NovaMediaCard, { name: "Nova Media Card", description: "Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.", documentationURL: docUrl("nova-media-card") });
+  define("media-card", NovaMediaCard, { name: "Nova Media Card", description: "Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.", documentationURL: docUrl("nova-media-card") });
   var MP = { domain: ["media_player"] };
   var MPMAIN = [
     { name: "entity", required: true, selector: { entity: MP } },
@@ -3310,7 +3314,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
   };
   __publicField(NovaMediaCardEditor, "labels", MPLABELS);
   __publicField(NovaMediaCardEditor, "helpers", MPHELPERS);
-  define("nova-media-card-editor", NovaMediaCardEditor);
+  define("media-card-editor", NovaMediaCardEditor);
 
   // src/vacuum.js
   var VCSS = `
@@ -3577,7 +3581,7 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
   var VTOWER = { full: [262, 12, 58, 86, 282, 15.5, 18], wash: [262, 12, 58, 86, 282, 15.5, 18], empty: [262, 50, 58, 48, 282, 53, 18], dock: [292, 76, 28, 22, 299, 79.5, 14] };
   var NovaVacuumCard = class extends HTMLElement {
     static getConfigElement() {
-      return document.createElement("nova-vacuum-card-editor");
+      return document.createElement(tag("vacuum-card-editor"));
     }
     static getStubConfig(h) {
       const ids = Object.keys(h.states).filter((i) => i.startsWith("vacuum."));
@@ -3958,7 +3962,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
       return runAction(this, o, kind, info);
     }
   };
-  define("nova-vacuum-card", NovaVacuumCard, { name: "Nova Saugroboter Card", description: "Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.", documentationURL: docUrl("nova-saugroboter-card") });
+  define("vacuum-card", NovaVacuumCard, { name: "Nova Saugroboter Card", description: "Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.", documentationURL: docUrl("nova-saugroboter-card") });
   var VMAIN = [
     { name: "entity", required: true, selector: { entity: { domain: ["vacuum"] } } },
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
@@ -4121,7 +4125,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
   };
   __publicField(NovaVacuumCardEditor, "labels", VLABELS);
   __publicField(NovaVacuumCardEditor, "helpers", VHELPERS);
-  define("nova-vacuum-card-editor", NovaVacuumCardEditor);
+  define("vacuum-card-editor", NovaVacuumCardEditor);
 
   // src/waste.js
   var WCSS = `
@@ -4149,7 +4153,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
 .cp.today .ic{box-shadow:0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
 .msg{display:flex;align-items:center;gap:8px;font-size:13px;opacity:.7;padding:4px 2px}
 .msg ha-icon{--mdc-icon-size:18px}`;
-  var WDEF = { title: "Müllkalender", icon: "mdi:trash-can-outline", layout: "list", count: 5, days: 30, refresh: 60, hide_unmatched: false, show_header: true, glow: true };
+  var WDEF = { title: "Müllkalender", icon: "mdi:trash-can-outline", layout: "list", count: 5, days: 30, hide_unmatched: false, show_header: true, glow: true };
   var WTYPES = [
     { match: "Rest", name: "Restmüll", icon: "mdi:trash-can", color: "neutral" },
     { match: "Papier, PPK", name: "Papiertonne", icon: "mdi:newspaper-variant-outline", color: "accent-1" },
@@ -4158,6 +4162,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     { match: "Glas", name: "Altglas", icon: "mdi:bottle-wine-outline", color: "accent-4" }
   ];
   var DAY = 864e5;
+  var HOUR = 36e5;
   var ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
   var dayNum = (s) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / DAY;
   var tzOf = (h) => h.locale?.time_zone === "server" ? h.config?.time_zone : void 0;
@@ -4192,7 +4197,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   };
   var NovaWasteCard = class extends HTMLElement {
     static getConfigElement() {
-      return document.createElement("nova-waste-card-editor");
+      return document.createElement(tag("waste-card-editor"));
     }
     static getStubConfig(h) {
       const cal = Object.keys(h.states).find((id) => id.startsWith("calendar."));
@@ -4206,7 +4211,6 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         ...c,
         count: n(c.count, WDEF.count, 1, 50),
         days: n(c.days, WDEF.days, 1, 366),
-        refresh: n(c.refresh, WDEF.refresh, 5, 1440),
         types: [].concat(c.types || []).filter((t) => t && typeof t === "object" && list(t.match).length)
       };
       this._cals = calsOf(c);
@@ -4247,7 +4251,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
     _tick() {
       if (!this._h || !this._c) return;
-      const stale = Date.now() - (this._last || 0) >= this._c.refresh * 6e4;
+      const stale = Date.now() - (this._last || 0) >= HOUR;
       const appeared = this._cals.some((id) => this._h.states[id] && !this._asked?.includes(id));
       if (this._fetched && (stale || appeared || this._today() !== this._fday)) this._load();
       else this._render();
@@ -4419,14 +4423,13 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       return el;
     }
   };
-  define("nova-waste-card", NovaWasteCard, { name: "Nova Müllkalender Card", description: "Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.", documentationURL: docUrl("nova-müllkalender-card") });
+  define("waste-card", NovaWasteCard, { name: "Nova Müllkalender Card", description: "Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.", documentationURL: docUrl("nova-müllkalender-card") });
   var WMAIN = [
     { name: "entities", required: true, selector: { entity: { domain: "calendar", multiple: true } } },
     g2({ name: "title", selector: T }, { name: "icon", selector: I }),
     g2(sel("layout", [["list", "Liste"], ["compact", "Kompakt (nur nächster Termin)"]]), { name: "count", selector: { number: { min: 1, max: 20, mode: "box" } } }),
-    g2({ name: "days", selector: { number: { min: 1, max: 366, mode: "box", unit_of_measurement: "Tage" } } }, { name: "refresh", selector: { number: { min: 5, max: 1440, mode: "box", unit_of_measurement: "min" } } }),
-    g2({ name: "hide_unmatched", selector: { boolean: {} } }, { name: "show_header", selector: { boolean: {} } }),
-    { name: "glow", selector: { boolean: {} } }
+    g2({ name: "days", selector: { number: { min: 1, max: 366, mode: "box", unit_of_measurement: "Tage" } } }, { name: "show_header", selector: { boolean: {} } }),
+    g2({ name: "hide_unmatched", selector: { boolean: {} } }, { name: "glow", selector: { boolean: {} } })
   ];
   var WTYPE = [
     g2({ name: "match", required: true, selector: T }, { name: "name", selector: T }),
@@ -4439,7 +4442,6 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     layout: "Darstellung",
     count: "Anzahl Termine",
     days: "Zeitraum",
-    refresh: "Aktualisieren alle",
     hide_unmatched: "Termine ohne passende Müllart ausblenden",
     show_header: "Kopfzeile anzeigen",
     glow: "Rahmen leuchtet bei Abholung heute/morgen",
@@ -4468,6 +4470,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const strip = (c) => {
         Object.entries(WDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         delete c.entity;
+        delete c.refresh;
         return c;
       };
       w.append(this._form(WMAIN, { ...WDEF, ...c0, entities: calsOf(c0) }, (v) => this._emit(strip(merge(this._config, names(WMAIN), v)))));
@@ -4482,8 +4485,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   };
   __publicField(NovaWasteCardEditor, "labels", WLABELS);
   __publicField(NovaWasteCardEditor, "helpers", WHELPERS);
-  define("nova-waste-card-editor", NovaWasteCardEditor);
+  define("waste-card-editor", NovaWasteCardEditor);
 
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.10.0"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.10.1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();

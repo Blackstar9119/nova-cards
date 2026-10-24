@@ -1,4 +1,4 @@
-import {define, docUrl} from './shared/define.js';
+import {define, docUrl, tag} from './shared/define.js';
 import {esc, dom, setIcon, list, NUMRE, toObj, stamp, mapIcon} from './shared/utils.js';
 import {isOn, TOGGLE, fmtState, nameOf, iconOf, valueOf, hasF} from './shared/state.js';
 import {moreInfo, runAction} from './shared/actions.js';
@@ -253,7 +253,7 @@ function vstation(h, id, c, auto) {
 const VTOWER = {full: [262, 12, 58, 86, 282, 15.5, 18], wash: [262, 12, 58, 86, 282, 15.5, 18], empty: [262, 50, 58, 48, 282, 53, 18], dock: [292, 76, 28, 22, 299, 79.5, 14]};
 
 class NovaVacuumCard extends HTMLElement {
-  static getConfigElement() { return document.createElement('nova-vacuum-card-editor'); }
+  static getConfigElement() { return document.createElement(tag('vacuum-card-editor')); }
   static getStubConfig(h) {
     const ids = Object.keys(h.states).filter(i => i.startsWith('vacuum.'));
     return {entity: ids[0] || 'vacuum.'};
@@ -575,7 +575,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('nova-vacuum-card', NovaVacuumCard, {name: 'Nova Saugroboter Card', description: 'Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.', documentationURL: docUrl('nova-saugroboter-card')});
+define('vacuum-card', NovaVacuumCard, {name: 'Nova Saugroboter Card', description: 'Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.', documentationURL: docUrl('nova-saugroboter-card')});
 
 /* ---------- Editor Saugroboter Card ---------- */
 const VMAIN = [
@@ -685,4 +685,4 @@ class NovaVacuumCardEditor extends NovaEditorBase {
     this._itemList(w, 'consumables', VCONS, {item: 'Verbrauchsteil', icon: 'mdi:wrench-clock'}, 'Verbrauchsteil hinzufügen');
   }
 }
-define('nova-vacuum-card-editor', NovaVacuumCardEditor);
+define('vacuum-card-editor', NovaVacuumCardEditor);
