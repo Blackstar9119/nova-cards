@@ -8,6 +8,7 @@ import './camera.js';
 import './media.js';
 import './vacuum.js';
 import './waste.js';
+import './weather.js';
 import './info.js';
 import './popup.js';
 

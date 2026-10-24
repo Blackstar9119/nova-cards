@@ -3,6 +3,7 @@ import {esc} from './shared/utils.js';
 import {moreInfo, hassAction} from './shared/actions.js';
 import {CARD_CSS, EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
+import {sparkline} from './shared/sparkline.js';
 
 const TAG = 'thermostat-card';
 const MODE_NAMES = {off: 'Aus', heat: 'Heizen', auto: 'Auto', cool: 'Kühlen', heat_cool: 'Heizen/Kühlen', dry: 'Trocknen', fan_only: 'Lüften'};
@@ -23,19 +24,6 @@ function history(h, id, hours, onLoad) {
     onLoad && onLoad();
   }).catch(() => { HISTORY[key] = {t: Date.now(), data: []}; });
   return HISTORY[key].data;
-}
-
-// Flächen-Sparkline als SVG; die Linie wird bis „jetzt“ verlängert
-let gradientId = 0;
-function sparkline(pts, {w = 300, h = 64, color = 'var(--nv-accent)'} = {}) {
-  if (!pts || pts.length < 2) return '<svg class="spk"></svg>';
-  const t0 = pts[0][0], t1 = Math.max(pts[pts.length - 1][0], Date.now()), vals = pts.map(p => p[1]);
-  const min = Math.min(...vals), max = Math.max(...vals), range = max - min || 1;
-  const d = 'M' + pts.concat([[t1, pts[pts.length - 1][1]]])
-    .map(p => [(p[0] - t0) / (t1 - t0 || 1) * w, h - 6 - (p[1] - min) / range * (h - 14)])
-    .map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L');
-  const id = `nvg${++gradientId}`;
-  return `<svg class="spk" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".45"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${d}L${w},${h}L0,${h}Z" fill="url(#${id})"/><path d="${d}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
 /* ---------- Editor Thermostat Card ---------- */
