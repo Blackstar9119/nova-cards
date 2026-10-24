@@ -4493,7 +4493,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var WCSS2 = `
 .g.wt{gap:14px}
 .clk{text-align:center;padding:2px 0 12px;border-bottom:1px solid rgba(255,255,255,.1)}
-.clk .dt{font-size:14px;opacity:.75}
+.clk .dt{font-size:14px;opacity:.75;margin-top:2px}
 .clk .tm{font-size:64px;font-weight:300;letter-spacing:-.04em;line-height:1.05;font-variant-numeric:tabular-nums}
 .cur{display:flex;align-items:center;gap:14px;min-width:0;border-radius:18px}
 .cur .ic{width:64px;height:64px;background:var(--c);color:var(--cf);box-shadow:0 0 22px color-mix(in srgb,var(--c) 45%,transparent)}
@@ -4666,7 +4666,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${WCSS2}</style><div class="g wt">
-<div class="clk"><div class="dt"></div><div class="tm"></div></div>
+<div class="clk"><div class="tm"></div><div class="dt"></div></div>
 <div class="bt"></div>
 <div class="cur"><div class="ic"></div><div class="tx"><span class="t"></span><b></b><small></small></div></div>
 <div class="pills det"></div><div class="fc"></div><div class="msg"></div></div>`;
