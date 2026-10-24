@@ -4492,6 +4492,9 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   // src/weather.js
   var WCSS2 = `
 .g.wt{gap:14px}
+.clk{text-align:center;padding:2px 0 12px;border-bottom:1px solid rgba(255,255,255,.1)}
+.clk .dt{font-size:14px;opacity:.75}
+.clk .tm{font-size:64px;font-weight:300;letter-spacing:-.04em;line-height:1.05;font-variant-numeric:tabular-nums}
 .cur{display:flex;align-items:center;gap:14px;min-width:0;border-radius:18px}
 .cur .ic{width:64px;height:64px;background:var(--c);color:var(--cf);box-shadow:0 0 22px color-mix(in srgb,var(--c) 45%,transparent)}
 .cur .ic ha-icon{--mdc-icon-size:36px}.cur .ic img{width:40px;height:40px}
@@ -4527,7 +4530,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
 .fmsg{display:flex;align-items:center;gap:8px;font-size:12.5px;opacity:.7;padding:4px 0}
 .fmsg.err{color:var(--nv-error);opacity:1}
 .fmsg ha-icon{--mdc-icon-size:18px}
-@container (max-width:280px){.tx .t{font-size:32px}.cur .ic{width:54px;height:54px}.cur .ic ha-icon{--mdc-icon-size:30px}
+@container (max-width:280px){.clk .tm{font-size:48px}.tx .t{font-size:32px}.cur .ic{width:54px;height:54px}.cur .ic ha-icon{--mdc-icon-size:30px}
 .day,.day.pp{grid-template-columns:minmax(36px,auto) 20px 30px minmax(20px,1fr) 30px}.day .p{display:none}}`;
   var CICON = {
     "clear-night": "mdi:weather-night",
@@ -4580,6 +4583,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var FC = { daily: 1, hourly: 2 };
   var FC_NAME = { daily: "Tagesvorhersage", hourly: "Stundenvorhersage" };
   var WDEF2 = {
+    show_clock: false,
+    show_date: false,
     show_name: true,
     show_feels_like: true,
     show_high_low: true,
@@ -4648,10 +4653,12 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
     disconnectedCallback() {
       this._unsub();
+      clearInterval(this._tm);
+      this._tm = null;
     }
     getCardSize() {
       const c = this._c || WDEF2;
-      return 2 + (c.show_details !== false ? 1 : 0) + (c.show_daily !== false ? Math.ceil(c.days * 0.7) : 0) + (c.show_hourly ? 3 : 0);
+      return 2 + (c.show_clock || c.show_date ? 2 : 0) + (c.show_details !== false ? 1 : 0) + (c.show_daily !== false ? Math.ceil(c.days * 0.7) : 0) + (c.show_hourly ? 3 : 0);
     }
     getGridOptions() {
       return { columns: 6, rows: "auto", min_columns: 3 };
@@ -4659,14 +4666,40 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${WCSS2}</style><div class="g wt">
+<div class="clk"><div class="dt"></div><div class="tm"></div></div>
 <div class="bt"></div>
 <div class="cur"><div class="ic"></div><div class="tx"><span class="t"></span><b></b><small></small></div></div>
 <div class="pills det"></div><div class="fc"></div><div class="msg"></div></div>`;
       const q = (s) => r.querySelector(s);
-      this._e = { g: q(".g"), bt: q(".bt"), cur: q(".cur"), ic: q(".cur .ic"), t: q(".t"), cd: q(".tx b"), fl: q(".tx small"), det: q(".det"), fc: q(".fc"), msg: q(".msg") };
+      this._e = { g: q(".g"), clk: q(".clk"), dt: q(".clk .dt"), tm: q(".clk .tm"), bt: q(".bt"), cur: q(".cur"), ic: q(".cur .ic"), t: q(".t"), cd: q(".tx b"), fl: q(".tx small"), det: q(".det"), fc: q(".fc"), msg: q(".msg") };
       const c = () => ({ entity: this._c.entity, tap_action: this._c.tap_action, hold_action: this._c.hold_action });
       press(this._e.cur, { tap: () => runAction(this, c(), "tap", true), hold: () => runAction(this, c(), "hold") });
       this._key = null;
+    }
+    // Uhr und Datum wie im HA-Profil (Sprache, Zeitzone); läuft nur, solange die Karte angezeigt wird
+    _clock() {
+      const c = this._c, e = this._e, h = this._h;
+      if (!e || !h) return;
+      const on = !!(c.show_clock || c.show_date) && this.isConnected;
+      if (on && !this._tm) this._tm = setInterval(() => this._clock(), 1e4);
+      if (!on && this._tm) {
+        clearInterval(this._tm);
+        this._tm = null;
+      }
+      e.clk.hidden = !(c.show_clock || c.show_date);
+      if (e.clk.hidden) return;
+      const now = /* @__PURE__ */ new Date(), lang = langOf(h), tz = tzOf(h);
+      const fmt = (o) => {
+        try {
+          return new Intl.DateTimeFormat(lang, { ...o, timeZone: tz }).format(now);
+        } catch {
+          return new Intl.DateTimeFormat(lang, o).format(now);
+        }
+      };
+      e.dt.hidden = !c.show_date;
+      e.tm.hidden = !c.show_clock;
+      if (c.show_date) e.dt.textContent = fmt({ weekday: "long", day: "numeric", month: "long" });
+      if (c.show_clock) e.tm.textContent = fmt({ hour: "2-digit", minute: "2-digit" });
     }
     /* Vorhersage: weather/subscribe_forecast, je Art (täglich/stündlich) ein Abo, nur solange die Karte angezeigt wird */
     _needs() {
@@ -4798,6 +4831,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     _render() {
       const h = this._h, c = this._c, e = this._e;
       if (!h || !e) return;
+      this._clock();
       const s = c.entity && h.states[c.entity];
       let msg = null;
       if (!c.entity) msg = ["info", "mdi:weather-cloudy-alert", "Keine Wetter-Entität gewählt – im Editor eine weather.*-Entität auswählen."];
@@ -4901,6 +4935,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var NUMB = (n, min, max, unit) => ({ name: n, selector: { number: { min, max, mode: "box", ...unit ? { unit_of_measurement: unit } : {} } } });
   var S_CUR = [
     { name: "entity", required: true, selector: { entity: { domain: "weather" } } },
+    g2(BOOL("show_clock"), BOOL("show_date")),
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
     g2({ name: "temperature_entity", selector: TSENS }, { name: "feels_like_entity", selector: TSENS }),
     g2(BOOL("show_name"), BOOL("show_feels_like")),
@@ -4922,6 +4957,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var WLABELS2 = {
     ...BASE_LABELS,
     entity: "Wetter-Entität",
+    show_clock: "Uhr anzeigen",
+    show_date: "Datum anzeigen",
     name: "Name",
     temperature_entity: "Temperatur-Sensor (optional)",
     feels_like_entity: "Sensor gefühlte Temperatur (optional)",
@@ -4948,6 +4985,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   };
   var WHELPERS2 = {
     icon: "Leer = Icon passend zum Wetter",
+    show_clock: "Große Uhr über dem Wetter",
     temperature_entity: "Leer = Temperatur der Wetter-Entität",
     feels_like_entity: "Leer = Attribut „apparent_temperature“, falls die Wetter-Entität es liefert",
     color: "Farben kommen aus dem Theme (--nova-accent-1 … 4, --nova-neutral); „Automatisch“ färbt jedes Icon nach seinem Wetter",

@@ -11,6 +11,9 @@ import {g2, T, I, A, sel, BASE_LABELS} from './shared/editor-schema.js';
 /* ---------- Nova Wetter Card ---------- */
 const WCSS = `
 .g.wt{gap:14px}
+.clk{text-align:center;padding:2px 0 12px;border-bottom:1px solid rgba(255,255,255,.1)}
+.clk .dt{font-size:14px;opacity:.75}
+.clk .tm{font-size:64px;font-weight:300;letter-spacing:-.04em;line-height:1.05;font-variant-numeric:tabular-nums}
 .cur{display:flex;align-items:center;gap:14px;min-width:0;border-radius:18px}
 .cur .ic{width:64px;height:64px;background:var(--c);color:var(--cf);box-shadow:0 0 22px color-mix(in srgb,var(--c) 45%,transparent)}
 .cur .ic ha-icon{--mdc-icon-size:36px}.cur .ic img{width:40px;height:40px}
@@ -46,7 +49,7 @@ const WCSS = `
 .fmsg{display:flex;align-items:center;gap:8px;font-size:12.5px;opacity:.7;padding:4px 0}
 .fmsg.err{color:var(--nv-error);opacity:1}
 .fmsg ha-icon{--mdc-icon-size:18px}
-@container (max-width:280px){.tx .t{font-size:32px}.cur .ic{width:54px;height:54px}.cur .ic ha-icon{--mdc-icon-size:30px}
+@container (max-width:280px){.clk .tm{font-size:48px}.tx .t{font-size:32px}.cur .ic{width:54px;height:54px}.cur .ic ha-icon{--mdc-icon-size:30px}
 .day,.day.pp{grid-template-columns:minmax(36px,auto) 20px 30px minmax(20px,1fr) 30px}.day .p{display:none}}`;
 
 // Wetterzustände von HA → Icon (Nacht-Variante, wenn die Sonne unter dem Horizont ist)
@@ -81,7 +84,7 @@ const dirOf = b => { const n = parseFloat(b); return Number.isFinite(n) ? DIRS[M
 const FC = {daily: 1, hourly: 2};
 const FC_NAME = {daily: 'Tagesvorhersage', hourly: 'Stundenvorhersage'};
 
-const WDEF = {show_name: true, show_feels_like: true, show_high_low: true, show_details: true, details: ['humidity', 'wind', 'pressure'],
+const WDEF = {show_clock: false, show_date: false, show_name: true, show_feels_like: true, show_high_low: true, show_details: true, details: ['humidity', 'wind', 'pressure'],
   color: 'auto', label_details: false, show_daily: true, days: 7, daily_bar: true, show_hourly: false, hours: 24, hour_step: 3,
   hourly_layout: 'columns', hourly_graph: true, hourly_first: false, show_probability: true, show_precipitation: true, show_titles: true};
 const isNum = v => v !== '' && v != null && Number.isFinite(+v);
@@ -109,23 +112,40 @@ class NovaWeatherCard extends HTMLElement {
     this._render();
   }
   connectedCallback() { if (this._h && this._c) { if (!this._e) this._build(); this._sub(); this._render(); } }
-  disconnectedCallback() { this._unsub(); }
+  disconnectedCallback() { this._unsub(); clearInterval(this._tm); this._tm = null; }
   getCardSize() {
     const c = this._c || WDEF;
-    return 2 + (c.show_details !== false ? 1 : 0) + (c.show_daily !== false ? Math.ceil(c.days * 0.7) : 0) + (c.show_hourly ? 3 : 0);
+    return 2 + (c.show_clock || c.show_date ? 2 : 0) + (c.show_details !== false ? 1 : 0) + (c.show_daily !== false ? Math.ceil(c.days * 0.7) : 0) + (c.show_hourly ? 3 : 0);
   }
   getGridOptions() { return {columns: 6, rows: 'auto', min_columns: 3}; }
   _build() {
     const r = this.shadowRoot || this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${WCSS}</style><div class="g wt">
+<div class="clk"><div class="dt"></div><div class="tm"></div></div>
 <div class="bt"></div>
 <div class="cur"><div class="ic"></div><div class="tx"><span class="t"></span><b></b><small></small></div></div>
 <div class="pills det"></div><div class="fc"></div><div class="msg"></div></div>`;
     const q = s => r.querySelector(s);
-    this._e = {g: q('.g'), bt: q('.bt'), cur: q('.cur'), ic: q('.cur .ic'), t: q('.t'), cd: q('.tx b'), fl: q('.tx small'), det: q('.det'), fc: q('.fc'), msg: q('.msg')};
+    this._e = {g: q('.g'), clk: q('.clk'), dt: q('.clk .dt'), tm: q('.clk .tm'), bt: q('.bt'), cur: q('.cur'), ic: q('.cur .ic'), t: q('.t'), cd: q('.tx b'), fl: q('.tx small'), det: q('.det'), fc: q('.fc'), msg: q('.msg')};
     const c = () => ({entity: this._c.entity, tap_action: this._c.tap_action, hold_action: this._c.hold_action});
     press(this._e.cur, {tap: () => runAction(this, c(), 'tap', true), hold: () => runAction(this, c(), 'hold')});
     this._key = null;
+  }
+
+  // Uhr und Datum wie im HA-Profil (Sprache, Zeitzone); läuft nur, solange die Karte angezeigt wird
+  _clock() {
+    const c = this._c, e = this._e, h = this._h;
+    if (!e || !h) return;
+    const on = !!(c.show_clock || c.show_date) && this.isConnected;
+    if (on && !this._tm) this._tm = setInterval(() => this._clock(), 10000);
+    if (!on && this._tm) { clearInterval(this._tm); this._tm = null; }
+    e.clk.hidden = !(c.show_clock || c.show_date);
+    if (e.clk.hidden) return;
+    const now = new Date(), lang = langOf(h), tz = tzOf(h);
+    const fmt = o => { try { return new Intl.DateTimeFormat(lang, {...o, timeZone: tz}).format(now); } catch { return new Intl.DateTimeFormat(lang, o).format(now); } };
+    e.dt.hidden = !c.show_date; e.tm.hidden = !c.show_clock;
+    if (c.show_date) e.dt.textContent = fmt({weekday: 'long', day: 'numeric', month: 'long'});
+    if (c.show_clock) e.tm.textContent = fmt({hour: '2-digit', minute: '2-digit'});
   }
 
   /* Vorhersage: weather/subscribe_forecast, je Art (täglich/stündlich) ein Abo, nur solange die Karte angezeigt wird */
@@ -231,6 +251,7 @@ class NovaWeatherCard extends HTMLElement {
   _render() {
     const h = this._h, c = this._c, e = this._e;
     if (!h || !e) return;
+    this._clock();
     const s = c.entity && h.states[c.entity];
     let msg = null;
     if (!c.entity) msg = ['info', 'mdi:weather-cloudy-alert', 'Keine Wetter-Entität gewählt – im Editor eine weather.*-Entität auswählen.'];
@@ -325,6 +346,7 @@ const BOOL = n => ({name: n, selector: {boolean: {}}});
 const NUMB = (n, min, max, unit) => ({name: n, selector: {number: {min, max, mode: 'box', ...(unit ? {unit_of_measurement: unit} : {})}}});
 const S_CUR = [
   {name: 'entity', required: true, selector: {entity: {domain: 'weather'}}},
+  g2(BOOL('show_clock'), BOOL('show_date')),
   g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
   g2({name: 'temperature_entity', selector: TSENS}, {name: 'feels_like_entity', selector: TSENS}),
   g2(BOOL('show_name'), BOOL('show_feels_like')),
@@ -343,7 +365,7 @@ const S_HOUR = [
 ];
 const S_ALL = [g2(BOOL('show_probability'), BOOL('show_precipitation')), g2(BOOL('show_titles'), BOOL('hourly_first'))];
 const S_ACT = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
-const WLABELS = {...BASE_LABELS, entity: 'Wetter-Entität', name: 'Name', temperature_entity: 'Temperatur-Sensor (optional)',
+const WLABELS = {...BASE_LABELS, entity: 'Wetter-Entität', show_clock: 'Uhr anzeigen', show_date: 'Datum anzeigen', name: 'Name', temperature_entity: 'Temperatur-Sensor (optional)',
   feels_like_entity: 'Sensor gefühlte Temperatur (optional)', show_name: 'Name anzeigen', show_feels_like: 'Gefühlte Temperatur anzeigen',
   show_high_low: 'Max/Min von heute anzeigen', color: 'Farbrolle Icons', decimals: 'Nachkommastellen Temperatur',
   show_details: 'Zusatzwerte anzeigen', label_details: 'Zusatzwerte beschriften', details: 'Zusatzwerte',
@@ -353,6 +375,7 @@ const WLABELS = {...BASE_LABELS, entity: 'Wetter-Entität', name: 'Name', temper
   show_titles: 'Überschriften', hourly_first: 'Stunden vor Tagen'};
 const WHELPERS = {
   icon: 'Leer = Icon passend zum Wetter',
+  show_clock: 'Große Uhr über dem Wetter',
   temperature_entity: 'Leer = Temperatur der Wetter-Entität',
   feels_like_entity: 'Leer = Attribut „apparent_temperature“, falls die Wetter-Entität es liefert',
   color: 'Farben kommen aus dem Theme (--nova-accent-1 … 4, --nova-neutral); „Automatisch“ färbt jedes Icon nach seinem Wetter',
