@@ -22,7 +22,8 @@ src/
   vacuum.js           Nova Saugroboter Card + Editor
   waste.js            Nova Müllkalender Card + Editor (Termine aus calendar.*-Entitäten)
   shared/
-    define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl()
+    define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
+                      tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
     utils.js          Escaping (esc), Domain, Icons/Bilder, Listen, Hilfsfunktionen
     state.js          Zustände: isOn, Formatierung, Werte, Warnbedingungen, Domain-Listen
     actions.js        Events (more-info, hass-action), Navigation, tap/hold-Aktionen
@@ -30,8 +31,10 @@ src/
     styles.js         Gemeinsame CSS-Bausteine (Variablen, Glas-Hintergrund, Editor-Styles)
     editor-base.js    NovaEditorBase – Basisklasse ALLER Editoren
     editor-schema.js  Bausteine für ha-form-Schemas + gemeinsame Beschriftungen
-build.mjs             esbuild-Build → nova-cards.js
-package.json          Versionsnummer (einzige Stelle) und „npm run build“
+dev/
+  nova-dev-cards.js   ERZEUGT von „npm run dev“ – Dev-Build zum Testen, gitignored, nie committen
+build.mjs             esbuild-Build → nova-cards.js („npm run dev“ → dev/nova-dev-cards.js)
+package.json          Versionsnummer (einzige Stelle), „npm run build“ und „npm run dev [-- <karte>]“
 nova-cards.js         ERZEUGT – nicht von Hand bearbeiten
 README.md             Doku für Nutzer (ein Abschnitt pro Karte)
 hacs.json             HACS-Metadaten
@@ -46,6 +49,9 @@ hacs.json             HACS-Metadaten
 - **Neue Karte** = neue Datei in `src/` (Karte + Editor), Import in `src/index.js`, Registrierung über
   `define()` aus `src/shared/define.js` (mit Name, Beschreibung, `documentationURL: docUrl(...)`) und ein
   eigener Abschnitt in `README.md`.
+- **Elementnamen nie hart als `'nova-…'` schreiben**, sonst kollidiert der Dev-Build mit der HACS-Version.
+  Immer ohne Präfix: `define('x-card', …)` und `document.createElement(tag('x-card-editor'))` mit `tag()` aus
+  `src/shared/define.js`.
 - **Gemeinsames gehört nach `src/shared/`** – keine Hilfsfunktionen doppelt anlegen, nur die eine `define()`.
   Editoren erben von `NovaEditorBase`, nicht voneinander.
 - **Grafischer Editor für alles:** jede Option ist im Editor einstellbar, nichts hartkodiert (Entitäten,
@@ -59,3 +65,21 @@ hacs.json             HACS-Metadaten
   (auch nicht in Branch-Namen; Branches heißen `feature/...`).
 - **Commits immer als Blackstar9119 mit 209100092+Blackstar9119@users.noreply.github.com, nie mit privater Mail.**
 - **Pushen und PRs immer über `git` und `gh`** (`git push`, `gh pr create`), nie über den Browser.
+
+## Dev-Workflow
+
+- **Dev-Build „dev“:** alle Karten mit Präfix `nova-dev-` statt `nova-`, damit sie sich nicht mit der HACS-Version
+  beißen. `npm run dev` baut alle Karten nach `dev/nova-dev-cards.js`, `npm run dev -- <karte>` (Dateiname in `src/`
+  ohne `.js`, z. B. `waste`) nur diese eine. In der Kartenauswahl tragen die Karten „ (Dev)“ im Namen.
+- **Nach jeder Änderung, die der Nutzer testen soll:** Dev-Build erstellen und über den HA-MCP mit
+  `ha_config_set_dashboard_resource` (`content` = Build, `resource_type` = `module`) als Inline-Modul-Ressource
+  hochladen. **Immer dieselbe Ressource aktualisieren** (`resource_id`), nie eine neue anlegen.
+- **resource_id der Dev-Ressource:** `4cc06e00074c416590e298ace68fe3a7`
+  Fehlt sie oder ist sie ungültig, zuerst per `ha_config_list_dashboard_resources` nach einer bestehenden
+  Inline-Ressource suchen, die mit `/* Nova Cards v… DEV` beginnt, und deren ID hier eintragen. Nur wenn es keine
+  gibt, eine neue anlegen.
+- **Liegt der Build über 128 KB** (Grenze für Inline-Ressourcen, der Build bricht dann mit Exit 2 ab): nur die Karte
+  bauen, an der gerade gearbeitet wird.
+- **Danach dem Nutzer sagen,** welche Karte (`custom:nova-dev-…`) er testen soll und dass er hart neu laden muss
+  (Strg/Cmd+Shift+R bzw. App-Cache leeren).
+- **Keine Releases dafür.** Releases (Versionssprung, Tag, GitHub-Release) nur, wenn der Nutzer es ausdrücklich sagt.
