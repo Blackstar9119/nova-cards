@@ -38,11 +38,7 @@ await build({
 });
 
 if (dev) {
-  const size = statSync(outfile).size;
-  const kb = (size / 1024).toFixed(1);
-  if (size > LIMIT) {
-    console.error(`Dev-Build ist ${kb} KB groß – über 128 KB passt nicht als Inline-Ressource. Nur eine Karte bauen: npm run dev -- <karte>`);
-    process.exit(2);
-  }
-  console.info(`Dev-Build: ${kb} KB, passt als Inline-Ressource.`);
+  // Der Dev-Build wird über jsDelivr geladen – die 128-KB-Grenze gilt nur noch für Inline-Ressourcen
+  const kb = (statSync(outfile).size / 1024).toFixed(1);
+  console.info(`Dev-Build: ${kb} KB${statSync(outfile).size > LIMIT ? ' (zu groß für eine Inline-Ressource, über jsDelivr kein Problem)' : ''}.`);
 }

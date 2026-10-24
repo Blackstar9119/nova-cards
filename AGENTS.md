@@ -106,7 +106,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
   Fehlt sie oder ist sie ungültig, zuerst per `ha_config_list_dashboard_resources` nach einer bestehenden
   Ressource suchen, die auf `nova-dev-cards.js` zeigt (oder inline mit `/* Nova Cards v… DEV` beginnt), und deren ID
   hier eintragen. Nur wenn es keine gibt, eine neue anlegen.
-- **Liegt der Build über 128 KB** (bricht mit Exit 2 ab): nur die Karten bauen, an denen gerade gearbeitet wird.
+- **Größe:** Über jsDelivr gibt es keine 128-KB-Grenze mehr. Trotzdem nur die Karten bauen, die gerade getestet werden.
 - **Danach dem Nutzer sagen,** welche Karte (`custom:nova-dev-…`) er testen soll und dass er hart neu laden muss
   (Strg/Cmd+Shift+R bzw. App-Cache leeren).
 - **Keine Releases dafür.** Releases (Versionssprung, Tag, GitHub-Release) nur, wenn der Nutzer es ausdrücklich sagt.
