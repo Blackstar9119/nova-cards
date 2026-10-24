@@ -14,6 +14,7 @@ Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
 | [Nova Media Card](#nova-media-card) | `custom:nova-media-card` |
 | [Nova Saugroboter Card](#nova-saugroboter-card) | `custom:nova-vacuum-card` |
 | [Nova Müllkalender Card](#nova-müllkalender-card) | `custom:nova-waste-card` |
+| [Nova Wetter Card](#nova-wetter-card) | `custom:nova-weather-card` |
 
 ## Installation (HACS)
 
@@ -428,6 +429,37 @@ Ganztägige Termine zählen für ihren Kalendertag, mehrtägige ab heute bis zu 
 Uhrzeit mit an und richten sich nach der Zeitzone aus dem HA-Profil (Browser oder Server). Die gleiche Müllart am gleichen Tag
 aus mehreren Kalendern erscheint nur einmal. Antippen öffnet die Details des Kalenders.
 Im Editor fügt **„Standard-Müllarten einfügen“** Restmüll, Papier, Gelber Sack, Bio und Glas als Vorlage ein.
+
+## Nova Wetter Card
+
+Aktuelles Wetter einer `weather.*`-Entität: großes Icon passend zum Wetter (nachts die Nacht-Variante), Temperatur, Zustand,
+optional gefühlte Temperatur und Zusatzwerte als Chips (Luftfeuchte, Wind mit Richtung, Luftdruck …). Das Icon trägt
+automatisch eine Farbrolle nach Wetterlage oder eine fest gewählte.
+
+```yaml
+type: custom:nova-weather-card
+entity: weather.forecast_home
+name: Zuhause
+temperature_entity: sensor.aussen_temperatur   # optional, ersetzt die Temperatur der Wetter-Entität
+details:
+  - humidity
+  - wind
+  - pressure
+color: auto                 # auto | neutral | accent-1 … accent-4
+```
+
+| Option | Standard | Bedeutung |
+|---|---|---|
+| `entity` | – | `weather.*`-Entität (Pflicht) |
+| `name`, `show_name` | Name der Entität, `true` | Überschrift über dem Wetter |
+| `icon` | nach Wetter | Festes Icon statt des automatischen |
+| `temperature_entity` | – | Eigener Temperatur-Sensor statt der Temperatur der Wetter-Entität |
+| `show_feels_like`, `feels_like_entity` | `true`, – | Gefühlte Temperatur: aus dem Sensor oder dem Attribut `apparent_temperature` (fehlt beides, entfällt die Zeile) |
+| `decimals` | bis zu 1 | Nachkommastellen der Temperatur |
+| `color` | `auto` | Farbrolle des Icons, siehe [Theming](#theming); `auto` = nach Wetterlage |
+| `show_details`, `details` | `true`, `humidity, wind, pressure` | Zusatzwerte: `humidity`, `wind`, `wind_gust`, `pressure`, `uv_index`, `cloud_coverage`, `dew_point`, `visibility`, `ozone` – Werte, die die Entität nicht liefert, entfallen |
+| `label_details` | `false` | Zusatzwerte mit Beschriftung |
+| `tap_action`, `hold_action` | Details der Entität | Aktionen beim Antippen / langen Drücken |
 
 ## Theming
 
