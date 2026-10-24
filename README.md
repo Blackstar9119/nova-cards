@@ -13,6 +13,7 @@ Jede Karte ist einzeln unter **„Karte hinzufügen“** auswählbar.
 | [Nova Kamera Card](#nova-kamera-card) | `custom:nova-camera-card` |
 | [Nova Media Card](#nova-media-card) | `custom:nova-media-card` |
 | [Nova Saugroboter Card](#nova-saugroboter-card) | `custom:nova-vacuum-card` |
+| [Nova Müllkalender Card](#nova-müllkalender-card) | `custom:nova-waste-card` |
 
 ## Installation (HACS)
 
@@ -385,11 +386,54 @@ consumables:                   # Infos & Verbrauchsteile
 
 ---
 
+## Nova Müllkalender Card
+
+Nächste Müllabholungen aus einem oder mehreren Kalendern (z. B. iCal-Abfallkalender) – mit Müllart, Icon, Farbe, Datum und
+„heute / morgen / in X Tagen“. Abholungen heute und morgen werden hervorgehoben, der Rahmen leuchtet in der Farbe der Müllart.
+Die Termine kommen über die Kalender-API von Home Assistant und werden regelmäßig sowie beim Tageswechsel neu geladen.
+
+```yaml
+type: custom:nova-waste-card
+entities:
+  - calendar.abfallkalender
+title: Müllkalender
+layout: list                # list | compact
+count: 5
+days: 30
+types:                      # erste passende Regel gewinnt
+  - match: Papier, PPK      # Stichwort(e) im Termintitel, Groß/Klein egal
+    name: Papiertonne
+    icon: mdi:newspaper-variant-outline
+    color: blue             # HA-Farbname, #hex oder rgb(...)
+  - match: Gelb, Wertstoff
+    name: Gelber Sack
+    icon: mdi:recycle
+    color: yellow
+```
+
+| Option | Standard | Bedeutung |
+|---|---|---|
+| `entities` | – | Ein oder mehrere `calendar.*` (Pflicht; einzeln auch als `entity`) |
+| `title`, `icon` | `Müllkalender`, `mdi:trash-can-outline` | Kopfzeile; `icon` ist auch das Icon für Termine ohne eigene Regel |
+| `show_header` | `true` | Kopfzeile mit „Nächste Abholung …“ |
+| `layout` | `list` | `list` = nächste Termine untereinander, `compact` = nur der nächste Abholtag (mehrere Müllarten an dem Tag nebeneinander) |
+| `count` | `5` | Anzahl Termine in der Liste |
+| `days` | `30` | Zeitraum in Tagen ab heute |
+| `refresh` | `60` | Minuten bis zum erneuten Laden (mindestens 5). Beim Tageswechsel wird immer neu geladen |
+| `types[]` | – | Regeln: `match` (Stichwort, mehrere mit Komma), `name` (leer = Termintitel), `icon`, `color` |
+| `hide_unmatched` | `false` | Termine ohne passende Regel ausblenden |
+| `glow` | `true` | Rahmen leuchtet bei einer Abholung heute oder morgen |
+
+Ganztägige Termine zählen für ihren Kalendertag, mehrtägige ab heute bis zu ihrem letzten Tag. Termine mit Uhrzeit zeigen die
+Uhrzeit mit an und richten sich nach der Zeitzone aus dem HA-Profil (Browser oder Server). Die gleiche Müllart am gleichen Tag
+aus mehreren Kalendern erscheint nur einmal. Antippen öffnet die Details des Kalenders.
+Im Editor fügt **„Standard-Müllarten einfügen“** Restmüll, Papier, Gelber Sack, Bio und Glas als Vorlage ein.
+
 ## Theming
 
 Alle Karten lesen diese Variablen (z. B. im Theme oder per card-mod):
 
-`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`, `--nova-media-min-height`, `--nova-media-artwork-opacity`, `--nova-vacuum-map-min-height`, `--nova-vacuum-scene-height`, `--nova-vacuum-robot-color`, `--nova-vacuum-station-color`, `--nova-vacuum-water-color`
+`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`, `--nova-media-min-height`, `--nova-media-artwork-opacity`, `--nova-vacuum-map-min-height`, `--nova-vacuum-scene-height`, `--nova-vacuum-robot-color`, `--nova-vacuum-station-color`, `--nova-vacuum-water-color`, `--nova-waste-color`
 
 ## Lizenz
 

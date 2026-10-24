@@ -14,7 +14,7 @@ await build({
   legalComments: 'none',
   define: {__VERSION__: JSON.stringify(version)},
   banner: {js: `/* Nova Cards v${version} | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */`},
   logLevel: 'info',
 });
