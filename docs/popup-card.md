@@ -35,14 +35,17 @@ wird der Chip farbig, z. B. wenn ein Fenster offen ist (ohne weitere Angabe bei 
 ## Vorlage wählen und Karten einfügen
 
 1. Unter **Layout & Vorlage** eine Vorlage wählen, z. B. „Groß oben, zwei klein darunter“. Sie legt leere Plätze an.
-2. Unter **Inhalt** auf einen leeren Platz **Karte hinzufügen** tippen und eine Karte auswählen.
-3. Einen Block antippen öffnet darunter seine Einstellungen: Karte bearbeiten (grafisch oder YAML), andere Karte
-   wählen, duplizieren, löschen, Spaltenbreite ändern.
-4. Blöcke am Griff ziehen, um sie zu verschieben (am PC geht auch der ganze Block). Zwischen zwei Zeilen
-   abgelegt, entsteht eine neue Zeile.
+2. Unter **Inhalt** steht jede Zeile als eigener Block („Zeile 1“, „Zeile 2“ …). **Spalte hinzufügen** setzt eine
+   weitere Karte neben die vorhandenen in dieselbe Zeile, **Zeile hinzufügen** ganz unten legt eine neue Zeile an.
+3. Einen leeren Platz (**Karte wählen**) antippen und eine Karte aus der Kartenauswahl von HA nehmen.
+4. Einen Block antippen öffnet darunter seine Einstellungen: **Breite** (Auto, 1/4, 1/3, 1/2, 2/3, 3/4, Voll),
+   nach links/rechts verschieben, Karte bearbeiten (grafisch oder YAML), andere Karte wählen, duplizieren, löschen.
+   „Auto“ teilt sich den freien Platz mit den anderen Spalten der Zeile.
+5. Zeilen lassen sich über die Pfeile neben „Zeile N“ verschieben oder löschen. Blöcke am Griff ziehen, um sie zu
+   verschieben (am PC geht auch der ganze Block). Zwischen zwei Zeilen abgelegt, entsteht eine neue Zeile.
 
 Auf schmalen Bildschirmen stehen alle Karten untereinander (einstellbar unter **Allgemein** →
-„Untereinander unter Breite“). Die Anordnung im Editor bleibt dabei erhalten.
+„Untereinander unter Breite“). Wird eine Zeile sonst zu eng, rutschen Spalten von selbst in die nächste Reihe.
 
 ## Beispiel-YAML
 
@@ -57,13 +60,12 @@ info:
     name: Fenster
     alert: true
     alert_color: accent-2
-columns: 2
 rows:
   - cells:
-      - span: 2
-        card: {type: weather-forecast, entity: weather.forecast_home}
+      - card: {type: weather-forecast, entity: weather.forecast_home}
   - cells:
-      - card: {type: custom:nova-light-card, entity: light.wohnzimmer}
+      - width: 2/3
+        card: {type: custom:nova-light-card, entity: light.wohnzimmer}
       - card: null
 ```
 

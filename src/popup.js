@@ -8,18 +8,30 @@ import {g2, T, I, ENT, NUM, sel, ROLE, NAMEICON} from './shared/editor-schema.js
 import {register, unregister, curHash, cleanHash, clearHash, cameByNav, lockScroll, hasPopup} from './shared/popup-hub.js';
 
 /* ---------- Datenmodell ----------
-   rows: [{cells: [{span: 2, card: {...}}, {card: null}]}]
-   Jede Zelle enthält genau eine Karte (null = leerer Platz aus einer Vorlage), span = Spaltenbreite. */
-const DEF = {columns: 2, width: 1180, stack_below: 500, info_layout: 'wrap'};
-const toCell = x => !x || typeof x !== 'object' ? {span: 1, card: null}
-  : ('card' in x || 'span' in x) ? {span: Math.max(1, +x.span || 1), card: x.card && typeof x.card === 'object' ? x.card : null}
-  : {span: 1, card: x};
+   rows: [{cells: [{width: '1/2', card: {...}}, {card: null}]}]
+   Jede Zeile ist eine Reihe von Spalten nebeneinander, jede Spalte enthält genau eine Karte (null = leerer Platz).
+   width = Anteil an der Zeilenbreite (1/4 … voll), ohne Angabe teilen sich die Spalten den restlichen Platz. */
+const DEF = {width: 1180, stack_below: 500, info_layout: 'wrap'};
+export const WIDTHS = [['auto', 'Auto'], ['1/4', '1/4'], ['1/3', '1/3'], ['1/2', '1/2'], ['2/3', '2/3'], ['3/4', '3/4'], ['1', 'Voll']];
+const FR = {'1/4': 1 / 4, '1/3': 1 / 3, '1/2': 1 / 2, '2/3': 2 / 3, '3/4': 3 / 4, '1': 1};
+// Ältere Konfigurationen mit span/columns: nächstliegenden Anteil nehmen
+const fracOf = v => Object.keys(FR).reduce((a, k) => Math.abs(FR[k] - v) < Math.abs(FR[a] - v) ? k : a, '1');
+const toCell = (x, cols) => {
+  if (!x || typeof x !== 'object') return {width: 'auto', card: null};
+  if (!('card' in x || 'span' in x || 'width' in x)) return {width: 'auto', card: x};
+  const old = +x.span > 1 ? fracOf(+x.span / cols) : 'auto';
+  const width = FR[x.width] ? String(x.width) : old === '1' ? 'auto' : old;
+  return {width, card: x.card && typeof x.card === 'object' ? x.card : null};
+};
 export const normRows = c => {
-  if (Array.isArray(c.rows)) return c.rows.map(r => ({cells: (Array.isArray(r) ? r : r?.cells || []).map(toCell)})).filter(r => r.cells.length);
-  if (Array.isArray(c.cards)) return c.cards.map(k => ({cells: [{span: +c.columns || DEF.columns, card: k}]}));
+  const cols = Math.max(1, +c.columns || 2);
+  if (Array.isArray(c.rows)) return c.rows.map(r => ({cells: (Array.isArray(r) ? r : r?.cells || []).map(x => toCell(x, cols))})).filter(r => r.cells.length);
+  if (Array.isArray(c.cards)) return c.cards.map(k => ({cells: [{width: 'auto', card: k}]}));
   return [];
 };
-const serRows = rows => rows.filter(r => r.cells.length).map(r => ({cells: r.cells.map(x => x.span > 1 ? {span: x.span, card: x.card ?? null} : {card: x.card ?? null})}));
+const serRows = rows => rows.filter(r => r.cells.length).map(r => ({cells: r.cells.map(x => FR[x.width] ? {width: x.width, card: x.card ?? null} : {card: x.card ?? null})}));
+// Spaltenbreite als flex-Angabe (gap = Abstand zwischen den Spalten in px)
+export const flexOf = (w, gap) => FR[w] ? `0 0 calc(${FR[w]} * (100% + ${gap}px) - ${gap + 0.1}px)` : '1 1 0';
 
 // HA-INTERN: window.loadCardHelpers() → createCardElement. Fehlt es, zeigt jede Zelle einen Fehler statt zu crashen.
 let helpersP;
@@ -76,8 +88,10 @@ background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filt
 .chip .cn:empty{display:none}.chip .cn:not(:empty)::after{content:' ·'}
 .chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}
 .body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box;
-padding:0 14px calc(16px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:12px;align-content:start}
-.body.stack{grid-template-columns:minmax(0,1fr)}.body.stack>.cell{grid-column:auto!important}
+padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.rw{display:flex;flex-wrap:wrap;gap:12px;flex:none}
+.rw>.cell.auto{min-width:min(100%,140px)}
+.body.stack .rw>.cell{flex:1 1 100%!important}
 .cell{min-width:0}
 .cell.empty{min-height:0}
 .pop.inline .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
@@ -85,7 +99,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:grid;grid-templa
 .err{display:flex;gap:8px;align-items:flex-start;padding:12px 14px;border-radius:20px;font-size:13px;
 background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid color-mix(in srgb,var(--nv-error) 50%,transparent)}
 .err ha-icon{color:var(--nv-error);flex:none}
-.hint{font-size:13px;opacity:.7;padding:8px 2px;grid-column:1/-1}
+.hint{font-size:13px;opacity:.7;padding:8px 2px}
 @media(max-width:600px){
 .pop{align-items:flex-end}
 .bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
@@ -105,8 +119,7 @@ const EDIT = new Set(['HUI-CARD-OPTIONS', 'HUI-CARD-EDIT-MODE']);
 class NovaPopupCard extends HTMLElement {
   static getConfigElement() { return document.createElement(tag('popup-card-editor')); }
   static getStubConfig() {
-    return {hash: 'neu', columns: 2,
-      rows: [{cells: [{span: 2, card: null}]}, {cells: [{card: null}, {card: null}]}]};
+    return {hash: 'neu', rows: [{cells: [{card: null}]}, {cells: [{card: null}, {card: null}]}]};
   }
   constructor() {
     super();
@@ -140,7 +153,6 @@ class NovaPopupCard extends HTMLElement {
     this._cfg = {...DEF, ...c, hash: cleanHash(c.hash), info: [].concat(c.info || []).map(x => typeof x === 'string' ? {entity: x} : x),
       badges: [].concat(c.badges || []).map(x => typeof x === 'string' ? {entity: x} : x).filter(x => x?.entity)};
     this._rows = normRows(c);
-    this._cols = Math.min(4, Math.max(1, +this._cfg.columns || 2));
     if (this.isConnected && old !== this._cfg.hash) { this._unreg(old); this._reg(); }
     this._head();
     this._dirty = true;
@@ -278,7 +290,6 @@ class NovaPopupCard extends HTMLElement {
     this._sh.classList.toggle('tint', !!tint);
     if (tint) this._sh.style.setProperty('--tc', roleVars(tint).c);
     if (c.title || c.hash) this._sh.setAttribute('aria-label', c.title || c.hash); else this._sh.removeAttribute('aria-label');
-    this._body.style.setProperty('--cols', this._cols);
     this._infoEl.classList.toggle('scroll', c.info_layout === 'scroll');
     this._chips = null; this._bds = null;
     if (this._h) this._info();
@@ -347,7 +358,7 @@ class NovaPopupCard extends HTMLElement {
     this._dirty = false;
     // Zellen mit unveränderter Karte weiterverwenden – die Vorschau flackert dann nicht bei jeder Eingabe
     const old = this._pool || new Map(), pool = new Map(), list = [];
-    this._rows.forEach(row => row.cells.forEach((cell, i) => {
+    this._rows.forEach(row => { const rw = document.createElement('div'); rw.className = 'rw'; list.push(rw); row.cells.forEach(cell => {
       const key = JSON.stringify(cell.card);
       let w = old.get(key)?.shift();
       if (!w) {
@@ -356,10 +367,11 @@ class NovaPopupCard extends HTMLElement {
         if (cell.card) { this._mount(w, cell.card); w.addEventListener('ll-rebuild', e => { e.stopPropagation(); this._mount(w, cell.card); }); }
         else w.classList.add('empty');
       }
-      w.style.gridColumn = `${i === 0 ? '1 / ' : ''}span ${Math.min(cell.span || 1, this._cols)}`;
+      w.style.flex = flexOf(cell.width, 12);
+      w.classList.toggle('auto', !FR[cell.width]);
       (pool.get(key) || pool.set(key, []).get(key)).push(w);
-      list.push(w);
-    }));
+      rw.append(w);
+    }); });
     this._pool = pool;
     if (!list.length) {
       const p = document.createElement('div');
@@ -390,12 +402,14 @@ class NovaPopupCard extends HTMLElement {
 define('popup-card', NovaPopupCard, {name: 'Nova Pop-up Card', description: 'Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – vom Dock oder jeder Karte mit Navigations-Aktion.', documentationURL: docUrl('nova-pop-up-card')});
 
 /* ---------- Editor ---------- */
+const A = 'auto';
 const TEMPLATES = [
-  {label: 'Eine Karte groß', columns: 1, rows: [[1]]},
-  {label: 'Groß oben, zwei klein darunter', columns: 2, rows: [[2], [1, 1]]},
-  {label: 'Zwei nebeneinander', columns: 2, rows: [[1, 1]]},
-  {label: 'Raster 2×2', columns: 2, rows: [[1, 1], [1, 1]]},
-  {label: 'Drei nebeneinander', columns: 3, rows: [[1, 1, 1]]},
+  {label: 'Eine Karte groß', rows: [[A]]},
+  {label: 'Groß oben, zwei klein darunter', rows: [[A], [A, A]]},
+  {label: 'Zwei nebeneinander', rows: [[A, A]]},
+  {label: 'Raster 2×2', rows: [[A, A], [A, A]]},
+  {label: 'Drei nebeneinander', rows: [[A, A, A]]},
+  {label: 'Breit und schmal', rows: [['2/3', '1/3']]},
 ];
 // Bekannte HA-Karten: Name + Icon für die Blöcke und die einfache Kartenauswahl
 const HA_CARDS = {
@@ -436,12 +450,10 @@ const INFO = [
   g2({name: 'alert_state', selector: T}, ROLE('alert_color')),
   g2(NUM('alert_above'), NUM('alert_below')),
 ];
-const COLS = [{name: 'columns', selector: {number: {min: 1, max: 4, mode: 'slider'}}}];
 const LABELS = {
   hash: 'Hash (ohne #)', title: 'Titel', icon: 'Icon', tint: 'Farbton (leer = Nova-Glas)', color: 'Farbe', show_state: 'Zustand anzeigen', state: 'Nur anzeigen bei Zustand', width: 'Max. Breite (Desktop)', stack_below: 'Untereinander unter Breite',
   info_layout: 'Info-Leiste bei vielen Einträgen', entity: 'Entität', name: 'Eigener Name (optional)', decimals: 'Nachkommastellen',
   alert: 'Bei Achtung hervorheben', alert_state: 'Achtung bei Zustand', alert_color: 'Farbe', alert_above: 'Achtung über', alert_below: 'Achtung unter',
-  columns: 'Spalten',
 };
 const HELPERS = {
   hash: 'Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.',
@@ -456,7 +468,9 @@ const ED_CSS = `
 details.item>.body{gap:12px}
 .mini{display:flex;flex-direction:column}
 .gap{height:10px;border-radius:4px}.gap.hot{background:var(--primary-color);opacity:.7}
-.row{display:grid;gap:8px;border-radius:12px}
+.rowb{display:flex;flex-direction:column;gap:6px}
+.rh{display:flex;align-items:center;gap:2px;font-size:12px;font-weight:500;opacity:.8}.rh .fill{flex:1}
+.row{display:flex;flex-wrap:wrap;gap:8px;border-radius:12px}
 .row.hot{outline:2px dashed var(--primary-color);outline-offset:3px}
 .blk{min-height:56px;box-sizing:border-box;border-radius:12px;border:1px solid var(--divider-color,#444);background:var(--secondary-background-color);
 display:flex;align-items:center;gap:6px;padding:8px 10px 8px 2px;cursor:pointer;user-select:none;-webkit-user-select:none;min-width:0;position:relative;outline:none}
@@ -473,13 +487,16 @@ display:flex;align-items:center;gap:6px;padding:8px 10px 8px 2px;cursor:pointer;
 .blk.slot ha-icon{--mdc-icon-size:30px}
 .blk.slot .drag{position:absolute;left:2px;top:50%;transform:translateY(-50%)}
 .blk.slot.hot{background:color-mix(in srgb,var(--primary-color) 14%,transparent)}
-.more{border:1px dashed var(--divider-color,#444);border-radius:12px;background:none;color:var(--secondary-text-color);cursor:pointer;min-height:56px;display:flex;align-items:center;justify-content:center;padding:0}
+.rowb>.add{align-self:flex-start;margin:0}
+.wd{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.wd>span{font-size:12px;opacity:.75;margin-right:4px}
+.wd button{border:1px solid var(--divider-color,#444);border-radius:999px;background:none;color:inherit;font:inherit;font-size:12px;padding:4px 10px;cursor:pointer}
+.wd button.on{border-color:var(--primary-color);background:var(--primary-color);color:var(--text-primary-color,#fff)}
 .panel{border:1px solid var(--primary-color);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px;margin-top:8px}
 .tools{display:flex;align-items:center;gap:2px;flex-wrap:wrap}.tools .w{font-size:12px;opacity:.75;padding:0 2px;min-width:52px;text-align:center}.tools .fill{flex:1}
 .tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .tpl{display:flex;flex-direction:column;gap:6px;align-items:center;padding:8px 6px;border-radius:12px;border:1px solid var(--divider-color,#444);background:none;color:inherit;cursor:pointer;font:inherit;font-size:11.5px;text-align:center}
 .tpl:hover{border-color:var(--primary-color)}
-.tp{display:grid;gap:3px;width:56px}.tp i{display:block;height:13px;border-radius:3px;background:var(--primary-color);opacity:.55}
+.tp{display:flex;flex-direction:column;gap:3px;width:56px}.tp>span{display:flex;gap:3px}.tp i{display:block;height:13px;border-radius:3px;background:var(--primary-color);opacity:.55}
 .pick{max-height:640px;overflow:auto}
 textarea.json{width:100%;box-sizing:border-box;background:var(--card-background-color,transparent);color:inherit;border:1px solid var(--divider-color,#444);border-radius:8px;padding:8px;font:inherit}
 textarea.json{min-height:200px;font-family:monospace;font-size:12px}
@@ -499,10 +516,9 @@ class NovaPopupCardEditor extends NovaEditorBase {
 
   async _rebuild() { await loadHaEditors(); return super._rebuild(); }
   _rows() { return normRows(this._config); }
-  _colsN() { return Math.min(4, Math.max(1, +this._config.columns || DEF.columns)); }
   _emitRows(rows, keep) {
     const c = {...this._config, rows: serRows(rows)};
-    delete c.cards;
+    delete c.cards; delete c.columns;
     if (keep !== undefined) {
       this._sel = null;
       rows.forEach((r, ri) => r.cells.forEach((x, ci) => { if (x === keep) this._sel = [ri, ci]; }));
@@ -558,13 +574,12 @@ class NovaPopupCardEditor extends NovaEditorBase {
   }
   _secLayout() {
     const [d, b] = this._sec('sec.layout', 'mdi:view-grid-outline', 'Layout & Vorlage');
-    b.append(this._form(COLS, {columns: this._colsN()}, v => { this._emit({...this._config, columns: v.columns || DEF.columns}); this._rebuild(); }));
     b.append(this._hint('Vorlage legt leere Plätze an. Vorhandene Karten wandern der Reihe nach hinein, übrige bleiben unten erhalten.'));
     const g = el('div', 'tpls');
     TEMPLATES.forEach(t => {
       const btn = el('button', 'tpl');
       btn.type = 'button';
-      btn.innerHTML = `<span class="tp" style="grid-template-columns:repeat(${t.columns},1fr)">${t.rows.map(row => row.map(s => `<i style="grid-column:span ${s}"></i>`).join('')).join('')}</span><span></span>`;
+      btn.innerHTML = `<span class="tp">${t.rows.map(row => `<span>${row.map(w => `<i style="flex:${flexOf(w, 3)}"></i>`).join('')}</span>`).join('')}</span><span></span>`;
       btn.lastChild.textContent = t.label;
       btn.addEventListener('click', e => { e.preventDefault(); this._template(t); });
       g.append(btn);
@@ -574,52 +589,55 @@ class NovaPopupCardEditor extends NovaEditorBase {
   }
   _template(t) {
     const left = this._rows().flatMap(r => r.cells).filter(x => x.card);
-    const rows = t.rows.map(row => ({cells: row.map(span => ({span, card: left.shift()?.card ?? null}))}));
-    left.forEach(x => rows.push({cells: [{span: t.columns, card: x.card}]}));
+    const rows = t.rows.map(row => ({cells: row.map(width => ({width, card: left.shift()?.card ?? null}))}));
+    left.forEach(x => rows.push({cells: [{width: 'auto', card: x.card}]}));
     this._sel = null;
     this._secs.add('sec.content');
-    this._emit({...this._config, columns: t.columns, rows: serRows(rows)});
+    this._emitRows(rows);
     this._rebuild();
   }
 
   /* --- Inhalt: Miniatur des Rasters --- */
   _secContent() {
     const [d, b] = this._sec('sec.content', 'mdi:view-dashboard-edit-outline', 'Inhalt');
-    const rows = this._rows(), cols = this._colsN();
+    const rows = this._rows();
     if (this._sel && !rows[this._sel[0]]?.cells[this._sel[1]]) this._sel = null;
-    b.append(this._hint('So sieht das Raster im Pop-up aus. Antippen zum Bearbeiten, am Griff ziehen zum Verschieben (am PC geht auch der ganze Block).'));
+    b.append(this._hint('So sieht das Raster im Pop-up aus. Spalten einer Zeile stehen nebeneinander. Antippen zum Bearbeiten, am Griff ziehen zum Verschieben (am PC geht auch der ganze Block).'));
     const mini = this._mini = el('div', 'mini');
+    const addCell = ri => { const rs = this._rows(), x = {width: 'auto', card: null}; rs[ri].cells.forEach(k => { if (k.width === '1') k.width = 'auto'; }); rs[ri].cells.push(x); this._picking = true; this._yaml = false; this._emitRows(rs, x); this._rebuild(); };
+    const rowOp = fn => { const rs = this._rows(), keep = this._sel ? rs[this._sel[0]]?.cells[this._sel[1]] : undefined; fn(rs); this._emitRows(rs, keep ?? null); this._rebuild(); };
     rows.forEach((row, ri) => {
       mini.append(Object.assign(el('div', 'gap'), {_i: ri}));
+      const rb = el('div', 'rowb');
+      rb._r = ri;
+      const rh = el('div', 'rh');
+      rh.append(Object.assign(el('span'), {textContent: `Zeile ${ri + 1}`}), el('span', 'fill'),
+        this._btn('mdi:arrow-up', 'Zeile nach oben', () => rowOp(rs => rs.splice(ri - 1, 0, ...rs.splice(ri, 1))), ri === 0),
+        this._btn('mdi:arrow-down', 'Zeile nach unten', () => rowOp(rs => rs.splice(ri + 1, 0, ...rs.splice(ri, 1))), ri === rows.length - 1),
+        this._btn('mdi:delete-outline', 'Zeile löschen', () => rowOp(rs => rs.splice(ri, 1))));
       const re = el('div', 'row');
       re._r = ri;
-      re.style.gridTemplateColumns = `repeat(${cols},minmax(0,1fr))`;
-      row.cells.forEach((cell, ci) => re.append(this._block(cell, ri, ci, cols)));
-      const used = row.cells.reduce((s, x) => s + Math.min(x.span, cols), 0) % cols;
-      if (used) {
-        const m = el('button', 'more', '<ha-icon icon="mdi:plus"></ha-icon>');
-        m.type = 'button'; m.title = 'Platz in dieser Zeile hinzufügen';
-        m.style.gridColumn = `span ${cols - used}`;
-        m.addEventListener('click', e => { e.preventDefault(); const rs = this._rows(); const x = {span: 1, card: null}; rs[ri].cells.push(x); this._picking = true; this._emitRows(rs, x); this._rebuild(); });
-        re.append(m);
-      }
-      mini.append(re);
-      if (this._sel?.[0] === ri) mini.append(this._panel(rows, cols));
+      row.cells.forEach((cell, ci) => re.append(this._block(cell, ri, ci)));
+      rb.append(rh, re);
+      if (this._sel?.[0] === ri) rb.append(this._panel(rows));
+      rb.append(this._add('Spalte hinzufügen', () => addCell(ri)));
+      mini.append(rb);
     });
     mini.append(Object.assign(el('div', 'gap'), {_i: rows.length}));
     b.append(mini);
     b.append(this._add('Zeile hinzufügen', () => {
-      const rs = this._rows(), x = {span: cols, card: null};
+      const rs = this._rows(), x = {width: 'auto', card: null};
       rs.push({cells: [x]});
-      this._picking = true;
+      this._picking = true; this._yaml = false;
       this._emitRows(rs, x); this._rebuild();
     }));
     return d;
   }
-  _block(cell, ri, ci, cols) {
+  _block(cell, ri, ci) {
     const b = el('div', 'blk');
     b.tabIndex = 0; b.setAttribute('role', 'button');
-    b.style.gridColumn = `${ci === 0 ? '1 / ' : ''}span ${Math.min(cell.span, cols)}`;
+    b.style.flex = flexOf(cell.width, 8);
+    if (!FR[cell.width]) b.style.minWidth = 'min(100%,110px)';
     b._r = ri; b._c = ci;
     const sel = this._sel?.[0] === ri && this._sel?.[1] === ci;
     b.classList.toggle('sel', sel);
@@ -627,10 +645,10 @@ class NovaPopupCardEditor extends NovaEditorBase {
     grip.title = 'Ziehen zum Verschieben';
     if (!cell.card) {
       b.classList.add('slot');
-      b.innerHTML = '<ha-icon icon="mdi:plus"></ha-icon><span>Karte hinzufügen</span>';
+      b.innerHTML = '<ha-icon icon="mdi:plus"></ha-icon><span>Karte wählen</span>';
     } else {
       b.innerHTML = '<ha-icon class="bi"></ha-icon><span class="bl"><b></b><small></small></span><span class="sp"></span>';
-      this._label(b, cell, cols);
+      this._label(b, cell);
     }
     b.prepend(grip);
     const toggle = () => {
@@ -645,28 +663,38 @@ class NovaPopupCardEditor extends NovaEditorBase {
     this._blocks[`${ri}.${ci}`] = b;
     return b;
   }
-  _label(b, cell, cols) {
+  _label(b, cell) {
     const c = cell.card, t = cardTitle(this._hass, c), n = typeName(c.type);
     b.querySelector('.bi').setAttribute('icon', cardIcon(this._hass, c));
     b.querySelector('b').textContent = t || n;
     b.querySelector('small').textContent = t ? n : '';
-    b.querySelector('.sp').textContent = cols > 1 ? `${Math.min(cell.span, cols)}/${cols}` : '';
+    b.querySelector('.sp').textContent = FR[cell.width] && cell.width !== '1' ? cell.width : '';
   }
 
   /* --- Einstellungen des gewählten Blocks --- */
-  _panel(rows, cols) {
-    const [ri, ci] = this._sel, cell = rows[ri].cells[ci], p = el('div', 'panel');
-    const tools = el('div', 'tools'), span = Math.min(cell.span, cols);
+  _panel(rows) {
+    const [ri, ci] = this._sel, cell = rows[ri].cells[ci], n = rows[ri].cells.length, p = el('div', 'panel');
     const set = fn => { const rs = this._rows(), x = rs[ri].cells[ci]; fn(rs, x); };
+    const wd = el('div', 'wd');
+    wd.append(Object.assign(el('span'), {textContent: 'Breite:'}));
+    WIDTHS.forEach(([v, l]) => {
+      const bt = el('button', v === (FR[cell.width] ? cell.width : 'auto') ? 'on' : '');
+      bt.type = 'button'; bt.textContent = l;
+      bt.title = v === 'auto' ? 'Teilt sich den freien Platz mit den anderen Spalten' : v === '1' ? 'Ganze Zeilenbreite' : `${l} der Zeilenbreite`;
+      bt.addEventListener('click', e => { e.preventDefault(); set((rs, x) => { x.width = v; this._emitRows(rs, x); this._rebuild(); }); });
+      wd.append(bt);
+    });
+    p.append(wd);
+    const tools = el('div', 'tools');
+    const mv = dir => set((rs, x) => { rs[ri].cells.splice(ci, 1); rs[ri].cells.splice(ci + dir, 0, x); this._emitRows(rs, x); this._rebuild(); });
     tools.append(
-      this._btn('mdi:arrow-collapse-horizontal', 'Schmaler', () => set((rs, x) => { x.span = span - 1; this._emitRows(rs, x); this._rebuild(); }), span <= 1),
-      Object.assign(el('span', 'w'), {textContent: `${span} von ${cols}`, title: 'Spaltenbreite'}),
-      this._btn('mdi:arrow-expand-horizontal', 'Breiter', () => set((rs, x) => { x.span = span + 1; this._emitRows(rs, x); this._rebuild(); }), span >= cols),
+      this._btn('mdi:arrow-left', 'Nach links', () => mv(-1), ci === 0),
+      this._btn('mdi:arrow-right', 'Nach rechts', () => mv(1), ci >= n - 1),
       el('span', 'fill'));
     if (cell.card) tools.append(
       this._btn('mdi:pencil-outline', this._yaml ? 'Grafischer Editor' : 'Als YAML bearbeiten', () => { this._yaml = !this._yaml; this._picking = false; this._rebuild(); }),
       this._btn('mdi:swap-horizontal', 'Andere Karte wählen', () => { this._picking = !this._picking; this._rebuild(); }),
-      this._btn('mdi:content-copy', 'Duplizieren', () => set((rs, x) => { const n = {span: x.span, card: clone(x.card)}; rs[ri].cells.splice(ci + 1, 0, n); this._emitRows(rs, n); this._rebuild(); })));
+      this._btn('mdi:content-copy', 'Duplizieren', () => set((rs, x) => { const k = {width: x.width, card: clone(x.card)}; rs[ri].cells.splice(ci + 1, 0, k); this._emitRows(rs, k); this._rebuild(); })));
     tools.append(
       this._btn('mdi:delete-outline', 'Löschen', () => set(rs => { rs[ri].cells.splice(ci, 1); this._sel = null; this._emitRows(rs); this._rebuild(); })),
       this._btn('mdi:chevron-up', 'Zuklappen', () => { this._sel = null; this._rebuild(); }));
@@ -686,7 +714,7 @@ class NovaPopupCardEditor extends NovaEditorBase {
     this._emitRows(rs, x);
     if (rebuild) { this._picking = false; this._yaml = false; this._rebuild(); return; }
     const b = this._blocks[`${ri}.${ci}`];
-    if (b && !b.classList.contains('slot')) this._label(b, x, this._colsN());
+    if (b && !b.classList.contains('slot')) this._label(b, x);
   }
 
   // HA-INTERN: hui-card-picker (Kartenauswahl von HA mit Vorschaubildern und Suche), geladen über loadHaEditors().
@@ -799,8 +827,9 @@ class NovaPopupCardEditor extends NovaEditorBase {
     const inR = (r, pad = 0) => x >= r.left && x <= r.right && y >= r.top - pad && y <= r.bottom + pad;
     let t = null;
     for (const g of m.querySelectorAll(':scope>.gap')) if (inR(g.getBoundingClientRect(), 4)) { t = {kind: 'row', i: g._i, el: g}; break; }
-    if (!t) for (const re of m.querySelectorAll(':scope>.row')) {
-      if (!inR(re.getBoundingClientRect())) continue;
+    if (!t) for (const rb of m.querySelectorAll(':scope>.rowb')) {
+      if (!inR(rb.getBoundingClientRect())) continue;
+      const re = rb.querySelector(':scope>.row');
       const blks = [...re.querySelectorAll(':scope>.blk')].filter(n => n !== src);
       const hit = blks.find(n => inR(n.getBoundingClientRect()));
       if (hit?.classList.contains('slot')) t = {kind: 'slot', r: hit._r, c: hit._c, el: hit, cls: 'hot'};
@@ -809,7 +838,7 @@ class NovaPopupCardEditor extends NovaEditorBase {
       break;
     }
     if (!t) {
-      const rows = m.querySelectorAll(':scope>.row');
+      const rows = m.querySelectorAll(':scope>.rowb');
       if (rows.length && y < rows[0].getBoundingClientRect().top) t = {kind: 'row', i: 0};
       else if (rows.length && y > rows[rows.length - 1].getBoundingClientRect().bottom) t = {kind: 'row', i: rows.length};
     }
