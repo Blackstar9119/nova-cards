@@ -58,3 +58,4 @@ hacs.json             HACS-Metadaten
 - **Commits, Branches und PRs:** keine `Co-Authored-By`-Zeilen und keine Erwähnung von KI-Tools
   (auch nicht in Branch-Namen; Branches heißen `feature/...`).
 - **Commits immer als Blackstar9119 mit 209100092+Blackstar9119@users.noreply.github.com, nie mit privater Mail.**
+- **Pushen und PRs immer über `git` und `gh`** (`git push`, `gh pr create`), nie über den Browser.
