@@ -50,6 +50,9 @@ hacs.json             HACS-Metadaten
   Editoren erben von `NovaEditorBase`, nicht voneinander.
 - **Grafischer Editor für alles:** jede Option ist im Editor einstellbar, nichts hartkodiert (Entitäten,
   Texte, Icons, Farben kommen aus der Konfiguration oder werden automatisch erkannt).
+- **Keine festen Farben in Karten:** wählbare Farben sind Farbrollen (`neutral`, `accent-1` … `accent-4`), im Editor
+  per `ROLE()` aus `editor-schema.js`, in der Karte per `roleVars()` aus `styles.js`. Die Standardfarben stehen nur
+  zentral in `NOVA_VARS` (`--nova-accent-1` …) und werden vom Theme überschrieben.
 - **Alles auf Deutsch:** Beschriftungen, Hilfetexte, Fehlermeldungen, Kommentare, README.
 - **Für Nutzer darf sich bei Umbauten nichts ändern:** gleiche Kartentypen, Optionen, Optik und Editoren.
 - **Commits, Branches und PRs:** keine `Co-Authored-By`-Zeilen und keine Erwähnung von KI-Tools

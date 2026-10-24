@@ -149,7 +149,17 @@
 --nv-error:var(--nova-error-color,#ff6b6b);
 --nv-chip:var(--nova-chip-color,rgba(255,255,255,.13));
 --nv-radius:var(--nova-radius,24px);
---nv-blur:var(--nova-blur,20px)}`;
+--nv-blur:var(--nova-blur,20px);
+--nv-a1:var(--nova-accent-1,#3d8bf5);--nv-a1-fg:var(--nova-accent-1-text,#fff);
+--nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
+--nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
+--nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff)}`;
+  var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
+  var roleVars = (r) => {
+    const k = ROLES[r] || ROLES.neutral;
+    return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)` };
+  };
   var CARD_CSS = `${NOVA_VARS}
 :host{display:block;height:100%}
 .g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);background:var(--nv-bg);
@@ -1779,6 +1789,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   var COLS = { name: "columns", selector: { number: { min: 1, max: 4, mode: "slider" } } };
   var NUM = (n) => ({ name: n, selector: { number: { mode: "box", step: "any" } } });
   var sel = (n, opts) => ({ name: n, selector: { select: { mode: "dropdown", options: opts.map(([value, label]) => ({ value, label })) } } });
+  var ROLE = (n) => sel(n, [["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]);
   var NAMEICON = g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } });
   var BASE_LABELS = {
     name: "Name",
@@ -4116,11 +4127,12 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
   var WCSS = `
 .g.ws{gap:10px}
 .g.ws.due{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--due) 60%,transparent),0 0 22px color-mix(in srgb,var(--due) 25%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
-.hd.due .ic{background:var(--due);color:#fff;box-shadow:0 0 14px color-mix(in srgb,var(--due) 55%,transparent)}
+.hd.due .ic{background:var(--due);color:var(--due-fg);box-shadow:0 0 14px color-mix(in srgb,var(--due) 55%,transparent)}
 .rows{display:flex;flex-direction:column;gap:6px}
-.wr{--c:var(--nova-waste-color,rgba(255,255,255,.22));display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:16px;min-width:0;
+.wr{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:16px;min-width:0;
 background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transition:background .25s,border-color .25s}
-.wr .ic,.cp .ic{background:var(--c);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.wr,.cp .ic{--c:var(--nv-neutral);--cf:var(--nv-neutral-fg)}
+.wr .ic,.cp .ic{background:var(--c);color:var(--cf)}
 .wr.today{background:color-mix(in srgb,var(--c) 26%,transparent);border-color:color-mix(in srgb,var(--c) 60%,transparent)}
 .wr.today .ic{box-shadow:0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
 .wr.tomorrow{background:color-mix(in srgb,var(--c) 13%,transparent);border-color:color-mix(in srgb,var(--c) 35%,transparent)}
@@ -4130,7 +4142,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
 .wr:active{transform:scale(.98)}
 .cp{display:flex;align-items:center;gap:12px;min-width:0}
 .cp .ics{display:flex;flex:none}
-.cp .ic{--c:var(--nova-waste-color,rgba(255,255,255,.22));width:44px;height:44px;border:2px solid rgba(20,24,38,.6)}
+.cp .ic{width:44px;height:44px;border:2px solid rgba(20,24,38,.6)}
 .cp .ic+.ic{margin-left:-14px}
 .cp .ic ha-icon{--mdc-icon-size:24px}
 .cp .nm b{font-weight:600;font-size:15px}.cp .nm small{font-size:12px;opacity:.65}
@@ -4139,11 +4151,11 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
 .msg ha-icon{--mdc-icon-size:18px}`;
   var WDEF = { title: "Müllkalender", icon: "mdi:trash-can-outline", layout: "list", count: 5, days: 30, refresh: 60, hide_unmatched: false, show_header: true, glow: true };
   var WTYPES = [
-    { match: "Rest", name: "Restmüll", icon: "mdi:trash-can", color: "grey" },
-    { match: "Papier, PPK", name: "Papiertonne", icon: "mdi:newspaper-variant-outline", color: "blue" },
-    { match: "Gelb, Wertstoff, Verpackung", name: "Gelber Sack", icon: "mdi:recycle", color: "yellow" },
-    { match: "Bio", name: "Biotonne", icon: "mdi:leaf", color: "brown" },
-    { match: "Glas", name: "Altglas", icon: "mdi:bottle-wine-outline", color: "green" }
+    { match: "Rest", name: "Restmüll", icon: "mdi:trash-can", color: "neutral" },
+    { match: "Papier, PPK", name: "Papiertonne", icon: "mdi:newspaper-variant-outline", color: "accent-1" },
+    { match: "Gelb, Wertstoff, Verpackung", name: "Gelber Sack", icon: "mdi:recycle", color: "accent-2" },
+    { match: "Bio", name: "Biotonne", icon: "mdi:leaf", color: "accent-3" },
+    { match: "Glas", name: "Altglas", icon: "mdi:bottle-wine-outline", color: "accent-4" }
   ];
   var DAY = 864e5;
   var ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -4177,11 +4189,6 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var ruleOf = (types, summary) => {
     const s = summary.toLowerCase();
     return types.find((r) => list(r.match).some((k) => s.includes(k.toLowerCase())));
-  };
-  var colorOf = (v) => {
-    if (Array.isArray(v) && v.length >= 3) return `rgb(${v.slice(0, 3).map(Number).join(",")})`;
-    if (!v || typeof v !== "string") return "";
-    return /^(#|rgb|hsl|var\(|color-mix)/i.test(v) ? v : `var(--${v}-color,${v})`;
   };
   var NovaWasteCard = class extends HTMLElement {
     static getConfigElement() {
@@ -4301,7 +4308,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         const k = `${day}|${name.toLowerCase()}`;
         if (seen.has(k)) continue;
         seen.add(k);
-        out.push({ day, d: day - today, name, icon: rule?.icon || c.icon, color: colorOf(rule?.color), t: ev.sd === day ? ev.t : null, cal: ev.cal });
+        out.push({ day, d: day - today, name, icon: rule?.icon || c.icon, color: roleVars(rule?.color), t: ev.sd === day ? ev.t : null, cal: ev.cal });
       }
       return out.sort((a, b) => a.day - b.day || (a.t ?? -1) - (b.t ?? -1) || a.name.localeCompare(b.name));
     }
@@ -4341,9 +4348,10 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const key = JSON.stringify([msg, shown, warn, this._err && !!this._events, langOf(h), tzOf(h)]);
       if (key === this._key) return;
       this._key = key;
-      const next = shown[0], due = next && next.d <= 1 ? next.color || "var(--nv-accent)" : "";
+      const next = shown[0], due = next && next.d <= 1 ? next.color : null;
       e.g.classList.toggle("due", !!due && c.glow !== false);
-      e.g.style.setProperty("--due", due || "transparent");
+      e.g.style.setProperty("--due", due?.c || "transparent");
+      e.g.style.setProperty("--due-fg", due?.fg || "inherit");
       e.hd.hidden = compact || c.show_header === false;
       e.hd.classList.toggle("due", !!due);
       setIcon(e.ic, c.icon);
@@ -4373,13 +4381,17 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       }
       e.body.replaceChildren(...body);
     }
+    _paint(el, v) {
+      el.style.setProperty("--c", v.c);
+      el.style.setProperty("--cf", v.fg);
+    }
     _cls(d) {
       return d === 0 ? " today" : d === 1 ? " tomorrow" : "";
     }
     _row(it) {
       const el = document.createElement("div");
       el.className = "wr" + this._cls(it.d);
-      if (it.color) el.style.setProperty("--c", it.color);
+      this._paint(el, it.color);
       el.innerHTML = '<div class="ic"></div><div class="nm"><b></b><small></small></div><span class="rel"></span>';
       setIcon(el.firstChild, it.icon);
       el.querySelector("b").textContent = it.name;
@@ -4396,7 +4408,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       el.firstChild.append(...shown.map((x) => {
         const ic = document.createElement("div");
         ic.className = "ic";
-        if (x.color) ic.style.setProperty("--c", x.color);
+        this._paint(ic, x.color);
         setIcon(ic, x.icon);
         return ic;
       }));
@@ -4418,7 +4430,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   ];
   var WTYPE = [
     g2({ name: "match", required: true, selector: T }, { name: "name", selector: T }),
-    g2({ name: "icon", selector: I }, { name: "color", selector: { ui_color: {} } })
+    g2({ name: "icon", selector: I }, ROLE("color"))
   ];
   var WLABELS = {
     ...BASE_LABELS,
@@ -4433,7 +4445,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     glow: "Rahmen leuchtet bei Abholung heute/morgen",
     match: "Stichwort im Termintitel",
     name: "Anzeigename",
-    color: "Farbe"
+    color: "Farbrolle"
   };
   var WHELPERS = {
     entities: "Ein oder mehrere Kalender, z. B. ein iCal-Abfallkalender",
@@ -4442,7 +4454,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     icon: "Leer = Icon der Karte",
     match: "Groß/Klein egal, mehrere mit Komma: Papier, PPK",
     name: "Leer = Termintitel",
-    show_header: "Bei „Kompakt“ immer aus"
+    show_header: "Bei „Kompakt“ immer aus",
+    color: "Farben kommen aus dem Theme (--nova-accent-1 … 4, --nova-neutral)"
   };
   var NovaWasteCardEditor = class extends NovaEditorBase {
     _ilabel(it, j) {

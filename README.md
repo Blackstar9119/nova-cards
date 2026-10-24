@@ -390,6 +390,7 @@ consumables:                   # Infos & Verbrauchsteile
 
 Nächste Müllabholungen aus einem oder mehreren Kalendern (z. B. iCal-Abfallkalender) – mit Müllart, Icon, Farbe, Datum und
 „heute / morgen / in X Tagen“. Abholungen heute und morgen werden hervorgehoben, der Rahmen leuchtet in der Farbe der Müllart.
+Farben werden nicht frei gewählt, sondern als Farbrolle – so färbt ein Theme alle Karten einheitlich um.
 Die Termine kommen über die Kalender-API von Home Assistant und werden regelmäßig sowie beim Tageswechsel neu geladen.
 
 ```yaml
@@ -404,11 +405,11 @@ types:                      # erste passende Regel gewinnt
   - match: Papier, PPK      # Stichwort(e) im Termintitel, Groß/Klein egal
     name: Papiertonne
     icon: mdi:newspaper-variant-outline
-    color: blue             # HA-Farbname, #hex oder rgb(...)
+    color: accent-1         # Farbrolle: neutral | accent-1 … accent-4
   - match: Gelb, Wertstoff
     name: Gelber Sack
     icon: mdi:recycle
-    color: yellow
+    color: accent-2
 ```
 
 | Option | Standard | Bedeutung |
@@ -420,7 +421,7 @@ types:                      # erste passende Regel gewinnt
 | `count` | `5` | Anzahl Termine in der Liste |
 | `days` | `30` | Zeitraum in Tagen ab heute |
 | `refresh` | `60` | Minuten bis zum erneuten Laden (mindestens 5). Beim Tageswechsel wird immer neu geladen |
-| `types[]` | – | Regeln: `match` (Stichwort, mehrere mit Komma), `name` (leer = Termintitel), `icon`, `color` |
+| `types[]` | – | Regeln: `match` (Stichwort, mehrere mit Komma), `name` (leer = Termintitel), `icon`, `color` (Farbrolle, siehe [Theming](#theming); Standard `neutral`) |
 | `hide_unmatched` | `false` | Termine ohne passende Regel ausblenden |
 | `glow` | `true` | Rahmen leuchtet bei einer Abholung heute oder morgen |
 
@@ -433,7 +434,19 @@ Im Editor fügt **„Standard-Müllarten einfügen“** Restmüll, Papier, Gelbe
 
 Alle Karten lesen diese Variablen (z. B. im Theme oder per card-mod):
 
-`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`, `--nova-media-min-height`, `--nova-media-artwork-opacity`, `--nova-vacuum-map-min-height`, `--nova-vacuum-scene-height`, `--nova-vacuum-robot-color`, `--nova-vacuum-station-color`, `--nova-vacuum-water-color`, `--nova-waste-color`
+**Farbrollen** – Karten wählen nur eine Rolle, die Farbe kommt aus dem Theme:
+
+| Rolle | Variable (Farbe / Text darauf) | Standard |
+|---|---|---|
+| `neutral` | `--nova-neutral` / `--nova-neutral-text` | Grau |
+| `accent-1` | `--nova-accent-1` / `--nova-accent-1-text` | Blau |
+| `accent-2` | `--nova-accent-2` / `--nova-accent-2-text` | Gelb |
+| `accent-3` | `--nova-accent-3` / `--nova-accent-3-text` | Braun |
+| `accent-4` | `--nova-accent-4` / `--nova-accent-4-text` | Grün |
+
+Weitere Variablen:
+
+`--nova-background`, `--nova-border-color`, `--nova-text-color`, `--nova-accent-color`, `--nova-accent-text-color`, `--nova-active-color`, `--nova-active-text-color`, `--nova-warning-color`, `--nova-error-color`, `--nova-chip-color`, `--nova-radius`, `--nova-blur`, `--nova-room-min-height`, `--nova-light-min-width`, `--nova-modular-button-width`, `--nova-camera-ptz-size`, `--nova-media-min-height`, `--nova-media-artwork-opacity`, `--nova-vacuum-map-min-height`, `--nova-vacuum-scene-height`, `--nova-vacuum-robot-color`, `--nova-vacuum-station-color`, `--nova-vacuum-water-color`
 
 ## Lizenz
 
