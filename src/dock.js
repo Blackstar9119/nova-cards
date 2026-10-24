@@ -4,7 +4,7 @@ import {isOn} from './shared/state.js';
 import {moreInfo, hassAction, navigate} from './shared/actions.js';
 import {DOCK_VARS, EDITOR_CSS, EDITOR_ICON_CSS} from './shared/styles.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
-import {cleanHash, curHash, openPopup, closePopup, hasPopup, findPopup, dashPopups} from './shared/popup-hub.js';
+import {cleanHash, curHash, togglePopup, popupOptions} from './shared/popup-hub.js';
 
 // Wie viele Mitglieder einer Gruppe sind an (ohne ex)
 const countOn = (h, group, ex) => ((h.states[group]?.attributes.entity_id) || []).filter(id => !(ex || []).includes(id) && isOn(h.states[id])).length;
@@ -51,7 +51,7 @@ class NovaDockPopup extends HTMLElement {
       this._body.appendChild(el);
       return el;
     });
-    if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Popup – im Editor unter „Popup-Karten“ eintragen.</div>';
+    if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Pop-up – im Dock-Editor unter „Einfaches Pop-up: Karten“ eintragen.</div>';
   }
   set hass(h) { this._h = h; this._cards.forEach(c => { c.hass = h; }); }
 }
@@ -163,6 +163,7 @@ class NovaDockCard extends HTMLElement {
     const c = this._cfg, r = this.shadowRoot || this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${DOCK_VARS}${DCSS}</style><div class="dock ${esc(c.position)} ${this._inline ? 'inline' : ''}" style="--sz:${+c.button_size || 48}px"></div>`;
     const dock = r.querySelector('.dock');
+    if (this._hp) r.appendChild(this._hp);
     if (!this._items.length) { dock.innerHTML = `<span class="empty">${c.source ? `Kein Dock in „${esc(c.source)}“ gefunden` : 'Noch keine Einträge'}</span>`; this._btns = []; return; }
     this._btns = this._items.map((it, i) => {
       const d = document.createElement('div');
@@ -204,7 +205,7 @@ class NovaDockCard extends HTMLElement {
   _tap(i) {
     const it = this._items[i];
     if (this._btns[i]?._held) { this._btns[i]._held = false; return; }
-    if (it.popup_hash) { const h = cleanHash(it.popup_hash); this._close(); return curHash() === h ? closePopup(h) : this._openHash(h); }
+    if (it.popup_hash) { this._close(); return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source); }
     if (this._cur === i) return this._close();
     this._close();
     if (Array.isArray(it.cards)) return this._openCards(i, it);
@@ -221,25 +222,6 @@ class NovaDockCard extends HTMLElement {
     p.hass = this._h;
     this.shadowRoot.appendChild(p); // im eigenen Shadow-DOM, damit more-info & Aktionen der Karten bei HA ankommen
     this._opened(i, p);
-  }
-
-  // Nova Pop-up Card per Hash öffnen. Liegt sie nicht in der aktuellen Ansicht, holt das Dock ihre
-  // Konfiguration aus dem Dashboard und zeigt sie selbst an – so geht es in jeder Ansicht.
-  async _openHash(h) {
-    openPopup(h);
-    if (hasPopup(h) || !this._h) return;
-    const cfg = await findPopup(this._h, h, this._cfg.source);
-    if (!cfg || curHash() !== h || hasPopup(h) || !customElements.get(tag('popup-card'))) return;
-    const key = JSON.stringify(cfg);
-    if (this._hp?._cfgKey !== key) {
-      this._hp?.remove();
-      const p = document.createElement(tag('popup-card'));
-      p._fallback = true; p._cfgKey = key;
-      p.setConfig(cfg);
-      this._hp = p;
-    }
-    this._hp.hass = this._h;
-    if (!this._hp.isConnected) this.shadowRoot.appendChild(this._hp); // im eigenen Shadow-DOM, damit Aktionen der Karten bei HA ankommen
   }
 
   _openLegacy(i, it) { // Kompatibilität mit alten nz-Dock-Einträgen (popup: lights|heating|…)
@@ -293,14 +275,14 @@ const ITEM = [
 ];
 const LABELS = {
   position: 'Position', button_size: 'Button-Größe', source: 'Einträge aus anderem Dashboard übernehmen',
-  icon: 'Icon', label: 'Name', tap_action: 'Aktion beim Antippen', popup_title: 'Popup-Titel',
-  popup_hash: 'Nova Pop-up öffnen', cards: 'Popup-Karten (YAML-Liste)', badge: 'Punkt, wenn diese Entität an ist',
+  icon: 'Icon', label: 'Name', tap_action: 'Aktion beim Antippen', popup_title: 'Einfaches Pop-up: Titel',
+  popup_hash: 'Nova Pop-up öffnen', cards: 'Einfaches Pop-up: Karten (YAML-Liste)', badge: 'Punkt, wenn diese Entität an ist',
   badge_count_of: 'Zähler: Gruppe', badge_show_number: 'Zahl statt Punkt', badge_exclude: 'Beim Zählen ignorieren',
 };
 const HELPERS = {
   source: 'Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Dock – praktisch für mehrere Dashboards mit gleicher Leiste.',
-  popup_hash: 'Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor Aktion und Popup-Karten.',
-  cards: 'Wenn gesetzt, öffnet der Button ein Popup mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur',
+  popup_hash: 'Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion und dem einfachen Pop-up.',
+  cards: 'Einfaches Pop-up: Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur',
   badge_count_of: 'Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)',
 };
 
@@ -312,11 +294,11 @@ class NovaDockCardEditor extends NovaEditorBase {
     super.hass = h;
     if (h && !this._hashes) {
       this._hashes = [];
-      dashPopups(h, undefined, true).then(list => { this._hashes = list; this._rebuild(); });
+      popupOptions(h).then(o => { this._hashes = o; this._rebuild(); });
     }
   }
   _schema() {
-    const opts = [{value: '', label: '– keins –'}, ...(this._hashes || []).map(p => { const h = cleanHash(p.hash); return {value: h, label: `${p.title || h} (#${h})`}; })];
+    const opts = this._hashes?.length ? this._hashes : [{value: '', label: '– keins –'}];
     return ITEM.map(x => x.name === 'popup_hash' ? {...x, selector: {select: {...x.selector.select, options: opts}}} : x);
   }
   _build() {
@@ -343,7 +325,8 @@ class NovaDockCardEditor extends NovaEditorBase {
       this._rebuild();
     }));
   }
-  _label(it, i) { return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? `#${cleanHash(it.popup_hash)}` : '') || (Array.isArray(it.cards) ? 'Popup' : it.tap_action?.navigation_path) || 'Neuer Button'}`; }
+  _popName(h) { h = cleanHash(h); return this._hashes?.find(o => o.value === h)?.label || `#${h}`; }
+  _label(it, i) { return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : '') || (Array.isArray(it.cards) ? 'Einfaches Pop-up' : it.tap_action?.navigation_path) || 'Neuer Button'}`; }
   _item(it, i, n) {
     const [d, s, b] = this._details(i, it.icon || 'mdi:circle-outline', this._label(it, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._remove(i)));
     const schema = this._schema();

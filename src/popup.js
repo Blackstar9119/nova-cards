@@ -5,12 +5,12 @@ import {moreInfo} from './shared/actions.js';
 import {NOVA_VARS, roleVars, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from './shared/styles.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, ENT, NUM, sel, ROLE, NAMEICON} from './shared/editor-schema.js';
-import {register, unregister, curHash, cleanHash, openPopup, clearHash, cameByNav, lockScroll, hasPopup} from './shared/popup-hub.js';
+import {register, unregister, curHash, cleanHash, clearHash, cameByNav, lockScroll, hasPopup} from './shared/popup-hub.js';
 
 /* ---------- Datenmodell ----------
    rows: [{cells: [{span: 2, card: {...}}, {card: null}]}]
    Jede Zelle enthält genau eine Karte (null = leerer Platz aus einer Vorlage), span = Spaltenbreite. */
-const DEF = {columns: 2, width: 720, stack_below: 500, info_layout: 'wrap'};
+const DEF = {columns: 2, width: 1180, stack_below: 500, info_layout: 'wrap'};
 const toCell = x => !x || typeof x !== 'object' ? {span: 1, card: null}
   : ('card' in x || 'span' in x) ? {span: Math.max(1, +x.span || 1), card: x.card && typeof x.card === 'object' ? x.card : null}
   : {span: 1, card: x};
@@ -30,53 +30,53 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 
 /* ---------- Nova Pop-up Card ---------- */
 const PCSS = `${NOVA_VARS}
-:host{display:block;--pp-bg:var(--nova-popup-background,var(--primary-background-color,#111418));--pp-fg:var(--nova-popup-text-color,var(--primary-text-color,#fff));
---pp-r:var(--nova-popup-radius,28px);--pp-chip:color-mix(in srgb,var(--pp-fg) 9%,transparent);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+:host{display:block;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 :host(.live){display:contents}
 ha-icon{--mdc-icon-size:20px;display:flex}
 .ph{display:none;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;border:1px dashed var(--divider-color,#666);color:var(--primary-text-color);font-size:13px}
 :host(.edit) .ph{display:flex}
-.ph .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ph small{opacity:.6}
-.ph button{border:none;border-radius:999px;padding:6px 12px;background:var(--primary-color);color:var(--text-primary-color,#fff);font:inherit;cursor:pointer}
+.ph .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pop{position:fixed;inset:0;z-index:var(--nova-popup-z-index,6);display:flex;align-items:center;justify-content:center}
 .pop[hidden]{display:none}
-.ov{position:absolute;inset:0;background:var(--nova-popup-backdrop,rgba(0,0,0,.45));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;transition:opacity .22s}
-.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,720px),calc(100vw - 32px));max-height:min(86vh,1000px);
-background:var(--pp-bg);color:var(--pp-fg);border-radius:var(--pp-r);border:1px solid color-mix(in srgb,var(--pp-fg) 10%,transparent);
-box-shadow:0 24px 70px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:translateY(16px) scale(.98);transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.ov{position:absolute;inset:0;background:var(--nv-popup-backdrop);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .22s}
+.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96vw);max-height:88vh;
+background:var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
+box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.sh.tint{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,var(--nv-popup-base)),var(--nv-popup-base))}
 .pop.in .ov{opacity:1}.pop.in .sh{opacity:1;transform:none}
-.grip{display:none;justify-content:center;padding:8px 0 2px;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.3}
-.hd{display:flex;align-items:center;gap:10px;padding:14px 12px 8px 18px;flex:none;touch-action:pan-x}
-.hi:empty{display:none}.hi ha-icon{--mdc-icon-size:22px}
-.tt{flex:1;min-width:0;font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--pp-chip);color:inherit;cursor:pointer;padding:0}
+.grip{display:none;justify-content:center;padding:8px 0 0;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.35}
+.hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
+background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.hi:empty{display:none}
+.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
-.info{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px;flex:none}
+.info{display:flex;flex-wrap:wrap;gap:7px;padding:0 14px 12px;flex:none}
 .info.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.info.scroll::-webkit-scrollbar{display:none}
 .info[hidden]{display:none}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:var(--pp-chip);font-size:13px;white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:background .2s}
-.chip ha-icon{--mdc-icon-size:17px}.chip img{width:17px;height:17px}.chip:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
-.chip .cn{opacity:.7}.chip .cn:empty{display:none}
-.chip.al{background:color-mix(in srgb,var(--c) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 55%,transparent)}.chip.al .ci{color:var(--c)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:12.5px;white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:all .2s}
+.chip ha-icon{--mdc-icon-size:16px}.chip img{width:16px;height:16px}.chip:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.chip:active{transform:scale(.95)}
+.chip .cn:empty{display:none}.chip .cn:not(:empty)::after{content:' ·'}
+.chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}
 .body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box;
-padding:6px 16px calc(18px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:12px;align-content:start}
+padding:0 14px calc(16px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:12px;align-content:start}
 .body.stack{grid-template-columns:minmax(0,1fr)}.body.stack>.cell{grid-column:auto!important}
 .cell{min-width:0}
 .cell.empty{min-height:0}
-.pop.inline .cell.empty{min-height:72px;border:2px dashed color-mix(in srgb,var(--pp-fg) 25%,transparent);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
+.pop.inline .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
 .pop.inline .cell.empty::after{content:'Leerer Platz'}
-.err{display:flex;gap:8px;align-items:flex-start;padding:12px;border-radius:16px;font-size:13px;color:var(--pp-fg);
-background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid color-mix(in srgb,var(--nv-error) 50%,transparent)}
+.err{display:flex;gap:8px;align-items:flex-start;padding:12px 14px;border-radius:20px;font-size:13px;
+background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid color-mix(in srgb,var(--nv-error) 50%,transparent)}
 .err ha-icon{color:var(--nv-error);flex:none}
 .hint{font-size:13px;opacity:.7;padding:8px 2px;grid-column:1/-1}
 @media(max-width:600px){
 .pop{align-items:flex-end}
-.sh{width:100vw;height:calc(100dvh - 40px - env(safe-area-inset-top));max-height:none;border-radius:var(--pp-r) var(--pp-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
-.grip{display:flex}.hd{padding-top:6px}
-.body{padding-bottom:calc(88px + env(safe-area-inset-bottom))}}
+.sh{width:100vw;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
+.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
+.body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
 .pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
-.pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--pp-r);box-shadow:none;border-bottom:1px solid color-mix(in srgb,var(--pp-fg) 10%,transparent)}
-.pop.inline .body{overflow:visible;padding-bottom:16px}
+.pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
+.pop.inline .body{overflow:visible;padding-bottom:14px}
 @media(prefers-reduced-motion:reduce){.ov,.sh{transition:none}}`;
 
 // Wo liegt die Karte? Kartenauswahl/Editor-Vorschau → Pop-up direkt anzeigen, Bearbeitungsmodus → Platzhalter
@@ -87,14 +87,14 @@ const EDIT = new Set(['HUI-CARD-OPTIONS', 'HUI-CARD-EDIT-MODE']);
 class NovaPopupCard extends HTMLElement {
   static getConfigElement() { return document.createElement(tag('popup-card-editor')); }
   static getStubConfig() {
-    return {hash: 'pop-up', title: 'Pop-up', icon: 'mdi:card-multiple-outline', columns: 2,
+    return {hash: 'neu', columns: 2,
       rows: [{cells: [{span: 2, card: null}]}, {cells: [{card: null}, {card: null}]}]};
   }
   constructor() {
     super();
     const r = this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${PCSS}</style>
-<div class="ph"><ha-icon icon="mdi:card-multiple-outline"></ha-icon><span class="t"></span><button type="button">Öffnen</button></div>
+<div class="ph"><ha-icon icon="mdi:card-multiple-outline"></ha-icon><span class="t"></span></div>
 <div class="pop" hidden><div class="ov"></div><div class="sh" role="dialog" aria-modal="true">
 <div class="grip"><i></i></div>
 <div class="hd"><span class="hi"></span><span class="tt"></span><button type="button" class="x" aria-label="Schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
@@ -104,7 +104,6 @@ class NovaPopupCard extends HTMLElement {
     r.querySelector('.x').addEventListener('click', () => this.close());
     r.querySelector('.ov').addEventListener('click', () => this.close());
     r.querySelector('.ov').addEventListener('touchmove', e => e.preventDefault(), {passive: false});
-    r.querySelector('.ph button').addEventListener('click', e => { e.stopPropagation(); openPopup(this._cfg?.hash); });
     this._sync = () => this._syncOpen();
     this._key = e => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
@@ -153,12 +152,14 @@ class NovaPopupCard extends HTMLElement {
 
   _detect() {
     if (!this.isConnected) return;
-    let m = this.preview || this.hasAttribute('preview') ? 'preview' : this.editMode ? 'edit' : 'live';
-    for (let n = this, i = 0; n && i < 60; i++) {
-      if (EDIT.has(n.tagName)) { m = 'edit'; break; }
-      if (PREV.has(n.tagName)) { m = 'preview'; break; }
+    // Im Karteneditor (Dialog) immer live geöffnet zeigen, im Bearbeitungsmodus des Dashboards nur den Platzhalter
+    let inDialog = false, inEdit = !!(this.preview || this.hasAttribute('preview') || this.editMode);
+    for (let n = this, i = 0; n && i < 80; i++) {
+      if (PREV.has(n.tagName) || n.tagName?.includes('DIALOG')) { inDialog = true; break; }
+      if (EDIT.has(n.tagName)) inEdit = true;
       n = n.parentElement || n.getRootNode?.().host;
     }
+    let m = inDialog ? 'preview' : inEdit ? 'edit' : 'live';
     if (this._fallback) m = 'live';
     const was = this._mode;
     this._mode = m;
@@ -251,9 +252,12 @@ class NovaPopupCard extends HTMLElement {
     r.querySelector('.tt').textContent = c.title || '';
     const hi = r.querySelector('.hi');
     if (c.icon) setIcon(hi, c.icon); else { hi.innerHTML = ''; hi._ic = null; }
-    r.querySelector('.ph .t').innerHTML = `${esc(c.title || 'Pop-up')} <small>${c.hash ? `#${esc(c.hash)}` : 'kein Hash eingestellt'}</small>`;
+    r.querySelector('.ph .t').textContent = c.title || (c.hash ? `#${c.hash}` : 'Kein Hash eingestellt');
+    r.querySelector('.ph ha-icon').setAttribute('icon', c.icon || 'mdi:card-multiple-outline');
     this._sh.style.setProperty('--pw', `${+c.width || DEF.width}px`);
-    this._sh.setAttribute('aria-label', c.title || 'Pop-up');
+    this._sh.classList.toggle('tint', !!c.color);
+    if (c.color) this._sh.style.setProperty('--tc', roleVars(c.color).c);
+    if (c.title || c.hash) this._sh.setAttribute('aria-label', c.title || c.hash); else this._sh.removeAttribute('aria-label');
     this._body.style.setProperty('--cols', this._cols);
     this._infoEl.classList.toggle('scroll', c.info_layout === 'scroll');
     this._chips = null;
@@ -283,7 +287,7 @@ class NovaPopupCard extends HTMLElement {
       d.title = nameOf(h, o);
       const al = !!o.alert && alertHit({state: o.alert_state, above: o.alert_above, below: o.alert_below}, s);
       d.classList.toggle('al', al);
-      if (al) d.style.setProperty('--c', roleVars(o.alert_color || 'accent-2').c);
+      if (al) { const v = roleVars(o.alert_color || 'accent-2'); d.style.setProperty('--c', v.c); d.style.setProperty('--cf', v.fg); }
     });
   }
 
@@ -368,6 +372,7 @@ const cardIcon = (h, c) => c.icon || (c.entity && h ? iconOf(h, {entity: c.entit
 const GENERAL = [
   {name: 'hash', required: true, selector: T},
   g2({name: 'title', selector: T}, {name: 'icon', selector: I}),
+  ROLE('color'),
   g2({name: 'width', selector: {number: {min: 320, max: 1600, step: 10, mode: 'box', unit_of_measurement: 'px'}}},
     {name: 'stack_below', selector: {number: {min: 0, max: 1200, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
 ];
@@ -380,13 +385,14 @@ const INFO = [
 ];
 const COLS = [{name: 'columns', selector: {number: {min: 1, max: 4, mode: 'slider'}}}];
 const LABELS = {
-  hash: 'Hash (ohne #)', title: 'Titel', icon: 'Icon', width: 'Max. Breite (Desktop)', stack_below: 'Untereinander unter Breite',
+  hash: 'Hash (ohne #)', title: 'Titel', icon: 'Icon', color: 'Farbton (leer = Nova-Glas)', width: 'Max. Breite (Desktop)', stack_below: 'Untereinander unter Breite',
   info_layout: 'Info-Leiste bei vielen Einträgen', entity: 'Entität', name: 'Eigener Name (optional)', decimals: 'Nachkommastellen',
   alert: 'Bei Achtung hervorheben', alert_state: 'Achtung bei Zustand', alert_color: 'Farbe', alert_above: 'Achtung über', alert_below: 'Achtung unter',
   columns: 'Spalten',
 };
 const HELPERS = {
   hash: 'Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.',
+  title: 'Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.',
   stack_below: 'Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).',
   alert_state: 'z. B. on oder open, mehrere mit Komma. Leer = an bzw. Problem (z. B. Fenster offen).',
 };

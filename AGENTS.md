@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Dock,
-Modular, Kamera, Media, Saugroboter, Müllkalender und Pop-up – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Info und Pop-up – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -21,6 +21,7 @@ src/
   media.js            Nova Media Card + Editor
   vacuum.js           Nova Saugroboter Card + Editor
   waste.js            Nova Müllkalender Card + Editor (Termine aus calendar.*-Entitäten)
+  info.js             Nova Info Card + Editor (Überschrift + Zeilen: Name/Wert oder Schalter)
   popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
@@ -33,7 +34,7 @@ src/
     editor-base.js    NovaEditorBase – Basisklasse ALLER Editoren
     editor-schema.js  Bausteine für ha-form-Schemas + gemeinsame Beschriftungen
     popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
-                      genutzt von Pop-up Card und Dock
+                      Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Dock und Raum-Karte
 docs/
   popup-card.md       Anleitung Nova Pop-up Card
 dev/
@@ -85,7 +86,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | `ha-yaml-editor` | `popup.js` | Textfeld im JSON-Format |
 | `getStubConfig()` der Kartenklassen (`hui-<typ>-card`) | `popup.js` | nur `{type}` |
 | Elementnamen `hui-card-preview`, `hui-dialog-edit-card`, `hui-card-options`, `hui-card-edit-mode` … | `popup.js`, `dock.js` | Karte gilt als normal eingebunden |
-| WebSocket `lovelace/config` | `popup-hub.js`, `dock.js` | keine Pop-ups/Einträge aus dem Dashboard |
+| WebSocket `lovelace/config` | `popup-hub.js` (Pop-ups für Dock und Raum-Karte), `dock.js` | keine Pop-ups/Einträge aus dem Dashboard |
 | Event `ll-rebuild` | `popup.js` | Zelle wird neu aufgebaut, sonst nichts |
 
 ## Dev-Workflow
@@ -98,7 +99,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
   `ha_config_set_dashboard_resource` (`url` = `https://cdn.jsdelivr.net/gh/Blackstar9119/nova-cards@<commit>/nova-dev-cards.js`,
   `resource_type` = `module`) auf den neuen Commit-Hash umstellen. **Immer dieselbe Ressource aktualisieren**
   (`resource_id`), nie eine neue anlegen. Laufen mehrere Feature-Branches parallel, alle getesteten Karten in einen
-  Build packen (`npm run dev -- weather,popup,dock`), damit kein Test verloren geht.
+  Build packen (z. B. `npm run dev -- weather,popup,dock,info,room`), damit kein Test verloren geht.
 - **resource_id der Dev-Ressource:** `4cc06e00074c416590e298ace68fe3a7`
   Fehlt sie oder ist sie ungültig, zuerst per `ha_config_list_dashboard_resources` nach einer bestehenden
   Ressource suchen, die auf `nova-dev-cards.js` zeigt (oder inline mit `/* Nova Cards v… DEV` beginnt), und deren ID

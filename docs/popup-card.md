@@ -6,14 +6,17 @@ Ein Pop-up mit beliebigen Karten (Nova-Karten, HA-Karten, andere Custom Cards). 
 ## Pop-up anlegen
 
 1. Dashboard bearbeiten → **Karte hinzufügen** → **Nova Pop-up Card**.
-2. Unter **Allgemein** einen **Hash** vergeben, z. B. `wohnzimmer` (ohne `#`), dazu Titel und Icon.
-3. Die Karte selbst ist im Dashboard unsichtbar. Im Bearbeitungsmodus zeigt sie einen kleinen Platzhalter mit
-   „Öffnen“-Knopf. Am besten ganz ans Ende der Ansicht legen.
+2. Unter **Allgemein** einen **Hash** vergeben, z. B. `wohnzimmer` (ohne `#`), dazu Titel und Icon. Der Titel steht
+   oben im Pop-up und in den Auswahllisten. Ohne Titel bleibt die Kopfzeile leer, in Listen erscheint dann der Hash.
+3. Die Karte selbst ist im Dashboard unsichtbar. Im Bearbeitungsmodus zeigt sie nur einen kleinen Platzhalter mit
+   dem Titel, im Karteneditor erscheint das Pop-up live in der Vorschau. Am besten ganz ans Ende der Ansicht legen.
 
 ## Öffnen
 
-- **Über das Dock:** Im Dock-Editor beim Button unter **Nova Pop-up öffnen** das Pop-up aus der Liste wählen.
-  Das Dock findet Pop-ups im ganzen Dashboard und öffnet sie in jeder Ansicht.
+- **Über das Dock:** Im Dock-Editor beim Button unter **Nova Pop-up öffnen** das Pop-up aus der Liste wählen
+  (angezeigt mit seinem Titel). Das Dock findet Pop-ups im ganzen Dashboard und öffnet sie in jeder Ansicht.
+  „Einfaches Pop-up“ im Dock ist das alte, schlichte Pop-up mit einer YAML-Kartenliste.
+- **Über die Raum-Karte:** Im Editor der Nova Room Card unter **Beim Antippen Nova Pop-up öffnen** das Pop-up wählen.
 - **Über jede andere Karte:** Aktion „Navigieren“ mit dem Pfad `#wohnzimmer`. Dafür muss die Pop-up Card in
   derselben Ansicht liegen.
 
@@ -62,5 +65,8 @@ rows:
 
 ## Farben
 
-Hintergrund und Text kommen aus dem HA-Theme. Anpassbar per Theme-Variablen: `nova-popup-background`,
-`nova-popup-text-color`, `nova-popup-radius`, `nova-popup-backdrop`, `nova-popup-z-index`.
+Standard ist der bläuliche Nova-Glas-Look. Unter **Allgemein** → **Farbton** lässt er sich mit einer Nova-Farbrolle
+einfärben. Per Theme-Variablen anpassbar: `nova-popup-background`, `nova-popup-base-color`, `nova-popup-header-color`,
+`nova-popup-backdrop`, `nova-popup-radius`, `nova-popup-z-index`, Textfarbe über `nova-text-color`.
+
+Passend für Blöcke im Pop-up: die **Nova Info Card** (Überschrift + Zeilen mit Name und Wert oder Schaltern).

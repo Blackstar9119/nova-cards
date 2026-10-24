@@ -68,3 +68,30 @@ export const findPopup = async (hass, h, alt) => {
   }
   return null;
 };
+
+// Anzeige in Auswahllisten und Platzhaltern: eingestellter Titel, sonst #hash
+export const popupLabel = c => c.title || `#${cleanHash(c.hash)}`;
+// Optionen für eine Auswahlliste „Nova Pop-up öffnen“ (Dock, Raum-Karte)
+export const popupOptions = async hass => [{value: '', label: '– keins –'},
+  ...(await dashPopups(hass, undefined, true)).map(c => ({value: cleanHash(c.hash), label: popupLabel(c)}))];
+
+// Nova Pop-up per Hash öffnen (zweites Antippen schließt). Liegt die Pop-up Card nicht in der aktuellen Ansicht,
+// holt die aufrufende Karte (host) ihre Konfiguration aus dem Dashboard und zeigt sie in ihrem eigenen Shadow-DOM an,
+// damit Aktionen der Karten bei HA ankommen. alt = weiteres Dashboard zum Suchen (z. B. „source“ des Docks).
+export async function togglePopup(host, hass, h, alt) {
+  if (curHash() === h) return closePopup(h);
+  openPopup(h);
+  if (hasPopup(h) || !hass) return;
+  const cfg = await findPopup(hass, h, alt);
+  if (!cfg || curHash() !== h || hasPopup(h) || !customElements.get(tag('popup-card'))) return;
+  const key = JSON.stringify(cfg);
+  if (host._hp?._cfgKey !== key) {
+    host._hp?.remove();
+    const p = document.createElement(tag('popup-card'));
+    p._fallback = true; p._cfgKey = key;
+    p.setConfig(cfg);
+    host._hp = p;
+  }
+  host._hp.hass = hass;
+  if (!host._hp.isConnected) host.shadowRoot.appendChild(host._hp);
+}

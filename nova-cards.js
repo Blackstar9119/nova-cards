@@ -1,5 +1,5 @@
 /* Nova Cards v0.10.1 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Pop-up – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Info, Pop-up – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
   var __defProp = Object.defineProperty;
@@ -158,7 +158,13 @@
 --nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
 --nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
 --nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
---nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff)}`;
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff);
+--nv-box:var(--nova-box-background,rgba(255,255,255,.09));--nv-box-border:var(--nova-box-border-color,rgba(255,255,255,.1));
+--nv-popup-bg:var(--nova-popup-background,linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88)));
+--nv-popup-base:var(--nova-popup-base-color,rgba(22,27,42,.88));
+--nv-popup-head:var(--nova-popup-header-color,rgba(60,72,100,.85));
+--nv-popup-backdrop:var(--nova-popup-backdrop,rgba(8,12,22,.5));
+--nv-popup-r:var(--nova-popup-radius,28px)}`;
   var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
   var roleVars = (r) => {
     const k = ROLES[r] || ROLES.neutral;
@@ -431,12 +437,136 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
   };
 
+  // src/shared/popup-hub.js
+  var KEY = `__${tag("popups")}`;
+  var popups = () => window[KEY] ||= /* @__PURE__ */ new Map();
+  var register = (h, card) => {
+    const m = popups();
+    (m.get(h) || m.set(h, /* @__PURE__ */ new Set()).get(h)).add(card);
+  };
+  var unregister = (h, card) => {
+    const s = popups().get(h);
+    if (s) {
+      s.delete(card);
+      if (!s.size) popups().delete(h);
+    }
+  };
+  var hasPopup = (h) => [...popups().get(h) || []].some((p) => !p._fallback && p.isConnected);
+  var cleanHash = (h) => String(h ?? "").trim().replace(/^#+/, "").replace(/\s+/g, "-");
+  var curHash = () => {
+    const s = location.hash.slice(1);
+    try {
+      return decodeURIComponent(s);
+    } catch {
+      return s;
+    }
+  };
+  var openPopup = (h) => {
+    if (h && curHash() !== h) navigate(`#${encodeURIComponent(h)}`);
+  };
+  var prev = null;
+  var cur = location.href;
+  var track = () => {
+    if (location.href !== cur) {
+      prev = cur;
+      cur = location.href;
+    }
+  };
+  ["popstate", "hashchange", "location-changed"].forEach((ev) => window.addEventListener(ev, track));
+  var base = (u) => {
+    try {
+      const x = new URL(u);
+      return x.origin + x.pathname + x.search;
+    } catch {
+      return "";
+    }
+  };
+  var cameByNav = () => {
+    track();
+    return !!prev && base(prev) === base(location.href) && !new URL(prev).hash;
+  };
+  var clearHash = (back) => {
+    if (back) return history.back();
+    history.replaceState(history.state, "", location.pathname + location.search);
+    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: true } }));
+  };
+  var closePopup = (h) => {
+    const p = [...popups().get(h) || []].find((x) => x._isOpen);
+    if (p) p.close();
+    else if (curHash() === h) clearHash(false);
+  };
+  var locks = 0;
+  var saved = null;
+  var lockScroll = (on) => {
+    const els = [document.documentElement, document.body];
+    if (on && locks++ === 0) {
+      saved = els.map((e) => e.style.overflow);
+      els.forEach((e) => {
+        e.style.overflow = "hidden";
+      });
+    }
+    if (!on && locks > 0 && --locks === 0) els.forEach((e, i) => {
+      e.style.overflow = saved?.[i] || "";
+    });
+  };
+  var findPopups = (o, out = []) => {
+    if (!o || typeof o !== "object") return out;
+    if (o.type === `custom:${tag("popup-card")}` && o.hash) out.push(o);
+    else Object.values(o).forEach((v) => findPopups(v, out));
+    return out;
+  };
+  var dashPath = () => {
+    const p = location.pathname.split("/")[1];
+    return !p || p === "lovelace" ? null : p;
+  };
+  var CACHE = {};
+  var dashPopups = (hass, path = dashPath(), fresh) => {
+    const k = path ?? "", c = CACHE[k];
+    if (c && !fresh && Date.now() - c.t < 15e3) return c.p;
+    const p = Promise.resolve().then(() => hass.callWS({ type: "lovelace/config", url_path: path })).then((cfg) => findPopups(cfg)).catch(() => []);
+    CACHE[k] = { t: Date.now(), p };
+    return p;
+  };
+  var findPopup = async (hass, h, alt) => {
+    const paths = [dashPath()];
+    if (alt) paths.push(alt === "default" ? null : alt);
+    for (const p of paths) {
+      const hit = (await dashPopups(hass, p)).find((c) => cleanHash(c.hash) === h);
+      if (hit) return hit;
+    }
+    return null;
+  };
+  var popupLabel = (c) => c.title || `#${cleanHash(c.hash)}`;
+  var popupOptions = async (hass) => [
+    { value: "", label: "– keins –" },
+    ...(await dashPopups(hass, void 0, true)).map((c) => ({ value: cleanHash(c.hash), label: popupLabel(c) }))
+  ];
+  async function togglePopup(host, hass, h, alt) {
+    if (curHash() === h) return closePopup(h);
+    openPopup(h);
+    if (hasPopup(h) || !hass) return;
+    const cfg = await findPopup(hass, h, alt);
+    if (!cfg || curHash() !== h || hasPopup(h) || !customElements.get(tag("popup-card"))) return;
+    const key = JSON.stringify(cfg);
+    if (host._hp?._cfgKey !== key) {
+      host._hp?.remove();
+      const p = document.createElement(tag("popup-card"));
+      p._fallback = true;
+      p._cfgKey = key;
+      p.setConfig(cfg);
+      host._hp = p;
+    }
+    host._hp.hass = hass;
+    if (!host._hp.isConnected) host.shadowRoot.appendChild(host._hp);
+  }
+
   // src/room.js
   var MAIN = [
     { type: "grid", name: "", schema: [{ name: "name", required: true, selector: { text: {} } }, { name: "icon", selector: { icon: {} } }] },
     { name: "temperature", selector: { entity: { domain: ["sensor", "climate"] } } },
     { name: "windows", selector: { entity: { multiple: true, domain: "binary_sensor" } } },
-    { name: "tap_action", selector: { ui_action: {} } }
+    { name: "tap_action", selector: { ui_action: {} } },
+    { name: "popup", selector: { select: { mode: "dropdown", custom_value: true, options: [] } } }
   ];
   var ADVANCED = [
     { name: "info", selector: { entity: {} } },
@@ -455,6 +585,21 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   var ICON_MAP_ROW = [{ type: "grid", name: "", schema: [{ name: "state", selector: { text: {} } }, { name: "value", selector: { text: {} } }] }];
   var NovaRoomCardEditor = class extends NovaEditorBase {
     // icon_map je Button als bearbeitbare Zeilen (bleiben auch leer stehen)
+    // Pop-ups des Dashboards für die Auswahlliste einmal laden
+    set hass(h) {
+      super.hass = h;
+      if (h && !this._pops) {
+        this._pops = [];
+        popupOptions(h).then((o) => {
+          this._pops = o;
+          this._rebuild();
+        });
+      }
+    }
+    _main() {
+      const opts = this._pops?.length ? this._pops : [{ value: "", label: "– keins –" }];
+      return MAIN.map((x) => x.name === "popup" ? { ...x, selector: { select: { ...x.selector.select, options: opts } } } : x);
+    }
     _onExternalConfig() {
       this._maps = (this._config.buttons || []).map((b) => Object.entries(b.icon_map || {}));
     }
@@ -462,7 +607,13 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       const r = this.shadowRoot;
       r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), save = (schema2) => (v) => this._emit(merge(this._config, names(schema2), v));
-      w.append(this._form(MAIN, this._config, save(MAIN)));
+      const main = this._main();
+      w.append(this._form(main, this._config, (v) => {
+        const c = merge(this._config, names(main), v);
+        if (c.popup) c.popup = cleanHash(c.popup);
+        if (!c.popup) delete c.popup;
+        this._emit(c);
+      }));
       w.append(this._h3("Buttons"));
       (this._config.buttons || []).forEach((b, i) => w.append(this._button(b, i)));
       w.append(this._add("Button hinzufügen", () => {
@@ -550,6 +701,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     temperature: "Temperatur (Sensor oder Thermostat)",
     windows: "Fenster & Türen",
     tap_action: "Aktion beim Antippen",
+    popup: "Beim Antippen Nova Pop-up öffnen",
     hold_action: "Aktion bei langem Drücken",
     info: "Info-Entität (ersetzt Temperatur)",
     info_suffix: "Info-Suffix",
@@ -564,6 +716,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   });
   __publicField(NovaRoomCardEditor, "helpers", {
     windows: "Offenes Fenster = farbiger Rahmen + Icon",
+    popup: "Öffnet die gewählte Nova Pop-up Card (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion beim Antippen.",
     state_entity: "Optional: bestimmt An/Aus-Anzeige statt der Entität selbst (z. B. TV-Bildschirmstatus)",
     icon_entity: "Optional: Icon wechselt je nach Zustand dieser Entität (z. B. aktuelle TV-App)",
     image: "z. B. /local/raeume/wohnzimmer.jpg"
@@ -632,6 +785,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     set hass(h) {
       this._h = h;
       if (!this._built) this._build();
+      if (this._hp) this._hp.hass = h;
       this._update();
     }
     getCardSize() {
@@ -643,7 +797,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     _build() {
       if (!this._c) return;
       this._built = true;
-      const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" }), tap = c.tap_action?.action;
+      const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" }), tap = c.popup ? "popup" : c.tap_action?.action;
       r.innerHTML = `<style>${CARD_CSS}${ROOM_CSS}</style>
 <div class="g room ${tap && tap !== "none" ? "click" : ""}">
   ${c.image ? `<div class="bg" style="background-image:url('${esc(c.image)}')"></div>` : ""}
@@ -653,10 +807,12 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   <div class="btns"></div>
 </div>`;
       this._room = r.querySelector(".room");
+      if (this._hp) r.appendChild(this._hp);
       this._tv = r.querySelector(".tv");
       const box = r.querySelector(".btns");
       this._room.addEventListener("click", () => {
         if (!tap || tap === "none") return;
+        if (c.popup) return togglePopup(this, this._h, cleanHash(c.popup));
         hassAction(this, { entity: c.temperature || c.info, tap_action: c.tap_action }, "tap");
       });
       this._btns = c.buttons.map((b) => {
@@ -1404,106 +1560,6 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   };
   define(TAG3, NovaLightCard, { name: "Nova Licht Card", description: "Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.", documentationURL: docUrl("nova-licht-card") });
 
-  // src/shared/popup-hub.js
-  var KEY = `__${tag("popups")}`;
-  var popups = () => window[KEY] ||= /* @__PURE__ */ new Map();
-  var register = (h, card) => {
-    const m = popups();
-    (m.get(h) || m.set(h, /* @__PURE__ */ new Set()).get(h)).add(card);
-  };
-  var unregister = (h, card) => {
-    const s = popups().get(h);
-    if (s) {
-      s.delete(card);
-      if (!s.size) popups().delete(h);
-    }
-  };
-  var hasPopup = (h) => [...popups().get(h) || []].some((p) => !p._fallback && p.isConnected);
-  var cleanHash = (h) => String(h ?? "").trim().replace(/^#+/, "").replace(/\s+/g, "-");
-  var curHash = () => {
-    const s = location.hash.slice(1);
-    try {
-      return decodeURIComponent(s);
-    } catch {
-      return s;
-    }
-  };
-  var openPopup = (h) => {
-    if (h && curHash() !== h) navigate(`#${encodeURIComponent(h)}`);
-  };
-  var prev = null;
-  var cur = location.href;
-  var track = () => {
-    if (location.href !== cur) {
-      prev = cur;
-      cur = location.href;
-    }
-  };
-  ["popstate", "hashchange", "location-changed"].forEach((ev) => window.addEventListener(ev, track));
-  var base = (u) => {
-    try {
-      const x = new URL(u);
-      return x.origin + x.pathname + x.search;
-    } catch {
-      return "";
-    }
-  };
-  var cameByNav = () => {
-    track();
-    return !!prev && base(prev) === base(location.href) && !new URL(prev).hash;
-  };
-  var clearHash = (back) => {
-    if (back) return history.back();
-    history.replaceState(history.state, "", location.pathname + location.search);
-    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: true } }));
-  };
-  var closePopup = (h) => {
-    const p = [...popups().get(h) || []].find((x) => x._isOpen);
-    if (p) p.close();
-    else if (curHash() === h) clearHash(false);
-  };
-  var locks = 0;
-  var saved = null;
-  var lockScroll = (on) => {
-    const els = [document.documentElement, document.body];
-    if (on && locks++ === 0) {
-      saved = els.map((e) => e.style.overflow);
-      els.forEach((e) => {
-        e.style.overflow = "hidden";
-      });
-    }
-    if (!on && locks > 0 && --locks === 0) els.forEach((e, i) => {
-      e.style.overflow = saved?.[i] || "";
-    });
-  };
-  var findPopups = (o, out = []) => {
-    if (!o || typeof o !== "object") return out;
-    if (o.type === `custom:${tag("popup-card")}` && o.hash) out.push(o);
-    else Object.values(o).forEach((v) => findPopups(v, out));
-    return out;
-  };
-  var dashPath = () => {
-    const p = location.pathname.split("/")[1];
-    return !p || p === "lovelace" ? null : p;
-  };
-  var CACHE = {};
-  var dashPopups = (hass, path = dashPath(), fresh) => {
-    const k = path ?? "", c = CACHE[k];
-    if (c && !fresh && Date.now() - c.t < 15e3) return c.p;
-    const p = Promise.resolve().then(() => hass.callWS({ type: "lovelace/config", url_path: path })).then((cfg) => findPopups(cfg)).catch(() => []);
-    CACHE[k] = { t: Date.now(), p };
-    return p;
-  };
-  var findPopup = async (hass, h, alt) => {
-    const paths = [dashPath()];
-    if (alt) paths.push(alt === "default" ? null : alt);
-    for (const p of paths) {
-      const hit = (await dashPopups(hass, p)).find((c) => cleanHash(c.hash) === h);
-      if (hit) return hit;
-    }
-    return null;
-  };
-
   // src/dock.js
   var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
   var PCSS = `
@@ -1548,7 +1604,7 @@ ha-icon{--mdc-icon-size:20px;display:flex}
         this._body.appendChild(el2);
         return el2;
       });
-      if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Popup – im Editor unter „Popup-Karten“ eintragen.</div>';
+      if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Pop-up – im Dock-Editor unter „Einfaches Pop-up: Karten“ eintragen.</div>';
     }
     set hass(h) {
       this._h = h;
@@ -1679,6 +1735,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${DOCK_VARS}${DCSS}</style><div class="dock ${esc(c.position)} ${this._inline ? "inline" : ""}" style="--sz:${+c.button_size || 48}px"></div>`;
       const dock = r.querySelector(".dock");
+      if (this._hp) r.appendChild(this._hp);
       if (!this._items.length) {
         dock.innerHTML = `<span class="empty">${c.source ? `Kein Dock in „${esc(c.source)}“ gefunden` : "Noch keine Einträge"}</span>`;
         this._btns = [];
@@ -1741,9 +1798,8 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
         return;
       }
       if (it.popup_hash) {
-        const h = cleanHash(it.popup_hash);
         this._close();
-        return curHash() === h ? closePopup(h) : this._openHash(h);
+        return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
       }
       if (this._cur === i) return this._close();
       this._close();
@@ -1760,25 +1816,6 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       p.hass = this._h;
       this.shadowRoot.appendChild(p);
       this._opened(i, p);
-    }
-    // Nova Pop-up Card per Hash öffnen. Liegt sie nicht in der aktuellen Ansicht, holt das Dock ihre
-    // Konfiguration aus dem Dashboard und zeigt sie selbst an – so geht es in jeder Ansicht.
-    async _openHash(h) {
-      openPopup(h);
-      if (hasPopup(h) || !this._h) return;
-      const cfg = await findPopup(this._h, h, this._cfg.source);
-      if (!cfg || curHash() !== h || hasPopup(h) || !customElements.get(tag("popup-card"))) return;
-      const key = JSON.stringify(cfg);
-      if (this._hp?._cfgKey !== key) {
-        this._hp?.remove();
-        const p = document.createElement(tag("popup-card"));
-        p._fallback = true;
-        p._cfgKey = key;
-        p.setConfig(cfg);
-        this._hp = p;
-      }
-      this._hp.hass = this._h;
-      if (!this._hp.isConnected) this.shadowRoot.appendChild(this._hp);
     }
     _openLegacy(i, it) {
       const p = document.createElement("nz-popup");
@@ -1839,9 +1876,9 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     icon: "Icon",
     label: "Name",
     tap_action: "Aktion beim Antippen",
-    popup_title: "Popup-Titel",
+    popup_title: "Einfaches Pop-up: Titel",
     popup_hash: "Nova Pop-up öffnen",
-    cards: "Popup-Karten (YAML-Liste)",
+    cards: "Einfaches Pop-up: Karten (YAML-Liste)",
     badge: "Punkt, wenn diese Entität an ist",
     badge_count_of: "Zähler: Gruppe",
     badge_show_number: "Zahl statt Punkt",
@@ -1849,8 +1886,8 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   var HELPERS = {
     source: "Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Dock – praktisch für mehrere Dashboards mit gleicher Leiste.",
-    popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor Aktion und Popup-Karten.",
-    cards: "Wenn gesetzt, öffnet der Button ein Popup mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
+    popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion und dem einfachen Pop-up.",
+    cards: "Einfaches Pop-up: Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
     badge_count_of: "Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)"
   };
   var NovaDockCardEditor = class extends NovaEditorBase {
@@ -1859,17 +1896,14 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       super.hass = h;
       if (h && !this._hashes) {
         this._hashes = [];
-        dashPopups(h, void 0, true).then((list2) => {
-          this._hashes = list2;
+        popupOptions(h).then((o) => {
+          this._hashes = o;
           this._rebuild();
         });
       }
     }
     _schema() {
-      const opts = [{ value: "", label: "– keins –" }, ...(this._hashes || []).map((p) => {
-        const h = cleanHash(p.hash);
-        return { value: h, label: `${p.title || h} (#${h})` };
-      })];
+      const opts = this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
       return ITEM.map((x) => x.name === "popup_hash" ? { ...x, selector: { select: { ...x.selector.select, options: opts } } } : x);
     }
     _build() {
@@ -1896,8 +1930,12 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
         this._rebuild();
       }));
     }
+    _popName(h) {
+      h = cleanHash(h);
+      return this._hashes?.find((o) => o.value === h)?.label || `#${h}`;
+    }
     _label(it, i) {
-      return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? `#${cleanHash(it.popup_hash)}` : "") || (Array.isArray(it.cards) ? "Popup" : it.tap_action?.navigation_path) || "Neuer Button"}`;
+      return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : it.tap_action?.navigation_path) || "Neuer Button"}`;
     }
     _item(it, i, n) {
       const [d, s, b] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)));
@@ -4642,8 +4680,158 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   __publicField(NovaWasteCardEditor, "helpers", WHELPERS);
   define("waste-card-editor", NovaWasteCardEditor);
 
+  // src/info.js
+  var ICSS = `
+.g.box{background:var(--nv-box);backdrop-filter:none;-webkit-backdrop-filter:none;border-color:var(--nv-box-border);box-shadow:none;border-radius:20px;padding:12px 14px}
+.g{gap:6px}
+.ht{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;opacity:.8;margin-bottom:2px}
+.ht ha-icon{--mdc-icon-size:17px}.ht:empty{display:none}
+.rows{display:flex;flex-direction:column}
+.kv{cursor:pointer}.kv .ki:empty{display:none}
+.row{padding:5px 0}
+.row .ic{width:38px;height:38px;cursor:pointer;--c:var(--nv-accent);--cf:var(--nv-accent-fg)}
+.row.on .ic{background:var(--c);color:var(--cf);box-shadow:0 0 14px color-mix(in srgb,var(--c) 50%,transparent)}
+.row .nm{cursor:pointer}
+.row:active .ic{transform:none}.row .ic:active{transform:scale(.92)}
+.empty{font-size:13px;opacity:.6;padding:4px 0}`;
+  var WARM = ["light", "switch", "input_boolean"];
+  var rowsOf = (c) => [].concat(c.entities || []).filter(Boolean).map(toObj).filter((o) => o.entity);
+  var NovaInfoCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("info-card-editor"));
+    }
+    static getStubConfig(h) {
+      const ids = Object.keys(h?.states || {}).filter((id) => h.states[id].attributes.device_class === "temperature" && id.startsWith("sensor.")).slice(0, 3);
+      return { title: "Temperaturen", icon: "mdi:thermometer", entities: ids };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._c = { style: "box", ...c };
+      this._rows = rowsOf(c);
+      this._built = false;
+      if (this._h) this.hass = this._h;
+    }
+    set hass(h) {
+      this._h = h;
+      if (!this._c) return;
+      if (!this._built) this._build();
+      this._update();
+    }
+    getCardSize() {
+      return 1 + this._rows?.length || 1;
+    }
+    getGridOptions() {
+      return { columns: 6, rows: "auto", min_columns: 3 };
+    }
+    _build() {
+      this._built = true;
+      const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${ICSS}</style><div class="g ${c.style === "glass" ? "" : "box"}"><div class="ht"></div><div class="rows"></div></div>`;
+      const ht = r.querySelector(".ht");
+      if (c.title || c.icon) ht.innerHTML = `${c.icon ? `<ha-icon icon="${esc(c.icon)}"></ha-icon>` : ""}<span></span>`;
+      if (c.title) ht.querySelector("span").textContent = c.title;
+      const box = r.querySelector(".rows");
+      if (!this._rows.length) {
+        box.innerHTML = '<div class="empty">Noch keine Zeilen – im Editor Entitäten hinzufügen.</div>';
+        this._els = [];
+        return;
+      }
+      this._els = this._rows.map((o) => {
+        const el2 = document.createElement("div");
+        if (o.display === "toggle") {
+          el2.className = "row";
+          el2.innerHTML = '<div class="ic"></div><div class="nm"><b></b><small></small></div>';
+          if (o.color || !WARM.includes(dom(o.entity))) {
+            const v = roleVars(o.color || "accent-1");
+            el2.style.setProperty("--c", v.c);
+            el2.style.setProperty("--cf", v.fg);
+          }
+          press(el2.querySelector(".ic"), { tap: () => runAction(this, o, "tap"), hold: () => moreInfo(this, o.entity), isolate: true });
+          press(el2.querySelector(".nm"), { tap: () => moreInfo(this, o.entity), isolate: true });
+        } else {
+          el2.className = "kv";
+          el2.innerHTML = '<span class="ki"></span><span class="k"></span><span class="v"></span>';
+          press(el2, { tap: () => moreInfo(this, o.entity), isolate: true });
+        }
+        box.appendChild(el2);
+        return el2;
+      });
+    }
+    _update() {
+      const h = this._h;
+      this._rows.forEach((o, i) => {
+        const el2 = this._els[i];
+        if (!el2) return;
+        const s = h.states[o.entity], name = nameOf(h, o);
+        el2.classList.toggle("na", !s || s.state === "unavailable");
+        if (o.display === "toggle") {
+          const pr = !!PRESS[dom(o.entity)];
+          el2.classList.toggle("on", !pr && isOn(s));
+          setIcon(el2.querySelector(".ic"), iconOf(h, o, "mdi:toggle-switch"));
+          el2.querySelector("b").textContent = name;
+          el2.querySelector("small").textContent = !s ? "Nicht gefunden" : pr ? "Antippen zum Auslösen" : valueOf(h, s, o);
+        } else {
+          const ki = el2.querySelector(".ki");
+          if (o.icon) setIcon(ki, o.icon);
+          else {
+            ki.innerHTML = "";
+            ki._ic = null;
+          }
+          el2.querySelector(".k").textContent = name;
+          el2.querySelector(".v").textContent = s ? valueOf(h, s, o) : "Nicht gefunden";
+        }
+      });
+    }
+  };
+  define("info-card", NovaInfoCard, { name: "Nova Info Card", description: "Überschrift mit Zeilen: Name und Wert von Entitäten, optional als Schalter mit Icon und Zustand.", documentationURL: docUrl("nova-info-card") });
+  var MAIN4 = [
+    g2({ name: "title", selector: T }, { name: "icon", selector: I }),
+    sel("style", [["box", "Block (wie im Pop-up)"], ["glass", "Glas (wie andere Nova-Karten)"]])
+  ];
+  var ROW = [
+    ENT,
+    NAMEICON,
+    g2(
+      sel("display", [["value", "Name links, Wert rechts"], ["toggle", "Icon, Name, Zustand (Tippen schaltet)"]]),
+      { name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }
+    ),
+    ROLE("color")
+  ];
+  var LABELS2 = {
+    title: "Überschrift",
+    icon: "Icon",
+    style: "Aussehen",
+    entity: "Entität",
+    name: "Eigener Name (optional)",
+    display: "Darstellung",
+    decimals: "Nachkommastellen",
+    color: "Farbe, wenn an"
+  };
+  var HELPERS2 = {
+    icon: "Optional. Bei „Name links, Wert rechts“ erscheint das Icon nur, wenn es hier gesetzt ist.",
+    color: "Nur für „Tippen schaltet“. Leer = Akzent 2 für Licht/Schalter, sonst Akzent 1."
+  };
+  var NovaInfoCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap");
+      w.append(this._form(MAIN4, { style: "box", ...this._config }, (v) => {
+        const c = merge(this._config, names(MAIN4), v);
+        if (c.style === "box") delete c.style;
+        this._emit(c);
+      }));
+      w.append(this._h3("Zeilen"));
+      w.append(this._hint("Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details."));
+      this._itemList(w, "entities", ROW, { item: "Zeile", icon: "mdi:format-list-bulleted" }, "Zeile hinzufügen", (it) => ({ display: "value", ...it }));
+    }
+  };
+  __publicField(NovaInfoCardEditor, "labels", LABELS2);
+  __publicField(NovaInfoCardEditor, "helpers", HELPERS2);
+  define("info-card-editor", NovaInfoCardEditor);
+
   // src/popup.js
-  var DEF = { columns: 2, width: 720, stack_below: 500, info_layout: "wrap" };
+  var DEF = { columns: 2, width: 1180, stack_below: 500, info_layout: "wrap" };
   var toCell = (x) => !x || typeof x !== "object" ? { span: 1, card: null } : "card" in x || "span" in x ? { span: Math.max(1, +x.span || 1), card: x.card && typeof x.card === "object" ? x.card : null } : { span: 1, card: x };
   var normRows = (c) => {
     if (Array.isArray(c.rows)) return c.rows.map((r) => ({ cells: (Array.isArray(r) ? r : r?.cells || []).map(toCell) })).filter((r) => r.cells.length);
@@ -4661,53 +4849,53 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   });
   var wait = (ms) => new Promise((r) => setTimeout(r, ms));
   var PCSS2 = `${NOVA_VARS}
-:host{display:block;--pp-bg:var(--nova-popup-background,var(--primary-background-color,#111418));--pp-fg:var(--nova-popup-text-color,var(--primary-text-color,#fff));
---pp-r:var(--nova-popup-radius,28px);--pp-chip:color-mix(in srgb,var(--pp-fg) 9%,transparent);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+:host{display:block;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 :host(.live){display:contents}
 ha-icon{--mdc-icon-size:20px;display:flex}
 .ph{display:none;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;border:1px dashed var(--divider-color,#666);color:var(--primary-text-color);font-size:13px}
 :host(.edit) .ph{display:flex}
-.ph .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ph small{opacity:.6}
-.ph button{border:none;border-radius:999px;padding:6px 12px;background:var(--primary-color);color:var(--text-primary-color,#fff);font:inherit;cursor:pointer}
+.ph .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pop{position:fixed;inset:0;z-index:var(--nova-popup-z-index,6);display:flex;align-items:center;justify-content:center}
 .pop[hidden]{display:none}
-.ov{position:absolute;inset:0;background:var(--nova-popup-backdrop,rgba(0,0,0,.45));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;transition:opacity .22s}
-.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,720px),calc(100vw - 32px));max-height:min(86vh,1000px);
-background:var(--pp-bg);color:var(--pp-fg);border-radius:var(--pp-r);border:1px solid color-mix(in srgb,var(--pp-fg) 10%,transparent);
-box-shadow:0 24px 70px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:translateY(16px) scale(.98);transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.ov{position:absolute;inset:0;background:var(--nv-popup-backdrop);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .22s}
+.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96vw);max-height:88vh;
+background:var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
+box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.sh.tint{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,var(--nv-popup-base)),var(--nv-popup-base))}
 .pop.in .ov{opacity:1}.pop.in .sh{opacity:1;transform:none}
-.grip{display:none;justify-content:center;padding:8px 0 2px;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.3}
-.hd{display:flex;align-items:center;gap:10px;padding:14px 12px 8px 18px;flex:none;touch-action:pan-x}
-.hi:empty{display:none}.hi ha-icon{--mdc-icon-size:22px}
-.tt{flex:1;min-width:0;font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--pp-chip);color:inherit;cursor:pointer;padding:0}
+.grip{display:none;justify-content:center;padding:8px 0 0;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.35}
+.hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
+background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.hi:empty{display:none}
+.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
-.info{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px;flex:none}
+.info{display:flex;flex-wrap:wrap;gap:7px;padding:0 14px 12px;flex:none}
 .info.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.info.scroll::-webkit-scrollbar{display:none}
 .info[hidden]{display:none}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:var(--pp-chip);font-size:13px;white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:background .2s}
-.chip ha-icon{--mdc-icon-size:17px}.chip img{width:17px;height:17px}.chip:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
-.chip .cn{opacity:.7}.chip .cn:empty{display:none}
-.chip.al{background:color-mix(in srgb,var(--c) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 55%,transparent)}.chip.al .ci{color:var(--c)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:12.5px;white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:all .2s}
+.chip ha-icon{--mdc-icon-size:16px}.chip img{width:16px;height:16px}.chip:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.chip:active{transform:scale(.95)}
+.chip .cn:empty{display:none}.chip .cn:not(:empty)::after{content:' ·'}
+.chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}
 .body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box;
-padding:6px 16px calc(18px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:12px;align-content:start}
+padding:0 14px calc(16px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:12px;align-content:start}
 .body.stack{grid-template-columns:minmax(0,1fr)}.body.stack>.cell{grid-column:auto!important}
 .cell{min-width:0}
 .cell.empty{min-height:0}
-.pop.inline .cell.empty{min-height:72px;border:2px dashed color-mix(in srgb,var(--pp-fg) 25%,transparent);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
+.pop.inline .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
 .pop.inline .cell.empty::after{content:'Leerer Platz'}
-.err{display:flex;gap:8px;align-items:flex-start;padding:12px;border-radius:16px;font-size:13px;color:var(--pp-fg);
-background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid color-mix(in srgb,var(--nv-error) 50%,transparent)}
+.err{display:flex;gap:8px;align-items:flex-start;padding:12px 14px;border-radius:20px;font-size:13px;
+background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid color-mix(in srgb,var(--nv-error) 50%,transparent)}
 .err ha-icon{color:var(--nv-error);flex:none}
 .hint{font-size:13px;opacity:.7;padding:8px 2px;grid-column:1/-1}
 @media(max-width:600px){
 .pop{align-items:flex-end}
-.sh{width:100vw;height:calc(100dvh - 40px - env(safe-area-inset-top));max-height:none;border-radius:var(--pp-r) var(--pp-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
-.grip{display:flex}.hd{padding-top:6px}
-.body{padding-bottom:calc(88px + env(safe-area-inset-bottom))}}
+.sh{width:100vw;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
+.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
+.body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
 .pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
-.pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--pp-r);box-shadow:none;border-bottom:1px solid color-mix(in srgb,var(--pp-fg) 10%,transparent)}
-.pop.inline .body{overflow:visible;padding-bottom:16px}
+.pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
+.pop.inline .body{overflow:visible;padding-bottom:14px}
 @media(prefers-reduced-motion:reduce){.ov,.sh{transition:none}}`;
   var PREV = /* @__PURE__ */ new Set(["HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR", "HUI-CARD-PICKER"]);
   var EDIT = /* @__PURE__ */ new Set(["HUI-CARD-OPTIONS", "HUI-CARD-EDIT-MODE"]);
@@ -4717,9 +4905,7 @@ background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid c
     }
     static getStubConfig() {
       return {
-        hash: "pop-up",
-        title: "Pop-up",
-        icon: "mdi:card-multiple-outline",
+        hash: "neu",
         columns: 2,
         rows: [{ cells: [{ span: 2, card: null }] }, { cells: [{ card: null }, { card: null }] }]
       };
@@ -4728,7 +4914,7 @@ background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid c
       super();
       const r = this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${PCSS2}</style>
-<div class="ph"><ha-icon icon="mdi:card-multiple-outline"></ha-icon><span class="t"></span><button type="button">Öffnen</button></div>
+<div class="ph"><ha-icon icon="mdi:card-multiple-outline"></ha-icon><span class="t"></span></div>
 <div class="pop" hidden><div class="ov"></div><div class="sh" role="dialog" aria-modal="true">
 <div class="grip"><i></i></div>
 <div class="hd"><span class="hi"></span><span class="tt"></span><button type="button" class="x" aria-label="Schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
@@ -4741,10 +4927,6 @@ background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid c
       r.querySelector(".x").addEventListener("click", () => this.close());
       r.querySelector(".ov").addEventListener("click", () => this.close());
       r.querySelector(".ov").addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
-      r.querySelector(".ph button").addEventListener("click", (e) => {
-        e.stopPropagation();
-        openPopup(this._cfg?.hash);
-      });
       this._sync = () => this._syncOpen();
       this._key = (e) => {
         if (e.key !== "Escape" || e.defaultPrevented) return;
@@ -4800,18 +4982,16 @@ background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid c
     }
     _detect() {
       if (!this.isConnected) return;
-      let m = this.preview || this.hasAttribute("preview") ? "preview" : this.editMode ? "edit" : "live";
-      for (let n = this, i = 0; n && i < 60; i++) {
-        if (EDIT.has(n.tagName)) {
-          m = "edit";
+      let inDialog = false, inEdit = !!(this.preview || this.hasAttribute("preview") || this.editMode);
+      for (let n = this, i = 0; n && i < 80; i++) {
+        if (PREV.has(n.tagName) || n.tagName?.includes("DIALOG")) {
+          inDialog = true;
           break;
         }
-        if (PREV.has(n.tagName)) {
-          m = "preview";
-          break;
-        }
+        if (EDIT.has(n.tagName)) inEdit = true;
         n = n.parentElement || n.getRootNode?.().host;
       }
+      let m = inDialog ? "preview" : inEdit ? "edit" : "live";
       if (this._fallback) m = "live";
       const was = this._mode;
       this._mode = m;
@@ -4922,9 +5102,13 @@ background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid c
         hi.innerHTML = "";
         hi._ic = null;
       }
-      r.querySelector(".ph .t").innerHTML = `${esc(c.title || "Pop-up")} <small>${c.hash ? `#${esc(c.hash)}` : "kein Hash eingestellt"}</small>`;
+      r.querySelector(".ph .t").textContent = c.title || (c.hash ? `#${c.hash}` : "Kein Hash eingestellt");
+      r.querySelector(".ph ha-icon").setAttribute("icon", c.icon || "mdi:card-multiple-outline");
       this._sh.style.setProperty("--pw", `${+c.width || DEF.width}px`);
-      this._sh.setAttribute("aria-label", c.title || "Pop-up");
+      this._sh.classList.toggle("tint", !!c.color);
+      if (c.color) this._sh.style.setProperty("--tc", roleVars(c.color).c);
+      if (c.title || c.hash) this._sh.setAttribute("aria-label", c.title || c.hash);
+      else this._sh.removeAttribute("aria-label");
       this._body.style.setProperty("--cols", this._cols);
       this._infoEl.classList.toggle("scroll", c.info_layout === "scroll");
       this._chips = null;
@@ -4961,7 +5145,11 @@ background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid c
         d.title = nameOf(h, o);
         const al = !!o.alert && alertHit({ state: o.alert_state, above: o.alert_above, below: o.alert_below }, s);
         d.classList.toggle("al", al);
-        if (al) d.style.setProperty("--c", roleVars(o.alert_color || "accent-2").c);
+        if (al) {
+          const v = roleVars(o.alert_color || "accent-2");
+          d.style.setProperty("--c", v.c);
+          d.style.setProperty("--cf", v.fg);
+        }
       });
     }
     /* --- Raster --- */
@@ -5076,6 +5264,7 @@ background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid c
   var GENERAL = [
     { name: "hash", required: true, selector: T },
     g2({ name: "title", selector: T }, { name: "icon", selector: I }),
+    ROLE("color"),
     g2(
       { name: "width", selector: { number: { min: 320, max: 1600, step: 10, mode: "box", unit_of_measurement: "px" } } },
       { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } }
@@ -5090,10 +5279,11 @@ background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid c
     g2(NUM("alert_above"), NUM("alert_below"))
   ];
   var COLS2 = [{ name: "columns", selector: { number: { min: 1, max: 4, mode: "slider" } } }];
-  var LABELS2 = {
+  var LABELS3 = {
     hash: "Hash (ohne #)",
     title: "Titel",
     icon: "Icon",
+    color: "Farbton (leer = Nova-Glas)",
     width: "Max. Breite (Desktop)",
     stack_below: "Untereinander unter Breite",
     info_layout: "Info-Leiste bei vielen Einträgen",
@@ -5107,8 +5297,9 @@ background:color-mix(in srgb,var(--nv-error) 14%,transparent);border:1px solid c
     alert_below: "Achtung unter",
     columns: "Spalten"
   };
-  var HELPERS2 = {
+  var HELPERS3 = {
     hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
+    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.",
     stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
     alert_state: "z. B. on oder open, mehrere mit Komma. Leer = an bzw. Problem (z. B. Fenster offen)."
   };
@@ -5666,8 +5857,8 @@ textarea.bad{border-color:var(--error-color,#db4437)}
       this._rebuild();
     }
   };
-  __publicField(NovaPopupCardEditor, "labels", LABELS2);
-  __publicField(NovaPopupCardEditor, "helpers", HELPERS2);
+  __publicField(NovaPopupCardEditor, "labels", LABELS3);
+  __publicField(NovaPopupCardEditor, "helpers", HELPERS3);
   define("popup-card-editor", NovaPopupCardEditor);
 
   // src/index.js

@@ -5,6 +5,7 @@ import {moreInfo, hassAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {CARD_CSS, EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
+import {cleanHash, togglePopup, popupOptions} from './shared/popup-hub.js';
 
 /* ---------- Editor Raum Card ---------- */
 const MAIN = [
@@ -12,6 +13,7 @@ const MAIN = [
   {name: 'temperature', selector: {entity: {domain: ['sensor', 'climate']}}},
   {name: 'windows', selector: {entity: {multiple: true, domain: 'binary_sensor'}}},
   {name: 'tap_action', selector: {ui_action: {}}},
+  {name: 'popup', selector: {select: {mode: 'dropdown', custom_value: true, options: []}}},
 ];
 const ADVANCED = [
   {name: 'info', selector: {entity: {}}},
@@ -32,23 +34,38 @@ const ICON_MAP_ROW = [{type: 'grid', name: '', schema: [{name: 'state', selector
 class NovaRoomCardEditor extends NovaEditorBase {
   static labels = {
     name: 'Name', icon: 'Icon', temperature: 'Temperatur (Sensor oder Thermostat)', windows: 'Fenster & Türen',
-    tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken', info: 'Info-Entität (ersetzt Temperatur)',
+    tap_action: 'Aktion beim Antippen', popup: 'Beim Antippen Nova Pop-up öffnen', hold_action: 'Aktion bei langem Drücken', info: 'Info-Entität (ersetzt Temperatur)',
     info_suffix: 'Info-Suffix', info_round: 'Info runden', image: 'Hintergrundbild (URL)', window_icon: 'Icon für offenes Fenster',
     entity: 'Entität', state_entity: 'Status-Entität', icon_entity: 'Icon-Entität', state: 'Zustand', value: 'Icon oder Bild-URL',
   };
   static helpers = {
     windows: 'Offenes Fenster = farbiger Rahmen + Icon',
+    popup: 'Öffnet die gewählte Nova Pop-up Card (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion beim Antippen.',
     state_entity: 'Optional: bestimmt An/Aus-Anzeige statt der Entität selbst (z. B. TV-Bildschirmstatus)',
     icon_entity: 'Optional: Icon wechselt je nach Zustand dieser Entität (z. B. aktuelle TV-App)',
     image: 'z. B. /local/raeume/wohnzimmer.jpg',
   };
   // icon_map je Button als bearbeitbare Zeilen (bleiben auch leer stehen)
+  // Pop-ups des Dashboards für die Auswahlliste einmal laden
+  set hass(h) {
+    super.hass = h;
+    if (h && !this._pops) { this._pops = []; popupOptions(h).then(o => { this._pops = o; this._rebuild(); }); }
+  }
+  _main() {
+    const opts = this._pops?.length ? this._pops : [{value: '', label: '– keins –'}];
+    return MAIN.map(x => x.name === 'popup' ? {...x, selector: {select: {...x.selector.select, options: opts}}} : x);
+  }
   _onExternalConfig() { this._maps = (this._config.buttons || []).map(b => Object.entries(b.icon_map || {})); }
   _build() {
     const r = this.shadowRoot;
     r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
     const w = r.querySelector('.wrap'), save = schema => v => this._emit(merge(this._config, names(schema), v));
-    w.append(this._form(MAIN, this._config, save(MAIN)));
+    const main = this._main();
+    w.append(this._form(main, this._config, v => {
+      const c = merge(this._config, names(main), v);
+      if (c.popup) c.popup = cleanHash(c.popup); if (!c.popup) delete c.popup;
+      this._emit(c);
+    }));
     w.append(this._h3('Buttons'));
     (this._config.buttons || []).forEach((b, i) => w.append(this._button(b, i)));
     w.append(this._add('Button hinzufügen', () => {
@@ -185,6 +202,7 @@ class NovaRoomCard extends HTMLElement {
   set hass(h) {
     this._h = h;
     if (!this._built) this._build();
+    if (this._hp) this._hp.hass = h;
     this._update();
   }
   getCardSize() { return 3; }
@@ -192,7 +210,7 @@ class NovaRoomCard extends HTMLElement {
   _build() {
     if (!this._c) return;
     this._built = true;
-    const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'}), tap = c.tap_action?.action;
+    const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'}), tap = c.popup ? 'popup' : c.tap_action?.action;
     r.innerHTML = `<style>${CARD_CSS}${ROOM_CSS}</style>
 <div class="g room ${tap && tap !== 'none' ? 'click' : ''}">
   ${c.image ? `<div class="bg" style="background-image:url('${esc(c.image)}')"></div>` : ''}
@@ -202,10 +220,12 @@ class NovaRoomCard extends HTMLElement {
   <div class="btns"></div>
 </div>`;
     this._room = r.querySelector('.room');
+    if (this._hp) r.appendChild(this._hp);
     this._tv = r.querySelector('.tv');
     const box = r.querySelector('.btns');
     this._room.addEventListener('click', () => {
       if (!tap || tap === 'none') return;
+      if (c.popup) return togglePopup(this, this._h, cleanHash(c.popup));
       hassAction(this, {entity: c.temperature || c.info, tap_action: c.tap_action}, 'tap');
     });
     this._btns = c.buttons.map(b => {
