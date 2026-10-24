@@ -17,3 +17,10 @@ export const mapIcon = (map, ...keys) => {
 };
 // Icon oder Bild in ein Element setzen (nur bei Änderung)
 export const setIcon = (el, ic) => { if (el._ic === ic) return; el._ic = ic; el.innerHTML = isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`; };
+// Kalendertag „JJJJ-MM-TT“ eines Zeitpunkts in Zeitzone tz (undefined = Browser)
+export function ymdIn(d, tz) {
+  try {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(d).map(x => [x.type, x.value]));
+    return `${p.year}-${p.month}-${p.day}`;
+  } catch { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+}

@@ -29,7 +29,7 @@ await build({
   banner: {js: dev
     ? `/* Nova Cards v${version} DEV${card ? ` (nur ${card})` : ''} – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */`
     : `/* Nova Cards v${version} | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */`},
   logLevel: 'info',
 });
