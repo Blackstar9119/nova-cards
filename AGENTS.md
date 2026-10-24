@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Dock,
-Modular, Kamera, Media, Saugroboter und Müllkalender – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender und Pop-up – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -21,6 +21,7 @@ src/
   media.js            Nova Media Card + Editor
   vacuum.js           Nova Saugroboter Card + Editor
   waste.js            Nova Müllkalender Card + Editor (Termine aus calendar.*-Entitäten)
+  popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
                       tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
@@ -31,6 +32,10 @@ src/
     styles.js         Gemeinsame CSS-Bausteine (Variablen, Glas-Hintergrund, Editor-Styles)
     editor-base.js    NovaEditorBase – Basisklasse ALLER Editoren
     editor-schema.js  Bausteine für ha-form-Schemas + gemeinsame Beschriftungen
+    popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
+                      genutzt von Pop-up Card und Dock
+docs/
+  popup-card.md       Anleitung Nova Pop-up Card
 dev/
   nova-dev-cards.js   ERZEUGT von „npm run dev“ – Dev-Build zum Testen, gitignored, nie committen
 build.mjs             esbuild-Build → nova-cards.js („npm run dev“ → dev/nova-dev-cards.js)
@@ -66,10 +71,26 @@ hacs.json             HACS-Metadaten
 - **Commits immer als Blackstar9119 mit 209100092+Blackstar9119@users.noreply.github.com, nie mit privater Mail.**
 - **Pushen und PRs immer über `git` und `gh`** (`git push`, `gh pr create`), nie über den Browser.
 
+## Abhängigkeiten von HA-Interna
+
+Alles, was nicht zur dokumentierten Custom-Card-API gehört, ist im Code mit `// HA-INTERN:` markiert. Jede Stelle prüft
+vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach HA-Updates diese Stellen zuerst prüfen:
+
+| Stelle | Datei | Fallback |
+|---|---|---|
+| `window.loadCardHelpers()` → `createCardElement` | `popup.js` (Karten in Zellen), `editor-base.js` | Fehler nur in der betroffenen Zelle |
+| `hui-card-picker` (Kartenauswahl) | `popup.js` | eigene Liste aus `window.customCards` + bekannten HA-Karten |
+| `hui-card-element-editor` (Karteneditor) | `popup.js` | YAML-Feld |
+| `ha-yaml-editor` | `popup.js` | Textfeld im JSON-Format |
+| `getStubConfig()` der Kartenklassen (`hui-<typ>-card`) | `popup.js` | nur `{type}` |
+| Elementnamen `hui-card-preview`, `hui-dialog-edit-card`, `hui-card-options`, `hui-card-edit-mode` … | `popup.js`, `dock.js` | Karte gilt als normal eingebunden |
+| WebSocket `lovelace/config` | `popup-hub.js`, `dock.js` | keine Pop-ups/Einträge aus dem Dashboard |
+| Event `ll-rebuild` | `popup.js` | Zelle wird neu aufgebaut, sonst nichts |
+
 ## Dev-Workflow
 
 - **Dev-Build „dev“:** alle Karten mit Präfix `nova-dev-` statt `nova-`, damit sie sich nicht mit der HACS-Version
-  beißen. `npm run dev` baut alle Karten nach `dev/nova-dev-cards.js`, `npm run dev -- <karte>` (Dateiname in `src/`
+  beißen. `npm run dev` baut alle Karten nach `dev/nova-dev-cards.js`, `npm run dev -- <karte>` bzw. mehrere mit Komma wie `popup,dock` (Dateiname in `src/`
   ohne `.js`, z. B. `waste`) nur diese eine. In der Kartenauswahl tragen die Karten „ (Dev)“ im Namen.
 - **Nach jeder Änderung, die der Nutzer testen soll:** Dev-Build erstellen und über den HA-MCP mit
   `ha_config_set_dashboard_resource` (`content` = Build, `resource_type` = `module`) als Inline-Modul-Ressource
