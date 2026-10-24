@@ -1,5 +1,6 @@
 import {define, docUrl, tag} from './shared/define.js';
-import {dom, esc, list, setIcon} from './shared/utils.js';
+import {dom, esc, list, setIcon, ymdIn} from './shared/utils.js';
+import {langOf, tzOf} from './shared/state.js';
 import {moreInfo} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, roleVars} from './shared/styles.js';
@@ -47,15 +48,6 @@ const DAY = 864e5, HOUR = 36e5;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 // Kalendertag als fortlaufende Zahl (unabhängig von Zeitzone und Sommerzeit)
 const dayNum = s => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / DAY;
-// Zeitzone wie im HA-Profil eingestellt: „Server“ = Zeitzone von HA, sonst die des Browsers
-const tzOf = h => h.locale?.time_zone === 'server' ? h.config?.time_zone : undefined;
-function ymdIn(d, tz) {
-  try {
-    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(d).map(x => [x.type, x.value]));
-    return `${p.year}-${p.month}-${p.day}`;
-  } catch { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-}
-const langOf = h => h.locale?.language || h.language || 'de';
 const calsOf = c => list(c.entities ?? c.entity).filter(id => dom(id) === 'calendar');
 
 // Termin aus der Kalender-API: ganztägig = {date}, mit Uhrzeit = {dateTime}. Ende ganztägig ist exklusiv

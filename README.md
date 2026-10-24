@@ -432,19 +432,24 @@ Im Editor fügt **„Standard-Müllarten einfügen“** Restmüll, Papier, Gelbe
 
 ## Nova Wetter Card
 
-Aktuelles Wetter einer `weather.*`-Entität: großes Icon passend zum Wetter (nachts die Nacht-Variante), Temperatur, Zustand,
-optional gefühlte Temperatur und Zusatzwerte als Chips (Luftfeuchte, Wind mit Richtung, Luftdruck …). Das Icon trägt
-automatisch eine Farbrolle nach Wetterlage oder eine fest gewählte.
+Aktuelles Wetter einer `weather.*`-Entität mit Vorhersage: oben großes Icon passend zum Wetter (nachts die Nacht-Variante),
+Temperatur, Zustand, gefühlte Temperatur, Max/Min von heute und Zusatzwerte als Pills (Luftfeuchte, Wind mit Richtung,
+Luftdruck …). Darunter die Tagesvorhersage (Wochentag, Icon, Min/Max mit Temperatur-Balken, Regen) und auf Wunsch die
+Stundenvorhersage mit Temperaturkurve. Die Vorhersage kommt live über `weather/subscribe_forecast` und wird beim Entfernen
+der Karte wieder abgemeldet. Liefert die Entität eine Vorhersage-Art nicht, zeigt die Karte das statt eines Fehlers an.
+Icons tragen automatisch eine Farbrolle nach Wetterlage oder eine fest gewählte.
 
 ```yaml
 type: custom:nova-weather-card
 entity: weather.forecast_home
-name: Zuhause
 temperature_entity: sensor.aussen_temperatur   # optional, ersetzt die Temperatur der Wetter-Entität
-details:
-  - humidity
-  - wind
-  - pressure
+details: [humidity, wind, pressure]
+show_daily: true
+days: 7
+show_hourly: true
+hours: 24
+hour_step: 3
+hourly_layout: columns      # columns | list
 color: auto                 # auto | neutral | accent-1 … accent-4
 ```
 
@@ -452,14 +457,24 @@ color: auto                 # auto | neutral | accent-1 … accent-4
 |---|---|---|
 | `entity` | – | `weather.*`-Entität (Pflicht) |
 | `name`, `show_name` | Name der Entität, `true` | Überschrift über dem Wetter |
-| `icon` | nach Wetter | Festes Icon statt des automatischen |
+| `icon` | nach Wetter | Festes Icon statt des automatischen (nur oben) |
 | `temperature_entity` | – | Eigener Temperatur-Sensor statt der Temperatur der Wetter-Entität |
-| `show_feels_like`, `feels_like_entity` | `true`, – | Gefühlte Temperatur: aus dem Sensor oder dem Attribut `apparent_temperature` (fehlt beides, entfällt die Zeile) |
-| `decimals` | bis zu 1 | Nachkommastellen der Temperatur |
-| `color` | `auto` | Farbrolle des Icons, siehe [Theming](#theming); `auto` = nach Wetterlage |
+| `show_feels_like`, `feels_like_entity` | `true`, – | Gefühlte Temperatur: aus dem Sensor oder dem Attribut `apparent_temperature` (fehlt beides, entfällt sie) |
+| `show_high_low` | `true` | Max/Min von heute aus der Tagesvorhersage |
+| `decimals` | bis zu 1 | Nachkommastellen der aktuellen Temperatur |
+| `color` | `auto` | Farbrolle der Icons, siehe [Theming](#theming); `auto` = jedes Icon nach seinem Wetter |
 | `show_details`, `details` | `true`, `humidity, wind, pressure` | Zusatzwerte: `humidity`, `wind`, `wind_gust`, `pressure`, `uv_index`, `cloud_coverage`, `dew_point`, `visibility`, `ozone` – Werte, die die Entität nicht liefert, entfallen |
 | `label_details` | `false` | Zusatzwerte mit Beschriftung |
-| `tap_action`, `hold_action` | Details der Entität | Aktionen beim Antippen / langen Drücken |
+| `show_daily`, `days` | `true`, `7` | Tagesvorhersage und Anzahl Tage (1–14) |
+| `daily_bar` | `true` | Temperatur-Balken zwischen Min und Max |
+| `show_hourly` | `false` | Stundenvorhersage |
+| `hours`, `hour_step` | `24`, `3` | Zeitraum in Stunden und jede wievielte Stunde angezeigt wird |
+| `hourly_layout` | `columns` | `columns` = Spalten nebeneinander, `list` = Zeilen mit Temperatur-Balken |
+| `hourly_graph` | `true` | Temperaturkurve über den ganzen Zeitraum |
+| `show_probability`, `show_precipitation` | `true`, `true` | Regenwahrscheinlichkeit und Niederschlagsmenge (wenn die Vorhersage sie liefert) |
+| `show_titles` | `true` | Überschriften über den Vorhersagen |
+| `hourly_first` | `false` | Stunden- vor Tagesvorhersage |
+| `tap_action`, `hold_action` | Details der Entität | Aktionen beim Antippen / langen Drücken des aktuellen Wetters |
 
 ## Theming
 

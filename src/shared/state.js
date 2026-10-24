@@ -12,6 +12,9 @@ export const unitJoin = (v, u) => !u ? `${v}` : u.startsWith('°') ? `${v}${u}` 
 export const decOf = st => (String(st).split('.')[1] || '').length;
 export const nameOf = (h, o) => o.name ?? h.states[o.entity]?.attributes.friendly_name ?? o.entity ?? '';
 export const iconOf = (h, o, fb) => o.icon || h.states[o.entity]?.attributes.icon || DICON[dom(o.entity)] || fb;
+// Sprache und Zeitzone wie im HA-Profil: „Server“ = Zeitzone von HA, sonst die des Browsers
+export const langOf = h => h.locale?.language || h.language || 'de';
+export const tzOf = h => h.locale?.time_zone === 'server' ? h.config?.time_zone : undefined;
 // Bereich einer Entität (direkt oder über ihr Gerät)
 export const areaOf = (h, id) => { const e = h.entities?.[id]; return (e && (e.area_id || h.devices?.[e.device_id]?.area_id)) || null; };
 // supported_features prüfen
