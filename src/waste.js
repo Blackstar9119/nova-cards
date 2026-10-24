@@ -33,7 +33,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
 .msg{display:flex;align-items:center;gap:8px;font-size:13px;opacity:.7;padding:4px 2px}
 .msg ha-icon{--mdc-icon-size:18px}`;
 
-const WDEF = {title: 'Müllkalender', icon: 'mdi:trash-can-outline', layout: 'list', count: 5, days: 30, refresh: 60, hide_unmatched: false, show_header: true, glow: true};
+const WDEF = {title: 'Müllkalender', icon: 'mdi:trash-can-outline', layout: 'list', count: 5, days: 30, hide_unmatched: false, show_header: true, glow: true};
 // Vorschlag für neue Karten und den Editor-Button „Standard-Müllarten“ – danach frei änderbar
 const WTYPES = [
   {match: 'Rest', name: 'Restmüll', icon: 'mdi:trash-can', color: 'neutral'},
@@ -43,7 +43,7 @@ const WTYPES = [
   {match: 'Glas', name: 'Altglas', icon: 'mdi:bottle-wine-outline', color: 'accent-4'},
 ];
 
-const DAY = 864e5;
+const DAY = 864e5, HOUR = 36e5;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 // Kalendertag als fortlaufende Zahl (unabhängig von Zeitzone und Sommerzeit)
 const dayNum = s => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / DAY;
@@ -92,7 +92,7 @@ class NovaWasteCard extends HTMLElement {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     const n = (v, d, min, max) => Number.isFinite(+v) && v !== '' && v != null ? Math.min(max, Math.max(min, Math.round(+v))) : d;
     this._c = {...WDEF, ...c,
-      count: n(c.count, WDEF.count, 1, 50), days: n(c.days, WDEF.days, 1, 366), refresh: n(c.refresh, WDEF.refresh, 5, 1440),
+      count: n(c.count, WDEF.count, 1, 50), days: n(c.days, WDEF.days, 1, 366),
       types: [].concat(c.types || []).filter(t => t && typeof t === 'object' && list(t.match).length)};
     this._cals = calsOf(c);
     this._events = null; this._err = null; this._failed = []; this._key = null;
@@ -110,7 +110,7 @@ class NovaWasteCard extends HTMLElement {
   getGridOptions() { return {columns: 6, rows: 'auto', min_columns: 3}; }
   connectedCallback() {
     clearInterval(this._tm);
-    // Jede Minute: Tageswechsel (heute/morgen) und Aktualisierungsintervall prüfen
+    // Jede Minute prüfen: neu laden stündlich und gleich nach Mitternacht (Tageswechsel)
     this._tm = setInterval(() => this._tick(), 60000);
     if (this._e) this._tick();
   }
@@ -118,7 +118,7 @@ class NovaWasteCard extends HTMLElement {
   _today() { return dayNum(ymdIn(new Date(), tzOf(this._h))); }
   _tick() {
     if (!this._h || !this._c) return;
-    const stale = Date.now() - (this._last || 0) >= this._c.refresh * 60000;
+    const stale = Date.now() - (this._last || 0) >= HOUR;
     const appeared = this._cals.some(id => this._h.states[id] && !this._asked?.includes(id));
     if (this._fetched && (stale || appeared || this._today() !== this._fday)) this._load();
     else this._render();
@@ -275,16 +275,15 @@ const WMAIN = [
   {name: 'entities', required: true, selector: {entity: {domain: 'calendar', multiple: true}}},
   g2({name: 'title', selector: T}, {name: 'icon', selector: I}),
   g2(sel('layout', [['list', 'Liste'], ['compact', 'Kompakt (nur nächster Termin)']]), {name: 'count', selector: {number: {min: 1, max: 20, mode: 'box'}}}),
-  g2({name: 'days', selector: {number: {min: 1, max: 366, mode: 'box', unit_of_measurement: 'Tage'}}}, {name: 'refresh', selector: {number: {min: 5, max: 1440, mode: 'box', unit_of_measurement: 'min'}}}),
-  g2({name: 'hide_unmatched', selector: {boolean: {}}}, {name: 'show_header', selector: {boolean: {}}}),
-  {name: 'glow', selector: {boolean: {}}},
+  g2({name: 'days', selector: {number: {min: 1, max: 366, mode: 'box', unit_of_measurement: 'Tage'}}}, {name: 'show_header', selector: {boolean: {}}}),
+  g2({name: 'hide_unmatched', selector: {boolean: {}}}, {name: 'glow', selector: {boolean: {}}}),
 ];
 const WTYPE = [
   g2({name: 'match', required: true, selector: T}, {name: 'name', selector: T}),
   g2({name: 'icon', selector: I}, ROLE('color')),
 ];
 const WLABELS = {...BASE_LABELS, entities: 'Kalender', title: 'Überschrift', layout: 'Darstellung', count: 'Anzahl Termine',
-  days: 'Zeitraum', refresh: 'Aktualisieren alle', hide_unmatched: 'Termine ohne passende Müllart ausblenden', show_header: 'Kopfzeile anzeigen',
+  days: 'Zeitraum', hide_unmatched: 'Termine ohne passende Müllart ausblenden', show_header: 'Kopfzeile anzeigen',
   glow: 'Rahmen leuchtet bei Abholung heute/morgen', match: 'Stichwort im Termintitel', name: 'Anzeigename', color: 'Farbrolle'};
 const WHELPERS = {
   entities: 'Ein oder mehrere Kalender, z. B. ein iCal-Abfallkalender',
@@ -305,7 +304,7 @@ class NovaWasteCardEditor extends NovaEditorBase {
     const r = this.shadowRoot, c0 = this._config;
     r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
     const w = r.querySelector('.wrap');
-    const strip = c => { Object.entries(WDEF).forEach(([k, x]) => c[k] === x && delete c[k]); delete c.entity; return c; };
+    const strip = c => { Object.entries(WDEF).forEach(([k, x]) => c[k] === x && delete c[k]); delete c.entity; delete c.refresh; return c; };
     w.append(this._form(WMAIN, {...WDEF, ...c0, entities: calsOf(c0)}, v => this._emit(strip(merge(this._config, names(WMAIN), v)))));
 
     w.append(this._h3('Müllarten'));

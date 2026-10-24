@@ -1,4 +1,4 @@
-/* Nova Cards v0.10.0 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.10.1 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
@@ -4149,7 +4149,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
 .cp.today .ic{box-shadow:0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
 .msg{display:flex;align-items:center;gap:8px;font-size:13px;opacity:.7;padding:4px 2px}
 .msg ha-icon{--mdc-icon-size:18px}`;
-  var WDEF = { title: "Müllkalender", icon: "mdi:trash-can-outline", layout: "list", count: 5, days: 30, refresh: 60, hide_unmatched: false, show_header: true, glow: true };
+  var WDEF = { title: "Müllkalender", icon: "mdi:trash-can-outline", layout: "list", count: 5, days: 30, hide_unmatched: false, show_header: true, glow: true };
   var WTYPES = [
     { match: "Rest", name: "Restmüll", icon: "mdi:trash-can", color: "neutral" },
     { match: "Papier, PPK", name: "Papiertonne", icon: "mdi:newspaper-variant-outline", color: "accent-1" },
@@ -4158,6 +4158,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     { match: "Glas", name: "Altglas", icon: "mdi:bottle-wine-outline", color: "accent-4" }
   ];
   var DAY = 864e5;
+  var HOUR = 36e5;
   var ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
   var dayNum = (s) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / DAY;
   var tzOf = (h) => h.locale?.time_zone === "server" ? h.config?.time_zone : void 0;
@@ -4206,7 +4207,6 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         ...c,
         count: n(c.count, WDEF.count, 1, 50),
         days: n(c.days, WDEF.days, 1, 366),
-        refresh: n(c.refresh, WDEF.refresh, 5, 1440),
         types: [].concat(c.types || []).filter((t) => t && typeof t === "object" && list(t.match).length)
       };
       this._cals = calsOf(c);
@@ -4247,7 +4247,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
     _tick() {
       if (!this._h || !this._c) return;
-      const stale = Date.now() - (this._last || 0) >= this._c.refresh * 6e4;
+      const stale = Date.now() - (this._last || 0) >= HOUR;
       const appeared = this._cals.some((id) => this._h.states[id] && !this._asked?.includes(id));
       if (this._fetched && (stale || appeared || this._today() !== this._fday)) this._load();
       else this._render();
@@ -4424,9 +4424,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     { name: "entities", required: true, selector: { entity: { domain: "calendar", multiple: true } } },
     g2({ name: "title", selector: T }, { name: "icon", selector: I }),
     g2(sel("layout", [["list", "Liste"], ["compact", "Kompakt (nur nächster Termin)"]]), { name: "count", selector: { number: { min: 1, max: 20, mode: "box" } } }),
-    g2({ name: "days", selector: { number: { min: 1, max: 366, mode: "box", unit_of_measurement: "Tage" } } }, { name: "refresh", selector: { number: { min: 5, max: 1440, mode: "box", unit_of_measurement: "min" } } }),
-    g2({ name: "hide_unmatched", selector: { boolean: {} } }, { name: "show_header", selector: { boolean: {} } }),
-    { name: "glow", selector: { boolean: {} } }
+    g2({ name: "days", selector: { number: { min: 1, max: 366, mode: "box", unit_of_measurement: "Tage" } } }, { name: "show_header", selector: { boolean: {} } }),
+    g2({ name: "hide_unmatched", selector: { boolean: {} } }, { name: "glow", selector: { boolean: {} } })
   ];
   var WTYPE = [
     g2({ name: "match", required: true, selector: T }, { name: "name", selector: T }),
@@ -4439,7 +4438,6 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     layout: "Darstellung",
     count: "Anzahl Termine",
     days: "Zeitraum",
-    refresh: "Aktualisieren alle",
     hide_unmatched: "Termine ohne passende Müllart ausblenden",
     show_header: "Kopfzeile anzeigen",
     glow: "Rahmen leuchtet bei Abholung heute/morgen",
@@ -4468,6 +4466,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const strip = (c) => {
         Object.entries(WDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         delete c.entity;
+        delete c.refresh;
         return c;
       };
       w.append(this._form(WMAIN, { ...WDEF, ...c0, entities: calsOf(c0) }, (v) => this._emit(strip(merge(this._config, names(WMAIN), v)))));
@@ -4485,5 +4484,5 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   define("nova-waste-card-editor", NovaWasteCardEditor);
 
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.10.0"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.10.1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();
