@@ -607,7 +607,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         }
         [...u.pills.children].forEach(p => { p.textContent = fmtOpt(h, s, p.dataset.o); p.classList.toggle('on', p.dataset.o === cur); });
       } else if (u.kind === 'num') {
-        const pv = this._pend[o.entity]?.v, n = pv ?? (ok(s) ? +s.state : null);
+        // Wert außerhalb von min/max (z. B. Airfryer im Standby: 0 °C) ist kein echter Wert → „–“, Regler ausgegraut
+        const pv = this._pend[o.entity]?.v, raw = pv ?? (ok(s) ? +s.state : null), bad = raw != null && pv == null && ((a.min != null && raw < a.min) || (a.max != null && raw > a.max));
+        const n = bad ? null : raw;
+        if (bad) el.classList.add('na');
         v.textContent = n == null ? '–' : isDur(s) ? fmtDur(n * (SECS[a.unit_of_measurement] || 1)) : valueOf(h, {...s, state: String(n)}, o);
         if (u.rng) { Object.assign(u.rng, {min: a.min ?? 0, max: a.max ?? 100, step: o.step || a.step || 1}); if (n != null && pv == null) u.rng.value = n;
           u.rng.style.setProperty('--p', `${((n ?? 0) - (a.min ?? 0)) / (((a.max ?? 100) - (a.min ?? 0)) || 1) * 100}%`); }
