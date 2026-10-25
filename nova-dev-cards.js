@@ -656,7 +656,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 <g class="drops"><circle cx="34" cy="80" r="1.3"/><circle cx="44" cy="80" r="1.1"/><circle cx="50" cy="80" r="1.4"/><circle cx="57" cy="80" r="1.1"/><circle cx="66" cy="80" r="1.3"/><circle cx="40" cy="80" r="1"/></g>
 <g class="arm"><rect x="30" y="81" width="40" height="2.4" rx="1.2"/><circle cx="50" cy="82.2" r="2.4"/></g></g></g>${DONE}${WARN}</svg>`,
     // Airfryer: weiches Gehäuse, rundes Display mit Restzeit und Ring (Eieruhr), Schublade mit Fuge, Griff und Sichtfenster (abschaltbar)
-    airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nva"><path d="M31 54 h38 a6 6 0 0 1 6 6 v1 a8 8 0 0 1 -8 8 h-34 a8 8 0 0 1 -8 -8 v-1 a6 6 0 0 1 6 -6 Z"/></clipPath></defs>
+    airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nva"><path d="M39 55 h22 a5 5 0 0 1 5 5 a7 7 0 0 1 -7 7 h-18 a7 7 0 0 1 -7 -7 a5 5 0 0 1 5 -5 Z"/></clipPath></defs>
 <g class="heat"><path d="M38 8 q3 -4 0 -7"/><path d="M50 8 q3 -4 0 -7"/><path d="M62 8 q3 -4 0 -7"/></g>
 <g class="puff"><path d="M38 9 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 9 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M62 9 q3 -4 0 -8 q-3 -4 0 -8"/></g>
 <g class="afb"><ellipse class="ash" cx="50" cy="96.5" rx="32" ry="2.6"/><rect class="bd" x="17" y="10" width="66" height="85" rx="24"/>
@@ -666,8 +666,8 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 <rect class="opn" x="23" y="49" width="54" height="42" rx="17"/></g>
 <g class="drw"><ellipse class="ash dsh" cx="50" cy="94" rx="30" ry="3.5"/><rect class="gap" x="22" y="48" width="56" height="44" rx="18"/>
 <rect class="dw" x="23.5" y="49" width="53" height="41" rx="16.5"/><path class="dhl" d="M34 50.5 h32"/>
-<g class="win"><path class="wg" d="M31 54 h38 a6 6 0 0 1 6 6 v1 a8 8 0 0 1 -8 8 h-34 a8 8 0 0 1 -8 -8 v-1 a6 6 0 0 1 6 -6 Z"/><g clip-path="url(#nva)"><rect class="glo" x="25" y="54" width="50" height="15"/>
-<g class="fr"><line x1="37" y1="65" x2="44" y2="60"/><line x1="48.5" y1="65.5" x2="58" y2="62"/><line x1="61.5" y1="65" x2="64" y2="60.5"/></g></g></g>
+<g class="win"><path class="wg" d="M39 55 h22 a5 5 0 0 1 5 5 a7 7 0 0 1 -7 7 h-18 a7 7 0 0 1 -7 -7 a5 5 0 0 1 5 -5 Z"/><g clip-path="url(#nva)"><rect class="glo" x="34" y="55" width="32" height="12"/>
+<g class="fr"><line x1="39" y1="64.5" x2="45" y2="60"/><line x1="48.5" y1="65" x2="56" y2="61.5"/><line x1="59.5" y1="64.5" x2="62" y2="60.5"/></g></g></g>
 <path class="ahs" d="M36 84 q14 6 28 0 v-2 h-28 Z"/><path class="ahd" d="M36 74 h28 a4 4 0 0 1 4 4 a5 5 0 0 1 -5 5 h-26 a5 5 0 0 1 -5 -5 a4 4 0 0 1 4 -4 Z"/></g>${DONE}${WARN}</svg>`,
     // Kaffeevollautomat (Vorbild Siemens EQ): Bohnenfach oben, Bedienfeld, mittiger Auslauf mit Tasse, Wassertank seitlich
     coffee: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvc"><path d="M41 66 h18 v10 a6 6 0 0 1 -6 6 h-6 a6 6 0 0 1 -6 -6 Z"/></clipPath><clipPath id="nvt"><rect x="80" y="26" width="7" height="50" rx="2.5"/></clipPath></defs>
@@ -695,6 +695,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 .mid{display:flex;gap:14px;align-items:center;min-width:0}
 .scene{flex:none;width:92px;height:92px;color:var(--nv-fg)}
 .scene svg{display:block;width:100%;height:100%;overflow:visible}
+.w-airfryer .scene{width:128px;height:128px}
 .inf{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .pg{font-size:18px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .ph{font-size:12px;opacity:.65}
@@ -771,7 +772,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 .anim.st-run .w-dishwasher .arm{animation:dv-arm 1.6s ease-in-out infinite alternate}
 .anim.st-run .w-dishwasher .drops circle{animation:dv-drop 1.4s ease-out infinite}
 .anim.st-run .w-dishwasher .mist{animation:dv-mist 3.2s ease-in-out infinite}
-.scene .fr line{stroke:color-mix(in srgb,var(--dc) var(--pp,0%),currentColor);stroke-opacity:calc(.35 + var(--pf,0) * .5);stroke-width:3.6;stroke-linecap:round}
+.scene .fr line{stroke:color-mix(in srgb,var(--dc) var(--pp,0%),currentColor);stroke-opacity:calc(.35 + var(--pf,0) * .5);stroke-width:3.2;stroke-linecap:round}
 .scene .puff path{fill:none;stroke:currentColor;stroke-opacity:.6;stroke-width:1.6;stroke-linecap:round;opacity:0}
 /* Airfryer */
 .scene .kr{fill:none;stroke:currentColor;stroke-opacity:.18;stroke-width:2.2}
