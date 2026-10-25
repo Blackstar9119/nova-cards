@@ -140,3 +140,6 @@ export const EDITOR_LIST_CSS = `
 .adds{display:flex;flex-wrap:wrap;gap:8px}
 details.item details.item>summary{background:none}
 h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
+
+// Editor-Stil des Pop-up-Editors: aufklappbare Bereiche (_section), Listen, Zwischenüberschriften – Grundlage aller Editoren
+export const SECTION_EDITOR_CSS = `${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}`;
