@@ -584,7 +584,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   var TXT = { pause: "Pausiert", wait: "Startet später", done: "Fertig", err: "Störung", off: "Aus" };
   var BAD = /* @__PURE__ */ new Set(["unavailable", "unknown", "none", ""]);
   var ok = (s) => !!s && !BAD.has(s.state);
-  var GDEF = { layout: "full", animation: true, glow: true, hide_when_off: false };
+  var GDEF = { layout: "full", animation: true, glow: true, hide_when_off: false, start_at: "none" };
   var nice = (raw, t) => t === raw && /_/.test(raw) ? raw.replace(/_/g, " ").replace(/^./, (x) => x.toUpperCase()) : t;
   var fmtOpt = (h, s, o) => {
     let t = o;
@@ -614,6 +614,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     const m = Math.max(0, Math.round(sec / 60));
     return m < 1 ? "< 1 min" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h`;
   };
+  var SA = '<div class="ct sa"><div class="kv"><ha-icon icon="mdi:clock-start"></ha-icon><span class="k">Starten um</span><input type="time" aria-label="Startzeit"><div class="pill now">Sofort</div></div><div class="sah"></div></div>';
   var IC = { start: "mdi:play", pause: "mdi:pause", resume: "mdi:play-pause", stop: "mdi:stop" };
   var DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
   var SV = {
@@ -675,6 +676,9 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 .ct .row{padding:0;font-size:13px}.ct .row.on .sw{background:var(--dc)}
 .ct.na,.ab.dis{opacity:.4;pointer-events:none}
 .acts{display:flex;gap:8px}
+.sa .kv{gap:8px}.sa input{flex:none;background:var(--nv-chip);color:inherit;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:6px 10px;font:inherit;font-size:13.5px;font-weight:600;color-scheme:dark;min-width:0}
+.sa .pill.on{background:var(--dc);color:var(--dc-fg);border-color:transparent}
+.sa .sah{font-size:12px;opacity:.7;margin-top:6px}.sa .sah:empty{display:none}
 .ab{flex:1;min-width:0;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;transition:background-color .2s,opacity .2s,transform .2s}
 .ab ha-icon{--mdc-icon-size:22px}
 .ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--dc) 40%,transparent)}
@@ -863,7 +867,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 <div class="g dv t-${t}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ""}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
 ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
-<div class="ctls"></div><div class="acts"></div>`}<div class="als"></div></div>`;
+<div class="ctls"></div>${c.start_at === "home_connect" && c.start ? SA : ""}<div class="acts"></div>`}<div class="als"></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
         g: q(".g"),
@@ -879,13 +883,27 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         en: q(".en"),
         ctls: q(".ctls"),
         acts: q(".acts"),
-        als: q(".als")
+        als: q(".als"),
+        sa: q(".sa"),
+        sat: q(".sa input"),
+        san: q(".sa .now"),
+        sah: q(".sa .sah")
       };
       const e = this._e;
       press(e.ic, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
       if (cmp) press(e.name.parentElement, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
       if (e.pw) press(e.pw, { tap: () => this._call(dom(c.power) === "input_boolean" ? "input_boolean" : "switch", "toggle", c.power, {}, "Ein/Aus") });
       if (e.ctls) this._ctl = c.controls.map((o) => this._mkCtl(o));
+      if (e.sa) {
+        e.sat.addEventListener("change", () => {
+          this._at = e.sat.value || null;
+          this._update();
+        });
+        press(e.san, { tap: () => {
+          this._at = null;
+          this._update();
+        }, isolate: true });
+      }
       if (e.acts) {
         this._ab = {};
         ["start", "pause", "resume", "stop"].forEach((k) => {
@@ -974,9 +992,25 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _selStart() {
       return ["select", "input_select"].includes(dom(this._c.start));
     }
+    // „Starten um“ → Startzeitpunkt und „Fertig in“ (s) = Zeit bis zum Start + Programmdauer, auf volle Minuten
+    _atCalc() {
+      const c = this._c;
+      if (!this._at || c.start_at !== "home_connect") return null;
+      const [H, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
+      start.setHours(H, M, 0, 0);
+      if (start <= now) start.setDate(start.getDate() + 1);
+      const ds = this._S(c.duration), dur = secsOf(ds);
+      if (!dur) return { start, err: "Programmdauer unbekannt (Editor → Programm und Zeit → Gesamtdauer)" };
+      const fin = Math.ceil((start - now) / 6e4) * 60 + Math.round(dur / 60) * 60, max = dom(c.duration) === "number" && ds.attributes.max ? +ds.attributes.max : 86400;
+      if (fin > max) return { start, err: `Start zu spät: die Maschine erlaubt höchstens ${fmtDur(max)} bis zum Programmende` };
+      return { start, fin, end: now.getTime() + fin * 1e3 };
+    }
     _startBlock() {
       const c = this._c, s = this._S(c.start), rs = this._S(c.remote_start);
       if (!c.start) return null;
+      const at = this._atCalc();
+      if (at?.err) return at.err;
+      if (at && !this._h.entities?.[c.start]?.device_id) return "Starten um: Gerät der Start-Entität nicht gefunden";
       if (c.remote_start && rs && rs.state !== "on") return c.remote_start_text || "Fernstart ist aus – an der Maschine aktivieren";
       if (!s || s.state === "unavailable") return "Start gerade nicht möglich (Entität nicht verfügbar)";
       if (this._selStart()) {
@@ -994,6 +1028,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const conf = k === "start" ? c.start_confirm : k === "stop" ? c.stop_confirm : null;
       if (conf && !window.confirm(conf)) return;
       const what = { start: c.start_name || "Start", pause: "Pause", resume: "Fortsetzen", stop: "Stopp" }[k];
+      const at = k === "start" && this._atCalc();
+      if (at) {
+        const fin = at.fin;
+        this._at = null;
+        return Promise.resolve(this._h.callService("home_connect", "start_selected_program", { device_id: this._h.entities[c.start].device_id, b_s_h_common_option_finish_in_relative: fin })).catch((err) => this._flash(`${what}: ${err?.message || err}`)).finally(() => this._update());
+      }
       if (d === "select" || d === "input_select") return this._call(d, "select_option", id, { option: this._S(c.start_option)?.state }, what);
       if (d === "button" || d === "input_button") return this._call(d, "press", id, {}, what);
       if (d === "script" || d === "scene") return this._call(d, "turn_on", id, {}, what);
@@ -1148,7 +1188,15 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const act = ["run", "pause", "wait"].includes(cls), blk = this._startBlock();
       b.start.hidden = act || !c.start;
       b.start.classList.toggle("dis", !!blk);
-      b.start.lastChild.textContent = c.start_name || "Start";
+      const at = this._atCalc();
+      b.start.lastChild.textContent = at && !at.err ? `${c.start_name || "Start"} um ${this._clock(at.start.getTime())}` : c.start_name || "Start";
+      const e = this._e;
+      if (e.sa) {
+        e.sa.hidden = act;
+        if (e.sat !== this.shadowRoot.activeElement) e.sat.value = this._at || "";
+        e.san.classList.toggle("on", !this._at);
+        e.sah.textContent = at && !at.err ? `Fertig ca. ${this._clock(at.end)} · „Fertig in“ ${fmtDur(at.fin)}` : "";
+      }
       b.pause.hidden = cls !== "run" || !av("pause");
       b.resume.hidden = cls !== "pause" || !(av("resume") || !c.resume && av("start") && !this._selStart());
       b.stop.hidden = !act || !av("stop");
@@ -1225,7 +1273,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     ...["select", "input_select"].includes(dom(c.start)) ? [{ name: "start_option", selector: { entity: { domain: ["select", "input_select", "sensor", "input_text"] } } }] : [],
     g2({ name: "pause", selector: BTN }, { name: "resume", selector: BTN }),
     { name: "stop", selector: BTN },
-    g2({ name: "start_confirm", selector: T }, { name: "stop_confirm", selector: T })
+    g2({ name: "start_confirm", selector: T }, { name: "stop_confirm", selector: T }),
+    sel("start_at", [["none", "Aus"], ["home_connect", "Home Connect (rechnet in „Fertig in“ um)"]])
   ];
   var GINFO = [
     g2({ name: "remote_start", selector: ST }, { name: "remote_start_text", selector: T }),
@@ -1278,6 +1327,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     resume: "Fortsetzen",
     stop: "Stopp",
     start_confirm: "Rückfrage vor dem Start",
+    start_at: "„Starten um“ (Uhrzeit wählen)",
     stop_confirm: "Rückfrage vor dem Stopp",
     remote_start: "Fernstart erlaubt",
     remote_start_text: "Hinweis, wenn Fernstart aus",
@@ -1310,7 +1360,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     power: "Optional: runder Knopf oben rechts",
     program: "Laufendes Programm (Select oder Sensor). Leer bzw. ohne Wert = Programm für den Start",
     progress: "Leer = aus Restzeit und Gesamtdauer berechnet",
-    duration: "Nur für den Fortschritt, wenn es keinen Fortschritts-Sensor gibt",
+    duration: "Für den Fortschritt ohne Fortschritts-Sensor und für „Starten um“ (Programmdauer vor dem Start)",
     remaining: "Sensor mit s/min/h oder H:MM. Endzeit wird daraus berechnet",
     end_time: "Zeitpunkt-Sensor. Restzeit wird daraus berechnet",
     phase: "Leer = Status. Steuert die Sonder-Animation und wird unter dem Programm angezeigt",
@@ -1318,6 +1368,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     show: "z. B. Temperatur und Schleudern nur vor dem Start",
     step: "Leer = Schritt der Entität (bei „Fertig in“ in Sekunden z. B. 1800 = 30 min)",
     start: "Button, Skript, Schalter – oder ein Select wie „Aktives Programm“ bei Home Connect",
+    start_at: "Startzeit in der Karte wählen. Braucht die Gesamtdauer (Programm und Zeit), z. B. number.…_beenden_in_relativ – Home Connect meldet dort vor dem Start die Programmdauer",
     start_option: "Dessen Wert wird beim Start gesetzt, z. B. select.waschmaschine_ausgewahltes_programm",
     start_name: "Leer = „Start“",
     resume: "Leer = beim Fortsetzen wird Start ausgelöst (nicht bei Start über ein Select)",
