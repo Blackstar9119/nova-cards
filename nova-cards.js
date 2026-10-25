@@ -180,17 +180,22 @@
     const k = ROLES[r] || ROLES.neutral;
     return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)` };
   };
+  var GLASS = `:host{position:relative}
+:host::before{content:'';position:absolute;inset:0;border-radius:var(--nv-radius);background:var(--nv-bg);pointer-events:none;
+backdrop-filter:blur(var(--nv-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(150%)}
+:host(.nv-flat)::before{display:none}
+:host(.nv-na)::before{opacity:.4}`;
   var CARD_CSS = `${NOVA_VARS}
 :host{display:block;height:100%}
-.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);background:var(--nv-bg);
-backdrop-filter:blur(var(--nv-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(150%);
+${GLASS}
+.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);
 border:1px solid var(--nv-border);box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12);
 color:var(--nv-fg);overflow:hidden;position:relative;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 ha-icon{--mdc-icon-size:20px;display:flex}`;
   var PANEL_CSS = `
 :host{display:block;height:100%;container-type:inline-size}
-.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);background:var(--nv-bg);
-backdrop-filter:blur(var(--nv-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(150%);
+${GLASS}
+.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);
 border:1px solid var(--nv-border);box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12);
 color:var(--nv-fg);overflow:hidden;position:relative;font-family:var(--ha-font-family-body,Roboto,sans-serif);
 padding:14px 16px;display:flex;flex-direction:column;gap:12px;transition:box-shadow .4s}
@@ -203,7 +208,7 @@ img{object-fit:contain}
 .tap{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
 .tap:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .na{opacity:.4}
-.ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:all .25s}
+.ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color .25s,color .25s,border-color .25s,box-shadow .25s,transform .25s,opacity .25s}
 .ic ha-icon{--mdc-icon-size:18px}.ic img{width:20px;height:20px}
 .on>.ic{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 55%,transparent)}
 .nm{flex:1;min-width:0}.nm b,.nm small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -222,7 +227,7 @@ img{object-fit:contain}
 .kv .k{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kv .v{opacity:.8;text-align:right;white-space:nowrap}
 .pills{display:flex;flex-wrap:wrap;gap:7px}
-.pill{padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:12.5px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap;transition:all .2s;min-width:0}
+.pill{padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:12.5px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;min-width:0}
 .pill ha-icon{--mdc-icon-size:16px}.pill img{width:16px;height:16px}
 .pill.on{background:var(--nv-active);color:var(--nv-active-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--nv-active) 50%,transparent)}
 .pills.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-modular-button-width,104px),1fr));gap:8px}
@@ -265,6 +270,33 @@ summary .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow
 .adds{display:flex;flex-wrap:wrap;gap:8px}
 details.item details.item>summary{background:none}
 h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
+  var SECTION_EDITOR_CSS = `${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}`;
+
+  // src/shared/lifecycle.js
+  var GLOBAL = ["entities", "devices", "areas", "floors", "localize", "locale", "language", "themes", "selectedTheme", "config", "user", "connected"];
+  var ID = /^[a-z_]+\.[a-z0-9_]+$/;
+  var entityIds = (o, out = /* @__PURE__ */ new Set()) => {
+    if (typeof o === "string") {
+      if (ID.test(o)) out.add(o);
+    } else if (o && typeof o === "object") Object.values(o).forEach((v) => entityIds(v, out));
+    return out;
+  };
+  var hassChanged = (prev2, next, ids) => {
+    if (prev2 === next) return false;
+    if (!prev2 || !next) return true;
+    if (GLOBAL.some((k) => prev2[k] !== next[k])) return true;
+    const a = prev2.states, b = next.states;
+    if (a === b) return false;
+    for (const id of ids || []) if (a?.[id] !== b?.[id]) return true;
+    return false;
+  };
+  var inPicker = (el2) => {
+    for (let n = el2, i = 0; n && i < 80; i++) {
+      if (n.localName === "hui-card-picker") return true;
+      n = n.parentElement || n.getRootNode?.().host;
+    }
+    return false;
+  };
 
   // src/shared/editor-base.js
   var preload;
@@ -283,54 +315,96 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     keys.forEach((k) => empty(val[k]) ? delete o[k] : o[k] = val[k]);
     return o;
   };
+  var DEBOUNCE = 300;
   var NovaEditorBase = class extends HTMLElement {
     constructor() {
       super();
       this.attachShadow({ mode: "open" });
       this._forms = [];
       this._open = /* @__PURE__ */ new Set();
+      this._keep = /* @__PURE__ */ new Map();
+      this._ids = /* @__PURE__ */ new Set();
+      this.addEventListener("focusout", () => this._flush());
     }
+    // hass kommt mehrmals pro Sekunde – an die Felder nur weitergeben, wenn es den Editor betrifft
     set hass(h) {
+      const old = this._hass;
       this._hass = h;
-      this._forms.forEach((f) => {
+      if (hassChanged(old, h, this._ids)) this._forms.forEach((f) => {
         f.hass = h;
       });
     }
     setConfig(c) {
       const s = JSON.stringify(c);
-      if (s === this._emitted) {
+      if (s === this._emitted || this._pending && s === JSON.stringify(this._pending)) {
         this._config = c;
         return;
       }
+      clearTimeout(this._dt);
+      this._pending = null;
       this._config = JSON.parse(s);
+      this._ids = entityIds(this._config);
       this._onExternalConfig?.();
       this._rebuild();
+    }
+    disconnectedCallback() {
+      this._flush();
     }
     async _rebuild() {
       const id = this._bid = (this._bid || 0) + 1;
       await loadForm();
-      if (id === this._bid) {
-        this._forms = [];
+      if (id !== this._bid) return;
+      this._forms = [];
+      this._pool = this._keep;
+      this._keep = /* @__PURE__ */ new Map();
+      try {
         this._build();
+      } finally {
+        this._pool = null;
       }
     }
     _emit(c) {
       this._config = c;
+      this._ids = entityIds(c);
+      this._pending = c;
+      clearTimeout(this._dt);
+      this._dt = setTimeout(() => this._flush(), DEBOUNCE);
+    }
+    _flush() {
+      clearTimeout(this._dt);
+      const c = this._pending;
+      if (!c) return;
+      this._pending = null;
       this._emitted = JSON.stringify(c);
       fire(this, "config-changed", { config: c });
     }
-    _form(schema2, data, cb) {
-      const f = document.createElement("ha-form");
-      f.hass = this._hass;
-      f.schema = schema2;
-      f.data = data;
-      f.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
-      f.computeHelper = (s) => this.constructor.helpers?.[s.name];
-      f.addEventListener("value-changed", (e) => {
-        e.stopPropagation();
-        f.data = e.detail.value;
-        cb(e.detail.value);
+    // Element vom letzten Aufbau weiterverwenden (gleicher Typ, gleiche Reihenfolge), sonst mit create() neu erzeugen
+    _reuse(type, create) {
+      const el2 = this._pool?.get(type)?.shift() || create();
+      (this._keep.get(type) || this._keep.set(type, []).get(type)).push(el2);
+      return el2;
+    }
+    _form(schema, data, cb) {
+      const f = this._reuse(`form:${JSON.stringify(schema)}`, () => {
+        const f2 = document.createElement("ha-form");
+        f2.schema = schema;
+        f2.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f2.computeHelper = (s) => this.constructor.helpers?.[s.name];
+        f2.addEventListener("value-changed", (e) => {
+          e.stopPropagation();
+          f2.data = e.detail.value;
+          f2._dk = JSON.stringify(f2.data);
+          f2._cb(e.detail.value);
+        });
+        return f2;
       });
+      if (f.hass !== this._hass) f.hass = this._hass;
+      const dk = JSON.stringify(data);
+      if (f._dk !== dk) {
+        f.data = data;
+        f._dk = dk;
+      }
+      f._cb = cb;
       this._forms.push(f);
       return f;
     }
@@ -370,8 +444,9 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       p.textContent = t;
       return p;
     }
-    // Aufklapp-Eintrag; key merkt sich, ob er offen ist. Liefert [details, summary, body]
-    _details(key, icon, label, btns) {
+    // Aufklapp-Eintrag; key merkt sich, ob er offen ist. Liefert [details, summary, body].
+    // Mit fill(body, summary) wird der Inhalt erst beim ersten Aufklappen gebaut – zugeklappte Einträge kosten dann nichts
+    _details(key, icon, label, btns, fill) {
       const d = document.createElement("details");
       d.className = "item";
       d.open = this._open.has(key);
@@ -386,7 +461,38 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       const body = document.createElement("div");
       body.className = "body";
       d.append(s, body);
+      if (fill) {
+        let done = false;
+        const go = () => {
+          if (!done && d.open) {
+            done = true;
+            fill(body, s);
+          }
+        };
+        d.addEventListener("toggle", go);
+        go();
+      }
       return [d, s, body];
+    }
+    // Aufklappbarer Bereich im Stil des Pop-up-Editors (Icon + Überschrift, Inhalt erst beim Aufklappen).
+    // Welche Bereiche offen sind, bleibt beim Neuaufbau erhalten; anfangs offen: static openSections der Unterklasse.
+    _section(key, icon, label, fill) {
+      const open = this._openSecs ||= new Set(this.constructor.openSections || []), k = `sec.${key}`;
+      if (open.has(key)) this._open.add(k);
+      else this._open.delete(k);
+      const [d] = this._details(k, icon, label, [], fill);
+      d.classList.add("sec");
+      d.addEventListener("toggle", () => {
+        if (d.open) open.add(key);
+        else open.delete(key);
+      });
+      return d;
+    }
+    // Zwischenüberschrift innerhalb eines Bereichs
+    _h4(t) {
+      const h = document.createElement("h4");
+      h.textContent = t;
+      return h;
     }
     // Hoch / Runter / Löschen für Eintrag i von n
     _itemBtns(i, n, move, del) {
@@ -407,30 +513,40 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       else delete c[k];
       this._emit(c);
     }
-    _itemList(w, k, schema2, m, addLabel, view = (it) => it) {
-      const items = this._items(k), keys = names(schema2);
+    // schema darf eine Funktion des Eintrags sein (Felder je nach Einstellung); ändert sich dadurch das Schema, wird neu aufgebaut
+    _itemList(w, k, schema, m, addLabel, view = (it) => it) {
+      const items = this._items(k), sch = typeof schema === "function" ? schema : () => schema;
       items.forEach((it, j) => {
-        const [d, s, body] = this._details(`${k}.${j}`, it.icon || m.icon, this._ilabel(it, j, m), this._itemBtns(
-          j,
-          items.length,
-          (dir) => this._moveItem(k, j, dir),
-          () => {
-            this._open = /* @__PURE__ */ new Set();
-            this._setItems(k, this._items(k).filter((_, x) => x !== j));
-            this._rebuild();
+        const [d, s] = this._details(
+          `${k}.${j}`,
+          it.icon || m.icon,
+          this._ilabel(it, j, m),
+          this._itemBtns(
+            j,
+            items.length,
+            (dir) => this._moveItem(k, j, dir),
+            () => {
+              this._open = /* @__PURE__ */ new Set();
+              this._setItems(k, this._items(k).filter((_, x) => x !== j));
+              this._rebuild();
+            }
+          ),
+          (body) => {
+            const cur2 = this._items(k)[j] || it;
+            body.append(this._form(sch(cur2), view(cur2), (v) => {
+              const arr = this._items(k), was = JSON.stringify(sch(arr[j]));
+              arr[j] = merge(arr[j], names(sch(arr[j])), v);
+              this._setItems(k, arr);
+              s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
+              if (JSON.stringify(sch(arr[j])) !== was) this._rebuild();
+            }));
           }
-        ));
-        body.append(this._form(schema2, view(it), (v) => {
-          const arr = this._items(k);
-          arr[j] = merge(arr[j], keys, v);
-          this._setItems(k, arr);
-          s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
-        }));
+        );
         w.append(d);
       });
       w.append(this._add(addLabel, () => {
         const n = [...this._items(k), {}];
-        this._open = /* @__PURE__ */ new Set([`${k}.${n.length - 1}`]);
+        this._open = new Set([...this._open].filter((x) => x.startsWith("sec.")).concat(`${k}.${n.length - 1}`));
         this._setItems(k, n);
         this._rebuild();
       }));
@@ -571,27 +687,26 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   }
 
   // src/room.js
-  var MAIN = [
-    { type: "grid", name: "", schema: [{ name: "name", required: true, selector: { text: {} } }, { name: "icon", selector: { icon: {} } }] },
+  var GEN = [{ type: "grid", name: "", schema: [{ name: "name", required: true, selector: { text: {} } }, { name: "icon", selector: { icon: {} } }] }];
+  var VALUES = (c) => [
     { name: "temperature", selector: { entity: { domain: ["sensor", "climate"] } } },
-    { name: "windows", selector: { entity: { multiple: true, domain: "binary_sensor" } } },
-    { name: "tap_action", selector: { ui_action: {} } },
-    { name: "popup", selector: { select: { mode: "dropdown", custom_value: true, options: [] } } }
-  ];
-  var ADVANCED = [
     { name: "info", selector: { entity: {} } },
-    { type: "grid", name: "", schema: [{ name: "info_suffix", selector: { text: {} } }, { name: "info_round", selector: { boolean: {} } }] },
-    { name: "image", selector: { text: {} } },
-    { name: "window_icon", selector: { icon: {} } }
+    ...c.info ? [{ type: "grid", name: "", schema: [{ name: "info_suffix", selector: { text: {} } }, { name: "info_round", selector: { boolean: {} } }] }] : [],
+    { name: "windows", selector: { entity: { multiple: true, domain: "binary_sensor" } } },
+    ...[].concat(c.windows || []).length ? [{ name: "window_icon", selector: { icon: {} } }] : []
   ];
-  var BUTTON = [
+  var LOOK = [{ name: "image", selector: { text: {} } }];
+  var ACTIONS = [
+    { name: "popup", selector: { select: { mode: "dropdown", custom_value: true, options: [] } } },
+    { name: "tap_action", selector: { ui_action: {} } }
+  ];
+  var vis = (c) => `${!!c.info}|${!![].concat(c.windows || []).length}`;
+  var B_MAIN = [
     { name: "entity", required: true, selector: { entity: {} } },
-    { type: "grid", name: "", schema: [{ name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }, { name: "name", selector: { text: {} } }] },
-    { name: "state_entity", selector: { entity: {} } },
-    { name: "tap_action", selector: { ui_action: {} } },
-    { name: "hold_action", selector: { ui_action: {} } },
-    { name: "icon_entity", selector: { entity: {} } }
+    { type: "grid", name: "", schema: [{ name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }, { name: "name", selector: { text: {} } }] }
   ];
+  var B_ACT = [{ name: "tap_action", selector: { ui_action: {} } }, { name: "hold_action", selector: { ui_action: {} } }];
+  var B_ADV = [{ name: "state_entity", selector: { entity: {} } }, { name: "icon_entity", selector: { entity: {} } }];
   var ICON_MAP_ROW = [{ type: "grid", name: "", schema: [{ name: "state", selector: { text: {} } }, { name: "value", selector: { text: {} } }] }];
   var NovaRoomCardEditor = class extends NovaEditorBase {
     // icon_map je Button als bearbeitbare Zeilen (bleiben auch leer stehen)
@@ -606,38 +721,40 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
         });
       }
     }
-    _main() {
+    _actions() {
       const opts = this._pops?.length ? this._pops : [{ value: "", label: "– keins –" }];
-      return MAIN.map((x) => x.name === "popup" ? { ...x, selector: { select: { ...x.selector.select, options: opts } } } : x);
+      return ACTIONS.map((x) => x.name === "popup" ? { ...x, selector: { select: { ...x.selector.select, options: opts } } } : x);
     }
     _onExternalConfig() {
       this._maps = (this._config.buttons || []).map((b) => Object.entries(b.icon_map || {}));
     }
     _build() {
       const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), save = (schema2) => (v) => this._emit(merge(this._config, names(schema2), v));
-      const main = this._main();
-      w.append(this._form(main, this._config, (v) => {
-        const c = merge(this._config, names(main), v);
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), c0 = this._config;
+      const form = (schema) => this._form(schema, c0, (v) => {
+        const c = merge(this._config, names(schema), v);
         if (c.popup) c.popup = cleanHash(c.popup);
         if (!c.popup) delete c.popup;
         this._emit(c);
-      }));
-      w.append(this._h3("Buttons"));
-      (this._config.buttons || []).forEach((b, i) => w.append(this._button(b, i)));
-      w.append(this._add("Button hinzufügen", () => {
-        const buttons = [...this._config.buttons || [], {}];
-        this._maps.push([]);
-        this._open.add(buttons.length - 1);
-        this._emit({ ...this._config, buttons });
-        this._rebuild();
-      }));
-      const adv = document.createElement("details");
-      adv.className = "item";
-      adv.innerHTML = '<summary><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Erweitert</span></summary><div class="body"></div>';
-      adv.querySelector(".body").append(this._form(ADVANCED, this._config, save(ADVANCED)));
-      w.append(adv);
+        if (vis(c) !== vis(c0)) this._rebuild();
+      });
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN))),
+        this._section("values", "mdi:thermometer", "Anzeige", (b) => b.append(form(VALUES(c0)))),
+        this._section("buttons", "mdi:gesture-tap-button", "Buttons", (b) => {
+          (this._config.buttons || []).forEach((x, i) => b.append(this._button(x, i)));
+          b.append(this._add("Button hinzufügen", () => {
+            const buttons = [...this._config.buttons || [], {}];
+            this._maps.push([]);
+            this._open.add(buttons.length - 1);
+            this._emit({ ...this._config, buttons });
+            this._rebuild();
+          }));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(this._actions())))
+      );
     }
     _label(b, i) {
       const s = b.entity ? this._hass?.states[b.entity] : null;
@@ -645,15 +762,17 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     _button(b, i) {
       const n = (this._config.buttons || []).length;
-      const [d, s, body] = this._details(i, b.icon || "mdi:gesture-tap-button", this._label(b, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)));
-      body.append(this._form(BUTTON, b, (v) => {
-        const buttons = [...this._config.buttons], old = buttons[i];
-        buttons[i] = merge(old, names(BUTTON), v);
-        this._emit({ ...this._config, buttons });
-        s.querySelector(".lbl").textContent = this._label(buttons[i], i);
-        if (!!old.icon_entity !== !!buttons[i].icon_entity) this._rebuild();
-      }));
-      if (b.icon_entity) body.append(this._mapEditor(i));
+      const [d, s] = this._details(i, b.icon || "mdi:gesture-tap-button", this._label(b, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (body) => {
+        const form = (schema) => this._form(schema, b, (v) => {
+          const buttons = [...this._config.buttons], old = buttons[i];
+          buttons[i] = merge(old, names(schema), v);
+          this._emit({ ...this._config, buttons });
+          s.querySelector(".lbl").textContent = this._label(buttons[i], i);
+          if (!!old.icon_entity !== !!buttons[i].icon_entity) this._rebuild();
+        });
+        body.append(form(B_MAIN), this._h4("Aktionen"), form(B_ACT), this._h4("Status und Icon"), form(B_ADV));
+        if (b.icon_entity) body.append(this._mapEditor(i));
+      });
       return d;
     }
     _mapEditor(i) {
@@ -731,6 +850,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     icon_entity: "Optional: Icon wechselt je nach Zustand dieser Entität (z. B. aktuelle TV-App)",
     image: "z. B. /local/raeume/wohnzimmer.jpg"
   });
+  __publicField(NovaRoomCardEditor, "openSections", ["general"]);
   define("room-card-editor", NovaRoomCardEditor);
   var TAG = "room-card";
   var TOGGLE_DOMAINS = ["light", "switch", "input_boolean", "fan", "cover", "group", "siren", "humidifier", "automation"];
@@ -740,8 +860,8 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   var ROOM_CSS = `
 .room{display:flex;flex-direction:column;justify-content:space-between;padding:14px 16px;min-height:var(--nova-room-min-height,168px);transition:box-shadow .4s}
 .room.click{cursor:pointer}
-.bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.45;filter:grayscale(.7);transition:all .5s}
-.bgi{position:absolute;right:-14px;top:4px;--mdc-icon-size:130px;opacity:.07;transition:all .5s}
+.bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.45;filter:grayscale(.7);transition:opacity .5s,filter .5s}
+.bgi{position:absolute;right:-14px;top:4px;--mdc-icon-size:130px;opacity:.07;transition:opacity .5s,color .5s}
 .room.lit .bgi{opacity:.18;color:var(--nv-accent)}.room.lit .bg{opacity:.85;filter:none}
 .room.lit{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
 .room.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
@@ -750,7 +870,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 .t{margin-left:auto;font-weight:500;font-size:13px;opacity:.85;display:flex;gap:8px;align-items:center}
 .w{display:none;--mdc-icon-size:16px;color:var(--nv-warn)}.room.warn .w{display:flex}
 .btns{display:flex;gap:9px;flex-wrap:wrap;position:relative}
-.b{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.1);transition:all .25s;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
+.b{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.1);transition:background-color .25s,color .25s,border-color .25s,box-shadow .25s,transform .25s,opacity .25s;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
 .b:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .b:active{transform:scale(.9)}
 .b img{width:24px;height:24px;object-fit:contain}
@@ -786,16 +906,20 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     setConfig(c) {
       this._c = normalize(c);
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
-      if (!this._built) this._build();
       if (this._hp) this._hp.hass = h;
+      if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
       this._update();
     }
     getCardSize() {
@@ -918,33 +1042,53 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     });
     return HISTORY[key].data;
   }
-  var schema = (h, entity) => {
-    const modes = h?.states[entity]?.attributes.hvac_modes || Object.keys(MODE_NAMES);
+  var grid = (...schema) => ({ type: "grid", name: "", schema });
+  var S_GEN = [
+    { name: "entity", required: true, selector: { entity: { domain: "climate" } } },
+    grid({ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } })
+  ];
+  var S_SENS = [
+    grid({ name: "sensor", selector: { entity: { domain: "sensor", device_class: "temperature" } } }, { name: "humidity", selector: { entity: { domain: "sensor", device_class: "humidity" } } }),
+    { name: "windows", selector: { entity: { multiple: true, domain: "binary_sensor" } } }
+  ];
+  var S_CTRL = (h, c) => {
+    const modes = h?.states[c.entity]?.attributes.hvac_modes || Object.keys(MODE_NAMES);
     return [
-      { name: "entity", required: true, selector: { entity: { domain: "climate" } } },
-      { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] },
-      { name: "sensor", selector: { entity: { domain: "sensor", device_class: "temperature" } } },
-      { name: "windows", selector: { entity: { multiple: true, domain: "binary_sensor" } } },
-      { type: "grid", name: "", schema: [{ name: "show_graph", selector: { boolean: {} } }, { name: "graph_hours", selector: { number: { min: 1, max: 168, mode: "box", unit_of_measurement: "h" } } }] },
-      { type: "grid", name: "", schema: [{ name: "show_modes", selector: { boolean: {} } }, { name: "show_presets", selector: { boolean: {} } }] },
-      { name: "compact", selector: { boolean: {} } },
-      { name: "modes", selector: { select: { multiple: true, options: modes.map((m) => ({ value: m, label: MODE_NAMES[m] || m })) } } },
-      { type: "grid", name: "", schema: [{ name: "step", selector: { number: { min: 0.1, max: 5, step: 0.1, mode: "box", unit_of_measurement: "°" } } }, { name: "humidity", selector: { entity: { domain: "sensor", device_class: "humidity" } } }] },
-      { name: "tap_action", selector: { ui_action: {} } }
+      grid({ name: "show_modes", selector: { boolean: {} } }, { name: "show_presets", selector: { boolean: {} } }),
+      ...c.show_modes ? [{ name: "modes", selector: { select: { multiple: true, options: modes.map((m) => ({ value: m, label: MODE_NAMES[m] || m })) } } }] : [],
+      { name: "step", selector: { number: { min: 0.1, max: 5, step: 0.1, mode: "box", unit_of_measurement: "°" } } }
     ];
   };
+  var S_LOOK = (c) => [
+    { name: "compact", selector: { boolean: {} } },
+    grid({ name: "show_graph", selector: { boolean: {} } }, ...c.show_graph ? [{ name: "graph_hours", selector: { number: { min: 1, max: 168, mode: "box", unit_of_measurement: "h" } } }] : [])
+  ];
+  var S_ACT = [{ name: "tap_action", selector: { ui_action: {} } }];
+  var VIS = ["entity", "show_modes", "show_graph"];
   var EDITOR_DEFAULTS = { show_graph: true, graph_hours: 24, show_modes: true, show_presets: false, compact: true };
   var NovaThermostatCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
-      const s = schema(this._hass, this._config.entity), keys = names(s);
-      r.querySelector(".wrap").append(this._form(s, { ...EDITOR_DEFAULTS, ...this._config }, (v) => {
-        const prev2 = this._config.entity, c = merge(this._config, keys, v);
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
+      const data = { ...EDITOR_DEFAULTS, ...this._config };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
         Object.entries(EDITOR_DEFAULTS).forEach(([k, x]) => c[k] === x && delete c[k]);
         this._emit(c);
-        if (c.entity !== prev2) this._rebuild();
-      }));
+      });
+      r.querySelector(".wrap").append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(S_GEN))),
+        this._section("sensors", "mdi:thermometer", "Sensoren", (b) => b.append(form(S_SENS))),
+        this._section("control", "mdi:tune-variant", "Bedienung", (b) => b.append(form(S_CTRL(this._hass, data)))),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK(data)))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT)))
+      );
+    }
+    // Anderes Thermostat (Modi-Liste) oder Schalter für abhängige Felder → neu aufbauen
+    _emit(c) {
+      const was = { ...EDITOR_DEFAULTS, ...this._config }, now = { ...EDITOR_DEFAULTS, ...c };
+      super._emit(c);
+      if (VIS.some((k) => now[k] !== was[k])) this._rebuild();
     }
   };
   __publicField(NovaThermostatCardEditor, "labels", {
@@ -967,12 +1111,13 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     sensor: "Für Anzeige und Verlauf. Ohne: Ist-Temperatur des Thermostats",
     step: "Leer = Wert vom Thermostat (meist 0,5°)"
   });
+  __publicField(NovaThermostatCardEditor, "openSections", ["general"]);
   define("thermostat-card-editor", NovaThermostatCardEditor);
   var THERMO_CSS = `
 .th{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .th.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent)}
 .hd{display:flex;align-items:center;gap:10px;cursor:pointer}
-.ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:all .3s}
+.ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color .3s,color .3s,border-color .3s,box-shadow .3s,transform .3s,opacity .3s}
 .ic.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 50%,transparent)}
 .ic.cool{background:var(--nv-active);color:var(--nv-active-fg)}
 .nm{flex:1;min-width:0}.nm b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1014,6 +1159,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     setConfig(c) {
       this._c = normalize2(c);
+      this._ids = entityIds(this._c);
       this._built = false;
       this._pend = null;
       if (this._h) {
@@ -1021,9 +1167,12 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
       this._update();
     }
     getCardSize() {
@@ -1104,6 +1253,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       if (!this._h || !this._e) return;
       const h = this._h, c = this._c, e = this._e, s = h.states[c.entity];
       e.card.classList.toggle("na", !s || s.state === "unavailable");
+      this.classList.toggle("nv-na", !s || s.state === "unavailable");
       if (!s) {
         e.name.textContent = c.name || c.entity;
         e.sub.textContent = "nicht gefunden";
@@ -1230,25 +1380,28 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     }
   };
   define("color-input", NovaColorInput);
-  var MAIN2 = [
+  var GEN2 = [
     { type: "grid", name: "", schema: [{ name: "title", selector: { text: {} } }, { name: "icon", selector: { icon: {} } }] },
-    { name: "area", selector: { area: {} } },
-    { name: "exclude", selector: { entity: { multiple: true, domain: "light" } } },
-    { type: "grid", name: "", schema: [{ name: "show_header", selector: { boolean: {} } }, { name: "show_all_off", selector: { boolean: {} } }, { name: "use_light_color", selector: { boolean: {} } }, { name: "show_colors", selector: { boolean: {} } }] }
+    { name: "show_header", selector: { boolean: {} } }
   ];
+  var SRC = (c) => [
+    { name: "area", selector: { area: {} } },
+    ...c.area ? [{ name: "exclude", selector: { entity: { multiple: true, domain: "light" } } }] : []
+  ];
+  var COLORS = [{ name: "show_colors", selector: { boolean: {} } }];
+  var LOOK2 = [{ type: "grid", name: "", schema: [{ name: "use_light_color", selector: { boolean: {} } }, { name: "show_all_off", selector: { boolean: {} } }] }];
+  var vis2 = (c) => `${!!c.area}|${c.show_colors !== false}`;
   var LAMP = [
     { name: "entity", required: true, selector: { entity: { domain: "light" } } },
-    { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] },
-    { name: "tap_action", selector: { ui_action: {} } },
-    { name: "hold_action", selector: { ui_action: {} } }
+    { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] }
   ];
+  var LAMP_ACT = [{ name: "tap_action", selector: { ui_action: {} } }, { name: "hold_action", selector: { ui_action: {} } }];
   var EDITOR_DEFAULTS2 = { show_header: true, show_all_off: true, use_light_color: true, show_colors: true };
   var toLamp = (x) => typeof x === "string" ? { entity: x } : { ...x };
   var LIGHT_EDITOR_CSS = `
 .dots{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .dot{position:relative;width:30px;height:30px;border-radius:50%;border:2px solid var(--divider-color,#888);box-sizing:border-box}
-.dot button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;padding:0;border-radius:50%;border:none;background:var(--error-color,#db4437);color:#fff;font:700 12px/18px sans-serif;cursor:pointer}
-.sub{font-size:13px;font-weight:600;margin:4px 0 0}`;
+.dot button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;padding:0;border-radius:50%;border:none;background:var(--error-color,#db4437);color:#fff;font:700 12px/18px sans-serif;cursor:pointer}`;
   var NovaLightCardEditor = class extends NovaEditorBase {
     setConfig(c) {
       if (JSON.stringify(c) !== this._emitted) super.setConfig(c);
@@ -1263,22 +1416,35 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
       this._pickerOpen ||= /* @__PURE__ */ new Set();
     }
     _build() {
-      const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}${LIGHT_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), keys = names(MAIN2);
-      w.append(this._form(MAIN2, { ...EDITOR_DEFAULTS2, ...this._config }, (v) => this._emit(this._clean(merge(this._config, keys, v)))));
-      w.append(this._h3("Lampen"), this._hint("Genau eine Lampe (ohne Bereich) = Einzelkachel. Mehrere = Sammelkarte."));
-      this._config.entities.forEach((l, i) => w.append(this._lamp(l, i)));
-      w.append(this._add("Lampe hinzufügen", () => {
-        const lamps = [...this._config.entities, { entity: "" }];
-        this._open.add(lamps.length - 1);
-        this._set(lamps);
-        this._rebuild();
-      }));
-      w.append(this._h3("Farbknöpfe für alle Lampen"), this._colors("all", this._config.colors || [], (colors) => {
-        this._emit(this._clean({ ...this._config, colors }));
-        this._config.entities = this._internal;
-      }));
+      const r = this.shadowRoot, c0 = this._config;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}${LIGHT_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), data = { ...EDITOR_DEFAULTS2, ...c0 }, was = vis2(c0);
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
+        this._emit(this._clean(c));
+        if (vis2(c) !== was) this._rebuild();
+      });
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN2))),
+        this._section("lamps", "mdi:lightbulb-group", "Lampen", (b) => {
+          b.append(form(SRC(data)), this._hint("Genau eine Lampe (ohne Bereich) = Einzelkachel. Mehrere = Sammelkarte."));
+          this._config.entities.forEach((l, i) => b.append(this._lamp(l, i)));
+          b.append(this._add("Lampe hinzufügen", () => {
+            const lamps = [...this._config.entities, { entity: "" }];
+            this._open.add(lamps.length - 1);
+            this._set(lamps);
+            this._rebuild();
+          }));
+        }),
+        this._section("colors", "mdi:palette-swatch", "Farbknöpfe", (b) => {
+          b.append(form(COLORS));
+          if (data.show_colors !== false) b.append(this._hint("Gelten für alle Lampen; eigene Farbknöpfe je Lampe stehen bei der Lampe."), this._colors("all", this._config.colors || [], (colors) => {
+            this._emit(this._clean({ ...this._config, colors }));
+            this._config.entities = this._internal;
+          }));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK2)))
+      );
     }
     // Standardwerte und leere Farblisten weglassen, Lampen ohne Extras als reine Entity-ID
     _clean(c) {
@@ -1307,8 +1473,11 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     }
     _lamp(l, i) {
       const n = this._config.entities.length;
-      const [d, s, body] = this._details(i, l.icon || "mdi:lightbulb", this._label(l, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._removeLamp(i)));
       const keys = names(LAMP);
+      const [d] = this._details(i, l.icon || "mdi:lightbulb", this._label(l, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._removeLamp(i)), (body, s) => this._lampBody(body, s, l, i, keys));
+      return d;
+    }
+    _lampBody(body, s, l, i, keys) {
       body.append(this._form(LAMP, l, (v) => {
         const lamps = [...this._config.entities], old = lamps[i];
         lamps[i] = merge(old, keys, v);
@@ -1316,15 +1485,16 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
         s.querySelector(".lbl").textContent = this._label(lamps[i], i);
         if (old.entity !== lamps[i].entity) this._rebuild();
       }));
-      const sub = document.createElement("div");
-      sub.className = "sub";
-      sub.textContent = "Farbknöpfe dieser Lampe";
-      body.append(sub, this._colors(`l${i}`, l.colors || [], (colors) => {
+      body.append(this._h4("Aktionen"), this._form(LAMP_ACT, l, (v) => {
+        const lamps = [...this._config.entities];
+        lamps[i] = merge(lamps[i], names(LAMP_ACT), v);
+        this._set(lamps);
+      }));
+      body.append(this._h4("Farbknöpfe dieser Lampe"), this._colors(`l${i}`, l.colors || [], (colors) => {
         const lamps = [...this._config.entities];
         lamps[i] = { ...lamps[i], colors };
         this._set(lamps);
       }, l.entity));
-      return d;
     }
     // Farbknöpfe: Punkte mit ×, darunter die Farbscheibe zum Hinzufügen. key merkt sich, ob die Scheibe offen ist
     _colors(key, colors, onChange, entity) {
@@ -1401,6 +1571,7 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     hold_action: "Aktion bei langem Drücken"
   });
   __publicField(NovaLightCardEditor, "helpers", { area: "Optional. Neue Lampen im Bereich erscheinen von selbst" });
+  __publicField(NovaLightCardEditor, "openSections", ["general", "lamps"]);
   define("light-card-editor", NovaLightCardEditor);
   var TAG3 = "light-card";
   var LIGHT_CSS = `
@@ -1415,7 +1586,7 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
 .t.on{background:color-mix(in srgb,var(--lc,var(--nv-accent)) 22%,rgba(255,255,255,.08));box-shadow:0 0 18px color-mix(in srgb,var(--lc,var(--nv-accent)) 30%,transparent);border-color:color-mix(in srgb,var(--lc,var(--nv-accent)) 45%,transparent)}
 .t.na{opacity:.35}
 .top{display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
-.ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);transition:all .3s}
+.ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);transition:background-color .3s,color .3s,border-color .3s,box-shadow .3s,transform .3s,opacity .3s}
 .ic ha-icon{--mdc-icon-size:18px}
 .t.on .ic{background:var(--lc,var(--nv-accent));color:var(--nv-accent-fg);box-shadow:0 0 12px color-mix(in srgb,var(--lc,var(--nv-accent)) 60%,transparent)}
 .top:active .ic{transform:scale(.9)}
@@ -1451,6 +1622,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
     }
     setConfig(c) {
       this._c = normalize3(c);
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
@@ -1458,9 +1630,10 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
       }
     }
     set hass(h) {
-      const prev2 = this._list;
+      const prev2 = this._list, old = this._h;
       this._h = h;
       if (!this._c) return;
+      if (this._built && !hassChanged(old, h, [...this._ids, ...prev2 || []])) return;
       const now = this._lights();
       if (!this._built || now.join() !== (prev2 || []).join()) this._build();
       this._update();
@@ -1504,7 +1677,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
         const on = this._list.filter((id) => this._h.states[id]?.state === "on");
         if (on.length) this._h.callService("light", "turn_off", { entity_id: on });
       });
-      const grid = r.querySelector(".grid"), byId = Object.fromEntries(c.entities.map((l) => [l.entity, l]));
+      const grid2 = r.querySelector(".grid"), byId = Object.fromEntries(c.entities.map((l) => [l.entity, l]));
       this._tiles = this._list.map((id) => {
         const o = byId[id] || { entity: id }, tile = document.createElement("div");
         tile.className = "t";
@@ -1529,7 +1702,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
             tile._drag = false;
           }, 800);
         });
-        grid.appendChild(tile);
+        grid2.appendChild(tile);
         return { id, o, t: tile, ic: tile.querySelector("ha-icon"), nm: tile.querySelector("b"), st: tile.querySelector("small"), sl: slider, dots };
       });
     }
@@ -1636,7 +1809,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
 .dock.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.dock.top{top:14px}
 .dock::-webkit-scrollbar{display:none}
 .dock.inline{position:static;transform:none;margin:0 auto;width:max-content}
-.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:all .2s;-webkit-tap-highlight-color:transparent;outline:none}
+.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none}
 .d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .d:active{transform:scale(.9)}
 .d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
@@ -1648,7 +1821,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
 .d.bn .num{display:block}.d.bn .dot{display:none}
 .empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
 @media(max-width:600px){.d{width:calc(var(--sz) * .875);height:calc(var(--sz) * .875)}.dock{gap:5px;padding:6px}}`;
-  var SRC = {};
+  var SRC2 = {};
   var findDock = (o) => {
     if (!o || typeof o !== "object") return null;
     if ((o.type === `custom:${tag("dock-card")}` || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
@@ -1672,6 +1845,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       if (!c.items && !c.source) throw new Error("items oder source angeben");
       this._cfg = { position: "bottom", button_size: 48, ...c };
+      this._ids = entityIds(c);
       this._close();
       this._items = null;
       this._btns = null;
@@ -1680,8 +1854,11 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       if (this._h) this.hass = this._h;
     }
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._cfg) return;
+      if (this._pop) this._pop.hass = h;
+      if (this._hp) this._hp.hass = h;
       if (!this._items) {
         if (this._cfg.items) this._items = this._cfg.items;
         else {
@@ -1690,16 +1867,24 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
         }
       }
       if (!this._built) this._build();
-      if (this._pop) this._pop.hass = h;
-      if (this._hp) this._hp.hass = h;
+      else if (!hassChanged(old, h, this._watch(old))) return;
       this._update();
+    }
+    // Entitäten der Einträge, bei Zählern auch die Mitglieder der Gruppe
+    _watch(h) {
+      if (this._srcIds?.items !== this._items) this._srcIds = { items: this._items, ids: entityIds(this._items) };
+      const ids = [...this._ids, ...this._srcIds.ids];
+      (this._items || []).forEach((it) => {
+        if (it.badge_count_of) ids.push(...h?.states[it.badge_count_of]?.attributes.entity_id || []);
+      });
+      return ids;
     }
     async _loadSource() {
       if (this._loading) return;
       this._loading = true;
       const k = this._cfg.source;
-      SRC[k] = SRC[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findDock).catch(() => null);
-      const d = await SRC[k];
+      SRC2[k] = SRC2[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findDock).catch(() => null);
+      const d = await SRC2[k];
       this._loading = false;
       this._items = d ? d.items : [];
       this._srcCfg = d || {};
@@ -1858,28 +2043,24 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     }
   };
   define("dock-card", NovaDockCard, { name: "Nova Dock Card", description: "Schwebende Leiste unten mit Buttons: navigieren, Aktion auslösen oder Popup mit beliebigen Karten öffnen.", documentationURL: docUrl("nova-dock-card") });
-  var MAIN3 = [
-    { type: "grid", name: "", schema: [
-      { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
-      { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
-    ] },
-    { name: "source", selector: { text: {} } }
+  var GEN3 = [{ name: "source", selector: { text: {} } }];
+  var LOOK3 = [{ type: "grid", name: "", schema: [
+    { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
+    { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
+  ] }];
+  var I_MAIN = [{ type: "grid", name: "", schema: [
+    { name: "icon", required: true, selector: { icon: {} } },
+    { name: "label", selector: { text: {} } }
+  ] }];
+  var I_TAP = (opts) => [
+    { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
+    { name: "tap_action", selector: { ui_action: {} } }
   ];
-  var ITEM = [
-    { type: "grid", name: "", schema: [
-      { name: "icon", required: true, selector: { icon: {} } },
-      { name: "label", selector: { text: {} } }
-    ] },
-    { name: "tap_action", selector: { ui_action: {} } },
-    { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: [] } } },
-    { name: "popup_title", selector: { text: {} } },
-    { name: "cards", selector: { object: {} } },
+  var I_POP = [{ name: "popup_title", selector: { text: {} } }, { name: "cards", selector: { object: {} } }];
+  var I_BADGE = (it) => [
     { name: "badge", selector: { entity: {} } },
-    { type: "grid", name: "", schema: [
-      { name: "badge_count_of", selector: { entity: {} } },
-      { name: "badge_show_number", selector: { boolean: {} } }
-    ] },
-    { name: "badge_exclude", selector: { entity: { multiple: true } } }
+    { name: "badge_count_of", selector: { entity: {} } },
+    ...it.badge_count_of ? [{ name: "badge_show_number", selector: { boolean: {} } }, { name: "badge_exclude", selector: { entity: { multiple: true } } }] : []
   ];
   var LABELS = {
     position: "Position",
@@ -1888,9 +2069,9 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     icon: "Icon",
     label: "Name",
     tap_action: "Aktion beim Antippen",
-    popup_title: "Einfaches Pop-up: Titel",
+    popup_title: "Titel",
     popup_hash: "Nova Pop-up öffnen",
-    cards: "Einfaches Pop-up: Karten (YAML-Liste)",
+    cards: "Karten (YAML-Liste)",
     badge: "Punkt, wenn diese Entität an ist",
     badge_count_of: "Zähler: Gruppe",
     badge_show_number: "Zahl statt Punkt",
@@ -1899,7 +2080,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   var HELPERS = {
     source: "Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Dock – praktisch für mehrere Dashboards mit gleicher Leiste.",
     popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion und dem einfachen Pop-up.",
-    cards: "Einfaches Pop-up: Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
+    cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
     badge_count_of: "Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)"
   };
   var NovaDockCardEditor = class extends NovaEditorBase {
@@ -1914,33 +2095,36 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
         });
       }
     }
-    _schema() {
-      const opts = this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
-      return ITEM.map((x) => x.name === "popup_hash" ? { ...x, selector: { select: { ...x.selector.select, options: opts } } } : x);
-    }
     _build() {
       const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}</style><div class="wrap"></div>`;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap");
-      const main = { position: "bottom", button_size: 48, ...this._config };
-      w.append(this._form(MAIN3, main, (v) => {
-        const c = merge(this._config, names(MAIN3), v);
+      const data = { position: "bottom", button_size: 48, ...this._config };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
         if (c.position === "bottom") delete c.position;
         if (c.button_size === 48) delete c.button_size;
         const hadSrc = !!this._config.source;
         this._emit(c);
         if (hadSrc !== !!c.source) this._rebuild();
-      }));
-      if (this._config.source && !(this._config.items || []).length) w.append(this._hint("Einträge kommen aus dem anderen Dashboard. Eigene Einträge unten überschreiben das."));
-      w.append(this._h3("Buttons"));
+      });
       const items = this._config.items || [];
-      items.forEach((it, i) => w.append(this._item(it, i, items.length)));
-      w.append(this._add("Button hinzufügen", () => {
-        const n = [...items, { icon: "mdi:circle-outline" }];
-        this._open = /* @__PURE__ */ new Set([n.length - 1]);
-        this._emit({ ...this._config, items: n });
-        this._rebuild();
-      }));
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
+          b.append(form(GEN3));
+          if (this._config.source && !items.length) b.append(this._hint("Einträge kommen aus dem anderen Dashboard. Eigene Buttons überschreiben das."));
+        }),
+        this._section("buttons", "mdi:dock-bottom", "Buttons", (b) => {
+          items.forEach((it, i) => b.append(this._item(it, i, items.length)));
+          b.append(this._add("Button hinzufügen", () => {
+            const n = [...items, { icon: "mdi:circle-outline" }];
+            this._open = /* @__PURE__ */ new Set([n.length - 1]);
+            this._emit({ ...this._config, items: n });
+            this._rebuild();
+          }));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK3)))
+      );
     }
     _popName(h) {
       h = cleanHash(h);
@@ -1950,20 +2134,23 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : it.tap_action?.navigation_path) || "Neuer Button"}`;
     }
     _item(it, i, n) {
-      const [d, s, b] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)));
-      const schema2 = this._schema();
-      b.append(this._form(schema2, it, (v) => {
-        const list2 = [...this._config.items];
-        const nx = merge(list2[i], names(schema2), v);
-        if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
-        if (!nx.popup_hash) delete nx.popup_hash;
-        if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
-        if (!nx.badge_show_number) delete nx.badge_show_number;
-        list2[i] = nx;
-        this._emit({ ...this._config, items: list2 });
-        s.querySelector(".lbl").textContent = this._label(nx, i);
-        s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
-      }));
+      const opts = this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
+      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => {
+        const form = (schema) => this._form(schema, it, (v) => {
+          const list2 = [...this._config.items], old = list2[i];
+          const nx = merge(old, names(schema), v);
+          if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
+          if (!nx.popup_hash) delete nx.popup_hash;
+          if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
+          if (!nx.badge_show_number) delete nx.badge_show_number;
+          list2[i] = nx;
+          this._emit({ ...this._config, items: list2 });
+          s.querySelector(".lbl").textContent = this._label(nx, i);
+          s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
+          if (!!old.badge_count_of !== !!nx.badge_count_of) this._rebuild();
+        });
+        b.append(form(I_MAIN), this._h4("Beim Antippen"), form(I_TAP(opts)), this._h4("Einfaches Pop-up"), form(I_POP), this._h4("Punkt und Zähler"), form(I_BADGE(it)));
+      });
       return d;
     }
     _move(i, dir) {
@@ -1986,10 +2173,11 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   __publicField(NovaDockCardEditor, "labels", LABELS);
   __publicField(NovaDockCardEditor, "helpers", HELPERS);
+  __publicField(NovaDockCardEditor, "openSections", ["buttons"]);
   define("dock-card-editor", NovaDockCardEditor);
 
   // src/shared/editor-schema.js
-  var g2 = (...schema2) => ({ type: "grid", name: "", schema: schema2 });
+  var g2 = (...schema) => ({ type: "grid", name: "", schema });
   var T = { text: {} };
   var I = { icon: {} };
   var A = { ui_action: {} };
@@ -2239,16 +2427,20 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       if (!Array.isArray(c.blocks)) throw new Error("blocks (Liste der Bausteine) fehlt");
       this._c = { ...c, blocks: c.blocks.filter((b) => b && BLOCKS[b.type]).map(normBlock) };
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
       this._update();
     }
     getCardSize() {
@@ -2288,13 +2480,12 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   define("modular-card", NovaModularCard, { name: "Nova Modular Card", description: "Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.", documentationURL: docUrl("nova-modular-card") });
   var BM = {
-    header: { label: "Kopfzeile", icon: "mdi:page-layout-header", schema: [
-      g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "status" } }),
-      { name: "status", selector: { entity: {} } },
-      g2({ name: "active", selector: { entity: {} } }, { name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }),
-      { name: "tap_action", selector: A },
-      { name: "button_icon", selector: I },
-      { name: "button_action", selector: A }
+    // parts: Einstellungen in Gruppen mit Zwischenüberschrift (sonst ein Formular aus schema)
+    header: { label: "Kopfzeile", icon: "mdi:page-layout-header", parts: [
+      [null, [g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "status" } }), { name: "status", selector: { entity: {} } }]],
+      ["Aktiv und Fortschritt", [g2({ name: "active", selector: { entity: {} } }, { name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } })]],
+      ["Aktionen", [{ name: "tap_action", selector: A }]],
+      ["Button rechts", [{ name: "button_icon", selector: I }, { name: "button_action", selector: A }]]
     ] },
     info: {
       label: "Info-Entitäten",
@@ -2377,9 +2568,12 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     }
     _build() {
       const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), bl = this._blocks();
-      w.append(this._h3("Bausteine"), this._hint("Frei kombinierbar – die Reihenfolge hier ist die Reihenfolge auf der Karte."));
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      r.querySelector(".wrap").append(this._section("blocks", "mdi:view-dashboard-outline", "Bausteine", (w) => this._blockList(w)));
+    }
+    _blockList(w) {
+      const bl = this._blocks();
+      w.append(this._hint("Frei kombinierbar – die Reihenfolge hier ist die Reihenfolge auf der Karte."));
       bl.forEach((b, i) => w.append(this._block(b, i, bl.length)));
       const adds = document.createElement("div");
       adds.className = "adds";
@@ -2400,29 +2594,34 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     }
     _block(b, i, n) {
       const m = BM[b.type];
-      const [d, s, body] = this._details(
+      const [d] = this._details(
         `${i}`,
         m?.icon || "mdi:help-circle-outline",
         this._blabel(b, i),
-        this._itemBtns(i, n, (dir) => this._move(null, i, dir), () => this._del(null, i))
+        this._itemBtns(i, n, (dir) => this._move(null, i, dir), () => this._del(null, i)),
+        (body, s) => this._blockBody(body, s, b, i, m)
       );
+      return d;
+    }
+    _blockBody(body, s, b, i, m) {
       if (!m) {
         body.append(this._hint(`Unbekannter Baustein „${b.type}“ – nur per YAML bearbeitbar.`));
-        return d;
+        return;
       }
-      const keys = names(m.schema), def = m.defaults || {};
-      body.append(this._form(m.schema, { ...def, ...b }, (v) => {
-        const bl = this._blocks(), nb = merge(bl[i], keys, v);
-        Object.entries(def).forEach(([k, x]) => nb[k] === x && delete nb[k]);
-        bl[i] = nb;
-        this._set(bl);
-        s.querySelector(".lbl").textContent = this._blabel(nb, i);
-      }));
+      const def = m.defaults || {};
+      (m.parts || [[null, m.schema]]).forEach(([title, schema]) => {
+        if (title) body.append(this._h4(title));
+        body.append(this._form(schema, { ...def, ...b }, (v) => {
+          const bl = this._blocks(), nb = merge(bl[i], names(schema), v);
+          Object.entries(def).forEach(([k, x]) => nb[k] === x && delete nb[k]);
+          bl[i] = nb;
+          this._set(bl);
+          s.querySelector(".lbl").textContent = this._blabel(nb, i);
+        }));
+      });
       if (m.items) {
         const k = m.key || "entities", items = b[k] || [];
-        const h = document.createElement("h4");
-        h.textContent = m.plural;
-        body.append(h);
+        body.append(this._h4(m.plural));
         items.forEach((it, j) => body.append(this._sub(i, j, it, items.length, m, k)));
         body.append(this._add(`${m.item} hinzufügen`, () => {
           const bl = this._blocks();
@@ -2432,23 +2631,22 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
           this._rebuild();
         }));
       }
-      return d;
     }
     _sub(i, j, it, n, m, k) {
-      const [d, s, body] = this._details(
+      const keys = names(m.items);
+      const [d] = this._details(
         `${i}.${j}`,
         it.icon || m.icon,
         this._ilabel(it, j, m),
-        this._itemBtns(j, n, (dir) => this._move(i, j, dir), () => this._del(i, j))
+        this._itemBtns(j, n, (dir) => this._move(i, j, dir), () => this._del(i, j)),
+        (body, s) => body.append(this._form(m.items, it, (v) => {
+          const bl = this._blocks(), arr = [...bl[i][k]];
+          arr[j] = merge(arr[j], keys, v);
+          bl[i] = { ...bl[i], [k]: arr };
+          this._set(bl);
+          s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
+        }))
       );
-      const keys = names(m.items);
-      body.append(this._form(m.items, it, (v) => {
-        const bl = this._blocks(), arr = [...bl[i][k]];
-        arr[j] = merge(arr[j], keys, v);
-        bl[i] = { ...bl[i], [k]: arr };
-        this._set(bl);
-        s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
-      }));
       return d;
     }
     // i = null: Block verschieben/löschen, sonst Eintrag j in Block i
@@ -2482,6 +2680,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   __publicField(NovaModularCardEditor, "labels", BASE_LABELS);
   __publicField(NovaModularCardEditor, "helpers", MHELPERS);
+  __publicField(NovaModularCardEditor, "openSections", ["blocks"]);
   define("modular-card-editor", NovaModularCardEditor);
 
   // src/camera.js
@@ -2624,6 +2823,7 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
       CLISTS.forEach((k) => {
         this._c[k] = [].concat(c[k] || []).map(toObj).filter((o) => o.entity || o.tap_action);
       });
+      this._ids = entityIds(this._c);
       this._built = false;
       this._stopLive();
       if (this._h) {
@@ -2631,10 +2831,16 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte (auch die gefundenen PTZ-Buttons) geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
+      this._kids?.forEach((k) => {
+        k.hass = h;
+      });
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, [...this._ids, ...Object.values(this._ptz || {}).filter((v) => typeof v === "string")])) return;
       this._update();
     }
     getCardSize() {
@@ -2644,6 +2850,7 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
       return { columns: 12, rows: "auto", min_columns: 4 };
     }
     connectedCallback() {
+      this._quiet = inPicker(this);
       document.addEventListener("visibilitychange", this._onVis);
       if ("IntersectionObserver" in window) {
         this._io ||= new IntersectionObserver((es) => {
@@ -2669,6 +2876,7 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
       const ov = c.buttons_position !== "below";
       this._ptz = ptzMap(this._h, c);
       const pk = Object.keys(this._ptz), pov = c.ptz_position !== "below";
+      this.classList.toggle("nv-flat", !!c.bare);
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${CCSS}</style><div class="g cam${c.bare ? " bare" : ""}">
 ${c.show_header !== false ? `<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${hb ? '<div class="hb"></div>' : ""}</div>` : ""}
 <div class="media${ov && c.buttons.length ? " has-ov" : ""}${pk.length && pov ? " has-ptz" : ""}"><div class="ph"><ha-icon icon="mdi:cctv-off"></ha-icon></div><img class="still" alt=""><div class="live"></div>
@@ -2790,6 +2998,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
       if (!h || !e) return;
       const s = h.states[c.entity], st = c.status && h.states[c.status];
       e.g.classList.toggle("na", !s || s.state === "unavailable");
+      this.classList.toggle("nv-na", !s || s.state === "unavailable");
       if (e.hd) {
         e.name.textContent = c.name ?? s?.attributes.friendly_name ?? c.entity;
         setIcon(e.ic, c.icon || st?.attributes.icon || s?.attributes.icon || (dom(c.entity) === "image" ? "mdi:image" : "mdi:cctv"));
@@ -2831,9 +3040,6 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
       e.g.classList.toggle("err", lvl === 2);
       if (dom(c.entity) === "image" && s && this._stillKey !== s.state) this._still();
       if (this._liveEl && "hass" in this._liveEl) this._liveEl.hass = h;
-      this._kids.forEach((k) => {
-        k.hass = h;
-      });
     }
     _ptzGo(k) {
       const v = this._ptz[k], c = this._c;
@@ -2851,14 +3057,14 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
     _sync() {
       if (!this._e || !this._h) return;
       const show = this._vis && !document.hidden && this.isConnected;
-      const live = show && dom(this._c.entity) === "camera" && this._c.stream !== "snapshot";
+      const live = show && !this._quiet && dom(this._c.entity) === "camera" && this._c.stream !== "snapshot";
       if (live && !this._mode && !this._starting) this._startLive();
       if (!live) this._stopLive();
       clearInterval(this._tm);
       this._tm = null;
       if (show && dom(this._c.entity) === "camera" && !this._mode) {
         if (!this._e.still.src) this._still();
-        if (this._c.refresh > 0) this._tm = setInterval(() => !this._mode && this._still(), this._c.refresh * 1e3);
+        if (this._c.refresh > 0 && !this._quiet) this._tm = setInterval(() => !this._mode && this._still(), this._c.refresh * 1e3);
       }
     }
     async _startLive() {
@@ -2944,21 +3150,27 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
     }
   };
   define("camera-card", NovaCameraCard, { name: "Nova Kamera Card", description: "Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.", documentationURL: docUrl("nova-kamera-card") });
-  var CMAIN = [
+  var C_GEN = [
     { name: "entity", required: true, selector: { entity: { domain: ["camera", "image"] } } },
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
     { name: "status", selector: { entity: {} } },
-    g2({ name: "show_header", selector: { boolean: {} } }, { name: "glow", selector: { boolean: {} } }),
-    { name: "tap_action", selector: A },
-    g2({ name: "button_icon", selector: I }, { name: "button_action", selector: A }),
+    { name: "show_header", selector: { boolean: {} } }
+  ];
+  var C_IMG = [
     g2(sel("aspect_ratio", [["16:9", "16:9"], ["4:3", "4:3"], ["1:1", "1:1"]]), sel("fit", [["cover", "Füllen"], ["contain", "Ganzes Bild"]])),
     g2(
-      sel("image_action", [["more-info", "Details (more-info)"], ["fullscreen", "Vollbild"], ["none", "Nichts"]]),
-      sel("stream", [["auto", "Automatisch"], ["mjpeg", "MJPEG"], ["webrtc", "WebRTC-Karte"], ["snapshot", "Nur Standbild"]])
-    ),
-    g2({ name: "refresh", selector: { number: { min: 0, max: 300, mode: "box", unit_of_measurement: "s" } } }, sel("buttons_position", [["overlay", "Über dem Bild"], ["below", "Darunter"]]))
+      sel("stream", [["auto", "Automatisch"], ["mjpeg", "MJPEG"], ["webrtc", "WebRTC-Karte"], ["snapshot", "Nur Standbild"]]),
+      { name: "refresh", selector: { number: { min: 0, max: 300, mode: "box", unit_of_measurement: "s" } } }
+    )
   ];
-  CMAIN.push(sel("split_layout", [["grid", "Raster (2 Spalten)"], ["row", "Nebeneinander"], ["column", "Untereinander"]]));
+  var C_BTN = [sel("buttons_position", [["overlay", "Über dem Bild"], ["below", "Darunter"]])];
+  var C_WARN = [{ name: "glow", selector: { boolean: {} } }];
+  var C_SPLIT = [sel("split_layout", [["grid", "Raster (2 Spalten)"], ["row", "Nebeneinander"], ["column", "Untereinander"]])];
+  var C_ACT = [
+    { name: "tap_action", selector: A },
+    sel("image_action", [["more-info", "Details (more-info)"], ["fullscreen", "Vollbild"], ["none", "Nichts"]])
+  ];
+  var C_HBTN = [g2({ name: "button_icon", selector: I }, { name: "button_action", selector: A })];
   var CPTZ = [g2(sel("ptz", [["auto", "Automatisch (Geräte-Buttons)"], ["manual", "Manuell"], ["onvif", "ONVIF"], ["off", "Aus"]]), sel("ptz_position", [["overlay", "Über dem Bild"], ["below", "Darunter"]]))];
   var PBTN = { entity: { domain: ["button", "input_button", "script", "scene"] } };
   var CPTZM = [
@@ -3042,21 +3254,47 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
     state: "Komma-Liste. Chips: leer = immer sichtbar · Warnungen: leer = bei „on“/„problem“",
     tap_action: "Gilt für das Icon oben. Standard: Details der Kamera",
     message: "Leer = Name: Zustand. {state} wird ersetzt",
-    split_layout: "Nur mit weiteren Kameras unter „Splitscreen“. Schmale Karten stapeln automatisch",
+    split_layout: "Schmale Karten stapeln automatisch",
     ptz: "Automatisch sucht Schwenk-/Neige-Buttons am Gerät der Kamera. Gedrückt halten = weiterfahren"
   };
   var NovaCameraCardEditor = class extends NovaEditorBase {
     _build() {
-      const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap");
-      w.append(this._form(CMAIN, { ...CDEF, glow: true, ...this._config }, (v) => {
-        const c = merge(this._config, names(CMAIN), v);
+      const r = this.shadowRoot, c0 = this._config;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), data = { ...CDEF, glow: true, ...c0 };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
         Object.entries(CDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         if (c.glow === true) delete c.glow;
         this._emit(c);
-      }));
-      w.append(this._h3("Steuerkreuz (Schwenken / Neigen)"));
+      });
+      const list2 = (b, k) => {
+        const m = CM[k];
+        this._itemList(b, k, m.items, m, `${m.item} hinzufügen`);
+      };
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(C_GEN))),
+        this._section("image", "mdi:image-outline", "Bild und Stream", (b) => b.append(form(C_IMG))),
+        this._section("ptz", "mdi:arrow-all", "Steuerkreuz", (b) => this._ptz(b)),
+        this._section("buttons", CM.buttons.icon, CM.buttons.label, (b) => {
+          b.append(form(C_BTN));
+          list2(b, "buttons");
+        }),
+        this._section("info", "mdi:information-outline", "Infos und Warnungen", (b) => {
+          b.append(this._h4(CM.chips.label));
+          list2(b, "chips");
+          b.append(this._h4(CM.alerts.label), form(C_WARN));
+          list2(b, "alerts");
+        }),
+        this._section("split", CM.split.icon, CM.split.label, (b) => {
+          if (this._items("split").length) b.append(form(C_SPLIT));
+          list2(b, "split");
+        }),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(C_ACT), this._h4("Button in der Kopfzeile"), form(C_HBTN)))
+      );
+    }
+    // Steuerkreuz: Modus, bei „Manuell“ die Buttons, bei „Automatisch“ was gefunden wurde
+    _ptz(w) {
       const p = this._config.ptz, mode = p === void 0 || p === true ? "auto" : p === false ? "off" : typeof p === "object" ? "manual" : p;
       w.append(this._form(CPTZ, { ptz: mode, ptz_position: this._config.ptz_position || "overlay" }, (v) => {
         const c = { ...this._config };
@@ -3078,14 +3316,11 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
         const found = Object.keys(ptzAuto(this._hass, this._config.entity));
         w.append(this._hint(found.length ? `Gefunden: ${found.map((k) => PTZ_NAME[k]).join(", ")}` : "Keine Schwenk-/Neige-Buttons am Gerät gefunden – dann „Manuell“ wählen."));
       }
-      Object.entries(CM).forEach(([k, m]) => {
-        w.append(this._h3(m.label));
-        this._itemList(w, k, m.items, m, `${m.item} hinzufügen`);
-      });
     }
   };
   __publicField(NovaCameraCardEditor, "labels", CLABELS);
   __publicField(NovaCameraCardEditor, "helpers", CHELPERS);
+  __publicField(NovaCameraCardEditor, "openSections", ["general"]);
   define("camera-card-editor", NovaCameraCardEditor);
 
   // src/media.js
@@ -3111,7 +3346,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
 .bar.seek .tr{cursor:pointer}
 .bar .tr i{display:block;height:100%;width:0;background:var(--nv-accent);border-radius:3px;transition:width 1s linear}
 .ctl{display:flex;align-items:center;justify-content:center;gap:14px}
-.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:all .2s}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
 .ctl .cb ha-icon{--mdc-icon-size:24px}
 .ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
@@ -3167,16 +3402,20 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
       this._all = [{ entity: c.entity, name: c.name, icon: c.icon }, ...this._c.players];
       this._idx = 0;
       this._manual = false;
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich ein Player (auch sein Music-Assistant-Zwilling) geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, [...this._ids, ...(this._ma || []).filter(Boolean)])) return;
       this._update();
     }
     getCardSize() {
@@ -3185,7 +3424,9 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
     getGridOptions() {
       return { columns: 12, rows: "auto", min_columns: 4 };
     }
+    // In der Kartenauswahl läuft der Fortschrittsbalken nicht im Sekundentakt
     connectedCallback() {
+      this._quiet = inPicker(this);
       if (this._built) this._tick();
     }
     disconnectedCallback() {
@@ -3310,23 +3551,24 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
         }
       }
       const p = this._p, n = h.states[p.entity], s = h.states[this._eid], a = s?.attributes || {};
-      const off = !s || ["off", "unavailable", "unknown", "standby"].includes(s.state), play = s?.state === "playing";
+      const off2 = !s || ["off", "unavailable", "unknown", "standby"].includes(s.state), play = s?.state === "playing";
       e.g.classList.toggle("na", !s || s.state === "unavailable");
-      e.g.classList.toggle("off", off);
+      this.classList.toggle("nv-na", !s || s.state === "unavailable");
+      e.g.classList.toggle("off", off2);
       e.g.classList.toggle("play", play && c.glow !== false);
       const app = a.app_name || (a.app_id === "music_assistant" ? "Music Assistant" : a.source);
       const logo = mapIcon(c.icon_map, c.icon_entity && h.states[c.icon_entity]?.state, a.app_name, a.app_id, a.source, a.media_channel);
       e.name.textContent = p.name ?? n?.attributes.friendly_name ?? a.friendly_name ?? p.entity;
-      e.sub.textContent = !s ? "nicht gefunden" : off ? fmtState(h, s) : [app, play ? null : fmtState(h, s)].filter(Boolean).join(" · ") || fmtState(h, s);
+      e.sub.textContent = !s ? "nicht gefunden" : off2 ? fmtState(h, s) : [app, play ? null : fmtState(h, s)].filter(Boolean).join(" · ") || fmtState(h, s);
       setIcon(e.ic, logo || p.icon || a.icon || (a.device_class === "tv" ? "mdi:television" : a.device_class === "speaker" ? "mdi:speaker" : "mdi:cast"));
-      e.ic.parentElement.classList.toggle("on", !off);
+      e.ic.parentElement.classList.toggle("on", !off2);
       if (e.pw) {
-        e.pw.classList.toggle("on", !off);
+        e.pw.classList.toggle("on", !off2);
         e.pw.hidden = !!n && !hasF(n, MF.ON) && !hasF(n, MF.OFF);
       }
-      e.title.textContent = a.media_title || (off ? "" : app || fmtState(h, s));
+      e.title.textContent = a.media_title || (off2 ? "" : app || fmtState(h, s));
       e.artist.textContent = [a.media_artist || a.media_series_title, a.media_album_name].filter(Boolean).join(" · ") || (a.media_title ? "" : a.media_channel || "");
-      const pic = !off && c.artwork !== "none" ? a.entity_picture_local || a.entity_picture : null;
+      const pic = !off2 && c.artwork !== "none" ? a.entity_picture_local || a.entity_picture : null;
       if (pic !== this._pic) {
         this._pic = pic;
         if (e.art) e.art.style.backgroundImage = pic ? cssUrl(pic) : "";
@@ -3401,7 +3643,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
     }
     // Sekundentakt nur, solange etwas läuft und der Balken sichtbar ist
     _tick() {
-      const run = this.isConnected && this._e?.bar && this._st()?.state === "playing";
+      const run = this.isConnected && !this._quiet && this._e?.bar && this._st()?.state === "playing";
       if (run && !this._tm) this._tm = setInterval(() => this._progress(), 1e3);
       if (!run && this._tm) {
         clearInterval(this._tm);
@@ -3414,16 +3656,18 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
   };
   define("media-card", NovaMediaCard, { name: "Nova Media Card", description: "Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.", documentationURL: docUrl("nova-media-card") });
   var MP = { domain: ["media_player"] };
-  var MPMAIN = [
+  var MPGEN = [
     { name: "entity", required: true, selector: { entity: MP } },
-    g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
-    g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A }),
-    g2(sel("artwork", [["background", "Hintergrund"], ["cover", "Cover + unscharfer Hintergrund"], ["none", "Kein Cover"]]), { name: "glow", selector: { boolean: {} } }),
+    g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } })
+  ];
+  var MPCTRL = (c) => [
     g2({ name: "show_progress", selector: { boolean: {} } }, { name: "show_power", selector: { boolean: {} } }),
     g2({ name: "show_volume", selector: { boolean: {} } }, { name: "show_mute", selector: { boolean: {} } }),
     { name: "show_source", selector: { boolean: {} } },
-    { name: "sources", selector: { text: { multiple: true } } }
+    ...c.show_source ? [{ name: "sources", selector: { text: { multiple: true } } }] : []
   ];
+  var MPLOOK = [g2(sel("artwork", [["background", "Hintergrund"], ["cover", "Cover + unscharfer Hintergrund"], ["none", "Kein Cover"]]), { name: "glow", selector: { boolean: {} } })];
+  var MPACT = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
   var MPMA = [g2({ name: "ma_auto", selector: { boolean: {} } }, { name: "ma_entity", selector: { entity: { domain: "media_player", integration: "music_assistant" } } })];
   var MPPLAY = [g2({ name: "show_players", selector: { boolean: {} } }, { name: "auto_switch", selector: { boolean: {} } })];
   var MPITEM = [{ name: "entity", required: true, selector: { entity: MP } }, NAMEICON, { name: "music_assistant", selector: { entity: { domain: "media_player", integration: "music_assistant" } } }];
@@ -3467,26 +3711,42 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
     }
     _build() {
       const r = this.shadowRoot, c0 = this._config;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), strip = (c) => {
         Object.entries(MDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         if (c.glow === true) delete c.glow;
         return c;
       };
-      w.append(this._form(MPMAIN, { ...MDEF, glow: true, ...c0 }, (v) => this._emit(strip(merge(this._config, names(MPMAIN), v)))));
-      w.append(this._h3("Music Assistant"));
-      const ma = c0.music_assistant;
-      w.append(this._form(MPMA, { ma_auto: ma !== false, ma_entity: typeof ma === "string" ? ma : void 0 }, (v) => {
-        const c = { ...this._config };
-        if (v.ma_entity) c.music_assistant = v.ma_entity;
-        else if (v.ma_auto === false) c.music_assistant = false;
-        else delete c.music_assistant;
+      const data = { ...MDEF, glow: true, ...c0 };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = strip(merge(this._config, names(schema), v));
         this._emit(c);
-      }));
-      w.append(this._h3("Weitere Player (umschaltbar)"));
-      if (this._items("players").length) w.append(this._form(MPPLAY, { ...MDEF, ...c0 }, (v) => this._emit(strip({ ...this._config, ...v }))));
-      this._itemList(w, "players", MPITEM, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
-      w.append(this._h3("App-Logos (icon_map)"));
+        if (!!c.show_source !== !!c0.show_source) this._rebuild();
+      });
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(MPGEN))),
+        this._section("controls", "mdi:play-pause", "Bedienung", (b) => b.append(form(MPCTRL(data)))),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(MPLOOK))),
+        this._section("ma", "mdi:music", "Music Assistant", (b) => {
+          const ma = c0.music_assistant;
+          b.append(this._form(MPMA, { ma_auto: ma !== false, ma_entity: typeof ma === "string" ? ma : void 0 }, (v) => {
+            const c = { ...this._config };
+            if (v.ma_entity) c.music_assistant = v.ma_entity;
+            else if (v.ma_auto === false) c.music_assistant = false;
+            else delete c.music_assistant;
+            this._emit(c);
+          }));
+        }),
+        this._section("players", "mdi:speaker-multiple", "Weitere Player", (b) => {
+          if (this._items("players").length) b.append(this._form(MPPLAY, data, (v) => this._emit(strip({ ...this._config, ...v }))));
+          this._itemList(b, "players", MPITEM, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
+        }),
+        this._section("logos", "mdi:application-outline", "App-Logos", (b) => this._logos(b, c0)),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(MPACT)))
+      );
+    }
+    // App-Logos (icon_map): Zeilen bleiben im Editor, auch solange sie noch leer sind
+    _logos(w, c0) {
       w.append(this._hint("Ersetzt das Icon oben und bei den Quellen durch ein Logo, passend zu App oder Quelle."), this._form(MPLOGO, c0, (v) => this._emit(merge(this._config, ["icon_entity"], v))));
       const map = this._map ||= Object.entries(c0.icon_map || {});
       const write = () => {
@@ -3519,6 +3779,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
   };
   __publicField(NovaMediaCardEditor, "labels", MPLABELS);
   __publicField(NovaMediaCardEditor, "helpers", MPHELPERS);
+  __publicField(NovaMediaCardEditor, "openSections", ["general"]);
   define("media-card-editor", NovaMediaCardEditor);
 
   // src/vacuum.js
@@ -3539,7 +3800,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
 .map img{display:block;width:100%;height:auto;max-height:var(--nv-map-max,280px);object-fit:contain}
 .map.ar img{height:100%;object-fit:contain}
 .ctl{display:flex;align-items:center;justify-content:center;gap:14px}
-.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:all .2s}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
 .ctl .cb ha-icon{--mdc-icon-size:24px}
 .ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
@@ -3630,7 +3891,9 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
 .sc.empty .sled,.sc.wash .sled,.sc.dry .sled{opacity:1;animation:vc-pulse 2s ease-in-out infinite}
 .sc.empty .sled{fill:#b8a993}.sc.wash .sled{fill:var(--wc)}.sc.dry .sled{fill:var(--nv-accent)}
 .sc:not(.has-tanks) :is(.tank,.tkc,.tkd,.pipe,.drops,.dirt,.bubl),.sc:not(.has-bag) :is(.bin,.bag,.duct,.parts){display:none}
-.scene.still *{animation-play-state:paused!important}
+.scene.still *,.vc.still .hd .ic ha-icon{animation-play-state:paused!important}
+/* Eigene Ebene nur für die Szene, solange sie läuft: WebKit malt dann nur die Szene neu, nicht die ganze Karte */
+.scene:not(.still)>svg{will-change:transform}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important}}
 @keyframes vc-drive{0%,100%{transform:translateX(20px)}45%,50%{transform:translateX(150px)}}
 @keyframes vc-home{0%{transform:translateX(90px)}85%,100%{transform:translateX(240px)}}
@@ -3803,16 +4066,20 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
         consumables: [].concat(c.consumables || []).map(toObj).filter((o) => o.entity),
         switches: [].concat(c.switches || []).map(toObj).filter((o) => o.entity)
       };
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte (auch Akku und automatisch gefundene Station) geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, [...this._ids, this._bat, ...Object.values(this._auto || {})])) return;
       this._update();
     }
     getCardSize() {
@@ -3822,13 +4089,15 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
       return { columns: 12, rows: "auto", min_columns: 4 };
     }
     connectedCallback() {
+      this._quiet = inPicker(this);
+      if (this._quiet) this._vis = false;
       if ("IntersectionObserver" in window) {
         this._io ||= new IntersectionObserver((es) => {
-          this._vis = es[es.length - 1].isIntersecting;
+          this._vis = es[es.length - 1].isIntersecting && !this._quiet;
           this._tick();
         }, { rootMargin: "100px" });
         this._io.observe(this);
-      } else this._vis = true;
+      } else this._vis = !this._quiet;
       if ("ResizeObserver" in window) {
         this._ro ||= new ResizeObserver((es) => this._width(Math.round(es[es.length - 1].contentRect.width)));
         this._ro.observe(this);
@@ -4039,6 +4308,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
       const s = this._st(), a = s?.attributes || {}, st = s?.state;
       const run = VRUN.includes(st), err = st === "error";
       e.g.classList.toggle("na", !s || st === "unavailable");
+      this.classList.toggle("nv-na", !s || st === "unavailable");
       e.g.classList.toggle("run", run && c.glow !== false);
       e.name.textContent = c.name ?? a.friendly_name ?? c.entity;
       const ss = c.status && h.states[c.status];
@@ -4155,6 +4425,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     }
     _tick() {
       this._e?.sc?.classList.toggle("still", this._vis === false);
+      this._e?.g?.classList.toggle("still", this._vis === false);
       const c = this._c, run = this._vis && c?.map && dom(c.map) === "camera" && c.map_refresh > 0 && VRUN.includes(this._st()?.state);
       if (run && !this._tm) this._tm = setInterval(() => this._mapSync(true), c.map_refresh * 1e3);
       if (!run && this._tm) {
@@ -4168,18 +4439,23 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     }
   };
   define("vacuum-card", NovaVacuumCard, { name: "Nova Saugroboter Card", description: "Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.", documentationURL: docUrl("nova-saugroboter-card") });
-  var VMAIN = [
+  var VGEN = [
     { name: "entity", required: true, selector: { entity: { domain: ["vacuum"] } } },
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
-    g2({ name: "battery", selector: { entity: { domain: ["sensor"], device_class: "battery" } } }, { name: "battery_low", selector: { number: { min: 0, max: 100, mode: "box", unit_of_measurement: "%" } } }),
-    g2({ name: "status", selector: { entity: {} } }, sel("battery_display", [["status", "Im Statustext"], ["chip", "Als Pille rechts"], ["none", "Aus"]])),
-    g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A }),
-    g2(sel("controls", [["pills", "Pillen mit Text"], ["round", "Runde Buttons"]]), sel("layout", [["auto", "Automatisch"], ["side", "Karte daneben"], ["stack", "Karte darüber"]])),
-    { name: "glow", selector: { boolean: {} } },
+    { name: "status", selector: { entity: {} } }
+  ];
+  var VBAT = [
+    { name: "battery", selector: { entity: { domain: ["sensor"], device_class: "battery" } } },
+    g2({ name: "battery_low", selector: { number: { min: 0, max: 100, mode: "box", unit_of_measurement: "%" } } }, sel("battery_display", [["status", "Im Statustext"], ["chip", "Als Pille rechts"], ["none", "Aus"]]))
+  ];
+  var VCTRL = [
+    sel("controls", [["pills", "Pillen mit Text"], ["round", "Runde Buttons"]]),
     g2({ name: "show_stop", selector: { boolean: {} } }, { name: "show_return", selector: { boolean: {} } }),
     g2({ name: "show_locate", selector: { boolean: {} } }, { name: "show_spot", selector: { boolean: {} } })
   ];
-  var VSCN = [
+  var VLOOK = [sel("layout", [["auto", "Automatisch"], ["side", "Karte daneben"], ["stack", "Karte darüber"]]), { name: "glow", selector: { boolean: {} } }];
+  var VACT = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
+  var VSCN = (c) => c.scene === false ? [{ name: "scene", selector: { boolean: {} } }] : [
     g2({ name: "scene", selector: { boolean: {} } }, { name: "scene_auto", selector: { boolean: {} } }),
     sel("station_type", [["auto", "Automatisch"], ["dock", "Nur Ladestation"], ["empty", "Absaugstation"], ["wash", "Waschstation (Tanks)"], ["full", "Komplett (Tanks + Staubbeutel)"]]),
     g2({ name: "mop_attached", selector: { entity: {} } }, { name: "mop_mode", selector: { entity: {} } }),
@@ -4189,9 +4465,12 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     g2({ name: "drying", selector: { entity: {} } }, { name: "charging", selector: { entity: {} } }),
     { name: "station", selector: { entity: {} } }
   ];
-  var VFAN = [{ name: "show_fan_speed", selector: { boolean: {} } }, { name: "fan_speeds", selector: { text: { multiple: true } } }];
-  var VMAP = [
+  var VFAN = (c) => [{ name: "show_fan_speed", selector: { boolean: {} } }, ...c.show_fan_speed === false ? [] : [{ name: "fan_speeds", selector: { text: { multiple: true } } }]];
+  var VMAP = (c) => [
     g2({ name: "map", selector: { entity: { domain: ["camera", "image"] } } }, { name: "map_title", selector: T }),
+    ...c.map ? VMAPX : []
+  ];
+  var VMAPX = [
     g2(
       sel("map_aspect_ratio", [["auto", "Automatisch"], ["1:1", "1:1"], ["4:3", "4:3"], ["16:9", "16:9"], ["3:4", "3:4"]]),
       { name: "map_refresh", selector: { number: { min: 0, max: 60, mode: "box", unit_of_measurement: "s" } } }
@@ -4201,6 +4480,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
       { name: "map_max_height", selector: { number: { min: 0, max: 800, step: 10, mode: "box", unit_of_measurement: "px" } } }
     )
   ];
+  var vvis = (c) => `${c.scene === false}|${c.show_fan_speed === false}|${!!c.map}`;
   var VSEG = [
     { name: "rooms_title", selector: T },
     g2({ name: "room_sensor", selector: { entity: { domain: ["sensor", "select", "input_select"] } } }, { name: "all", selector: { entity: {} } }),
@@ -4297,39 +4577,52 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
   var NovaVacuumCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot, c0 = this._config;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), strip = (c) => {
         Object.entries(VDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         return c;
       };
-      const sec = (schema2, title) => {
-        if (title) w.append(this._h3(title));
-        w.append(this._form(schema2, { ...VDEF, ...c0 }, (v) => this._emit(strip(merge(this._config, names(schema2), v)))));
-      };
-      sec(VMAIN);
-      sec(VFAN, "Saugstärke");
-      sec(VMAP, "Karte");
-      sec(VSCN, "Animation");
-      if (c0.scene !== false && this._hass) {
-        const auto = vauto(this._hass, c0.entity), au = Object.entries(auto);
-        const ST = { dock: "Nur Ladestation", empty: "Absaugstation", wash: "Waschstation", full: "Komplett" };
-        w.append(this._hint(`Station: ${ST[vstation(this._hass, c0.entity, { ...VDEF, ...c0 }, auto)]}` + (au.length && c0.scene_auto !== false ? ` · Automatisch gefunden: ${au.map(([k, v]) => `${VLABELS[k] || k} = ${v}`).join(", ")}` : "")));
-      }
-      w.append(this._h3("Räume"));
-      w.append(this._hint("Je Raum einen HA-Bereich wählen: antippen plant ein, Start reinigt die eingeplanten Räume (vacuum.clean_area). Nichts eingeplant = alles."));
-      if (this._items("rooms").length) w.append(this._form(VSEG, { ...VDEF, ...c0 }, (v) => this._emit(strip(merge(this._config, names(VSEG), v)))));
-      this._itemList(w, "rooms", VROOM, { item: "Raum", icon: "mdi:floor-plan" }, "Raum hinzufügen", (it) => ({ ...it, ...it.segments != null ? { segments: list(it.segments).join(", ") } : {} }));
-      w.append(this._h3("Schalter"));
-      w.append(this._hint("z. B. Staubentleerung, Moppwäsche, Mopp-Trocknung – Antippen schaltet bzw. löst aus."));
-      if (this._items("switches").length) sec(VSWL);
-      this._itemList(w, "switches", VSW, { item: "Schalter", icon: "mdi:toggle-switch-outline" }, "Schalter hinzufügen");
-      w.append(this._h3("Infos & Verbrauchsteile"));
-      if (this._items("consumables").length) sec(VCONSL);
-      this._itemList(w, "consumables", VCONS, { item: "Verbrauchsteil", icon: "mdi:wrench-clock" }, "Verbrauchsteil hinzufügen");
+      const data = { ...VDEF, ...c0 };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = strip(merge(this._config, names(schema), v));
+        this._emit(c);
+        if (vvis(c) !== vvis(c0)) this._rebuild();
+      });
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(VGEN))),
+        this._section("battery", "mdi:battery-60", "Akku", (b) => b.append(form(VBAT))),
+        this._section("controls", "mdi:play-pause", "Bedienung", (b) => b.append(form(VCTRL), this._h4("Saugstärke"), form(VFAN(data)))),
+        this._section("map", "mdi:map-outline", "Karte", (b) => b.append(form(VMAP(data)))),
+        this._section("scene", "mdi:robot-vacuum", "Animation", (b) => {
+          b.append(form(VSCN(data)));
+          if (c0.scene !== false && this._hass) {
+            const auto = vauto(this._hass, c0.entity), au = Object.entries(auto);
+            const ST = { dock: "Nur Ladestation", empty: "Absaugstation", wash: "Waschstation", full: "Komplett" };
+            b.append(this._hint(`Station: ${ST[vstation(this._hass, c0.entity, data, auto)]}` + (au.length && c0.scene_auto !== false ? ` · Automatisch gefunden: ${au.map(([k, v]) => `${VLABELS[k] || k} = ${v}`).join(", ")}` : "")));
+          }
+        }),
+        this._section("rooms", "mdi:floor-plan", "Räume", (b) => {
+          b.append(this._hint("Je Raum einen HA-Bereich wählen: antippen plant ein, Start reinigt die eingeplanten Räume (vacuum.clean_area). Nichts eingeplant = alles."));
+          if (this._items("rooms").length) b.append(form(VSEG));
+          this._itemList(b, "rooms", VROOM, { item: "Raum", icon: "mdi:floor-plan" }, "Raum hinzufügen", (it) => ({ ...it, ...it.segments != null ? { segments: list(it.segments).join(", ") } : {} }));
+        }),
+        this._section("switches", "mdi:toggle-switch-outline", "Schalter", (b) => {
+          b.append(this._hint("z. B. Staubentleerung, Moppwäsche, Mopp-Trocknung – Antippen schaltet bzw. löst aus."));
+          if (this._items("switches").length) b.append(form(VSWL));
+          this._itemList(b, "switches", VSW, { item: "Schalter", icon: "mdi:toggle-switch-outline" }, "Schalter hinzufügen");
+        }),
+        this._section("consumables", "mdi:wrench-clock", "Infos und Verbrauchsteile", (b) => {
+          if (this._items("consumables").length) b.append(form(VCONSL));
+          this._itemList(b, "consumables", VCONS, { item: "Verbrauchsteil", icon: "mdi:wrench-clock" }, "Verbrauchsteil hinzufügen");
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(VLOOK))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(VACT)))
+      );
     }
   };
   __publicField(NovaVacuumCardEditor, "labels", VLABELS);
   __publicField(NovaVacuumCardEditor, "helpers", VHELPERS);
+  __publicField(NovaVacuumCardEditor, "openSections", ["general"]);
   define("vacuum-card-editor", NovaVacuumCardEditor);
 
   // src/waste.js
@@ -4419,12 +4712,14 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         this._load();
       }
     }
+    // Neu zeichnen nur, wenn sich ein Kalender geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._e) this._build();
       if (!this._fetched) this._load();
-      else this._render();
+      else if (hassChanged(old, h, this._cals)) this._render();
     }
     getCardSize() {
       return this._c?.layout === "compact" ? 1 : 1 + (this._c?.count || 5);
@@ -4434,6 +4729,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
     connectedCallback() {
       clearInterval(this._tm);
+      if (inPicker(this)) return;
       this._tm = setInterval(() => this._tick(), 6e4);
       if (this._e) this._tick();
     }
@@ -4619,13 +4915,16 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
   };
   define("waste-card", NovaWasteCard, { name: "Nova Müllkalender Card", description: "Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.", documentationURL: docUrl("nova-müllkalender-card") });
-  var WMAIN = [
+  var WGEN = [
     { name: "entities", required: true, selector: { entity: { domain: "calendar", multiple: true } } },
-    g2({ name: "title", selector: T }, { name: "icon", selector: I }),
-    g2(sel("layout", [["list", "Liste"], ["compact", "Kompakt (nur nächster Termin)"]]), { name: "count", selector: { number: { min: 1, max: 20, mode: "box" } } }),
-    g2({ name: "days", selector: { number: { min: 1, max: 366, mode: "box", unit_of_measurement: "Tage" } } }, { name: "show_header", selector: { boolean: {} } }),
-    g2({ name: "hide_unmatched", selector: { boolean: {} } }, { name: "glow", selector: { boolean: {} } })
+    g2({ name: "title", selector: T }, { name: "icon", selector: I })
   ];
+  var WDATES = (c) => [
+    g2(sel("layout", [["list", "Liste"], ["compact", "Kompakt (nur nächster Termin)"]]), { name: "days", selector: { number: { min: 1, max: 366, mode: "box", unit_of_measurement: "Tage" } } }),
+    ...c.layout === "compact" ? [] : [g2({ name: "count", selector: { number: { min: 1, max: 20, mode: "box" } } }, { name: "show_header", selector: { boolean: {} } })],
+    { name: "hide_unmatched", selector: { boolean: {} } }
+  ];
+  var WLOOK = [{ name: "glow", selector: { boolean: {} } }];
   var WTYPE = [
     g2({ name: "match", required: true, selector: T }, { name: "name", selector: T }),
     g2({ name: "icon", selector: I }, ROLE("color"))
@@ -4646,12 +4945,10 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   };
   var WHELPERS = {
     entities: "Ein oder mehrere Kalender, z. B. ein iCal-Abfallkalender",
-    count: "Nur bei Darstellung „Liste“",
     days: "So weit im Voraus werden Termine geholt",
     icon: "Leer = Icon der Karte",
     match: "Groß/Klein egal, mehrere mit Komma: Papier, PPK",
     name: "Leer = Termintitel",
-    show_header: "Bei „Kompakt“ immer aus",
     color: "Farben kommen aus dem Theme (--nova-accent-1 … 4, --nova-neutral)"
   };
   var NovaWasteCardEditor = class extends NovaEditorBase {
@@ -4660,26 +4957,40 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
     _build() {
       const r = this.shadowRoot, c0 = this._config;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap");
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), data = { ...WDEF, ...c0, entities: calsOf(c0) };
       const strip = (c) => {
+        if (c.entities === void 0 && c.entity !== void 0) c.entities = calsOf(c);
         Object.entries(WDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         delete c.entity;
         delete c.refresh;
         return c;
       };
-      w.append(this._form(WMAIN, { ...WDEF, ...c0, entities: calsOf(c0) }, (v) => this._emit(strip(merge(this._config, names(WMAIN), v)))));
-      w.append(this._h3("Müllarten"));
-      w.append(this._hint("Die erste Regel, deren Stichwort im Termintitel vorkommt, bestimmt Name, Icon und Farbe."));
-      this._itemList(w, "types", WTYPE, { item: "Müllart", icon: "mdi:trash-can-outline" }, "Müllart hinzufügen");
-      if (!this._items("types").length) w.append(this._add("Standard-Müllarten einfügen", () => {
-        this._setItems("types", WTYPES.map((t) => ({ ...t })));
-        this._rebuild();
-      }));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip(merge(this._config, names(schema), v))));
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(WGEN))),
+        this._section("dates", "mdi:calendar-clock", "Termine", (b) => b.append(form(WDATES(data)))),
+        this._section("types", "mdi:trash-can-outline", "Müllarten", (b) => {
+          b.append(this._hint("Die erste Regel, deren Stichwort im Termintitel vorkommt, bestimmt Name, Icon und Farbe."));
+          this._itemList(b, "types", WTYPE, { item: "Müllart", icon: "mdi:trash-can-outline" }, "Müllart hinzufügen");
+          if (!this._items("types").length) b.append(this._add("Standard-Müllarten einfügen", () => {
+            this._setItems("types", WTYPES.map((t) => ({ ...t })));
+            this._rebuild();
+          }));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(WLOOK)))
+      );
+    }
+    // Darstellung geändert → Termin-Felder neu aufbauen
+    _emit(c) {
+      const was = this._config;
+      super._emit(c);
+      if (c.layout !== was?.layout) this._rebuild();
     }
   };
   __publicField(NovaWasteCardEditor, "labels", WLABELS);
   __publicField(NovaWasteCardEditor, "helpers", WHELPERS);
+  __publicField(NovaWasteCardEditor, "openSections", ["general"]);
   define("waste-card-editor", NovaWasteCardEditor);
 
   // src/weather.js
@@ -4798,6 +5109,12 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     show_precipitation: true,
     show_titles: true
   };
+  var off = (p) => {
+    if (p._off) return;
+    p._off = true;
+    p.then((u) => typeof u === "function" && u()).catch(() => {
+    });
+  };
   var isNum = (v) => v !== "" && v != null && Number.isFinite(+v);
   var clamp = (v, d, min, max) => isNum(v) ? Math.min(max, Math.max(min, Math.round(+v))) : d;
   var NovaWeatherCard = class extends HTMLElement {
@@ -4824,20 +5141,26 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         hours: clamp(c.hours, WDEF2.hours, 1, 72),
         hour_step: clamp(c.hour_step, WDEF2.hour_step, 1, 12)
       };
+      this._ids = [...entityIds(c), "sun.sun"];
       this._key = null;
       if (this._h) {
         this._sub();
         this._render();
       }
     }
+    // Neu zeichnen nur, wenn sich die Wetter-Entität, ein Sensor der Karte oder die Sonne geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._e) this._build();
+      else if (this._key != null && !hassChanged(old, h, this._ids)) return;
       this._sub();
       this._render();
     }
+    // In der Kartenauswahl: Uhr ohne Takt, Vorhersage nur einmal holen
     connectedCallback() {
+      this._quiet = inPicker(this);
       if (this._h && this._c) {
         if (!this._e) this._build();
         this._sub();
@@ -4873,7 +5196,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     _clock() {
       const c = this._c, e = this._e, h = this._h;
       if (!e || !h) return;
-      const on = !!(c.show_clock || c.show_date) && this.isConnected;
+      const on = !!(c.show_clock || c.show_date) && this.isConnected && !this._quiet;
       if (on && !this._tm) this._tm = setInterval(() => this._clock(), 1e4);
       if (!on && this._tm) {
         clearInterval(this._tm);
@@ -4909,15 +5232,12 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       this._unsub();
       this._subKey = key;
       types.forEach((t) => {
-        const p = h.connection.subscribeMessage(
-          (ev) => {
-            if (this._subKey === key) {
-              this._fc[t] = ev?.forecast || [];
-              this._render();
-            }
-          },
-          { type: "weather/subscribe_forecast", forecast_type: t, entity_id: c.entity }
-        );
+        const p = h.connection.subscribeMessage((ev) => {
+          if (this._subKey !== key) return;
+          this._fc[t] = ev?.forecast || [];
+          this._render();
+          if (this._quiet) off(p);
+        }, { type: "weather/subscribe_forecast", forecast_type: t, entity_id: c.entity });
         p.catch((err) => {
           if (this._subKey !== key) return;
           this._fcErr[t] = err?.message || err?.code || "unbekannter Fehler";
@@ -4928,8 +5248,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       });
     }
     _unsub() {
-      this._subs.forEach((p) => p.then((u) => typeof u === "function" && u()).catch(() => {
-      }));
+      this._subs.forEach(off);
       this._subs = [];
       this._fc = {};
       this._fcErr = {};
@@ -5126,27 +5445,40 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var TSENS = { entity: { domain: "sensor", device_class: "temperature" } };
   var BOOL = (n) => ({ name: n, selector: { boolean: {} } });
   var NUMB = (n, min, max, unit) => ({ name: n, selector: { number: { min, max, mode: "box", ...unit ? { unit_of_measurement: unit } : {} } } });
-  var S_CUR = [
+  var S_GEN2 = [
     { name: "entity", required: true, selector: { entity: { domain: "weather" } } },
-    g2(BOOL("show_clock"), BOOL("show_date")),
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
-    g2({ name: "temperature_entity", selector: TSENS }, { name: "feels_like_entity", selector: TSENS }),
-    g2(BOOL("show_name"), BOOL("show_feels_like")),
-    g2(BOOL("show_high_low"), NUMB("decimals", 0, 2)),
-    sel("color", [["auto", "Automatisch (nach Wetter)"], ["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]])
+    BOOL("show_name"),
+    g2(BOOL("show_clock"), BOOL("show_date"))
   ];
-  var S_DET = [
-    g2(BOOL("show_details"), BOOL("label_details")),
-    { name: "details", selector: { select: { multiple: true, mode: "list", options: Object.entries(DETAILS).map(([value, d]) => ({ value, label: d.label })) } } }
+  var S_CUR = (c) => [
+    { name: "temperature_entity", selector: TSENS },
+    g2(BOOL("show_feels_like"), BOOL("show_high_low")),
+    ...c.show_feels_like !== false ? [{ name: "feels_like_entity", selector: TSENS }] : [],
+    NUMB("decimals", 0, 2)
   ];
-  var S_DAY = [g2(BOOL("show_daily"), NUMB("days", 1, 14, "Tage")), BOOL("daily_bar")];
-  var S_HOUR = [
-    g2(BOOL("show_hourly"), sel("hourly_layout", [["columns", "Spalten"], ["list", "Liste mit Balken"]])),
-    g2(NUMB("hours", 1, 72, "h"), NUMB("hour_step", 1, 12, "h")),
-    BOOL("hourly_graph")
+  var S_DET = (c) => [
+    BOOL("show_details"),
+    ...c.show_details !== false ? [
+      BOOL("label_details"),
+      { name: "details", selector: { select: { multiple: true, mode: "list", options: Object.entries(DETAILS).map(([value, d]) => ({ value, label: d.label })) } } }
+    ] : []
   ];
-  var S_ALL = [g2(BOOL("show_probability"), BOOL("show_precipitation")), g2(BOOL("show_titles"), BOOL("hourly_first"))];
-  var S_ACT = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
+  var S_DAY = (c) => [BOOL("show_daily"), ...c.show_daily !== false ? [g2(NUMB("days", 1, 14, "Tage"), BOOL("daily_bar"))] : []];
+  var S_HOUR = (c) => [
+    BOOL("show_hourly"),
+    ...c.show_hourly ? [
+      g2(sel("hourly_layout", [["columns", "Spalten"], ["list", "Liste mit Balken"]]), BOOL("hourly_graph")),
+      g2(NUMB("hours", 1, 72, "h"), NUMB("hour_step", 1, 12, "h"))
+    ] : []
+  ];
+  var S_RAIN = [g2(BOOL("show_probability"), BOOL("show_precipitation"))];
+  var S_LOOK2 = (c) => [
+    sel("color", [["auto", "Automatisch (nach Wetter)"], ["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]),
+    ...c.show_daily !== false || c.show_hourly ? [g2(BOOL("show_titles"), ...c.show_daily !== false && c.show_hourly ? [BOOL("hourly_first")] : [])] : []
+  ];
+  var S_ACT2 = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
+  var VIS2 = ["entity", "show_feels_like", "show_details", "show_daily", "show_hourly"];
   var WLABELS2 = {
     ...BASE_LABELS,
     entity: "Wetter-Entität",
@@ -5192,41 +5524,38 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var NovaWeatherCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot, c0 = this._config;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}</style><div class="wrap"></div>`;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), data = { ...WDEF2, ...c0 };
       const strip = (c) => {
         Object.entries(WDEF2).forEach(([k, x]) => JSON.stringify(c[k]) === JSON.stringify(x) && delete c[k]);
         return c;
       };
-      const form = (schema2) => this._form(schema2, data, (v) => this._emit(strip(merge(this._config, names(schema2), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip(merge(this._config, names(schema), v))));
       const s = this._hass?.states[c0.entity];
       const none = (t) => s && !hasF(s, FC[t]) ? [this._hint(`Diese Entität liefert keine ${FC_NAME[t]}.`)] : [];
+      const fc = data.show_daily !== false || data.show_hourly;
       w.append(
-        this._h3("Aktuelles Wetter"),
-        form(S_CUR),
-        this._h3("Zusatzwerte"),
-        form(S_DET),
-        this._h3("Tagesvorhersage"),
-        ...none("daily"),
-        form(S_DAY),
-        this._h3("Stundenvorhersage"),
-        ...none("hourly"),
-        form(S_HOUR),
-        this._h3("Vorhersage allgemein"),
-        form(S_ALL),
-        this._h3("Aktionen"),
-        form(S_ACT)
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(S_GEN2))),
+        this._section("current", "mdi:weather-partly-cloudy", "Aktuelles Wetter", (b) => b.append(form(S_CUR(data)))),
+        this._section("details", "mdi:water-percent", "Zusatzwerte", (b) => b.append(form(S_DET(data)))),
+        this._section("forecast", "mdi:calendar-week", "Vorhersage", (b) => {
+          b.append(this._h4(FC_NAME.daily), ...none("daily"), form(S_DAY(data)), this._h4(FC_NAME.hourly), ...none("hourly"), form(S_HOUR(data)));
+          if (fc) b.append(this._h4("Regen"), form(S_RAIN));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK2(data)))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT2)))
       );
     }
-    // Entität gewechselt → Hinweise zur Vorhersage neu aufbauen
+    // Entität oder ein Schalter für abhängige Felder geändert → Bereiche neu aufbauen (Felder werden weiterverwendet)
     _emit(c) {
-      const was = this._config?.entity;
+      const was = this._config;
       super._emit(c);
-      if (c.entity !== was) this._rebuild();
+      if (VIS2.some((k) => c[k] !== was?.[k])) this._rebuild();
     }
   };
   __publicField(NovaWeatherCardEditor, "labels", WLABELS2);
   __publicField(NovaWeatherCardEditor, "helpers", WHELPERS2);
+  __publicField(NovaWeatherCardEditor, "openSections", ["general"]);
   define("weather-card-editor", NovaWeatherCardEditor);
 
   // src/info.js
@@ -5257,13 +5586,17 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       this._c = { style: "box", ...c };
       this._rows = rowsOf(c);
+      this._ids = entityIds(c);
       this._built = false;
       if (this._h) this.hass = this._h;
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
       this._update();
     }
     getCardSize() {
@@ -5275,6 +5608,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     _build() {
       this._built = true;
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      this.classList.toggle("nv-flat", c.style !== "glass");
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${ICSS}</style><div class="g ${c.style === "glass" ? "" : "box"}"><div class="ht"></div><div class="rows"></div></div>`;
       const ht = r.querySelector(".ht");
       if (c.title || c.icon) ht.innerHTML = `${c.icon ? `<ha-icon icon="${esc(c.icon)}"></ha-icon>` : ""}<span></span>`;
@@ -5333,18 +5667,13 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
   };
   define("info-card", NovaInfoCard, { name: "Nova Info Card", description: "Überschrift mit Zeilen: Name und Wert von Entitäten, optional als Schalter mit Icon und Zustand.", documentationURL: docUrl("nova-info-card") });
-  var MAIN4 = [
-    g2({ name: "title", selector: T }, { name: "icon", selector: I }),
-    sel("style", [["box", "Block (wie im Pop-up)"], ["glass", "Glas (wie andere Nova-Karten)"]])
-  ];
-  var ROW = [
+  var GEN4 = [g2({ name: "title", selector: T }, { name: "icon", selector: I })];
+  var LOOK4 = [sel("style", [["box", "Block (wie im Pop-up)"], ["glass", "Glas (wie andere Nova-Karten)"]])];
+  var ROW = (it) => [
     ENT,
     NAMEICON,
-    g2(
-      sel("display", [["value", "Name links, Wert rechts"], ["toggle", "Icon, Name, Zustand (Tippen schaltet)"]]),
-      { name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }
-    ),
-    ROLE("color")
+    sel("display", [["value", "Name links, Wert rechts"], ["toggle", "Icon, Name, Zustand (Tippen schaltet)"]]),
+    it.display === "toggle" ? ROLE("color") : { name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }
   ];
   var LABELS2 = {
     title: "Überschrift",
@@ -5363,20 +5692,26 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var NovaInfoCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap");
-      w.append(this._form(MAIN4, { style: "box", ...this._config }, (v) => {
-        const c = merge(this._config, names(MAIN4), v);
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), data = { style: "box", ...this._config };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
         if (c.style === "box") delete c.style;
         this._emit(c);
-      }));
-      w.append(this._h3("Zeilen"));
-      w.append(this._hint("Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details."));
-      this._itemList(w, "entities", ROW, { item: "Zeile", icon: "mdi:format-list-bulleted" }, "Zeile hinzufügen", (it) => ({ display: "value", ...it }));
+      });
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN4))),
+        this._section("rows", "mdi:format-list-bulleted", "Zeilen", (b) => {
+          b.append(this._hint("Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details."));
+          this._itemList(b, "entities", (it) => ROW({ display: "value", ...it }), { item: "Zeile", icon: "mdi:format-list-bulleted" }, "Zeile hinzufügen", (it) => ({ display: "value", ...it }));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK4)))
+      );
     }
   };
   __publicField(NovaInfoCardEditor, "labels", LABELS2);
   __publicField(NovaInfoCardEditor, "helpers", HELPERS2);
+  __publicField(NovaInfoCardEditor, "openSections", ["general", "rows"]);
   define("info-card-editor", NovaInfoCardEditor);
 
   // src/popup.js
@@ -5450,7 +5785,7 @@ background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filt
 .info{display:flex;flex-wrap:wrap;gap:7px;padding:0 14px 12px;flex:none}
 .info.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.info.scroll::-webkit-scrollbar{display:none}
 .info[hidden]{display:none}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:12.5px;white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:all .2s}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:12.5px;white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
 .chip ha-icon{--mdc-icon-size:16px}.chip img{width:16px;height:16px}.chip:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.chip:active{transform:scale(.95)}
 .chip .cn:empty{display:none}.chip .cn:not(:empty)::after{content:' ·'}
 .chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}
@@ -5477,6 +5812,13 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
 .pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
 .pop.inline .body{overflow:visible;padding-bottom:14px}
 @media(prefers-reduced-motion:reduce){.ov,.sh{transition:none}}`;
+  var HANDOFF = /* @__PURE__ */ new Map();
+  var handoffT;
+  var handOff = (pool) => {
+    pool.forEach((ws, k) => (HANDOFF.get(k) || HANDOFF.set(k, []).get(k)).push(...ws));
+    clearTimeout(handoffT);
+    handoffT = setTimeout(() => HANDOFF.clear(), 3e3);
+  };
   var PREV = /* @__PURE__ */ new Set(["HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR", "HUI-CARD-PICKER"]);
   var EDIT = /* @__PURE__ */ new Set(["HUI-CARD-OPTIONS", "HUI-CARD-EDIT-MODE"]);
   var NovaPopupCard = class extends HTMLElement {
@@ -5512,7 +5854,6 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
       };
       this._swipe();
       this._ro = new ResizeObserver(() => this._stack());
-      this._ro.observe(this._body);
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
@@ -5525,6 +5866,7 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
         badges: [].concat(c.badges || []).map((x) => typeof x === "string" ? { entity: x } : x).filter((x) => x?.entity)
       };
       this._rows = normRows(c);
+      this._ids = entityIds([this._cfg.info, this._cfg.badges]);
       if (this.isConnected && old !== this._cfg.hash) {
         this._unreg(old);
         this._reg();
@@ -5534,10 +5876,12 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
       if (this._isOpen || this._mode === "preview") this._grid();
       this._syncOpen();
     }
+    // Die eingebetteten Karten bekommen jedes Update (sie filtern selbst), Kopfzeile und Info-Leiste nur bei eigenen Änderungen
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._isOpen && this._mode !== "preview") return;
-      this._info();
+      if (old === h || hassChanged(old, h, this._ids)) this._info();
       this._cells().forEach((el2) => this._setHass(el2));
     }
     getCardSize() {
@@ -5547,14 +5891,21 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
       return { columns: "full", rows: "auto" };
     }
     connectedCallback() {
+      this._ro.observe(this._body);
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.addEventListener(ev, this._sync));
       this._detect();
       requestAnimationFrame(() => this._detect());
     }
     disconnectedCallback() {
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.removeEventListener(ev, this._sync));
+      this._ro.disconnect();
       this._unreg(this._cfg?.hash);
       if (this._isOpen) this._hide(true);
+      if (this._mode === "preview" && this._pool) {
+        handOff(this._pool);
+        this._pool = null;
+        this._dirty = true;
+      }
     }
     _reg() {
       if (this._cfg?.hash && this._mode !== "preview") register(this._cfg.hash, this);
@@ -5801,17 +6152,22 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
         list2.push(rw);
         row.cells.forEach((cell) => {
           const key = JSON.stringify(cell.card);
-          let w = old.get(key)?.shift();
+          let w = old.get(key)?.shift() || (this._mode === "preview" ? HANDOFF.get(key)?.shift() : null);
           if (!w) {
             w = document.createElement("div");
             w.className = "cell";
+            w._card = cell.card;
+            w._owner = this;
             if (cell.card) {
               this._mount(w, cell.card);
               w.addEventListener("ll-rebuild", (e) => {
                 e.stopPropagation();
-                this._mount(w, cell.card);
+                w._owner._mount(w, w._card);
               });
             } else w.classList.add("empty");
+          } else if (w._owner !== this) {
+            w._owner = this;
+            w.querySelectorAll(":scope>*").forEach((el2) => this._setHass(el2));
           }
           w.style.flex = flexOf(cell.width, 12);
           w.classList.toggle("auto", !FR[cell.width]);
@@ -5998,8 +6354,9 @@ ha-dialog::part(body){overflow:hidden}
 hui-card-picker{flex:1;min-height:0}`;
   var NovaPopupCardEditor = class extends NovaEditorBase {
     set hass(h) {
+      const old = this._hass;
       super.hass = h;
-      [this._sub, this._pick, this._dlgPick].forEach((x) => {
+      if (hassChanged(old, h, this._ids)) [this._sub, this._pick, this._dlgPick].forEach((x) => {
         if (x) try {
           x.hass = h;
         } catch {
@@ -6018,6 +6375,7 @@ hui-card-picker{flex:1;min-height:0}`;
       return super._rebuild();
     }
     disconnectedCallback() {
+      super.disconnectedCallback();
       this._dlg?.close();
     }
     _rows() {
@@ -6397,16 +6755,20 @@ hui-card-picker{flex:1;min-height:0}`;
     _cardEditor(box, ri, ci) {
       const cfg = this._rows()[ri].cells[ci].card;
       try {
-        const ed = document.createElement("hui-card-element-editor");
+        const ed = this._reuse(`card-editor:${ri}.${ci}`, () => {
+          const ed2 = document.createElement("hui-card-element-editor");
+          ed2.addEventListener("config-changed", (e) => {
+            e.stopPropagation();
+            const c = e.detail?.config;
+            if (!e.detail?.error && c && typeof c === "object" && c.type) ed2._cb(c);
+          });
+          ed2.addEventListener("GUImode-changed", (e) => e.stopPropagation());
+          return ed2;
+        });
+        ed._cb = (c) => this._setCard(ri, ci, c, false);
         ed.hass = this._hass;
         if (this._ll) ed.lovelace = this._ll;
         ed.value = cfg;
-        ed.addEventListener("config-changed", (e) => {
-          e.stopPropagation();
-          const c = e.detail?.config;
-          if (!e.detail?.error && c && typeof c === "object" && c.type) this._setCard(ri, ci, c, false);
-        });
-        ed.addEventListener("GUImode-changed", (e) => e.stopPropagation());
         box.append(ed);
         this._sub = ed;
       } catch (e) {

@@ -3,7 +3,8 @@ import {dom, setIcon, list, toObj, mapIcon} from './shared/utils.js';
 import {fmtState, hasF} from './shared/state.js';
 import {moreInfo, runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
-import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, MAPROW_CSS} from './shared/styles.js';
+import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, sel, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
 
@@ -30,7 +31,7 @@ const MPCSS = `
 .bar.seek .tr{cursor:pointer}
 .bar .tr i{display:block;height:100%;width:0;background:var(--nv-accent);border-radius:3px;transition:width 1s linear}
 .ctl{display:flex;align-items:center;justify-content:center;gap:14px}
-.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:all .2s}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
 .ctl .cb ha-icon{--mdc-icon-size:24px}
 .ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
@@ -86,18 +87,23 @@ class NovaMediaCard extends HTMLElement {
     this._c = {...MDEF, ...c, players: [].concat(c.players || []).map(toObj).filter(o => dom(o.entity) === 'media_player')};
     this._all = [{entity: c.entity, name: c.name, icon: c.icon}, ...this._c.players];
     this._idx = 0; this._manual = false;
+    this._ids = entityIds(this._c);
     this._built = false;
     if (this._h) { this._build(); this._update(); }
   }
+  // Neu zeichnen nur, wenn sich ein Player (auch sein Music-Assistant-Zwilling) geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._built) this._build();
+    else if (!hassChanged(old, h, [...this._ids, ...(this._ma || []).filter(Boolean)])) return;
     this._update();
   }
   getCardSize() { return 4; }
   getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
-  connectedCallback() { if (this._built) this._tick(); }
+  // In der Kartenauswahl läuft der Fortschrittsbalken nicht im Sekundentakt
+  connectedCallback() { this._quiet = inPicker(this); if (this._built) this._tick(); }
   disconnectedCallback() { clearInterval(this._tm); this._tm = null; }
   get _p() { return this._all[this._idx]; }
   // Spielt der Music-Assistant-Zwilling, kommen Anzeige und Steuerung von dort
@@ -164,6 +170,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
     const p = this._p, n = h.states[p.entity], s = h.states[this._eid], a = s?.attributes || {};
     const off = !s || ['off', 'unavailable', 'unknown', 'standby'].includes(s.state), play = s?.state === 'playing';
     e.g.classList.toggle('na', !s || s.state === 'unavailable');
+    this.classList.toggle('nv-na', !s || s.state === 'unavailable');
     e.g.classList.toggle('off', off);
     e.g.classList.toggle('play', play && c.glow !== false);
     const app = a.app_name || (a.app_id === 'music_assistant' ? 'Music Assistant' : a.source);
@@ -248,7 +255,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
   }
   // Sekundentakt nur, solange etwas läuft und der Balken sichtbar ist
   _tick() {
-    const run = this.isConnected && this._e?.bar && this._st()?.state === 'playing';
+    const run = this.isConnected && !this._quiet && this._e?.bar && this._st()?.state === 'playing';
     if (run && !this._tm) this._tm = setInterval(() => this._progress(), 1000);
     if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
   }
@@ -258,16 +265,19 @@ define('media-card', NovaMediaCard, {name: 'Nova Media Card', description: 'Medi
 
 /* ---------- Editor Media Card ---------- */
 const MP = {domain: ['media_player']};
-const MPMAIN = [
+const MPGEN = [
   {name: 'entity', required: true, selector: {entity: MP}},
   g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
-  g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}),
-  g2(sel('artwork', [['background', 'Hintergrund'], ['cover', 'Cover + unscharfer Hintergrund'], ['none', 'Kein Cover']]), {name: 'glow', selector: {boolean: {}}}),
+];
+// Quellen-Liste nur mit Quellenauswahl
+const MPCTRL = c => [
   g2({name: 'show_progress', selector: {boolean: {}}}, {name: 'show_power', selector: {boolean: {}}}),
   g2({name: 'show_volume', selector: {boolean: {}}}, {name: 'show_mute', selector: {boolean: {}}}),
   {name: 'show_source', selector: {boolean: {}}},
-  {name: 'sources', selector: {text: {multiple: true}}},
+  ...(c.show_source ? [{name: 'sources', selector: {text: {multiple: true}}}] : []),
 ];
+const MPLOOK = [g2(sel('artwork', [['background', 'Hintergrund'], ['cover', 'Cover + unscharfer Hintergrund'], ['none', 'Kein Cover']]), {name: 'glow', selector: {boolean: {}}})];
+const MPACT = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
 const MPMA = [g2({name: 'ma_auto', selector: {boolean: {}}}, {name: 'ma_entity', selector: {entity: {domain: 'media_player', integration: 'music_assistant'}}})];
 const MPPLAY = [g2({name: 'show_players', selector: {boolean: {}}}, {name: 'auto_switch', selector: {boolean: {}}})];
 const MPITEM = [{name: 'entity', required: true, selector: {entity: MP}}, NAMEICON, {name: 'music_assistant', selector: {entity: {domain: 'media_player', integration: 'music_assistant'}}}];
@@ -294,26 +304,39 @@ class NovaMediaCardEditor extends NovaEditorBase {
   static helpers = MPHELPERS;
   // Neue Konfig von außen: Logo-Zeilen neu einlesen
   _onExternalConfig() { this._map = null; }
+  static openSections = ['general'];
   _build() {
     const r = this.shadowRoot, c0 = this._config;
-    r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
     const w = r.querySelector('.wrap'), strip = c => { Object.entries(MDEF).forEach(([k, x]) => c[k] === x && delete c[k]); if (c.glow === true) delete c.glow; return c; };
-    w.append(this._form(MPMAIN, {...MDEF, glow: true, ...c0}, v => this._emit(strip(merge(this._config, names(MPMAIN), v)))));
-
-    w.append(this._h3('Music Assistant'));
-    const ma = c0.music_assistant;
-    w.append(this._form(MPMA, {ma_auto: ma !== false, ma_entity: typeof ma === 'string' ? ma : undefined}, v => {
-      const c = {...this._config};
-      if (v.ma_entity) c.music_assistant = v.ma_entity; else if (v.ma_auto === false) c.music_assistant = false; else delete c.music_assistant;
+    const data = {...MDEF, glow: true, ...c0};
+    const form = schema => this._form(schema, data, v => {
+      const c = strip(merge(this._config, names(schema), v));
       this._emit(c);
-    }));
-
-    w.append(this._h3('Weitere Player (umschaltbar)'));
-    if (this._items('players').length) w.append(this._form(MPPLAY, {...MDEF, ...c0}, v => this._emit(strip({...this._config, ...v}))));
-    this._itemList(w, 'players', MPITEM, {item: 'Player', icon: 'mdi:speaker'}, 'Player hinzufügen');
-
-    // App-Logos: Zeilen bleiben im Editor, auch solange sie noch leer sind
-    w.append(this._h3('App-Logos (icon_map)'));
+      // Quellenauswahl an/aus → Quellen-Liste ein-/ausblenden
+      if (!!c.show_source !== !!c0.show_source) this._rebuild();
+    });
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(MPGEN))),
+      this._section('controls', 'mdi:play-pause', 'Bedienung', b => b.append(form(MPCTRL(data)))),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(MPLOOK))),
+      this._section('ma', 'mdi:music', 'Music Assistant', b => {
+        const ma = c0.music_assistant;
+        b.append(this._form(MPMA, {ma_auto: ma !== false, ma_entity: typeof ma === 'string' ? ma : undefined}, v => {
+          const c = {...this._config};
+          if (v.ma_entity) c.music_assistant = v.ma_entity; else if (v.ma_auto === false) c.music_assistant = false; else delete c.music_assistant;
+          this._emit(c);
+        }));
+      }),
+      this._section('players', 'mdi:speaker-multiple', 'Weitere Player', b => {
+        if (this._items('players').length) b.append(this._form(MPPLAY, data, v => this._emit(strip({...this._config, ...v}))));
+        this._itemList(b, 'players', MPITEM, {item: 'Player', icon: 'mdi:speaker'}, 'Player hinzufügen');
+      }),
+      this._section('logos', 'mdi:application-outline', 'App-Logos', b => this._logos(b, c0)),
+      this._section('actions', 'mdi:gesture-tap', 'Aktionen', b => b.append(form(MPACT))));
+  }
+  // App-Logos (icon_map): Zeilen bleiben im Editor, auch solange sie noch leer sind
+  _logos(w, c0) {
     w.append(this._hint('Ersetzt das Icon oben und bei den Quellen durch ein Logo, passend zu App oder Quelle.'), this._form(MPLOGO, c0, v => this._emit(merge(this._config, ['icon_entity'], v))));
     const map = this._map ||= Object.entries(c0.icon_map || {});
     const write = () => {

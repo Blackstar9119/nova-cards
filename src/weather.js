@@ -4,7 +4,8 @@ import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {fmtState, unitJoin, nameOf, hasF, langOf, tzOf} from './shared/state.js';
 import {sparkline} from './shared/sparkline.js';
-import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, roleVars} from './shared/styles.js';
+import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, roleVars} from './shared/styles.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, sel, BASE_LABELS} from './shared/editor-schema.js';
 
@@ -87,6 +88,8 @@ const FC_NAME = {daily: 'Tagesvorhersage', hourly: 'Stundenvorhersage'};
 const WDEF = {show_clock: false, show_date: false, show_name: true, show_feels_like: true, show_high_low: true, show_details: true, details: ['humidity', 'wind', 'pressure'],
   color: 'auto', label_details: false, show_daily: true, days: 7, daily_bar: true, show_hourly: false, hours: 24, hour_step: 3,
   hourly_layout: 'columns', hourly_graph: true, hourly_first: false, show_probability: true, show_precipitation: true, show_titles: true};
+// Abo der Vorhersage beenden (nur einmal)
+const off = p => { if (p._off) return; p._off = true; p.then(u => typeof u === 'function' && u()).catch(() => {}); };
 const isNum = v => v !== '' && v != null && Number.isFinite(+v);
 const clamp = (v, d, min, max) => isNum(v) ? Math.min(max, Math.max(min, Math.round(+v))) : d;
 
@@ -101,17 +104,22 @@ class NovaWeatherCard extends HTMLElement {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     this._c = {...WDEF, ...c, details: [].concat(c.details ?? WDEF.details).filter(k => DETAILS[k]),
       days: clamp(c.days, WDEF.days, 1, 14), hours: clamp(c.hours, WDEF.hours, 1, 72), hour_step: clamp(c.hour_step, WDEF.hour_step, 1, 12)};
+    this._ids = [...entityIds(c), 'sun.sun'];
     this._key = null;
     if (this._h) { this._sub(); this._render(); }
   }
+  // Neu zeichnen nur, wenn sich die Wetter-Entität, ein Sensor der Karte oder die Sonne geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._e) this._build();
+    else if (this._key != null && !hassChanged(old, h, this._ids)) return;
     this._sub();
     this._render();
   }
-  connectedCallback() { if (this._h && this._c) { if (!this._e) this._build(); this._sub(); this._render(); } }
+  // In der Kartenauswahl: Uhr ohne Takt, Vorhersage nur einmal holen
+  connectedCallback() { this._quiet = inPicker(this); if (this._h && this._c) { if (!this._e) this._build(); this._sub(); this._render(); } }
   disconnectedCallback() { this._unsub(); clearInterval(this._tm); this._tm = null; }
   getCardSize() {
     const c = this._c || WDEF;
@@ -136,7 +144,7 @@ class NovaWeatherCard extends HTMLElement {
   _clock() {
     const c = this._c, e = this._e, h = this._h;
     if (!e || !h) return;
-    const on = !!(c.show_clock || c.show_date) && this.isConnected;
+    const on = !!(c.show_clock || c.show_date) && this.isConnected && !this._quiet;
     if (on && !this._tm) this._tm = setInterval(() => this._clock(), 10000);
     if (!on && this._tm) { clearInterval(this._tm); this._tm = null; }
     e.clk.hidden = !(c.show_clock || c.show_date);
@@ -163,8 +171,12 @@ class NovaWeatherCard extends HTMLElement {
     this._unsub();
     this._subKey = key;
     types.forEach(t => {
-      const p = h.connection.subscribeMessage(ev => { if (this._subKey === key) { this._fc[t] = ev?.forecast || []; this._render(); } },
-        {type: 'weather/subscribe_forecast', forecast_type: t, entity_id: c.entity});
+      const p = h.connection.subscribeMessage(ev => {
+        if (this._subKey !== key) return;
+        this._fc[t] = ev?.forecast || [];
+        this._render();
+        if (this._quiet) off(p);
+      }, {type: 'weather/subscribe_forecast', forecast_type: t, entity_id: c.entity});
       p.catch(err => {
         if (this._subKey !== key) return;
         this._fcErr[t] = err?.message || err?.code || 'unbekannter Fehler';
@@ -175,7 +187,7 @@ class NovaWeatherCard extends HTMLElement {
     });
   }
   _unsub() {
-    this._subs.forEach(p => p.then(u => typeof u === 'function' && u()).catch(() => {}));
+    this._subs.forEach(off);
     this._subs = []; this._fc = {}; this._fcErr = {}; this._subKey = null;
   }
 
@@ -344,27 +356,38 @@ define('weather-card', NovaWeatherCard, {name: 'Nova Wetter Card', description: 
 const TSENS = {entity: {domain: 'sensor', device_class: 'temperature'}};
 const BOOL = n => ({name: n, selector: {boolean: {}}});
 const NUMB = (n, min, max, unit) => ({name: n, selector: {number: {min, max, mode: 'box', ...(unit ? {unit_of_measurement: unit} : {})}}});
-const S_CUR = [
+// Felder je Bereich; abhängige Felder erscheinen nur, wenn ihr Schalter an ist
+const S_GEN = [
   {name: 'entity', required: true, selector: {entity: {domain: 'weather'}}},
-  g2(BOOL('show_clock'), BOOL('show_date')),
   g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
-  g2({name: 'temperature_entity', selector: TSENS}, {name: 'feels_like_entity', selector: TSENS}),
-  g2(BOOL('show_name'), BOOL('show_feels_like')),
-  g2(BOOL('show_high_low'), NUMB('decimals', 0, 2)),
+  BOOL('show_name'),
+  g2(BOOL('show_clock'), BOOL('show_date')),
+];
+const S_CUR = c => [
+  {name: 'temperature_entity', selector: TSENS},
+  g2(BOOL('show_feels_like'), BOOL('show_high_low')),
+  ...(c.show_feels_like !== false ? [{name: 'feels_like_entity', selector: TSENS}] : []),
+  NUMB('decimals', 0, 2),
+];
+const S_DET = c => [
+  BOOL('show_details'),
+  ...(c.show_details !== false ? [BOOL('label_details'),
+    {name: 'details', selector: {select: {multiple: true, mode: 'list', options: Object.entries(DETAILS).map(([value, d]) => ({value, label: d.label}))}}}] : []),
+];
+const S_DAY = c => [BOOL('show_daily'), ...(c.show_daily !== false ? [g2(NUMB('days', 1, 14, 'Tage'), BOOL('daily_bar'))] : [])];
+const S_HOUR = c => [
+  BOOL('show_hourly'),
+  ...(c.show_hourly ? [g2(sel('hourly_layout', [['columns', 'Spalten'], ['list', 'Liste mit Balken']]), BOOL('hourly_graph')),
+    g2(NUMB('hours', 1, 72, 'h'), NUMB('hour_step', 1, 12, 'h'))] : []),
+];
+const S_RAIN = [g2(BOOL('show_probability'), BOOL('show_precipitation'))];
+const S_LOOK = c => [
   sel('color', [['auto', 'Automatisch (nach Wetter)'], ['neutral', 'Neutral'], ['accent-1', 'Akzent 1'], ['accent-2', 'Akzent 2'], ['accent-3', 'Akzent 3'], ['accent-4', 'Akzent 4']]),
+  ...(c.show_daily !== false || c.show_hourly ? [g2(BOOL('show_titles'), ...(c.show_daily !== false && c.show_hourly ? [BOOL('hourly_first')] : []))] : []),
 ];
-const S_DET = [
-  g2(BOOL('show_details'), BOOL('label_details')),
-  {name: 'details', selector: {select: {multiple: true, mode: 'list', options: Object.entries(DETAILS).map(([value, d]) => ({value, label: d.label}))}}},
-];
-const S_DAY = [g2(BOOL('show_daily'), NUMB('days', 1, 14, 'Tage')), BOOL('daily_bar')];
-const S_HOUR = [
-  g2(BOOL('show_hourly'), sel('hourly_layout', [['columns', 'Spalten'], ['list', 'Liste mit Balken']])),
-  g2(NUMB('hours', 1, 72, 'h'), NUMB('hour_step', 1, 12, 'h')),
-  BOOL('hourly_graph'),
-];
-const S_ALL = [g2(BOOL('show_probability'), BOOL('show_precipitation')), g2(BOOL('show_titles'), BOOL('hourly_first'))];
 const S_ACT = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
+// Schalter, die Felder ein- oder ausblenden
+const VIS = ['entity', 'show_feels_like', 'show_details', 'show_daily', 'show_hourly'];
 const WLABELS = {...BASE_LABELS, entity: 'Wetter-Entität', show_clock: 'Uhr anzeigen', show_date: 'Datum anzeigen', name: 'Name', temperature_entity: 'Temperatur-Sensor (optional)',
   feels_like_entity: 'Sensor gefühlte Temperatur (optional)', show_name: 'Name anzeigen', show_feels_like: 'Gefühlte Temperatur anzeigen',
   show_high_low: 'Max/Min von heute anzeigen', color: 'Farbrolle Icons', decimals: 'Nachkommastellen Temperatur',
@@ -390,21 +413,33 @@ const WHELPERS = {
 class NovaWeatherCardEditor extends NovaEditorBase {
   static labels = WLABELS;
   static helpers = WHELPERS;
+  static openSections = ['general'];
   _build() {
     const r = this.shadowRoot, c0 = this._config;
-    r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}</style><div class="wrap"></div>`;
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
     const w = r.querySelector('.wrap'), data = {...WDEF, ...c0};
     const strip = c => { Object.entries(WDEF).forEach(([k, x]) => JSON.stringify(c[k]) === JSON.stringify(x) && delete c[k]); return c; };
     const form = schema => this._form(schema, data, v => this._emit(strip(merge(this._config, names(schema), v))));
     // Hinweis, wenn die gewählte Entität eine Vorhersage-Art nicht liefert
     const s = this._hass?.states[c0.entity];
     const none = t => s && !hasF(s, FC[t]) ? [this._hint(`Diese Entität liefert keine ${FC_NAME[t]}.`)] : [];
-    w.append(this._h3('Aktuelles Wetter'), form(S_CUR), this._h3('Zusatzwerte'), form(S_DET),
-      this._h3('Tagesvorhersage'), ...none('daily'), form(S_DAY),
-      this._h3('Stundenvorhersage'), ...none('hourly'), form(S_HOUR),
-      this._h3('Vorhersage allgemein'), form(S_ALL), this._h3('Aktionen'), form(S_ACT));
+    const fc = data.show_daily !== false || data.show_hourly;
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(S_GEN))),
+      this._section('current', 'mdi:weather-partly-cloudy', 'Aktuelles Wetter', b => b.append(form(S_CUR(data)))),
+      this._section('details', 'mdi:water-percent', 'Zusatzwerte', b => b.append(form(S_DET(data)))),
+      this._section('forecast', 'mdi:calendar-week', 'Vorhersage', b => {
+        b.append(this._h4(FC_NAME.daily), ...none('daily'), form(S_DAY(data)), this._h4(FC_NAME.hourly), ...none('hourly'), form(S_HOUR(data)));
+        if (fc) b.append(this._h4('Regen'), form(S_RAIN));
+      }),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(S_LOOK(data)))),
+      this._section('actions', 'mdi:gesture-tap', 'Aktionen', b => b.append(form(S_ACT))));
   }
-  // Entität gewechselt → Hinweise zur Vorhersage neu aufbauen
-  _emit(c) { const was = this._config?.entity; super._emit(c); if (c.entity !== was) this._rebuild(); }
+  // Entität oder ein Schalter für abhängige Felder geändert → Bereiche neu aufbauen (Felder werden weiterverwendet)
+  _emit(c) {
+    const was = this._config;
+    super._emit(c);
+    if (VIS.some(k => c[k] !== was?.[k])) this._rebuild();
+  }
 }
 define('weather-card-editor', NovaWeatherCardEditor);

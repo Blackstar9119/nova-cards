@@ -2,7 +2,8 @@ import {define, docUrl, tag} from './shared/define.js';
 import {esc, isImg} from './shared/utils.js';
 import {isOn} from './shared/state.js';
 import {moreInfo, hassAction, navigate} from './shared/actions.js';
-import {DOCK_VARS, EDITOR_CSS, EDITOR_ICON_CSS} from './shared/styles.js';
+import {DOCK_VARS, SECTION_EDITOR_CSS} from './shared/styles.js';
+import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {cleanHash, curHash, togglePopup, popupOptions} from './shared/popup-hub.js';
 
@@ -68,7 +69,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
 .dock.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.dock.top{top:14px}
 .dock::-webkit-scrollbar{display:none}
 .dock.inline{position:static;transform:none;margin:0 auto;width:max-content}
-.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:all .2s;-webkit-tap-highlight-color:transparent;outline:none}
+.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none}
 .d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .d:active{transform:scale(.9)}
 .d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
@@ -101,21 +102,31 @@ class NovaDockCard extends HTMLElement {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     if (!c.items && !c.source) throw new Error('items oder source angeben');
     this._cfg = {position: 'bottom', button_size: 48, ...c};
+    this._ids = entityIds(c);
     this._close();
     this._items = null; this._btns = null; this._built = false; this._cur = -1;
     if (this._h) this.hass = this._h;
   }
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._cfg) return;
+    if (this._pop) this._pop.hass = h;
+    if (this._hp) this._hp.hass = h;
     if (!this._items) {
       if (this._cfg.items) this._items = this._cfg.items;
       else { this._loadSource(); return; }
     }
     if (!this._built) this._build();
-    if (this._pop) this._pop.hass = h;
-    if (this._hp) this._hp.hass = h;
+    else if (!hassChanged(old, h, this._watch(old))) return;
     this._update();
+  }
+  // Entitäten der Einträge, bei Zählern auch die Mitglieder der Gruppe
+  _watch(h) {
+    if (this._srcIds?.items !== this._items) this._srcIds = {items: this._items, ids: entityIds(this._items)};
+    const ids = [...this._ids, ...this._srcIds.ids];
+    (this._items || []).forEach(it => { if (it.badge_count_of) ids.push(...(h?.states[it.badge_count_of]?.attributes.entity_id || [])); });
+    return ids;
   }
   async _loadSource() {
     if (this._loading) return;
@@ -250,39 +261,36 @@ define('dock-card', NovaDockCard, {name: 'Nova Dock Card', description: 'Schwebe
 
 /* ---------- Editor Dock Card ---------- */
 
-const MAIN = [
-  {type: 'grid', name: '', schema: [
-    {name: 'position', selector: {select: {mode: 'dropdown', options: [{value: 'bottom', label: 'Unten'}, {value: 'top', label: 'Oben'}]}}},
-    {name: 'button_size', selector: {number: {min: 32, max: 72, step: 2, mode: 'box', unit_of_measurement: 'px'}}},
-  ]},
-  {name: 'source', selector: {text: {}}},
-];
-const ITEM = [
-  {type: 'grid', name: '', schema: [
-    {name: 'icon', required: true, selector: {icon: {}}},
-    {name: 'label', selector: {text: {}}},
-  ]},
+const GEN = [{name: 'source', selector: {text: {}}}];
+const LOOK = [{type: 'grid', name: '', schema: [
+  {name: 'position', selector: {select: {mode: 'dropdown', options: [{value: 'bottom', label: 'Unten'}, {value: 'top', label: 'Oben'}]}}},
+  {name: 'button_size', selector: {number: {min: 32, max: 72, step: 2, mode: 'box', unit_of_measurement: 'px'}}},
+]}];
+// Felder je Button in Gruppen; Zahl und Ausnahmen gibt es nur mit Zähler-Gruppe
+const I_MAIN = [{type: 'grid', name: '', schema: [
+  {name: 'icon', required: true, selector: {icon: {}}},
+  {name: 'label', selector: {text: {}}},
+]}];
+const I_TAP = opts => [
+  {name: 'popup_hash', selector: {select: {mode: 'dropdown', custom_value: true, options: opts}}},
   {name: 'tap_action', selector: {ui_action: {}}},
-  {name: 'popup_hash', selector: {select: {mode: 'dropdown', custom_value: true, options: []}}},
-  {name: 'popup_title', selector: {text: {}}},
-  {name: 'cards', selector: {object: {}}},
+];
+const I_POP = [{name: 'popup_title', selector: {text: {}}}, {name: 'cards', selector: {object: {}}}];
+const I_BADGE = it => [
   {name: 'badge', selector: {entity: {}}},
-  {type: 'grid', name: '', schema: [
-    {name: 'badge_count_of', selector: {entity: {}}},
-    {name: 'badge_show_number', selector: {boolean: {}}},
-  ]},
-  {name: 'badge_exclude', selector: {entity: {multiple: true}}},
+  {name: 'badge_count_of', selector: {entity: {}}},
+  ...(it.badge_count_of ? [{name: 'badge_show_number', selector: {boolean: {}}}, {name: 'badge_exclude', selector: {entity: {multiple: true}}}] : []),
 ];
 const LABELS = {
   position: 'Position', button_size: 'Button-Größe', source: 'Einträge aus anderem Dashboard übernehmen',
-  icon: 'Icon', label: 'Name', tap_action: 'Aktion beim Antippen', popup_title: 'Einfaches Pop-up: Titel',
-  popup_hash: 'Nova Pop-up öffnen', cards: 'Einfaches Pop-up: Karten (YAML-Liste)', badge: 'Punkt, wenn diese Entität an ist',
+  icon: 'Icon', label: 'Name', tap_action: 'Aktion beim Antippen', popup_title: 'Titel',
+  popup_hash: 'Nova Pop-up öffnen', cards: 'Karten (YAML-Liste)', badge: 'Punkt, wenn diese Entität an ist',
   badge_count_of: 'Zähler: Gruppe', badge_show_number: 'Zahl statt Punkt', badge_exclude: 'Beim Zählen ignorieren',
 };
 const HELPERS = {
   source: 'Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Dock – praktisch für mehrere Dashboards mit gleicher Leiste.',
   popup_hash: 'Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion und dem einfachen Pop-up.',
-  cards: 'Einfaches Pop-up: Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur',
+  cards: 'Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur',
   badge_count_of: 'Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)',
 };
 
@@ -297,50 +305,57 @@ class NovaDockCardEditor extends NovaEditorBase {
       popupOptions(h).then(o => { this._hashes = o; this._rebuild(); });
     }
   }
-  _schema() {
-    const opts = this._hashes?.length ? this._hashes : [{value: '', label: '– keins –'}];
-    return ITEM.map(x => x.name === 'popup_hash' ? {...x, selector: {select: {...x.selector.select, options: opts}}} : x);
-  }
+  static openSections = ['buttons'];
   _build() {
     const r = this.shadowRoot;
-    r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}</style><div class="wrap"></div>`;
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
     const w = r.querySelector('.wrap');
-    const main = {position: 'bottom', button_size: 48, ...this._config};
-    w.append(this._form(MAIN, main, v => {
-      const c = merge(this._config, names(MAIN), v);
+    const data = {position: 'bottom', button_size: 48, ...this._config};
+    const form = schema => this._form(schema, data, v => {
+      const c = merge(this._config, names(schema), v);
       if (c.position === 'bottom') delete c.position;
       if (c.button_size === 48) delete c.button_size;
       const hadSrc = !!this._config.source;
       this._emit(c);
       if (hadSrc !== !!c.source) this._rebuild();
-    }));
-    if (this._config.source && !(this._config.items || []).length) w.append(this._hint('Einträge kommen aus dem anderen Dashboard. Eigene Einträge unten überschreiben das.'));
-    w.append(this._h3('Buttons'));
+    });
     const items = this._config.items || [];
-    items.forEach((it, i) => w.append(this._item(it, i, items.length)));
-    w.append(this._add('Button hinzufügen', () => {
-      const n = [...items, {icon: 'mdi:circle-outline'}];
-      this._open = new Set([n.length - 1]);
-      this._emit({...this._config, items: n});
-      this._rebuild();
-    }));
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => {
+        b.append(form(GEN));
+        if (this._config.source && !items.length) b.append(this._hint('Einträge kommen aus dem anderen Dashboard. Eigene Buttons überschreiben das.'));
+      }),
+      this._section('buttons', 'mdi:dock-bottom', 'Buttons', b => {
+        items.forEach((it, i) => b.append(this._item(it, i, items.length)));
+        b.append(this._add('Button hinzufügen', () => {
+          const n = [...items, {icon: 'mdi:circle-outline'}];
+          this._open = new Set([n.length - 1]);
+          this._emit({...this._config, items: n});
+          this._rebuild();
+        }));
+      }),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(LOOK))));
   }
   _popName(h) { h = cleanHash(h); return this._hashes?.find(o => o.value === h)?.label || `#${h}`; }
   _label(it, i) { return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : '') || (Array.isArray(it.cards) ? 'Einfaches Pop-up' : it.tap_action?.navigation_path) || 'Neuer Button'}`; }
   _item(it, i, n) {
-    const [d, s, b] = this._details(i, it.icon || 'mdi:circle-outline', this._label(it, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._remove(i)));
-    const schema = this._schema();
-    b.append(this._form(schema, it, v => {
-      const list = [...this._config.items];
-      const nx = merge(list[i], names(schema), v);
-      if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash); if (!nx.popup_hash) delete nx.popup_hash;
-      if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
-      if (!nx.badge_show_number) delete nx.badge_show_number;
-      list[i] = nx;
-      this._emit({...this._config, items: list});
-      s.querySelector('.lbl').textContent = this._label(nx, i);
-      s.querySelector('ha-icon').setAttribute('icon', nx.icon || 'mdi:circle-outline');
-    }));
+    const opts = this._hashes?.length ? this._hashes : [{value: '', label: '– keins –'}];
+    const [d, s] = this._details(i, it.icon || 'mdi:circle-outline', this._label(it, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._remove(i)), b => {
+      const form = schema => this._form(schema, it, v => {
+        const list = [...this._config.items], old = list[i];
+        const nx = merge(old, names(schema), v);
+        if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash); if (!nx.popup_hash) delete nx.popup_hash;
+        if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
+        if (!nx.badge_show_number) delete nx.badge_show_number;
+        list[i] = nx;
+        this._emit({...this._config, items: list});
+        s.querySelector('.lbl').textContent = this._label(nx, i);
+        s.querySelector('ha-icon').setAttribute('icon', nx.icon || 'mdi:circle-outline');
+        // Zähler-Gruppe dazu oder weg → Zahl/Ausnahmen ein-/ausblenden
+        if (!!old.badge_count_of !== !!nx.badge_count_of) this._rebuild();
+      });
+      b.append(form(I_MAIN), this._h4('Beim Antippen'), form(I_TAP(opts)), this._h4('Einfaches Pop-up'), form(I_POP), this._h4('Punkt und Zähler'), form(I_BADGE(it)));
+    });
     return d;
   }
   _move(i, dir) {

@@ -4,7 +4,8 @@ import {isOn, TOGGLE, fmtState, nameOf, iconOf, valueOf, hasF} from './shared/st
 import {moreInfo, runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {BLOCKS} from './modular.js';
-import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from './shared/styles.js';
+import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS} from './shared/styles.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, ENT, NUM, sel, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
 
@@ -26,7 +27,7 @@ const VCSS = `
 .map img{display:block;width:100%;height:auto;max-height:var(--nv-map-max,280px);object-fit:contain}
 .map.ar img{height:100%;object-fit:contain}
 .ctl{display:flex;align-items:center;justify-content:center;gap:14px}
-.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:all .2s}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
 .ctl .cb ha-icon{--mdc-icon-size:24px}
 .ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
@@ -117,7 +118,9 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
 .sc.empty .sled,.sc.wash .sled,.sc.dry .sled{opacity:1;animation:vc-pulse 2s ease-in-out infinite}
 .sc.empty .sled{fill:#b8a993}.sc.wash .sled{fill:var(--wc)}.sc.dry .sled{fill:var(--nv-accent)}
 .sc:not(.has-tanks) :is(.tank,.tkc,.tkd,.pipe,.drops,.dirt,.bubl),.sc:not(.has-bag) :is(.bin,.bag,.duct,.parts){display:none}
-.scene.still *{animation-play-state:paused!important}
+.scene.still *,.vc.still .hd .ic ha-icon{animation-play-state:paused!important}
+/* Eigene Ebene nur für die Szene, solange sie läuft: WebKit malt dann nur die Szene neu, nicht die ganze Karte */
+.scene:not(.still)>svg{will-change:transform}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important}}
 @keyframes vc-drive{0%,100%{transform:translateX(20px)}45%,50%{transform:translateX(150px)}}
 @keyframes vc-home{0%{transform:translateX(90px)}85%,100%{transform:translateX(240px)}}
@@ -264,22 +267,29 @@ class NovaVacuumCard extends HTMLElement {
     if (c.map && !['camera', 'image'].includes(dom(c.map))) throw new Error('map muss eine camera.* oder image.* Entität sein');
     this._c = {...VDEF, ...c, rooms: [].concat(c.rooms || []).map(toObj).filter(o => o.name || o.icon || o.entity || o.segments != null || o.tap_action),
       consumables: [].concat(c.consumables || []).map(toObj).filter(o => o.entity), switches: [].concat(c.switches || []).map(toObj).filter(o => o.entity)};
+    this._ids = entityIds(this._c);
     this._built = false;
     if (this._h) { this._build(); this._update(); }
   }
+  // Neu zeichnen nur, wenn sich eine Entität der Karte (auch Akku und automatisch gefundene Station) geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._built) this._build();
+    else if (!hassChanged(old, h, [...this._ids, this._bat, ...Object.values(this._auto || {})])) return;
     this._update();
   }
   getCardSize() { return 3 + (this._c?.map ? 4 : 0) + Math.ceil(((this._c?.consumables.length || 0) + (this._c?.switches.length || 0)) / 2); }
   getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
   connectedCallback() {
+    // In der Kartenauswahl: Animation angehalten, Karte nicht im Takt nachladen
+    this._quiet = inPicker(this);
+    if (this._quiet) this._vis = false;
     if ('IntersectionObserver' in window) {
-      this._io ||= new IntersectionObserver(es => { this._vis = es[es.length - 1].isIntersecting; this._tick(); }, {rootMargin: '100px'});
+      this._io ||= new IntersectionObserver(es => { this._vis = es[es.length - 1].isIntersecting && !this._quiet; this._tick(); }, {rootMargin: '100px'});
       this._io.observe(this);
-    } else this._vis = true;
+    } else this._vis = !this._quiet;
     if ('ResizeObserver' in window) {
       this._ro ||= new ResizeObserver(es => this._width(Math.round(es[es.length - 1].contentRect.width)));
       this._ro.observe(this);
@@ -455,6 +465,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     const s = this._st(), a = s?.attributes || {}, st = s?.state;
     const run = VRUN.includes(st), err = st === 'error';
     e.g.classList.toggle('na', !s || st === 'unavailable');
+    this.classList.toggle('nv-na', !s || st === 'unavailable');
     e.g.classList.toggle('run', run && c.glow !== false);
     e.name.textContent = c.name ?? a.friendly_name ?? c.entity;
     const ss = c.status && h.states[c.status];
@@ -568,6 +579,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
   }
   _tick() {
     this._e?.sc?.classList.toggle('still', this._vis === false);
+    this._e?.g?.classList.toggle('still', this._vis === false);
     const c = this._c, run = this._vis && c?.map && dom(c.map) === 'camera' && c.map_refresh > 0 && VRUN.includes(this._st()?.state);
     if (run && !this._tm) this._tm = setInterval(() => this._mapSync(true), c.map_refresh * 1000);
     if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
@@ -578,18 +590,24 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
 define('vacuum-card', NovaVacuumCard, {name: 'Nova Saugroboter Card', description: 'Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.', documentationURL: docUrl('nova-saugroboter-card')});
 
 /* ---------- Editor Saugroboter Card ---------- */
-const VMAIN = [
+const VGEN = [
   {name: 'entity', required: true, selector: {entity: {domain: ['vacuum']}}},
   g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
-  g2({name: 'battery', selector: {entity: {domain: ['sensor'], device_class: 'battery'}}}, {name: 'battery_low', selector: {number: {min: 0, max: 100, mode: 'box', unit_of_measurement: '%'}}}),
-  g2({name: 'status', selector: {entity: {}}}, sel('battery_display', [['status', 'Im Statustext'], ['chip', 'Als Pille rechts'], ['none', 'Aus']])),
-  g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}),
-  g2(sel('controls', [['pills', 'Pillen mit Text'], ['round', 'Runde Buttons']]), sel('layout', [['auto', 'Automatisch'], ['side', 'Karte daneben'], ['stack', 'Karte darüber']])),
-  {name: 'glow', selector: {boolean: {}}},
+  {name: 'status', selector: {entity: {}}},
+];
+const VBAT = [
+  {name: 'battery', selector: {entity: {domain: ['sensor'], device_class: 'battery'}}},
+  g2({name: 'battery_low', selector: {number: {min: 0, max: 100, mode: 'box', unit_of_measurement: '%'}}}, sel('battery_display', [['status', 'Im Statustext'], ['chip', 'Als Pille rechts'], ['none', 'Aus']])),
+];
+const VCTRL = [
+  sel('controls', [['pills', 'Pillen mit Text'], ['round', 'Runde Buttons']]),
   g2({name: 'show_stop', selector: {boolean: {}}}, {name: 'show_return', selector: {boolean: {}}}),
   g2({name: 'show_locate', selector: {boolean: {}}}, {name: 'show_spot', selector: {boolean: {}}}),
 ];
-const VSCN = [
+const VLOOK = [sel('layout', [['auto', 'Automatisch'], ['side', 'Karte daneben'], ['stack', 'Karte darüber']]), {name: 'glow', selector: {boolean: {}}}];
+const VACT = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
+// Felder der Animation nur, wenn sie angezeigt wird
+const VSCN = c => c.scene === false ? [{name: 'scene', selector: {boolean: {}}}] : [
   g2({name: 'scene', selector: {boolean: {}}}, {name: 'scene_auto', selector: {boolean: {}}}),
   sel('station_type', [['auto', 'Automatisch'], ['dock', 'Nur Ladestation'], ['empty', 'Absaugstation'], ['wash', 'Waschstation (Tanks)'], ['full', 'Komplett (Tanks + Staubbeutel)']]),
   g2({name: 'mop_attached', selector: {entity: {}}}, {name: 'mop_mode', selector: {entity: {}}}),
@@ -599,14 +617,19 @@ const VSCN = [
   g2({name: 'drying', selector: {entity: {}}}, {name: 'charging', selector: {entity: {}}}),
   {name: 'station', selector: {entity: {}}},
 ];
-const VFAN = [{name: 'show_fan_speed', selector: {boolean: {}}}, {name: 'fan_speeds', selector: {text: {multiple: true}}}];
-const VMAP = [
+const VFAN = c => [{name: 'show_fan_speed', selector: {boolean: {}}}, ...(c.show_fan_speed === false ? [] : [{name: 'fan_speeds', selector: {text: {multiple: true}}}])];
+// Einstellungen der Karte erst, wenn eine Karte gewählt ist
+const VMAP = c => [
   g2({name: 'map', selector: {entity: {domain: ['camera', 'image']}}}, {name: 'map_title', selector: T}),
+  ...(c.map ? VMAPX : []),
+];
+const VMAPX = [
   g2(sel('map_aspect_ratio', [['auto', 'Automatisch'], ['1:1', '1:1'], ['4:3', '4:3'], ['16:9', '16:9'], ['3:4', '3:4']]),
     {name: 'map_refresh', selector: {number: {min: 0, max: 60, mode: 'box', unit_of_measurement: 's'}}}),
   g2(sel('map_action', [['more-info', 'Karte groß öffnen'], ['vacuum', 'Details des Roboters'], ['none', 'Nichts']]),
     {name: 'map_max_height', selector: {number: {min: 0, max: 800, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
 ];
+const vvis = c => `${c.scene === false}|${c.show_fan_speed === false}|${!!c.map}`;
 const VSEG = [{name: 'rooms_title', selector: T}, g2({name: 'room_sensor', selector: {entity: {domain: ['sensor', 'select', 'input_select']}}}, {name: 'all', selector: {entity: {}}}),
   g2({name: 'all_name', selector: T}, {name: 'all_icon', selector: I}), g2(sel('segment_mode', [['roborock', 'Roborock'], ['valetudo', 'Valetudo (MQTT)'], ['dreame', 'Dreame (HACS)'], ['xiaomi', 'Xiaomi Miio']]),
   {name: 'segment_repeat', selector: {number: {min: 1, max: 3, mode: 'slider'}}})];
@@ -657,32 +680,48 @@ const VHELPERS = {
 class NovaVacuumCardEditor extends NovaEditorBase {
   static labels = VLABELS;
   static helpers = VHELPERS;
+  static openSections = ['general'];
   _build() {
     const r = this.shadowRoot, c0 = this._config;
-    r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
     const w = r.querySelector('.wrap'), strip = c => { Object.entries(VDEF).forEach(([k, x]) => c[k] === x && delete c[k]); return c; };
-    const sec = (schema, title) => { if (title) w.append(this._h3(title)); w.append(this._form(schema, {...VDEF, ...c0}, v => this._emit(strip(merge(this._config, names(schema), v))))); };
-    sec(VMAIN);
-    sec(VFAN, 'Saugstärke');
-    sec(VMAP, 'Karte');
-    sec(VSCN, 'Animation');
-    if (c0.scene !== false && this._hass) {
-      const auto = vauto(this._hass, c0.entity), au = Object.entries(auto);
-      const ST = {dock: 'Nur Ladestation', empty: 'Absaugstation', wash: 'Waschstation', full: 'Komplett'};
-      w.append(this._hint(`Station: ${ST[vstation(this._hass, c0.entity, {...VDEF, ...c0}, auto)]}` + (au.length && c0.scene_auto !== false ? ` · Automatisch gefunden: ${au.map(([k, v]) => `${VLABELS[k] || k} = ${v}`).join(', ')}` : '')));
-    }
-    w.append(this._h3('Räume'));
-    w.append(this._hint('Je Raum einen HA-Bereich wählen: antippen plant ein, Start reinigt die eingeplanten Räume (vacuum.clean_area). Nichts eingeplant = alles.'));
-    if (this._items('rooms').length) w.append(this._form(VSEG, {...VDEF, ...c0}, v => this._emit(strip(merge(this._config, names(VSEG), v)))));
-    // Segmente aus YAML-Listen als Text zeigen
-    this._itemList(w, 'rooms', VROOM, {item: 'Raum', icon: 'mdi:floor-plan'}, 'Raum hinzufügen', it => ({...it, ...(it.segments != null ? {segments: list(it.segments).join(', ')} : {})}));
-    w.append(this._h3('Schalter'));
-    w.append(this._hint('z. B. Staubentleerung, Moppwäsche, Mopp-Trocknung – Antippen schaltet bzw. löst aus.'));
-    if (this._items('switches').length) sec(VSWL);
-    this._itemList(w, 'switches', VSW, {item: 'Schalter', icon: 'mdi:toggle-switch-outline'}, 'Schalter hinzufügen');
-    w.append(this._h3('Infos & Verbrauchsteile'));
-    if (this._items('consumables').length) sec(VCONSL);
-    this._itemList(w, 'consumables', VCONS, {item: 'Verbrauchsteil', icon: 'mdi:wrench-clock'}, 'Verbrauchsteil hinzufügen');
+    const data = {...VDEF, ...c0};
+    const form = schema => this._form(schema, data, v => {
+      const c = strip(merge(this._config, names(schema), v));
+      this._emit(c);
+      // Animation, Saugstärke oder Karte an/aus → abhängige Felder ein-/ausblenden
+      if (vvis(c) !== vvis(c0)) this._rebuild();
+    });
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(VGEN))),
+      this._section('battery', 'mdi:battery-60', 'Akku', b => b.append(form(VBAT))),
+      this._section('controls', 'mdi:play-pause', 'Bedienung', b => b.append(form(VCTRL), this._h4('Saugstärke'), form(VFAN(data)))),
+      this._section('map', 'mdi:map-outline', 'Karte', b => b.append(form(VMAP(data)))),
+      this._section('scene', 'mdi:robot-vacuum', 'Animation', b => {
+        b.append(form(VSCN(data)));
+        if (c0.scene !== false && this._hass) {
+          const auto = vauto(this._hass, c0.entity), au = Object.entries(auto);
+          const ST = {dock: 'Nur Ladestation', empty: 'Absaugstation', wash: 'Waschstation', full: 'Komplett'};
+          b.append(this._hint(`Station: ${ST[vstation(this._hass, c0.entity, data, auto)]}` + (au.length && c0.scene_auto !== false ? ` · Automatisch gefunden: ${au.map(([k, v]) => `${VLABELS[k] || k} = ${v}`).join(', ')}` : '')));
+        }
+      }),
+      this._section('rooms', 'mdi:floor-plan', 'Räume', b => {
+        b.append(this._hint('Je Raum einen HA-Bereich wählen: antippen plant ein, Start reinigt die eingeplanten Räume (vacuum.clean_area). Nichts eingeplant = alles.'));
+        if (this._items('rooms').length) b.append(form(VSEG));
+        // Segmente aus YAML-Listen als Text zeigen
+        this._itemList(b, 'rooms', VROOM, {item: 'Raum', icon: 'mdi:floor-plan'}, 'Raum hinzufügen', it => ({...it, ...(it.segments != null ? {segments: list(it.segments).join(', ')} : {})}));
+      }),
+      this._section('switches', 'mdi:toggle-switch-outline', 'Schalter', b => {
+        b.append(this._hint('z. B. Staubentleerung, Moppwäsche, Mopp-Trocknung – Antippen schaltet bzw. löst aus.'));
+        if (this._items('switches').length) b.append(form(VSWL));
+        this._itemList(b, 'switches', VSW, {item: 'Schalter', icon: 'mdi:toggle-switch-outline'}, 'Schalter hinzufügen');
+      }),
+      this._section('consumables', 'mdi:wrench-clock', 'Infos und Verbrauchsteile', b => {
+        if (this._items('consumables').length) b.append(form(VCONSL));
+        this._itemList(b, 'consumables', VCONS, {item: 'Verbrauchsteil', icon: 'mdi:wrench-clock'}, 'Verbrauchsteil hinzufügen');
+      }),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(VLOOK))),
+      this._section('actions', 'mdi:gesture-tap', 'Aktionen', b => b.append(form(VACT))));
   }
 }
 define('vacuum-card-editor', NovaVacuumCardEditor);

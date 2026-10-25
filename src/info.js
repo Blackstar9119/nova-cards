@@ -3,7 +3,8 @@ import {dom, esc, setIcon, toObj} from './shared/utils.js';
 import {isOn, PRESS, nameOf, iconOf, valueOf} from './shared/state.js';
 import {moreInfo, runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
-import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, roleVars} from './shared/styles.js';
+import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, roleVars} from './shared/styles.js';
+import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, ENT, sel, ROLE, NAMEICON} from './shared/editor-schema.js';
 
@@ -37,13 +38,17 @@ class NovaInfoCard extends HTMLElement {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     this._c = {style: 'box', ...c};
     this._rows = rowsOf(c);
+    this._ids = entityIds(c);
     this._built = false;
     if (this._h) this.hass = this._h;
   }
+  // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._built) this._build();
+    else if (!hassChanged(old, h, this._ids)) return;
     this._update();
   }
   getCardSize() { return 1 + this._rows?.length || 1; }
@@ -52,6 +57,7 @@ class NovaInfoCard extends HTMLElement {
   _build() {
     this._built = true;
     const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'});
+    this.classList.toggle('nv-flat', c.style !== 'glass');
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${ICSS}</style><div class="g ${c.style === 'glass' ? '' : 'box'}"><div class="ht"></div><div class="rows"></div></div>`;
     const ht = r.querySelector('.ht');
     if (c.title || c.icon) ht.innerHTML = `${c.icon ? `<ha-icon icon="${esc(c.icon)}"></ha-icon>` : ''}<span></span>`;
@@ -102,15 +108,13 @@ class NovaInfoCard extends HTMLElement {
 define('info-card', NovaInfoCard, {name: 'Nova Info Card', description: 'Überschrift mit Zeilen: Name und Wert von Entitäten, optional als Schalter mit Icon und Zustand.', documentationURL: docUrl('nova-info-card')});
 
 /* ---------- Editor ---------- */
-const MAIN = [
-  g2({name: 'title', selector: T}, {name: 'icon', selector: I}),
-  sel('style', [['box', 'Block (wie im Pop-up)'], ['glass', 'Glas (wie andere Nova-Karten)']]),
-];
-const ROW = [
+const GEN = [g2({name: 'title', selector: T}, {name: 'icon', selector: I})];
+const LOOK = [sel('style', [['box', 'Block (wie im Pop-up)'], ['glass', 'Glas (wie andere Nova-Karten)']])];
+// Felder je Zeile: Nachkommastellen nur bei „Wert“, Farbe nur bei „Tippen schaltet“
+const ROW = it => [
   ENT, NAMEICON,
-  g2(sel('display', [['value', 'Name links, Wert rechts'], ['toggle', 'Icon, Name, Zustand (Tippen schaltet)']]),
-    {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}),
-  ROLE('color'),
+  sel('display', [['value', 'Name links, Wert rechts'], ['toggle', 'Icon, Name, Zustand (Tippen schaltet)']]),
+  it.display === 'toggle' ? ROLE('color') : {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}},
 ];
 const LABELS = {
   title: 'Überschrift', icon: 'Icon', style: 'Aussehen', entity: 'Entität', name: 'Eigener Name (optional)',
@@ -124,18 +128,23 @@ const HELPERS = {
 class NovaInfoCardEditor extends NovaEditorBase {
   static labels = LABELS;
   static helpers = HELPERS;
+  static openSections = ['general', 'rows'];
   _build() {
     const r = this.shadowRoot;
-    r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-    const w = r.querySelector('.wrap');
-    w.append(this._form(MAIN, {style: 'box', ...this._config}, v => {
-      const c = merge(this._config, names(MAIN), v);
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap'), data = {style: 'box', ...this._config};
+    const form = schema => this._form(schema, data, v => {
+      const c = merge(this._config, names(schema), v);
       if (c.style === 'box') delete c.style;
       this._emit(c);
-    }));
-    w.append(this._h3('Zeilen'));
-    w.append(this._hint('Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details.'));
-    this._itemList(w, 'entities', ROW, {item: 'Zeile', icon: 'mdi:format-list-bulleted'}, 'Zeile hinzufügen', it => ({display: 'value', ...it}));
+    });
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(GEN))),
+      this._section('rows', 'mdi:format-list-bulleted', 'Zeilen', b => {
+        b.append(this._hint('Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details.'));
+        this._itemList(b, 'entities', it => ROW({display: 'value', ...it}), {item: 'Zeile', icon: 'mdi:format-list-bulleted'}, 'Zeile hinzufügen', it => ({display: 'value', ...it}));
+      }),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(LOOK))));
   }
 }
 define('info-card-editor', NovaInfoCardEditor);
