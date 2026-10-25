@@ -61,6 +61,11 @@ export const INFO = [
 export const INFO_LABELS = {entity: 'Entität', name: 'Eigener Name (optional)', icon: 'Icon', decimals: 'Nachkommastellen', alert: 'Bei Achtung hervorheben', alert_state: 'Achtung bei Zustand', alert_color: 'Farbe', alert_above: 'Achtung über', alert_below: 'Achtung unter'};
 export const INFO_HELPERS = {alert_state: 'z. B. on oder open, mehrere mit Komma. Leer = an bzw. Problem (z. B. Fenster offen).'};
 
+// Beschriftungen der Raster-Optionen – die Editoren nehmen sie in ihre labels/helpers auf
+const EQH = [{name: 'equal_height', selector: {boolean: {}}}];
+export const GRID_LABELS = {equal_height: 'Gleiche Höhe pro Reihe'};
+export const GRID_HELPERS = {equal_height: 'Streckt alle Karten einer Zeile auf die Höhe der höchsten. Aus = jede Karte so hoch wie ihr Inhalt.'};
+
 export const GRID_ED_CSS = `
 details.item>.body{gap:12px}
 .mini{display:flex;flex-direction:column}
@@ -139,6 +144,11 @@ export const GridEditor = Base => class extends Base {
   _gridReset() { this._sub = this._pick = null; this._blocks = {}; }
 
   _layoutBody(b) {
+    b.append(this._form(EQH, {equal_height: !!this._config.equal_height}, v => {
+      const c = {...this._config};
+      if (v.equal_height) c.equal_height = true; else delete c.equal_height;
+      this._emit(c);
+    }));
     b.append(this._hint('Vorlage legt leere Plätze an. Vorhandene Karten wandern der Reihe nach hinein, übrige bleiben unten erhalten.'));
     const g = el('div', 'tpls');
     TEMPLATES.forEach(t => {

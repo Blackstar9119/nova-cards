@@ -21,6 +21,8 @@ entities:
 |---|---|---|
 | `entities` / `area` | – | Lampen (mindestens eins von beiden) |
 | `exclude` | – | Ausblenden bei `area` |
+| `hide_group_members` | `true` | Bei `area`: Ist eine Lichtgruppe dabei (z. B. Deckenlampen), erscheinen ihre Mitglieder nicht zusätzlich. Eingetragene Lampen bleiben immer. |
+| `strip_area_name` | `true` | Raumnamen aus den Lampennamen entfernen („Wohnzimmer Pilzlampe“ → „Pilzlampe“). Eigene Namen bleiben. Lange Namen brechen um. |
 | `show_header` / `show_all_off` | `true` | Kopfzeile, „Alle aus“ |
 | `use_light_color` | `true` | In Lichtfarbe leuchten |
 | `show_colors` / `colors` | `true` / – | Farbknöpfe (im Editor per Farbscheibe anlegen) |

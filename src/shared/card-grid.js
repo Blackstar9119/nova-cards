@@ -54,7 +54,8 @@ const takeOver = (kind, k) => HANDOFF.get(`${kind}|${k}`)?.shift();
 
 // Raster und Chips in der Karte
 export const GRID_CSS = `
-.rw{display:flex;flex-wrap:wrap;gap:12px;flex:none}
+.rw{display:flex;flex-wrap:wrap;gap:12px;flex:none;align-items:flex-start}
+.eqh .rw{align-items:stretch}.eqh .rw>.cell{display:grid}
 .rw>.cell.auto{min-width:min(100%,140px)}
 .stack .rw>.cell{flex:1 1 100%!important}
 .cell{min-width:0}
@@ -103,7 +104,7 @@ export function renderChips(card, bar, items, h) {
   });
 }
 
-// Raster-Teil einer Karte. Die Karte stellt bereit: _body (Container), _rows (normRows), _h, _cfg.stack_below,
+// Raster-Teil einer Karte. Die Karte stellt bereit: _body (Container), _rows (normRows), _h, _cfg.stack_below, _cfg.equal_height,
 // static gridKind (für die Übergabe in der Vorschau) und _handoff() (true = Zellen einer Vorgängerin übernehmen).
 export const GridCard = Base => class extends Base {
   _cells() { return [...this._body.querySelectorAll(':scope>.rw>.cell>*')].filter(el => !el.classList.contains('err')); }
@@ -139,6 +140,8 @@ export const GridCard = Base => class extends Base {
       list.push(p);
     }
     this._body.replaceChildren(...list);
+    // Gleiche Höhe pro Reihe nur auf Wunsch – sonst wird z. B. eine kurze Karte neben einer hohen leer gestreckt
+    this._body.classList.toggle('eqh', !!this._cfg?.equal_height);
     this._stack();
   }
   // Fehler einer Karte bleiben in ihrer Zelle

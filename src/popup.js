@@ -8,7 +8,7 @@ import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, ENT, sel, ROLE, NAMEICON} from './shared/editor-schema.js';
 import {register, unregister, curHash, cleanHash, clearHash, cameByNav, lockScroll, hasPopup} from './shared/popup-hub.js';
 import {normRows, PREV, EDIT, GRID_CSS, CHIP_CSS, renderChips, GridCard} from './shared/card-grid.js';
-import {GridEditor, GRID_ED_CSS, INFO} from './shared/card-grid-editor.js';
+import {GridEditor, GRID_ED_CSS, GRID_LABELS, GRID_HELPERS, INFO} from './shared/card-grid-editor.js';
 
 // Raster (rows) und Info-Chips liegen in shared/card-grid.js bzw. shared/card-grid-editor.js
 const DEF = {width: 1180, stack_below: 500, info_layout: 'wrap'};
@@ -294,11 +294,13 @@ const BADGE = [
 ];
 const HEAD = [sel('info_layout', [['wrap', 'Umbrechen'], ['scroll', 'Waagrecht scrollen']])];
 const LABELS = {
+  ...GRID_LABELS,
   hash: 'Hash (ohne #)', title: 'Titel', icon: 'Icon', tint: 'Farbton (leer = Nova-Glas)', color: 'Farbe', show_state: 'Zustand anzeigen', state: 'Nur anzeigen bei Zustand', width: 'Max. Breite (Desktop)', stack_below: 'Untereinander unter Breite',
   info_layout: 'Info-Leiste bei vielen Einträgen', entity: 'Entität', name: 'Eigener Name (optional)', decimals: 'Nachkommastellen',
   alert: 'Bei Achtung hervorheben', alert_state: 'Achtung bei Zustand', alert_color: 'Farbe', alert_above: 'Achtung über', alert_below: 'Achtung unter',
 };
 const HELPERS = {
+  ...GRID_HELPERS,
   hash: 'Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.',
   title: 'Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.',
   stack_below: 'Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).',

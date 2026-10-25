@@ -6,7 +6,7 @@ import {CARD_CSS, roleVars, SECTION_EDITOR_CSS} from './shared/styles.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, A, ROLE, sel} from './shared/editor-schema.js';
 import {normRows, PREV, EDIT, GRID_CSS, GridCard} from './shared/card-grid.js';
-import {GridEditor, GRID_ED_CSS} from './shared/card-grid-editor.js';
+import {GridEditor, GRID_ED_CSS, GRID_LABELS, GRID_HELPERS} from './shared/card-grid-editor.js';
 import {normChips, renderNovaChips, NOVA_CHIPS_CSS, chipSchema, chipView, CHIP_LABELS, CHIP_HELPERS} from './shared/chips.js';
 
 /* ---------- Nova Bereich Card ----------
@@ -28,7 +28,6 @@ const ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}
 .hd .nchips{flex:0 1 auto;justify-content:flex-end}
 .hd .nchip{min-height:36px}
 .body{display:flex;flex-direction:column;gap:12px}
-.cell{display:grid}
 .cell>*{min-width:0}
 .prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
 .prev .cell.empty::after{content:'Leerer Platz'}
@@ -127,12 +126,12 @@ const S_GEN = icon => [
 ];
 const S_CHIPS = [sel('chips_layout', [['wrap', 'Umbrechen'], ['scroll', 'Waagrecht scrollen']])];
 const LABELS = {
-  ...CHIP_LABELS,
+  ...CHIP_LABELS, ...GRID_LABELS,
   area: 'Area', name: 'Name', icon: 'Icon', back_action: 'Zurück-Knopf: Aktion',
   tint: 'Farbton (leer = Nova-Glas)', stack_below: 'Untereinander unter Breite', chips_layout: 'Bei vielen Chips',
 };
 const HELPERS = {
-  ...CHIP_HELPERS,
+  ...CHIP_HELPERS, ...GRID_HELPERS,
   back_action: 'Ohne Angabe geht es eine Seite zurück. „Keine Aktion“ blendet den Knopf aus.',
   stack_below: 'Ist die Karte schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).',
 };

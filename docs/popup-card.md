@@ -50,6 +50,7 @@ wird der Chip farbig, z. B. wenn ein Fenster offen ist (ohne weitere Angabe bei 
 
 Auf schmalen Bildschirmen stehen alle Karten untereinander (einstellbar unter **Allgemein** →
 „Untereinander unter Breite“). Wird eine Zeile sonst zu eng, rutschen Spalten von selbst in die nächste Reihe.
+Unter **Layout & Vorlage** → „Gleiche Höhe pro Reihe“ (`equal_height`, Standard aus) streckt alle Karten einer Zeile auf die Höhe der höchsten.
 
 ## Beispiel-YAML
 

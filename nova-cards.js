@@ -1386,17 +1386,20 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
   ];
   var SRC = (c) => [
     { name: "area", selector: { area: {} } },
-    ...c.area ? [{ name: "exclude", selector: { entity: { multiple: true, domain: "light" } } }] : []
+    ...c.area ? [{ name: "exclude", selector: { entity: { multiple: true, domain: "light" } } }, { name: "hide_group_members", selector: { boolean: {} } }] : []
   ];
   var COLORS = [{ name: "show_colors", selector: { boolean: {} } }];
-  var LOOK2 = [{ type: "grid", name: "", schema: [{ name: "use_light_color", selector: { boolean: {} } }, { name: "show_all_off", selector: { boolean: {} } }] }];
+  var LOOK2 = [
+    { type: "grid", name: "", schema: [{ name: "use_light_color", selector: { boolean: {} } }, { name: "show_all_off", selector: { boolean: {} } }] },
+    { name: "strip_area_name", selector: { boolean: {} } }
+  ];
   var vis2 = (c) => `${!!c.area}|${c.show_colors !== false}`;
   var LAMP = [
     { name: "entity", required: true, selector: { entity: { domain: "light" } } },
     { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] }
   ];
   var LAMP_ACT = [{ name: "tap_action", selector: { ui_action: {} } }, { name: "hold_action", selector: { ui_action: {} } }];
-  var EDITOR_DEFAULTS2 = { show_header: true, show_all_off: true, use_light_color: true, show_colors: true };
+  var EDITOR_DEFAULTS2 = { show_header: true, show_all_off: true, use_light_color: true, show_colors: true, hide_group_members: true, strip_area_name: true };
   var toLamp = (x) => typeof x === "string" ? { entity: x } : { ...x };
   var LIGHT_EDITOR_CSS = `
 .dots{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -1568,9 +1571,15 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     entity: "Lampe",
     name: "Name",
     tap_action: "Aktion beim Antippen",
-    hold_action: "Aktion bei langem Drücken"
+    hold_action: "Aktion bei langem Drücken",
+    hide_group_members: "Lampen einer Lichtgruppe ausblenden",
+    strip_area_name: "Raumnamen aus Lampennamen entfernen"
   });
-  __publicField(NovaLightCardEditor, "helpers", { area: "Optional. Neue Lampen im Bereich erscheinen von selbst" });
+  __publicField(NovaLightCardEditor, "helpers", {
+    area: "Optional. Neue Lampen im Bereich erscheinen von selbst",
+    hide_group_members: "Ist eine Lichtgruppe (z. B. Deckenlampen) im Bereich, erscheint nur die Gruppe, nicht jede einzelne Lampe darin.",
+    strip_area_name: "„Wohnzimmer Pilzlampe“ wird zu „Pilzlampe“. Eigene Namen bleiben, wie sie sind."
+  });
   __publicField(NovaLightCardEditor, "openSections", ["general", "lamps"]);
   define("light-card-editor", NovaLightCardEditor);
   var TAG3 = "light-card";
@@ -1590,7 +1599,7 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
 .ic ha-icon{--mdc-icon-size:18px}
 .t.on .ic{background:var(--lc,var(--nv-accent));color:var(--nv-accent-fg);box-shadow:0 0 12px color-mix(in srgb,var(--lc,var(--nv-accent)) 60%,transparent)}
 .top:active .ic{transform:scale(.9)}
-.nm{flex:1;min-width:0}.nm b{display:block;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nm small{display:block;font-size:11px;opacity:.6}
+.nm{flex:1;min-width:0}.nm b{display:block;font-size:13px;font-weight:500;overflow-wrap:anywhere;hyphens:auto;line-height:1.25}.nm small{display:block;font-size:11px;opacity:.6}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;border-radius:11px;margin:0;outline:none;
 background:linear-gradient(90deg,var(--lc,var(--nv-accent)) 0 var(--p,0%),rgba(255,255,255,.14) var(--p,0%) 100%)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
@@ -1657,6 +1666,11 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
           const e = h.entities?.[id];
           return !e || !e.hidden && !e.entity_category;
         }).sort((a, b) => (h.states[a].attributes.friendly_name || a).localeCompare(h.states[b].attributes.friendly_name || b)).forEach((id) => ids.push(id));
+        if (c.hide_group_members !== false) {
+          const mine = new Set(c.entities.map((l) => l.entity));
+          const inGroup = new Set(ids.flatMap((id) => [].concat(h.states[id]?.attributes.entity_id || [])));
+          return ids.filter((id) => mine.has(id) || !inGroup.has(id));
+        }
       }
       return ids;
     }
@@ -1717,7 +1731,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
         x.t.classList.toggle("on", on);
         x.t.classList.toggle("na", na);
         x.ic.setAttribute("icon", x.o.icon || a.icon || (on ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"));
-        x.nm.textContent = x.o.name || this._strip(a.friendly_name || x.id);
+        x.nm.textContent = x.o.name || this._strip(a.friendly_name || x.id, x.id);
         x.st.textContent = na ? "nicht erreichbar" : on ? dimmable ? `${pct} %` : "an" : "aus";
         const rgb = this._c.use_light_color !== false && on && a.rgb_color;
         if (rgb) x.t.style.setProperty("--lc", `rgb(${rgb.join(",")})`);
@@ -1737,10 +1751,18 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
       if (this._cnt) this._cnt.textContent = count ? `${count} an` : "";
       this._all?.classList.toggle("show", !!this._c.show_all_off && count > 0);
     }
-    // Raumname vorne weglassen: „Küche Decke“ → „Decke“
-    _strip(name) {
-      const p = this._c.strip_prefix ?? this._c.title ?? (this._c.area ? this._h.areas?.[this._c.area]?.name : "");
-      return p && name.toLowerCase().startsWith(p.toLowerCase() + " ") ? name.slice(p.length + 1) : name;
+    // Raumname vorne oder hinten weglassen: „Küche Decke“ → „Decke“. strip_prefix legt das Wort fest,
+    // sonst Name des Bereichs der Lampe (bzw. der Karte) und der Titel; strip_area_name: false schaltet es ab.
+    _strip(name, id) {
+      const c = this._c, h = this._h;
+      const words = c.strip_prefix != null ? [c.strip_prefix] : c.strip_area_name === false ? [] : [h.areas?.[areaOf(h, id) || c.area]?.name, h.areas?.[c.area]?.name, c.title];
+      for (const w of words) {
+        if (!w) continue;
+        const n = name.toLowerCase(), p = w.toLowerCase();
+        if (n.startsWith(p + " ") && name.length > w.length + 1) return name.slice(w.length + 1);
+        if (n.endsWith(" " + p) && name.length > w.length + 1) return name.slice(0, -w.length - 1);
+      }
+      return name;
     }
   };
   define(TAG3, NovaLightCard, { name: "Nova Licht Card", description: "Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.", documentationURL: docUrl("nova-licht-card") });
@@ -5599,7 +5621,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   };
   var takeOver = (kind, k) => HANDOFF.get(`${kind}|${k}`)?.shift();
   var GRID_CSS = `
-.rw{display:flex;flex-wrap:wrap;gap:12px;flex:none}
+.rw{display:flex;flex-wrap:wrap;gap:12px;flex:none;align-items:flex-start}
+.eqh .rw{align-items:stretch}.eqh .rw>.cell{display:grid}
 .rw>.cell.auto{min-width:min(100%,140px)}
 .stack .rw>.cell{flex:1 1 100%!important}
 .cell{min-width:0}
@@ -5718,6 +5741,7 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
         list2.push(p);
       }
       this._body.replaceChildren(...list2);
+      this._body.classList.toggle("eqh", !!this._cfg?.equal_height);
       this._stack();
     }
     // Fehler einer Karte bleiben in ihrer Zelle
@@ -5806,6 +5830,9 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
     g2({ name: "alert_state", selector: T }, ROLE("alert_color")),
     g2(NUM("alert_above"), NUM("alert_below"))
   ];
+  var EQH = [{ name: "equal_height", selector: { boolean: {} } }];
+  var GRID_LABELS = { equal_height: "Gleiche Höhe pro Reihe" };
+  var GRID_HELPERS = { equal_height: "Streckt alle Karten einer Zeile auf die Höhe der höchsten. Aus = jede Karte so hoch wie ihr Inhalt." };
   var GRID_ED_CSS = `
 details.item>.body{gap:12px}
 .mini{display:flex;flex-direction:column}
@@ -5903,6 +5930,12 @@ hui-card-picker{flex:1;min-height:0}`;
       this._blocks = {};
     }
     _layoutBody(b) {
+      b.append(this._form(EQH, { equal_height: !!this._config.equal_height }, (v) => {
+        const c = { ...this._config };
+        if (v.equal_height) c.equal_height = true;
+        else delete c.equal_height;
+        this._emit(c);
+      }));
       b.append(this._hint("Vorlage legt leere Plätze an. Vorhandene Karten wandern der Reihe nach hinein, übrige bleiben unten erhalten."));
       const g = el("div", "tpls");
       TEMPLATES.forEach((t) => {
@@ -6690,6 +6723,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
   ];
   var HEAD = [sel("info_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])];
   var LABELS2 = {
+    ...GRID_LABELS,
     hash: "Hash (ohne #)",
     title: "Titel",
     icon: "Icon",
@@ -6710,6 +6744,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     alert_below: "Achtung unter"
   };
   var HELPERS2 = {
+    ...GRID_HELPERS,
     hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
     title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.",
     stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
@@ -6917,7 +6952,6 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .hd .nchips{flex:0 1 auto;justify-content:flex-end}
 .hd .nchip{min-height:36px}
 .body{display:flex;flex-direction:column;gap:12px}
-.cell{display:grid}
 .cell>*{min-width:0}
 .prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
 .prev .cell.empty::after{content:'Leerer Platz'}
@@ -7027,6 +7061,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var S_CHIPS = [sel("chips_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])];
   var LABELS3 = {
     ...CHIP_LABELS,
+    ...GRID_LABELS,
     area: "Area",
     name: "Name",
     icon: "Icon",
@@ -7037,6 +7072,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   };
   var HELPERS3 = {
     ...CHIP_HELPERS,
+    ...GRID_HELPERS,
     back_action: "Ohne Angabe geht es eine Seite zurück. „Keine Aktion“ blendet den Knopf aus.",
     stack_below: "Ist die Karte schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie)."
   };
