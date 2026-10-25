@@ -1,5 +1,7 @@
 # Nova Pop-up Card
 
+[← Zurück zur Übersicht](../README.md)
+
 Ein Pop-up mit beliebigen Karten (Nova-Karten, HA-Karten, andere Custom Cards). Es öffnet sich, wenn die Adresse auf
 `#hash` endet, z. B. `#wohnzimmer`. Alles lässt sich im grafischen Editor einstellen.
 

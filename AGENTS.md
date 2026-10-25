@@ -39,7 +39,7 @@ src/
     popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
                       Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Dock und Raum-Karte
 docs/
-  popup-card.md       Anleitung Nova Pop-up Card
+  <karte>.md          Alle Optionen je Karte (z. B. room-card.md, popup-card.md), theming.md für Farben/Variablen
 dev/
   nova-dev-cards.js   ERZEUGT von „npm run dev“ – gitignored, nur Zwischenablage
 nova-dev-cards.js     Kopie des Dev-Builds für jsDelivr – nur auf Feature-Branches, nie nach main mergen
