@@ -5,6 +5,7 @@ import {moreInfo, runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {BLOCKS} from './modular.js';
 import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from './shared/styles.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, ENT, NUM, sel, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
 
@@ -264,22 +265,29 @@ class NovaVacuumCard extends HTMLElement {
     if (c.map && !['camera', 'image'].includes(dom(c.map))) throw new Error('map muss eine camera.* oder image.* Entität sein');
     this._c = {...VDEF, ...c, rooms: [].concat(c.rooms || []).map(toObj).filter(o => o.name || o.icon || o.entity || o.segments != null || o.tap_action),
       consumables: [].concat(c.consumables || []).map(toObj).filter(o => o.entity), switches: [].concat(c.switches || []).map(toObj).filter(o => o.entity)};
+    this._ids = entityIds(this._c);
     this._built = false;
     if (this._h) { this._build(); this._update(); }
   }
+  // Neu zeichnen nur, wenn sich eine Entität der Karte (auch Akku und automatisch gefundene Station) geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._built) this._build();
+    else if (!hassChanged(old, h, [...this._ids, this._bat, ...Object.values(this._auto || {})])) return;
     this._update();
   }
   getCardSize() { return 3 + (this._c?.map ? 4 : 0) + Math.ceil(((this._c?.consumables.length || 0) + (this._c?.switches.length || 0)) / 2); }
   getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
   connectedCallback() {
+    // In der Kartenauswahl: Animation angehalten, Karte nicht im Takt nachladen
+    this._quiet = inPicker(this);
+    if (this._quiet) this._vis = false;
     if ('IntersectionObserver' in window) {
-      this._io ||= new IntersectionObserver(es => { this._vis = es[es.length - 1].isIntersecting; this._tick(); }, {rootMargin: '100px'});
+      this._io ||= new IntersectionObserver(es => { this._vis = es[es.length - 1].isIntersecting && !this._quiet; this._tick(); }, {rootMargin: '100px'});
       this._io.observe(this);
-    } else this._vis = true;
+    } else this._vis = !this._quiet;
     if ('ResizeObserver' in window) {
       this._ro ||= new ResizeObserver(es => this._width(Math.round(es[es.length - 1].contentRect.width)));
       this._ro.observe(this);

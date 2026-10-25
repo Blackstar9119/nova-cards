@@ -4,6 +4,7 @@ import {isOn, PRESS, nameOf, iconOf, valueOf} from './shared/state.js';
 import {moreInfo, runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, roleVars} from './shared/styles.js';
+import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, ENT, sel, ROLE, NAMEICON} from './shared/editor-schema.js';
 
@@ -37,13 +38,17 @@ class NovaInfoCard extends HTMLElement {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     this._c = {style: 'box', ...c};
     this._rows = rowsOf(c);
+    this._ids = entityIds(c);
     this._built = false;
     if (this._h) this.hass = this._h;
   }
+  // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._built) this._build();
+    else if (!hassChanged(old, h, this._ids)) return;
     this._update();
   }
   getCardSize() { return 1 + this._rows?.length || 1; }

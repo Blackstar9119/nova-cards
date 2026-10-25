@@ -5,6 +5,7 @@ import {press} from './shared/long-press.js';
 import {fmtState, unitJoin, nameOf, hasF, langOf, tzOf} from './shared/state.js';
 import {sparkline} from './shared/sparkline.js';
 import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, roleVars} from './shared/styles.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, sel, BASE_LABELS} from './shared/editor-schema.js';
 
@@ -87,6 +88,8 @@ const FC_NAME = {daily: 'Tagesvorhersage', hourly: 'Stundenvorhersage'};
 const WDEF = {show_clock: false, show_date: false, show_name: true, show_feels_like: true, show_high_low: true, show_details: true, details: ['humidity', 'wind', 'pressure'],
   color: 'auto', label_details: false, show_daily: true, days: 7, daily_bar: true, show_hourly: false, hours: 24, hour_step: 3,
   hourly_layout: 'columns', hourly_graph: true, hourly_first: false, show_probability: true, show_precipitation: true, show_titles: true};
+// Abo der Vorhersage beenden (nur einmal)
+const off = p => { if (p._off) return; p._off = true; p.then(u => typeof u === 'function' && u()).catch(() => {}); };
 const isNum = v => v !== '' && v != null && Number.isFinite(+v);
 const clamp = (v, d, min, max) => isNum(v) ? Math.min(max, Math.max(min, Math.round(+v))) : d;
 
@@ -101,17 +104,22 @@ class NovaWeatherCard extends HTMLElement {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     this._c = {...WDEF, ...c, details: [].concat(c.details ?? WDEF.details).filter(k => DETAILS[k]),
       days: clamp(c.days, WDEF.days, 1, 14), hours: clamp(c.hours, WDEF.hours, 1, 72), hour_step: clamp(c.hour_step, WDEF.hour_step, 1, 12)};
+    this._ids = [...entityIds(c), 'sun.sun'];
     this._key = null;
     if (this._h) { this._sub(); this._render(); }
   }
+  // Neu zeichnen nur, wenn sich die Wetter-Entität, ein Sensor der Karte oder die Sonne geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._e) this._build();
+    else if (this._key != null && !hassChanged(old, h, this._ids)) return;
     this._sub();
     this._render();
   }
-  connectedCallback() { if (this._h && this._c) { if (!this._e) this._build(); this._sub(); this._render(); } }
+  // In der Kartenauswahl: Uhr ohne Takt, Vorhersage nur einmal holen
+  connectedCallback() { this._quiet = inPicker(this); if (this._h && this._c) { if (!this._e) this._build(); this._sub(); this._render(); } }
   disconnectedCallback() { this._unsub(); clearInterval(this._tm); this._tm = null; }
   getCardSize() {
     const c = this._c || WDEF;
@@ -136,7 +144,7 @@ class NovaWeatherCard extends HTMLElement {
   _clock() {
     const c = this._c, e = this._e, h = this._h;
     if (!e || !h) return;
-    const on = !!(c.show_clock || c.show_date) && this.isConnected;
+    const on = !!(c.show_clock || c.show_date) && this.isConnected && !this._quiet;
     if (on && !this._tm) this._tm = setInterval(() => this._clock(), 10000);
     if (!on && this._tm) { clearInterval(this._tm); this._tm = null; }
     e.clk.hidden = !(c.show_clock || c.show_date);
@@ -163,8 +171,12 @@ class NovaWeatherCard extends HTMLElement {
     this._unsub();
     this._subKey = key;
     types.forEach(t => {
-      const p = h.connection.subscribeMessage(ev => { if (this._subKey === key) { this._fc[t] = ev?.forecast || []; this._render(); } },
-        {type: 'weather/subscribe_forecast', forecast_type: t, entity_id: c.entity});
+      const p = h.connection.subscribeMessage(ev => {
+        if (this._subKey !== key) return;
+        this._fc[t] = ev?.forecast || [];
+        this._render();
+        if (this._quiet) off(p);
+      }, {type: 'weather/subscribe_forecast', forecast_type: t, entity_id: c.entity});
       p.catch(err => {
         if (this._subKey !== key) return;
         this._fcErr[t] = err?.message || err?.code || 'unbekannter Fehler';
@@ -175,7 +187,7 @@ class NovaWeatherCard extends HTMLElement {
     });
   }
   _unsub() {
-    this._subs.forEach(p => p.then(u => typeof u === 'function' && u()).catch(() => {}));
+    this._subs.forEach(off);
     this._subs = []; this._fc = {}; this._fcErr = {}; this._subKey = null;
   }
 

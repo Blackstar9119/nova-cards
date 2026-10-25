@@ -35,6 +35,7 @@ src/
     styles.js         Gemeinsame CSS-Bausteine (Variablen, Glas-Hintergrund, Editor-Styles)
     editor-base.js    NovaEditorBase – Basisklasse ALLER Editoren
     editor-schema.js  Bausteine für ha-form-Schemas + gemeinsame Beschriftungen
+    lifecycle.js      Relevante hass-Änderungen erkennen (hassChanged, entityIds), Vorschau in der Kartenauswahl (inPicker)
     popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
                       Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Dock und Raum-Karte
 docs/
@@ -69,6 +70,10 @@ hacs.json             HACS-Metadaten
   per `ROLE()` aus `editor-schema.js`, in der Karte per `roleVars()` aus `styles.js`. Die Standardfarben stehen nur
   zentral in `NOVA_VARS` (`--nova-accent-1` …) und werden vom Theme überschrieben.
 - **Alles auf Deutsch:** Beschriftungen, Hilfetexte, Fehlermeldungen, Kommentare, README.
+- **Sparsam mit hass:** Karten und Editoren zeichnen nur neu, wenn `hassChanged()` aus `lifecycle.js` für ihre Entitäten
+  anschlägt. Editoren melden Änderungen gesammelt (`_emit` mit 300 ms Pause) und verwenden ha-form-Felder beim Neuaufbau weiter
+  (`_form`/`_reuse` in `editor-base.js`). Timer, Abos und Observer in `disconnectedCallback` beenden; in der Kartenauswahl
+  (`inPicker()`) keine Dauer-Animationen, Streams oder Intervalle.
 - **Für Nutzer darf sich bei Umbauten nichts ändern:** gleiche Kartentypen, Optionen, Optik und Editoren.
 - **Commits, Branches und PRs:** keine `Co-Authored-By`-Zeilen und keine Erwähnung von KI-Tools
   (auch nicht in Branch-Namen; Branches heißen `feature/...`).
@@ -92,6 +97,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | Elementnamen `hui-card-preview`, `hui-dialog-edit-card`, `hui-card-options`, `hui-card-edit-mode` … | `popup.js`, `dock.js` | Karte gilt als normal eingebunden |
 | WebSocket `lovelace/config` | `popup-hub.js` (Pop-ups für Dock und Raum-Karte), `dock.js` | keine Pop-ups/Einträge aus dem Dashboard |
 | Event `ll-rebuild` | `popup.js` | Zelle wird neu aufgebaut, sonst nichts |
+| Elementname `hui-card-picker` (Vorschau in der Kartenauswahl erkennen) | `lifecycle.js` (`inPicker`) | Karte läuft wie normal eingebunden |
 
 ## Dev-Workflow
 

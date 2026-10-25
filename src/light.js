@@ -4,6 +4,7 @@ import {areaOf} from './shared/state.js';
 import {moreInfo, hassAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {CARD_CSS, EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
+import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 
 /* ---------- Farben ---------- */
@@ -155,8 +156,11 @@ class NovaLightCardEditor extends NovaEditorBase {
   }
   _lamp(l, i) {
     const n = this._config.entities.length;
-    const [d, s, body] = this._details(i, l.icon || 'mdi:lightbulb', this._label(l, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._removeLamp(i)));
     const keys = names(LAMP);
+    const [d] = this._details(i, l.icon || 'mdi:lightbulb', this._label(l, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._removeLamp(i)), (body, s) => this._lampBody(body, s, l, i, keys));
+    return d;
+  }
+  _lampBody(body, s, l, i, keys) {
     body.append(this._form(LAMP, l, v => {
       const lamps = [...this._config.entities], old = lamps[i];
       lamps[i] = merge(old, keys, v);
@@ -173,7 +177,6 @@ class NovaLightCardEditor extends NovaEditorBase {
       lamps[i] = {...lamps[i], colors};
       this._set(lamps);
     }, l.entity));
-    return d;
   }
   // Farbknöpfe: Punkte mit ×, darunter die Farbscheibe zum Hinzufügen. key merkt sich, ob die Scheibe offen ist
   _colors(key, colors, onChange, entity) {
@@ -279,13 +282,16 @@ class NovaLightCard extends HTMLElement {
   }
   setConfig(c) {
     this._c = normalize(c);
+    this._ids = entityIds(this._c);
     this._built = false;
     if (this._h) { this._build(); this._update(); }
   }
   set hass(h) {
-    const prev = this._list;
+    const prev = this._list, old = this._h;
     this._h = h;
     if (!this._c) return;
+    // Nichts zu tun, wenn sich weder eine Lampe noch der Bereich geändert hat
+    if (this._built && !hassChanged(old, h, [...this._ids, ...(prev || [])])) return;
     // Neu aufbauen, wenn im Bereich Lampen dazukommen oder wegfallen
     const now = this._lights();
     if (!this._built || now.join() !== (prev || []).join()) this._build();

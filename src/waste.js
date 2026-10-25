@@ -4,6 +4,7 @@ import {langOf, tzOf} from './shared/state.js';
 import {moreInfo} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, roleVars} from './shared/styles.js';
+import {hassChanged, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, sel, ROLE, BASE_LABELS} from './shared/editor-schema.js';
 
@@ -91,17 +92,21 @@ class NovaWasteCard extends HTMLElement {
     this._fetched = false;
     if (this._h) { this._build(); this._load(); }
   }
+  // Neu zeichnen nur, wenn sich ein Kalender geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._e) this._build();
     if (!this._fetched) this._load();
-    else this._render();
+    else if (hassChanged(old, h, this._cals)) this._render();
   }
   getCardSize() { return this._c?.layout === 'compact' ? 1 : 1 + (this._c?.count || 5); }
   getGridOptions() { return {columns: 6, rows: 'auto', min_columns: 3}; }
   connectedCallback() {
     clearInterval(this._tm);
+    // In der Kartenauswahl einmal anzeigen, ohne Minutentakt
+    if (inPicker(this)) return;
     // Jede Minute prüfen: neu laden stündlich und gleich nach Mitternacht (Tageswechsel)
     this._tm = setInterval(() => this._tick(), 60000);
     if (this._e) this._tick();

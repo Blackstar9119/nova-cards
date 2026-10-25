@@ -3,6 +3,7 @@ import {esc, setIcon, list} from './shared/utils.js';
 import {iconOf, nameOf, valueOf, alertHit} from './shared/state.js';
 import {moreInfo} from './shared/actions.js';
 import {NOVA_VARS, roleVars, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from './shared/styles.js';
+import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, ENT, NUM, sel, ROLE, NAMEICON} from './shared/editor-schema.js';
 import {register, unregister, curHash, cleanHash, clearHash, cameByNav, lockScroll, hasPopup} from './shared/popup-hub.js';
@@ -111,6 +112,16 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
 .pop.inline .body{overflow:visible;padding-bottom:14px}
 @media(prefers-reduced-motion:reduce){.ov,.sh{transition:none}}`;
 
+// Vorschau im Karteneditor: HA erzeugt die Pop-up Card bei jeder Änderung neu. Die fertigen Zellen der alten Karte
+// wandern kurz hierher und werden von der neuen übernommen, statt jede eingebettete Karte neu zu erzeugen.
+const HANDOFF = new Map();
+let handoffT;
+const handOff = pool => {
+  pool.forEach((ws, k) => (HANDOFF.get(k) || HANDOFF.set(k, []).get(k)).push(...ws));
+  clearTimeout(handoffT);
+  handoffT = setTimeout(() => HANDOFF.clear(), 3000);
+};
+
 // Wo liegt die Karte? Kartenauswahl/Editor-Vorschau → Pop-up direkt anzeigen, Bearbeitungsmodus → Platzhalter
 // HA-INTERN: Elementnamen der HA-Oberfläche, nur zum Erkennen – fehlen sie, gilt die Karte als normal eingebunden
 const PREV = new Set(['HUI-CARD-PREVIEW', 'HUI-DIALOG-EDIT-CARD', 'HUI-DIALOG-CREATE-CARD', 'HUI-CARD-ELEMENT-EDITOR', 'HUI-CARD-PICKER']);
@@ -144,7 +155,6 @@ class NovaPopupCard extends HTMLElement {
     };
     this._swipe();
     this._ro = new ResizeObserver(() => this._stack());
-    this._ro.observe(this._body);
   }
 
   setConfig(c) {
@@ -153,30 +163,37 @@ class NovaPopupCard extends HTMLElement {
     this._cfg = {...DEF, ...c, hash: cleanHash(c.hash), info: [].concat(c.info || []).map(x => typeof x === 'string' ? {entity: x} : x),
       badges: [].concat(c.badges || []).map(x => typeof x === 'string' ? {entity: x} : x).filter(x => x?.entity)};
     this._rows = normRows(c);
+    this._ids = entityIds([this._cfg.info, this._cfg.badges]);
     if (this.isConnected && old !== this._cfg.hash) { this._unreg(old); this._reg(); }
     this._head();
     this._dirty = true;
     if (this._isOpen || this._mode === 'preview') this._grid();
     this._syncOpen();
   }
+  // Die eingebetteten Karten bekommen jedes Update (sie filtern selbst), Kopfzeile und Info-Leiste nur bei eigenen Änderungen
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._isOpen && this._mode !== 'preview') return;
-    this._info();
+    if (old === h || hassChanged(old, h, this._ids)) this._info();
     this._cells().forEach(el => this._setHass(el));
   }
   getCardSize() { return this._mode === 'live' ? 0 : 1; }
   getGridOptions() { return {columns: 'full', rows: 'auto'}; }
 
   connectedCallback() {
+    this._ro.observe(this._body);
     ['hashchange', 'popstate', 'location-changed'].forEach(ev => window.addEventListener(ev, this._sync));
     this._detect();
     requestAnimationFrame(() => this._detect());
   }
   disconnectedCallback() {
     ['hashchange', 'popstate', 'location-changed'].forEach(ev => window.removeEventListener(ev, this._sync));
+    this._ro.disconnect();
     this._unreg(this._cfg?.hash);
     if (this._isOpen) this._hide(true);
+    // Vorschau: Zellen an die Nachfolgerin weitergeben
+    if (this._mode === 'preview' && this._pool) { handOff(this._pool); this._pool = null; this._dirty = true; }
   }
   _reg() { if (this._cfg?.hash && this._mode !== 'preview') register(this._cfg.hash, this); }
   _unreg(h) { if (h) unregister(h, this); }
@@ -360,13 +377,15 @@ class NovaPopupCard extends HTMLElement {
     const old = this._pool || new Map(), pool = new Map(), list = [];
     this._rows.forEach(row => { const rw = document.createElement('div'); rw.className = 'rw'; list.push(rw); row.cells.forEach(cell => {
       const key = JSON.stringify(cell.card);
-      let w = old.get(key)?.shift();
+      let w = old.get(key)?.shift() || (this._mode === 'preview' ? HANDOFF.get(key)?.shift() : null);
       if (!w) {
         w = document.createElement('div');
         w.className = 'cell';
-        if (cell.card) { this._mount(w, cell.card); w.addEventListener('ll-rebuild', e => { e.stopPropagation(); this._mount(w, cell.card); }); }
+        w._card = cell.card;
+        w._owner = this;
+        if (cell.card) { this._mount(w, cell.card); w.addEventListener('ll-rebuild', e => { e.stopPropagation(); w._owner._mount(w, w._card); }); }
         else w.classList.add('empty');
-      }
+      } else if (w._owner !== this) { w._owner = this; w.querySelectorAll(':scope>*').forEach(el => this._setHass(el)); }
       w.style.flex = flexOf(cell.width, 12);
       w.classList.toggle('auto', !FR[cell.width]);
       (pool.get(key) || pool.set(key, []).get(key)).push(w);
@@ -516,13 +535,17 @@ hui-card-picker{flex:1;min-height:0}`;
 class NovaPopupCardEditor extends NovaEditorBase {
   static labels = LABELS;
   static helpers = HELPERS;
-  set hass(h) { super.hass = h; [this._sub, this._pick, this._dlgPick].forEach(x => { if (x) try { x.hass = h; } catch { /* egal */ } }); }
+  set hass(h) {
+    const old = this._hass;
+    super.hass = h;
+    if (hassChanged(old, h, this._ids)) [this._sub, this._pick, this._dlgPick].forEach(x => { if (x) try { x.hass = h; } catch { /* egal */ } });
+  }
   // HA reicht dem Editor die Dashboard-Konfiguration (für Kartenauswahl und Karteneditor)
   set lovelace(l) { this._ll = l; }
   get lovelace() { return this._ll; }
 
   async _rebuild() { await loadHaEditors(); return super._rebuild(); }
-  disconnectedCallback() { this._dlg?.close(); }
+  disconnectedCallback() { super.disconnectedCallback(); this._dlg?.close(); }
   _rows() { return normRows(this._config); }
   _emitRows(rows, keep) {
     const c = {...this._config, rows: serRows(rows)};
@@ -792,16 +815,21 @@ class NovaPopupCardEditor extends NovaEditorBase {
   _cardEditor(box, ri, ci) {
     const cfg = this._rows()[ri].cells[ci].card;
     try {
-      const ed = document.createElement('hui-card-element-editor');
+      // Beim Neuaufbau für dieselbe Zelle den vorhandenen Karteneditor weiterverwenden
+      const ed = this._reuse(`card-editor:${ri}.${ci}`, () => {
+        const ed = document.createElement('hui-card-element-editor');
+        ed.addEventListener('config-changed', e => {
+          e.stopPropagation();
+          const c = e.detail?.config;
+          if (!e.detail?.error && c && typeof c === 'object' && c.type) ed._cb(c);
+        });
+        ed.addEventListener('GUImode-changed', e => e.stopPropagation());
+        return ed;
+      });
+      ed._cb = c => this._setCard(ri, ci, c, false);
       ed.hass = this._hass;
       if (this._ll) ed.lovelace = this._ll;
       ed.value = cfg;
-      ed.addEventListener('config-changed', e => {
-        e.stopPropagation();
-        const c = e.detail?.config;
-        if (!e.detail?.error && c && typeof c === 'object' && c.type) this._setCard(ri, ci, c, false);
-      });
-      ed.addEventListener('GUImode-changed', e => e.stopPropagation());
       box.append(ed);
       this._sub = ed;
     } catch (e) {

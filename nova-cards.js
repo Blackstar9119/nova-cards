@@ -266,6 +266,32 @@ summary .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow
 details.item details.item>summary{background:none}
 h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 
+  // src/shared/lifecycle.js
+  var GLOBAL = ["entities", "devices", "areas", "floors", "localize", "locale", "language", "themes", "selectedTheme", "config", "user", "connected"];
+  var ID = /^[a-z_]+\.[a-z0-9_]+$/;
+  var entityIds = (o, out = /* @__PURE__ */ new Set()) => {
+    if (typeof o === "string") {
+      if (ID.test(o)) out.add(o);
+    } else if (o && typeof o === "object") Object.values(o).forEach((v) => entityIds(v, out));
+    return out;
+  };
+  var hassChanged = (prev2, next, ids) => {
+    if (prev2 === next) return false;
+    if (!prev2 || !next) return true;
+    if (GLOBAL.some((k) => prev2[k] !== next[k])) return true;
+    const a = prev2.states, b = next.states;
+    if (a === b) return false;
+    for (const id of ids || []) if (a?.[id] !== b?.[id]) return true;
+    return false;
+  };
+  var inPicker = (el2) => {
+    for (let n = el2, i = 0; n && i < 80; i++) {
+      if (n.localName === "hui-card-picker") return true;
+      n = n.parentElement || n.getRootNode?.().host;
+    }
+    return false;
+  };
+
   // src/shared/editor-base.js
   var preload;
   var loadForm = () => customElements.get("ha-form") ? Promise.resolve() : preload ||= (async () => {
@@ -283,54 +309,96 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     keys.forEach((k) => empty(val[k]) ? delete o[k] : o[k] = val[k]);
     return o;
   };
+  var DEBOUNCE = 300;
   var NovaEditorBase = class extends HTMLElement {
     constructor() {
       super();
       this.attachShadow({ mode: "open" });
       this._forms = [];
       this._open = /* @__PURE__ */ new Set();
+      this._keep = /* @__PURE__ */ new Map();
+      this._ids = /* @__PURE__ */ new Set();
+      this.addEventListener("focusout", () => this._flush());
     }
+    // hass kommt mehrmals pro Sekunde – an die Felder nur weitergeben, wenn es den Editor betrifft
     set hass(h) {
+      const old = this._hass;
       this._hass = h;
-      this._forms.forEach((f) => {
+      if (hassChanged(old, h, this._ids)) this._forms.forEach((f) => {
         f.hass = h;
       });
     }
     setConfig(c) {
       const s = JSON.stringify(c);
-      if (s === this._emitted) {
+      if (s === this._emitted || this._pending && s === JSON.stringify(this._pending)) {
         this._config = c;
         return;
       }
+      clearTimeout(this._dt);
+      this._pending = null;
       this._config = JSON.parse(s);
+      this._ids = entityIds(this._config);
       this._onExternalConfig?.();
       this._rebuild();
+    }
+    disconnectedCallback() {
+      this._flush();
     }
     async _rebuild() {
       const id = this._bid = (this._bid || 0) + 1;
       await loadForm();
-      if (id === this._bid) {
-        this._forms = [];
+      if (id !== this._bid) return;
+      this._forms = [];
+      this._pool = this._keep;
+      this._keep = /* @__PURE__ */ new Map();
+      try {
         this._build();
+      } finally {
+        this._pool = null;
       }
     }
     _emit(c) {
       this._config = c;
+      this._ids = entityIds(c);
+      this._pending = c;
+      clearTimeout(this._dt);
+      this._dt = setTimeout(() => this._flush(), DEBOUNCE);
+    }
+    _flush() {
+      clearTimeout(this._dt);
+      const c = this._pending;
+      if (!c) return;
+      this._pending = null;
       this._emitted = JSON.stringify(c);
       fire(this, "config-changed", { config: c });
     }
+    // Element vom letzten Aufbau weiterverwenden (gleicher Typ, gleiche Reihenfolge), sonst mit create() neu erzeugen
+    _reuse(type, create) {
+      const el2 = this._pool?.get(type)?.shift() || create();
+      (this._keep.get(type) || this._keep.set(type, []).get(type)).push(el2);
+      return el2;
+    }
     _form(schema2, data, cb) {
-      const f = document.createElement("ha-form");
-      f.hass = this._hass;
-      f.schema = schema2;
-      f.data = data;
-      f.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
-      f.computeHelper = (s) => this.constructor.helpers?.[s.name];
-      f.addEventListener("value-changed", (e) => {
-        e.stopPropagation();
-        f.data = e.detail.value;
-        cb(e.detail.value);
+      const f = this._reuse(`form:${JSON.stringify(schema2)}`, () => {
+        const f2 = document.createElement("ha-form");
+        f2.schema = schema2;
+        f2.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f2.computeHelper = (s) => this.constructor.helpers?.[s.name];
+        f2.addEventListener("value-changed", (e) => {
+          e.stopPropagation();
+          f2.data = e.detail.value;
+          f2._dk = JSON.stringify(f2.data);
+          f2._cb(e.detail.value);
+        });
+        return f2;
       });
+      if (f.hass !== this._hass) f.hass = this._hass;
+      const dk = JSON.stringify(data);
+      if (f._dk !== dk) {
+        f.data = data;
+        f._dk = dk;
+      }
+      f._cb = cb;
       this._forms.push(f);
       return f;
     }
@@ -370,8 +438,9 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       p.textContent = t;
       return p;
     }
-    // Aufklapp-Eintrag; key merkt sich, ob er offen ist. Liefert [details, summary, body]
-    _details(key, icon, label, btns) {
+    // Aufklapp-Eintrag; key merkt sich, ob er offen ist. Liefert [details, summary, body].
+    // Mit fill(body, summary) wird der Inhalt erst beim ersten Aufklappen gebaut – zugeklappte Einträge kosten dann nichts
+    _details(key, icon, label, btns, fill) {
       const d = document.createElement("details");
       d.className = "item";
       d.open = this._open.has(key);
@@ -386,6 +455,17 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       const body = document.createElement("div");
       body.className = "body";
       d.append(s, body);
+      if (fill) {
+        let done = false;
+        const go = () => {
+          if (!done && d.open) {
+            done = true;
+            fill(body, s);
+          }
+        };
+        d.addEventListener("toggle", go);
+        go();
+      }
       return [d, s, body];
     }
     // Hoch / Runter / Löschen für Eintrag i von n
@@ -410,22 +490,27 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     _itemList(w, k, schema2, m, addLabel, view = (it) => it) {
       const items = this._items(k), keys = names(schema2);
       items.forEach((it, j) => {
-        const [d, s, body] = this._details(`${k}.${j}`, it.icon || m.icon, this._ilabel(it, j, m), this._itemBtns(
-          j,
-          items.length,
-          (dir) => this._moveItem(k, j, dir),
-          () => {
-            this._open = /* @__PURE__ */ new Set();
-            this._setItems(k, this._items(k).filter((_, x) => x !== j));
-            this._rebuild();
-          }
-        ));
-        body.append(this._form(schema2, view(it), (v) => {
-          const arr = this._items(k);
-          arr[j] = merge(arr[j], keys, v);
-          this._setItems(k, arr);
-          s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
-        }));
+        const [d, s] = this._details(
+          `${k}.${j}`,
+          it.icon || m.icon,
+          this._ilabel(it, j, m),
+          this._itemBtns(
+            j,
+            items.length,
+            (dir) => this._moveItem(k, j, dir),
+            () => {
+              this._open = /* @__PURE__ */ new Set();
+              this._setItems(k, this._items(k).filter((_, x) => x !== j));
+              this._rebuild();
+            }
+          ),
+          (body) => body.append(this._form(schema2, view(this._items(k)[j] || it), (v) => {
+            const arr = this._items(k);
+            arr[j] = merge(arr[j], keys, v);
+            this._setItems(k, arr);
+            s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
+          }))
+        );
         w.append(d);
       });
       w.append(this._add(addLabel, () => {
@@ -633,10 +718,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
         this._emit({ ...this._config, buttons });
         this._rebuild();
       }));
-      const adv = document.createElement("details");
-      adv.className = "item";
-      adv.innerHTML = '<summary><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Erweitert</span></summary><div class="body"></div>';
-      adv.querySelector(".body").append(this._form(ADVANCED, this._config, save(ADVANCED)));
+      const [adv] = this._details("adv", "mdi:cog-outline", "Erweitert", [], (body) => body.append(this._form(ADVANCED, this._config, save(ADVANCED))));
       w.append(adv);
     }
     _label(b, i) {
@@ -645,15 +727,16 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     _button(b, i) {
       const n = (this._config.buttons || []).length;
-      const [d, s, body] = this._details(i, b.icon || "mdi:gesture-tap-button", this._label(b, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)));
-      body.append(this._form(BUTTON, b, (v) => {
-        const buttons = [...this._config.buttons], old = buttons[i];
-        buttons[i] = merge(old, names(BUTTON), v);
-        this._emit({ ...this._config, buttons });
-        s.querySelector(".lbl").textContent = this._label(buttons[i], i);
-        if (!!old.icon_entity !== !!buttons[i].icon_entity) this._rebuild();
-      }));
-      if (b.icon_entity) body.append(this._mapEditor(i));
+      const [d, s] = this._details(i, b.icon || "mdi:gesture-tap-button", this._label(b, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (body) => {
+        body.append(this._form(BUTTON, b, (v) => {
+          const buttons = [...this._config.buttons], old = buttons[i];
+          buttons[i] = merge(old, names(BUTTON), v);
+          this._emit({ ...this._config, buttons });
+          s.querySelector(".lbl").textContent = this._label(buttons[i], i);
+          if (!!old.icon_entity !== !!buttons[i].icon_entity) this._rebuild();
+        }));
+        if (b.icon_entity) body.append(this._mapEditor(i));
+      });
       return d;
     }
     _mapEditor(i) {
@@ -786,16 +869,20 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     setConfig(c) {
       this._c = normalize(c);
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
-      if (!this._built) this._build();
       if (this._hp) this._hp.hass = h;
+      if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
       this._update();
     }
     getCardSize() {
@@ -1014,6 +1101,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     setConfig(c) {
       this._c = normalize2(c);
+      this._ids = entityIds(this._c);
       this._built = false;
       this._pend = null;
       if (this._h) {
@@ -1021,9 +1109,12 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
       this._update();
     }
     getCardSize() {
@@ -1307,8 +1398,11 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     }
     _lamp(l, i) {
       const n = this._config.entities.length;
-      const [d, s, body] = this._details(i, l.icon || "mdi:lightbulb", this._label(l, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._removeLamp(i)));
       const keys = names(LAMP);
+      const [d] = this._details(i, l.icon || "mdi:lightbulb", this._label(l, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._removeLamp(i)), (body, s) => this._lampBody(body, s, l, i, keys));
+      return d;
+    }
+    _lampBody(body, s, l, i, keys) {
       body.append(this._form(LAMP, l, (v) => {
         const lamps = [...this._config.entities], old = lamps[i];
         lamps[i] = merge(old, keys, v);
@@ -1324,7 +1418,6 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
         lamps[i] = { ...lamps[i], colors };
         this._set(lamps);
       }, l.entity));
-      return d;
     }
     // Farbknöpfe: Punkte mit ×, darunter die Farbscheibe zum Hinzufügen. key merkt sich, ob die Scheibe offen ist
     _colors(key, colors, onChange, entity) {
@@ -1451,6 +1544,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
     }
     setConfig(c) {
       this._c = normalize3(c);
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
@@ -1458,9 +1552,10 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
       }
     }
     set hass(h) {
-      const prev2 = this._list;
+      const prev2 = this._list, old = this._h;
       this._h = h;
       if (!this._c) return;
+      if (this._built && !hassChanged(old, h, [...this._ids, ...prev2 || []])) return;
       const now = this._lights();
       if (!this._built || now.join() !== (prev2 || []).join()) this._build();
       this._update();
@@ -1672,6 +1767,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       if (!c.items && !c.source) throw new Error("items oder source angeben");
       this._cfg = { position: "bottom", button_size: 48, ...c };
+      this._ids = entityIds(c);
       this._close();
       this._items = null;
       this._btns = null;
@@ -1680,8 +1776,11 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       if (this._h) this.hass = this._h;
     }
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._cfg) return;
+      if (this._pop) this._pop.hass = h;
+      if (this._hp) this._hp.hass = h;
       if (!this._items) {
         if (this._cfg.items) this._items = this._cfg.items;
         else {
@@ -1690,9 +1789,17 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
         }
       }
       if (!this._built) this._build();
-      if (this._pop) this._pop.hass = h;
-      if (this._hp) this._hp.hass = h;
+      else if (!hassChanged(old, h, this._watch(old))) return;
       this._update();
+    }
+    // Entitäten der Einträge, bei Zählern auch die Mitglieder der Gruppe
+    _watch(h) {
+      if (this._srcIds?.items !== this._items) this._srcIds = { items: this._items, ids: entityIds(this._items) };
+      const ids = [...this._ids, ...this._srcIds.ids];
+      (this._items || []).forEach((it) => {
+        if (it.badge_count_of) ids.push(...h?.states[it.badge_count_of]?.attributes.entity_id || []);
+      });
+      return ids;
     }
     async _loadSource() {
       if (this._loading) return;
@@ -1950,9 +2057,8 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : it.tap_action?.navigation_path) || "Neuer Button"}`;
     }
     _item(it, i, n) {
-      const [d, s, b] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)));
       const schema2 = this._schema();
-      b.append(this._form(schema2, it, (v) => {
+      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => b.append(this._form(schema2, it, (v) => {
         const list2 = [...this._config.items];
         const nx = merge(list2[i], names(schema2), v);
         if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
@@ -1963,7 +2069,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
         this._emit({ ...this._config, items: list2 });
         s.querySelector(".lbl").textContent = this._label(nx, i);
         s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
-      }));
+      })));
       return d;
     }
     _move(i, dir) {
@@ -2239,16 +2345,20 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       if (!Array.isArray(c.blocks)) throw new Error("blocks (Liste der Bausteine) fehlt");
       this._c = { ...c, blocks: c.blocks.filter((b) => b && BLOCKS[b.type]).map(normBlock) };
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
       this._update();
     }
     getCardSize() {
@@ -2400,15 +2510,19 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     }
     _block(b, i, n) {
       const m = BM[b.type];
-      const [d, s, body] = this._details(
+      const [d] = this._details(
         `${i}`,
         m?.icon || "mdi:help-circle-outline",
         this._blabel(b, i),
-        this._itemBtns(i, n, (dir) => this._move(null, i, dir), () => this._del(null, i))
+        this._itemBtns(i, n, (dir) => this._move(null, i, dir), () => this._del(null, i)),
+        (body, s) => this._blockBody(body, s, b, i, m)
       );
+      return d;
+    }
+    _blockBody(body, s, b, i, m) {
       if (!m) {
         body.append(this._hint(`Unbekannter Baustein „${b.type}“ – nur per YAML bearbeitbar.`));
-        return d;
+        return;
       }
       const keys = names(m.schema), def = m.defaults || {};
       body.append(this._form(m.schema, { ...def, ...b }, (v) => {
@@ -2432,23 +2546,22 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
           this._rebuild();
         }));
       }
-      return d;
     }
     _sub(i, j, it, n, m, k) {
-      const [d, s, body] = this._details(
+      const keys = names(m.items);
+      const [d] = this._details(
         `${i}.${j}`,
         it.icon || m.icon,
         this._ilabel(it, j, m),
-        this._itemBtns(j, n, (dir) => this._move(i, j, dir), () => this._del(i, j))
+        this._itemBtns(j, n, (dir) => this._move(i, j, dir), () => this._del(i, j)),
+        (body, s) => body.append(this._form(m.items, it, (v) => {
+          const bl = this._blocks(), arr = [...bl[i][k]];
+          arr[j] = merge(arr[j], keys, v);
+          bl[i] = { ...bl[i], [k]: arr };
+          this._set(bl);
+          s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
+        }))
       );
-      const keys = names(m.items);
-      body.append(this._form(m.items, it, (v) => {
-        const bl = this._blocks(), arr = [...bl[i][k]];
-        arr[j] = merge(arr[j], keys, v);
-        bl[i] = { ...bl[i], [k]: arr };
-        this._set(bl);
-        s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
-      }));
       return d;
     }
     // i = null: Block verschieben/löschen, sonst Eintrag j in Block i
@@ -2624,6 +2737,7 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
       CLISTS.forEach((k) => {
         this._c[k] = [].concat(c[k] || []).map(toObj).filter((o) => o.entity || o.tap_action);
       });
+      this._ids = entityIds(this._c);
       this._built = false;
       this._stopLive();
       if (this._h) {
@@ -2631,10 +2745,16 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte (auch die gefundenen PTZ-Buttons) geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
+      this._kids?.forEach((k) => {
+        k.hass = h;
+      });
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, [...this._ids, ...Object.values(this._ptz || {}).filter((v) => typeof v === "string")])) return;
       this._update();
     }
     getCardSize() {
@@ -2644,6 +2764,7 @@ background:rgba(10,14,24,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:
       return { columns: 12, rows: "auto", min_columns: 4 };
     }
     connectedCallback() {
+      this._quiet = inPicker(this);
       document.addEventListener("visibilitychange", this._onVis);
       if ("IntersectionObserver" in window) {
         this._io ||= new IntersectionObserver((es) => {
@@ -2831,9 +2952,6 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
       e.g.classList.toggle("err", lvl === 2);
       if (dom(c.entity) === "image" && s && this._stillKey !== s.state) this._still();
       if (this._liveEl && "hass" in this._liveEl) this._liveEl.hass = h;
-      this._kids.forEach((k) => {
-        k.hass = h;
-      });
     }
     _ptzGo(k) {
       const v = this._ptz[k], c = this._c;
@@ -2851,14 +2969,14 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
     _sync() {
       if (!this._e || !this._h) return;
       const show = this._vis && !document.hidden && this.isConnected;
-      const live = show && dom(this._c.entity) === "camera" && this._c.stream !== "snapshot";
+      const live = show && !this._quiet && dom(this._c.entity) === "camera" && this._c.stream !== "snapshot";
       if (live && !this._mode && !this._starting) this._startLive();
       if (!live) this._stopLive();
       clearInterval(this._tm);
       this._tm = null;
       if (show && dom(this._c.entity) === "camera" && !this._mode) {
         if (!this._e.still.src) this._still();
-        if (this._c.refresh > 0) this._tm = setInterval(() => !this._mode && this._still(), this._c.refresh * 1e3);
+        if (this._c.refresh > 0 && !this._quiet) this._tm = setInterval(() => !this._mode && this._still(), this._c.refresh * 1e3);
       }
     }
     async _startLive() {
@@ -3167,16 +3285,20 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
       this._all = [{ entity: c.entity, name: c.name, icon: c.icon }, ...this._c.players];
       this._idx = 0;
       this._manual = false;
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich ein Player (auch sein Music-Assistant-Zwilling) geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, [...this._ids, ...(this._ma || []).filter(Boolean)])) return;
       this._update();
     }
     getCardSize() {
@@ -3185,7 +3307,9 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
     getGridOptions() {
       return { columns: 12, rows: "auto", min_columns: 4 };
     }
+    // In der Kartenauswahl läuft der Fortschrittsbalken nicht im Sekundentakt
     connectedCallback() {
+      this._quiet = inPicker(this);
       if (this._built) this._tick();
     }
     disconnectedCallback() {
@@ -3310,23 +3434,23 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
         }
       }
       const p = this._p, n = h.states[p.entity], s = h.states[this._eid], a = s?.attributes || {};
-      const off = !s || ["off", "unavailable", "unknown", "standby"].includes(s.state), play = s?.state === "playing";
+      const off2 = !s || ["off", "unavailable", "unknown", "standby"].includes(s.state), play = s?.state === "playing";
       e.g.classList.toggle("na", !s || s.state === "unavailable");
-      e.g.classList.toggle("off", off);
+      e.g.classList.toggle("off", off2);
       e.g.classList.toggle("play", play && c.glow !== false);
       const app = a.app_name || (a.app_id === "music_assistant" ? "Music Assistant" : a.source);
       const logo = mapIcon(c.icon_map, c.icon_entity && h.states[c.icon_entity]?.state, a.app_name, a.app_id, a.source, a.media_channel);
       e.name.textContent = p.name ?? n?.attributes.friendly_name ?? a.friendly_name ?? p.entity;
-      e.sub.textContent = !s ? "nicht gefunden" : off ? fmtState(h, s) : [app, play ? null : fmtState(h, s)].filter(Boolean).join(" · ") || fmtState(h, s);
+      e.sub.textContent = !s ? "nicht gefunden" : off2 ? fmtState(h, s) : [app, play ? null : fmtState(h, s)].filter(Boolean).join(" · ") || fmtState(h, s);
       setIcon(e.ic, logo || p.icon || a.icon || (a.device_class === "tv" ? "mdi:television" : a.device_class === "speaker" ? "mdi:speaker" : "mdi:cast"));
-      e.ic.parentElement.classList.toggle("on", !off);
+      e.ic.parentElement.classList.toggle("on", !off2);
       if (e.pw) {
-        e.pw.classList.toggle("on", !off);
+        e.pw.classList.toggle("on", !off2);
         e.pw.hidden = !!n && !hasF(n, MF.ON) && !hasF(n, MF.OFF);
       }
-      e.title.textContent = a.media_title || (off ? "" : app || fmtState(h, s));
+      e.title.textContent = a.media_title || (off2 ? "" : app || fmtState(h, s));
       e.artist.textContent = [a.media_artist || a.media_series_title, a.media_album_name].filter(Boolean).join(" · ") || (a.media_title ? "" : a.media_channel || "");
-      const pic = !off && c.artwork !== "none" ? a.entity_picture_local || a.entity_picture : null;
+      const pic = !off2 && c.artwork !== "none" ? a.entity_picture_local || a.entity_picture : null;
       if (pic !== this._pic) {
         this._pic = pic;
         if (e.art) e.art.style.backgroundImage = pic ? cssUrl(pic) : "";
@@ -3401,7 +3525,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
     }
     // Sekundentakt nur, solange etwas läuft und der Balken sichtbar ist
     _tick() {
-      const run = this.isConnected && this._e?.bar && this._st()?.state === "playing";
+      const run = this.isConnected && !this._quiet && this._e?.bar && this._st()?.state === "playing";
       if (run && !this._tm) this._tm = setInterval(() => this._progress(), 1e3);
       if (!run && this._tm) {
         clearInterval(this._tm);
@@ -3803,16 +3927,20 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
         consumables: [].concat(c.consumables || []).map(toObj).filter((o) => o.entity),
         switches: [].concat(c.switches || []).map(toObj).filter((o) => o.entity)
       };
+      this._ids = entityIds(this._c);
       this._built = false;
       if (this._h) {
         this._build();
         this._update();
       }
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte (auch Akku und automatisch gefundene Station) geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, [...this._ids, this._bat, ...Object.values(this._auto || {})])) return;
       this._update();
     }
     getCardSize() {
@@ -3822,13 +3950,15 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
       return { columns: 12, rows: "auto", min_columns: 4 };
     }
     connectedCallback() {
+      this._quiet = inPicker(this);
+      if (this._quiet) this._vis = false;
       if ("IntersectionObserver" in window) {
         this._io ||= new IntersectionObserver((es) => {
-          this._vis = es[es.length - 1].isIntersecting;
+          this._vis = es[es.length - 1].isIntersecting && !this._quiet;
           this._tick();
         }, { rootMargin: "100px" });
         this._io.observe(this);
-      } else this._vis = true;
+      } else this._vis = !this._quiet;
       if ("ResizeObserver" in window) {
         this._ro ||= new ResizeObserver((es) => this._width(Math.round(es[es.length - 1].contentRect.width)));
         this._ro.observe(this);
@@ -4419,12 +4549,14 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         this._load();
       }
     }
+    // Neu zeichnen nur, wenn sich ein Kalender geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._e) this._build();
       if (!this._fetched) this._load();
-      else this._render();
+      else if (hassChanged(old, h, this._cals)) this._render();
     }
     getCardSize() {
       return this._c?.layout === "compact" ? 1 : 1 + (this._c?.count || 5);
@@ -4434,6 +4566,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
     connectedCallback() {
       clearInterval(this._tm);
+      if (inPicker(this)) return;
       this._tm = setInterval(() => this._tick(), 6e4);
       if (this._e) this._tick();
     }
@@ -4798,6 +4931,12 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     show_precipitation: true,
     show_titles: true
   };
+  var off = (p) => {
+    if (p._off) return;
+    p._off = true;
+    p.then((u) => typeof u === "function" && u()).catch(() => {
+    });
+  };
   var isNum = (v) => v !== "" && v != null && Number.isFinite(+v);
   var clamp = (v, d, min, max) => isNum(v) ? Math.min(max, Math.max(min, Math.round(+v))) : d;
   var NovaWeatherCard = class extends HTMLElement {
@@ -4824,20 +4963,26 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         hours: clamp(c.hours, WDEF2.hours, 1, 72),
         hour_step: clamp(c.hour_step, WDEF2.hour_step, 1, 12)
       };
+      this._ids = [...entityIds(c), "sun.sun"];
       this._key = null;
       if (this._h) {
         this._sub();
         this._render();
       }
     }
+    // Neu zeichnen nur, wenn sich die Wetter-Entität, ein Sensor der Karte oder die Sonne geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._e) this._build();
+      else if (this._key != null && !hassChanged(old, h, this._ids)) return;
       this._sub();
       this._render();
     }
+    // In der Kartenauswahl: Uhr ohne Takt, Vorhersage nur einmal holen
     connectedCallback() {
+      this._quiet = inPicker(this);
       if (this._h && this._c) {
         if (!this._e) this._build();
         this._sub();
@@ -4873,7 +5018,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     _clock() {
       const c = this._c, e = this._e, h = this._h;
       if (!e || !h) return;
-      const on = !!(c.show_clock || c.show_date) && this.isConnected;
+      const on = !!(c.show_clock || c.show_date) && this.isConnected && !this._quiet;
       if (on && !this._tm) this._tm = setInterval(() => this._clock(), 1e4);
       if (!on && this._tm) {
         clearInterval(this._tm);
@@ -4909,15 +5054,12 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       this._unsub();
       this._subKey = key;
       types.forEach((t) => {
-        const p = h.connection.subscribeMessage(
-          (ev) => {
-            if (this._subKey === key) {
-              this._fc[t] = ev?.forecast || [];
-              this._render();
-            }
-          },
-          { type: "weather/subscribe_forecast", forecast_type: t, entity_id: c.entity }
-        );
+        const p = h.connection.subscribeMessage((ev) => {
+          if (this._subKey !== key) return;
+          this._fc[t] = ev?.forecast || [];
+          this._render();
+          if (this._quiet) off(p);
+        }, { type: "weather/subscribe_forecast", forecast_type: t, entity_id: c.entity });
         p.catch((err) => {
           if (this._subKey !== key) return;
           this._fcErr[t] = err?.message || err?.code || "unbekannter Fehler";
@@ -4928,8 +5070,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       });
     }
     _unsub() {
-      this._subs.forEach((p) => p.then((u) => typeof u === "function" && u()).catch(() => {
-      }));
+      this._subs.forEach(off);
       this._subs = [];
       this._fc = {};
       this._fcErr = {};
@@ -5257,13 +5398,17 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       this._c = { style: "box", ...c };
       this._rows = rowsOf(c);
+      this._ids = entityIds(c);
       this._built = false;
       if (this._h) this.hass = this._h;
     }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
       this._update();
     }
     getCardSize() {
@@ -5477,6 +5622,13 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
 .pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
 .pop.inline .body{overflow:visible;padding-bottom:14px}
 @media(prefers-reduced-motion:reduce){.ov,.sh{transition:none}}`;
+  var HANDOFF = /* @__PURE__ */ new Map();
+  var handoffT;
+  var handOff = (pool) => {
+    pool.forEach((ws, k) => (HANDOFF.get(k) || HANDOFF.set(k, []).get(k)).push(...ws));
+    clearTimeout(handoffT);
+    handoffT = setTimeout(() => HANDOFF.clear(), 3e3);
+  };
   var PREV = /* @__PURE__ */ new Set(["HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR", "HUI-CARD-PICKER"]);
   var EDIT = /* @__PURE__ */ new Set(["HUI-CARD-OPTIONS", "HUI-CARD-EDIT-MODE"]);
   var NovaPopupCard = class extends HTMLElement {
@@ -5512,7 +5664,6 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
       };
       this._swipe();
       this._ro = new ResizeObserver(() => this._stack());
-      this._ro.observe(this._body);
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
@@ -5525,6 +5676,7 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
         badges: [].concat(c.badges || []).map((x) => typeof x === "string" ? { entity: x } : x).filter((x) => x?.entity)
       };
       this._rows = normRows(c);
+      this._ids = entityIds([this._cfg.info, this._cfg.badges]);
       if (this.isConnected && old !== this._cfg.hash) {
         this._unreg(old);
         this._reg();
@@ -5534,10 +5686,12 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
       if (this._isOpen || this._mode === "preview") this._grid();
       this._syncOpen();
     }
+    // Die eingebetteten Karten bekommen jedes Update (sie filtern selbst), Kopfzeile und Info-Leiste nur bei eigenen Änderungen
     set hass(h) {
+      const old = this._h;
       this._h = h;
       if (!this._isOpen && this._mode !== "preview") return;
-      this._info();
+      if (old === h || hassChanged(old, h, this._ids)) this._info();
       this._cells().forEach((el2) => this._setHass(el2));
     }
     getCardSize() {
@@ -5547,14 +5701,21 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
       return { columns: "full", rows: "auto" };
     }
     connectedCallback() {
+      this._ro.observe(this._body);
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.addEventListener(ev, this._sync));
       this._detect();
       requestAnimationFrame(() => this._detect());
     }
     disconnectedCallback() {
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.removeEventListener(ev, this._sync));
+      this._ro.disconnect();
       this._unreg(this._cfg?.hash);
       if (this._isOpen) this._hide(true);
+      if (this._mode === "preview" && this._pool) {
+        handOff(this._pool);
+        this._pool = null;
+        this._dirty = true;
+      }
     }
     _reg() {
       if (this._cfg?.hash && this._mode !== "preview") register(this._cfg.hash, this);
@@ -5801,17 +5962,22 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
         list2.push(rw);
         row.cells.forEach((cell) => {
           const key = JSON.stringify(cell.card);
-          let w = old.get(key)?.shift();
+          let w = old.get(key)?.shift() || (this._mode === "preview" ? HANDOFF.get(key)?.shift() : null);
           if (!w) {
             w = document.createElement("div");
             w.className = "cell";
+            w._card = cell.card;
+            w._owner = this;
             if (cell.card) {
               this._mount(w, cell.card);
               w.addEventListener("ll-rebuild", (e) => {
                 e.stopPropagation();
-                this._mount(w, cell.card);
+                w._owner._mount(w, w._card);
               });
             } else w.classList.add("empty");
+          } else if (w._owner !== this) {
+            w._owner = this;
+            w.querySelectorAll(":scope>*").forEach((el2) => this._setHass(el2));
           }
           w.style.flex = flexOf(cell.width, 12);
           w.classList.toggle("auto", !FR[cell.width]);
@@ -5998,8 +6164,9 @@ ha-dialog::part(body){overflow:hidden}
 hui-card-picker{flex:1;min-height:0}`;
   var NovaPopupCardEditor = class extends NovaEditorBase {
     set hass(h) {
+      const old = this._hass;
       super.hass = h;
-      [this._sub, this._pick, this._dlgPick].forEach((x) => {
+      if (hassChanged(old, h, this._ids)) [this._sub, this._pick, this._dlgPick].forEach((x) => {
         if (x) try {
           x.hass = h;
         } catch {
@@ -6018,6 +6185,7 @@ hui-card-picker{flex:1;min-height:0}`;
       return super._rebuild();
     }
     disconnectedCallback() {
+      super.disconnectedCallback();
       this._dlg?.close();
     }
     _rows() {
@@ -6397,16 +6565,20 @@ hui-card-picker{flex:1;min-height:0}`;
     _cardEditor(box, ri, ci) {
       const cfg = this._rows()[ri].cells[ci].card;
       try {
-        const ed = document.createElement("hui-card-element-editor");
+        const ed = this._reuse(`card-editor:${ri}.${ci}`, () => {
+          const ed2 = document.createElement("hui-card-element-editor");
+          ed2.addEventListener("config-changed", (e) => {
+            e.stopPropagation();
+            const c = e.detail?.config;
+            if (!e.detail?.error && c && typeof c === "object" && c.type) ed2._cb(c);
+          });
+          ed2.addEventListener("GUImode-changed", (e) => e.stopPropagation());
+          return ed2;
+        });
+        ed._cb = (c) => this._setCard(ri, ci, c, false);
         ed.hass = this._hass;
         if (this._ll) ed.lovelace = this._ll;
         ed.value = cfg;
-        ed.addEventListener("config-changed", (e) => {
-          e.stopPropagation();
-          const c = e.detail?.config;
-          if (!e.detail?.error && c && typeof c === "object" && c.type) this._setCard(ri, ci, c, false);
-        });
-        ed.addEventListener("GUImode-changed", (e) => e.stopPropagation());
         box.append(ed);
         this._sub = ed;
       } catch (e) {

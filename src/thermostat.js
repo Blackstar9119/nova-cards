@@ -2,6 +2,7 @@ import {define, docUrl, tag} from './shared/define.js';
 import {esc} from './shared/utils.js';
 import {moreInfo, hassAction} from './shared/actions.js';
 import {CARD_CSS, EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
+import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {sparkline} from './shared/sparkline.js';
 
@@ -116,13 +117,17 @@ class NovaThermostatCard extends HTMLElement {
   static getStubConfig(h) { return {entity: Object.keys(h.states).find(id => id.startsWith('climate.')) || 'climate.wohnzimmer'}; }
   setConfig(c) {
     this._c = normalize(c);
+    this._ids = entityIds(this._c);
     this._built = false;
     this._pend = null;
     if (this._h) { this._build(); this._update(); }
   }
+  // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._built) this._build();
+    else if (!hassChanged(old, h, this._ids)) return;
     this._update();
   }
   getCardSize() { return 4; }

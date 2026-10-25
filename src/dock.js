@@ -3,6 +3,7 @@ import {esc, isImg} from './shared/utils.js';
 import {isOn} from './shared/state.js';
 import {moreInfo, hassAction, navigate} from './shared/actions.js';
 import {DOCK_VARS, EDITOR_CSS, EDITOR_ICON_CSS} from './shared/styles.js';
+import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {cleanHash, curHash, togglePopup, popupOptions} from './shared/popup-hub.js';
 
@@ -101,21 +102,31 @@ class NovaDockCard extends HTMLElement {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     if (!c.items && !c.source) throw new Error('items oder source angeben');
     this._cfg = {position: 'bottom', button_size: 48, ...c};
+    this._ids = entityIds(c);
     this._close();
     this._items = null; this._btns = null; this._built = false; this._cur = -1;
     if (this._h) this.hass = this._h;
   }
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._cfg) return;
+    if (this._pop) this._pop.hass = h;
+    if (this._hp) this._hp.hass = h;
     if (!this._items) {
       if (this._cfg.items) this._items = this._cfg.items;
       else { this._loadSource(); return; }
     }
     if (!this._built) this._build();
-    if (this._pop) this._pop.hass = h;
-    if (this._hp) this._hp.hass = h;
+    else if (!hassChanged(old, h, this._watch(old))) return;
     this._update();
+  }
+  // Entitäten der Einträge, bei Zählern auch die Mitglieder der Gruppe
+  _watch(h) {
+    if (this._srcIds?.items !== this._items) this._srcIds = {items: this._items, ids: entityIds(this._items)};
+    const ids = [...this._ids, ...this._srcIds.ids];
+    (this._items || []).forEach(it => { if (it.badge_count_of) ids.push(...(h?.states[it.badge_count_of]?.attributes.entity_id || [])); });
+    return ids;
   }
   async _loadSource() {
     if (this._loading) return;
@@ -328,9 +339,8 @@ class NovaDockCardEditor extends NovaEditorBase {
   _popName(h) { h = cleanHash(h); return this._hashes?.find(o => o.value === h)?.label || `#${h}`; }
   _label(it, i) { return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : '') || (Array.isArray(it.cards) ? 'Einfaches Pop-up' : it.tap_action?.navigation_path) || 'Neuer Button'}`; }
   _item(it, i, n) {
-    const [d, s, b] = this._details(i, it.icon || 'mdi:circle-outline', this._label(it, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._remove(i)));
     const schema = this._schema();
-    b.append(this._form(schema, it, v => {
+    const [d, s] = this._details(i, it.icon || 'mdi:circle-outline', this._label(it, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._remove(i)), b => b.append(this._form(schema, it, v => {
       const list = [...this._config.items];
       const nx = merge(list[i], names(schema), v);
       if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash); if (!nx.popup_hash) delete nx.popup_hash;
@@ -340,7 +350,7 @@ class NovaDockCardEditor extends NovaEditorBase {
       this._emit({...this._config, items: list});
       s.querySelector('.lbl').textContent = this._label(nx, i);
       s.querySelector('ha-icon').setAttribute('icon', nx.icon || 'mdi:circle-outline');
-    }));
+    })));
     return d;
   }
   _move(i, dir) {

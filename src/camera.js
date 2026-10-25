@@ -4,6 +4,7 @@ import {isOn, TOGGLE, fmtState, nameOf, iconOf, valueOf, alertHit} from './share
 import {moreInfo, runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from './shared/styles.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, ENT, NUM, sel, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
 
@@ -125,19 +126,26 @@ class NovaCameraCard extends HTMLElement {
     if (!c.entity || !['camera', 'image'].includes(dom(c.entity))) throw new Error('entity muss eine camera.* oder image.* Entität sein');
     this._c = {...CDEF, ...c};
     CLISTS.forEach(k => { this._c[k] = [].concat(c[k] || []).map(toObj).filter(o => o.entity || o.tap_action); });
+    this._ids = entityIds(this._c);
     this._built = false;
     this._stopLive();
     if (this._h) { this._build(); this._update(); }
   }
+  // Neu zeichnen nur, wenn sich eine Entität der Karte (auch die gefundenen PTZ-Buttons) geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
+    this._kids?.forEach(k => { k.hass = h; });
     if (!this._built) this._build();
+    else if (!hassChanged(old, h, [...this._ids, ...Object.values(this._ptz || {}).filter(v => typeof v === 'string')])) return;
     this._update();
   }
   getCardSize() { return 5 + (this._c?.split.length ? 3 : 0); }
   getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
   connectedCallback() {
+    // In der Kartenauswahl nur ein Standbild: kein Stream, kein Nachladen im Takt
+    this._quiet = inPicker(this);
     document.addEventListener('visibilitychange', this._onVis);
     if ('IntersectionObserver' in window) {
       this._io ||= new IntersectionObserver(es => { this._vis = es[es.length - 1].isIntersecting; this._sync(); }, {rootMargin: '100px'});
@@ -259,7 +267,6 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
     // image.* bekommt ein neues Bild, wenn sich der Zustand ändert
     if (dom(c.entity) === 'image' && s && this._stillKey !== s.state) this._still();
     if (this._liveEl && 'hass' in this._liveEl) this._liveEl.hass = h;
-    this._kids.forEach(k => { k.hass = h; });
   }
   _ptzGo(k) {
     const v = this._ptz[k], c = this._c;
@@ -277,13 +284,13 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
   _sync() {
     if (!this._e || !this._h) return;
     const show = this._vis && !document.hidden && this.isConnected;
-    const live = show && dom(this._c.entity) === 'camera' && this._c.stream !== 'snapshot';
+    const live = show && !this._quiet && dom(this._c.entity) === 'camera' && this._c.stream !== 'snapshot';
     if (live && !this._mode && !this._starting) this._startLive();
     if (!live) this._stopLive();
     clearInterval(this._tm); this._tm = null;
     if (show && dom(this._c.entity) === 'camera' && !this._mode) {
       if (!this._e.still.src) this._still();
-      if (this._c.refresh > 0) this._tm = setInterval(() => !this._mode && this._still(), this._c.refresh * 1000);
+      if (this._c.refresh > 0 && !this._quiet) this._tm = setInterval(() => !this._mode && this._still(), this._c.refresh * 1000);
     }
   }
   async _startLive() {

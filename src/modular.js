@@ -4,6 +4,7 @@ import {isOn, TOGGLE, PRESS, fmtState, unitJoin, decOf, nameOf, iconOf, valueOf,
 import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from './shared/styles.js';
+import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, ENT, TITLE, COLS, NUM, sel, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
 
@@ -196,13 +197,17 @@ class NovaModularCard extends HTMLElement {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     if (!Array.isArray(c.blocks)) throw new Error('blocks (Liste der Bausteine) fehlt');
     this._c = {...c, blocks: c.blocks.filter(b => b && BLOCKS[b.type]).map(normBlock)};
+    this._ids = entityIds(this._c);
     this._built = false;
     if (this._h) { this._build(); this._update(); }
   }
+  // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._built) this._build();
+    else if (!hassChanged(old, h, this._ids)) return;
     this._update();
   }
   getCardSize() { return 1 + (this._c?.blocks.length || 1); }
@@ -300,9 +305,12 @@ class NovaModularCardEditor extends NovaEditorBase {
   _blabel(b, i) { const m = BM[b.type]; return `${i + 1}. ${m ? m.label : b.type}${b.title || b.name ? ' · ' + (b.title || b.name) : ''}`; }
   _block(b, i, n) {
     const m = BM[b.type];
-    const [d, s, body] = this._details(`${i}`, m?.icon || 'mdi:help-circle-outline', this._blabel(b, i),
-      this._itemBtns(i, n, dir => this._move(null, i, dir), () => this._del(null, i)));
-    if (!m) { body.append(this._hint(`Unbekannter Baustein „${b.type}“ – nur per YAML bearbeitbar.`)); return d; }
+    const [d] = this._details(`${i}`, m?.icon || 'mdi:help-circle-outline', this._blabel(b, i),
+      this._itemBtns(i, n, dir => this._move(null, i, dir), () => this._del(null, i)), (body, s) => this._blockBody(body, s, b, i, m));
+    return d;
+  }
+  _blockBody(body, s, b, i, m) {
+    if (!m) { body.append(this._hint(`Unbekannter Baustein „${b.type}“ – nur per YAML bearbeitbar.`)); return; }
     const keys = names(m.schema), def = m.defaults || {};
     body.append(this._form(m.schema, {...def, ...b}, v => {
       const bl = this._blocks(), nb = merge(bl[i], keys, v);
@@ -322,18 +330,16 @@ class NovaModularCardEditor extends NovaEditorBase {
         this._set(bl); this._rebuild();
       }));
     }
-    return d;
   }
   _sub(i, j, it, n, m, k) {
-    const [d, s, body] = this._details(`${i}.${j}`, it.icon || m.icon, this._ilabel(it, j, m),
-      this._itemBtns(j, n, dir => this._move(i, j, dir), () => this._del(i, j)));
     const keys = names(m.items);
-    body.append(this._form(m.items, it, v => {
-      const bl = this._blocks(), arr = [...bl[i][k]];
-      arr[j] = merge(arr[j], keys, v);
-      bl[i] = {...bl[i], [k]: arr}; this._set(bl);
-      s.querySelector('.lbl').textContent = this._ilabel(arr[j], j, m);
-    }));
+    const [d] = this._details(`${i}.${j}`, it.icon || m.icon, this._ilabel(it, j, m),
+      this._itemBtns(j, n, dir => this._move(i, j, dir), () => this._del(i, j)), (body, s) => body.append(this._form(m.items, it, v => {
+        const bl = this._blocks(), arr = [...bl[i][k]];
+        arr[j] = merge(arr[j], keys, v);
+        bl[i] = {...bl[i], [k]: arr}; this._set(bl);
+        s.querySelector('.lbl').textContent = this._ilabel(arr[j], j, m);
+      })));
     return d;
   }
   // i = null: Block verschieben/löschen, sonst Eintrag j in Block i

@@ -4,6 +4,7 @@ import {isOn, fmtState, areaOf} from './shared/state.js';
 import {moreInfo, hassAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {CARD_CSS, EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
+import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {cleanHash, togglePopup, popupOptions} from './shared/popup-hub.js';
 
@@ -75,10 +76,7 @@ class NovaRoomCardEditor extends NovaEditorBase {
       this._emit({...this._config, buttons});
       this._rebuild();
     }));
-    const adv = document.createElement('details');
-    adv.className = 'item';
-    adv.innerHTML = '<summary><ha-icon icon="mdi:cog-outline"></ha-icon><span class="lbl">Erweitert</span></summary><div class="body"></div>';
-    adv.querySelector('.body').append(this._form(ADVANCED, this._config, save(ADVANCED)));
+    const [adv] = this._details('adv', 'mdi:cog-outline', 'Erweitert', [], body => body.append(this._form(ADVANCED, this._config, save(ADVANCED))));
     w.append(adv);
   }
   _label(b, i) {
@@ -87,16 +85,17 @@ class NovaRoomCardEditor extends NovaEditorBase {
   }
   _button(b, i) {
     const n = (this._config.buttons || []).length;
-    const [d, s, body] = this._details(i, b.icon || 'mdi:gesture-tap-button', this._label(b, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._remove(i)));
-    body.append(this._form(BUTTON, b, v => {
-      const buttons = [...this._config.buttons], old = buttons[i];
-      buttons[i] = merge(old, names(BUTTON), v);
-      this._emit({...this._config, buttons});
-      s.querySelector('.lbl').textContent = this._label(buttons[i], i);
-      // Icon-Entität dazu oder weg → Zeilen für icon_map ein-/ausblenden
-      if (!!old.icon_entity !== !!buttons[i].icon_entity) this._rebuild();
-    }));
-    if (b.icon_entity) body.append(this._mapEditor(i));
+    const [d, s] = this._details(i, b.icon || 'mdi:gesture-tap-button', this._label(b, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._remove(i)), body => {
+      body.append(this._form(BUTTON, b, v => {
+        const buttons = [...this._config.buttons], old = buttons[i];
+        buttons[i] = merge(old, names(BUTTON), v);
+        this._emit({...this._config, buttons});
+        s.querySelector('.lbl').textContent = this._label(buttons[i], i);
+        // Icon-Entität dazu oder weg → Zeilen für icon_map ein-/ausblenden
+        if (!!old.icon_entity !== !!buttons[i].icon_entity) this._rebuild();
+      }));
+      if (b.icon_entity) body.append(this._mapEditor(i));
+    });
     return d;
   }
   _mapEditor(i) {
@@ -196,13 +195,17 @@ class NovaRoomCard extends HTMLElement {
   }
   setConfig(c) {
     this._c = normalize(c);
+    this._ids = entityIds(this._c);
     this._built = false;
     if (this._h) { this._build(); this._update(); }
   }
+  // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
-    if (!this._built) this._build();
     if (this._hp) this._hp.hass = h;
+    if (!this._built) this._build();
+    else if (!hassChanged(old, h, this._ids)) return;
     this._update();
   }
   getCardSize() { return 3; }

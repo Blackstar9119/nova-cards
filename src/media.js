@@ -4,6 +4,7 @@ import {fmtState, hasF} from './shared/state.js';
 import {moreInfo, runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, MAPROW_CSS} from './shared/styles.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, sel, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
 
@@ -86,18 +87,23 @@ class NovaMediaCard extends HTMLElement {
     this._c = {...MDEF, ...c, players: [].concat(c.players || []).map(toObj).filter(o => dom(o.entity) === 'media_player')};
     this._all = [{entity: c.entity, name: c.name, icon: c.icon}, ...this._c.players];
     this._idx = 0; this._manual = false;
+    this._ids = entityIds(this._c);
     this._built = false;
     if (this._h) { this._build(); this._update(); }
   }
+  // Neu zeichnen nur, wenn sich ein Player (auch sein Music-Assistant-Zwilling) geändert hat
   set hass(h) {
+    const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._built) this._build();
+    else if (!hassChanged(old, h, [...this._ids, ...(this._ma || []).filter(Boolean)])) return;
     this._update();
   }
   getCardSize() { return 4; }
   getGridOptions() { return {columns: 12, rows: 'auto', min_columns: 4}; }
-  connectedCallback() { if (this._built) this._tick(); }
+  // In der Kartenauswahl läuft der Fortschrittsbalken nicht im Sekundentakt
+  connectedCallback() { this._quiet = inPicker(this); if (this._built) this._tick(); }
   disconnectedCallback() { clearInterval(this._tm); this._tm = null; }
   get _p() { return this._all[this._idx]; }
   // Spielt der Music-Assistant-Zwilling, kommen Anzeige und Steuerung von dort
@@ -248,7 +254,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
   }
   // Sekundentakt nur, solange etwas läuft und der Balken sichtbar ist
   _tick() {
-    const run = this.isConnected && this._e?.bar && this._st()?.state === 'playing';
+    const run = this.isConnected && !this._quiet && this._e?.bar && this._st()?.state === 'playing';
     if (run && !this._tm) this._tm = setInterval(() => this._progress(), 1000);
     if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
   }
