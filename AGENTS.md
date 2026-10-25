@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Dock,
-Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Info und Pop-up – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter und Pop-up – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -22,7 +22,6 @@ src/
   vacuum.js           Nova Saugroboter Card + Editor
   waste.js            Nova Müllkalender Card + Editor (Termine aus calendar.*-Entitäten)
   weather.js          Nova Wetter Card + Editor (aktuelles Wetter + Vorhersage per weather/subscribe_forecast)
-  info.js             Nova Info Card + Editor (Überschrift + Zeilen: Name/Wert oder Schalter)
   popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),

@@ -5558,162 +5558,6 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   __publicField(NovaWeatherCardEditor, "openSections", ["general"]);
   define("weather-card-editor", NovaWeatherCardEditor);
 
-  // src/info.js
-  var ICSS = `
-.g.box{background:var(--nv-box);backdrop-filter:none;-webkit-backdrop-filter:none;border-color:var(--nv-box-border);box-shadow:none;border-radius:20px;padding:12px 14px}
-.g{gap:6px}
-.ht{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;opacity:.8;margin-bottom:2px}
-.ht ha-icon{--mdc-icon-size:17px}.ht:empty{display:none}
-.rows{display:flex;flex-direction:column}
-.kv{cursor:pointer}.kv .ki:empty{display:none}
-.row{padding:5px 0}
-.row .ic{width:38px;height:38px;cursor:pointer;--c:var(--nv-accent);--cf:var(--nv-accent-fg)}
-.row.on .ic{background:var(--c);color:var(--cf);box-shadow:0 0 14px color-mix(in srgb,var(--c) 50%,transparent)}
-.row .nm{cursor:pointer}
-.row:active .ic{transform:none}.row .ic:active{transform:scale(.92)}
-.empty{font-size:13px;opacity:.6;padding:4px 0}`;
-  var WARM = ["light", "switch", "input_boolean"];
-  var rowsOf = (c) => [].concat(c.entities || []).filter(Boolean).map(toObj).filter((o) => o.entity);
-  var NovaInfoCard = class extends HTMLElement {
-    static getConfigElement() {
-      return document.createElement(tag("info-card-editor"));
-    }
-    static getStubConfig(h) {
-      const ids = Object.keys(h?.states || {}).filter((id) => h.states[id].attributes.device_class === "temperature" && id.startsWith("sensor.")).slice(0, 3);
-      return { title: "Temperaturen", icon: "mdi:thermometer", entities: ids };
-    }
-    setConfig(c) {
-      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      this._c = { style: "box", ...c };
-      this._rows = rowsOf(c);
-      this._ids = entityIds(c);
-      this._built = false;
-      if (this._h) this.hass = this._h;
-    }
-    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
-    set hass(h) {
-      const old = this._h;
-      this._h = h;
-      if (!this._c) return;
-      if (!this._built) this._build();
-      else if (!hassChanged(old, h, this._ids)) return;
-      this._update();
-    }
-    getCardSize() {
-      return 1 + this._rows?.length || 1;
-    }
-    getGridOptions() {
-      return { columns: 6, rows: "auto", min_columns: 3 };
-    }
-    _build() {
-      this._built = true;
-      const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      this.classList.toggle("nv-flat", c.style !== "glass");
-      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${ICSS}</style><div class="g ${c.style === "glass" ? "" : "box"}"><div class="ht"></div><div class="rows"></div></div>`;
-      const ht = r.querySelector(".ht");
-      if (c.title || c.icon) ht.innerHTML = `${c.icon ? `<ha-icon icon="${esc(c.icon)}"></ha-icon>` : ""}<span></span>`;
-      if (c.title) ht.querySelector("span").textContent = c.title;
-      const box = r.querySelector(".rows");
-      if (!this._rows.length) {
-        box.innerHTML = '<div class="empty">Noch keine Zeilen – im Editor Entitäten hinzufügen.</div>';
-        this._els = [];
-        return;
-      }
-      this._els = this._rows.map((o) => {
-        const el2 = document.createElement("div");
-        if (o.display === "toggle") {
-          el2.className = "row";
-          el2.innerHTML = '<div class="ic"></div><div class="nm"><b></b><small></small></div>';
-          if (o.color || !WARM.includes(dom(o.entity))) {
-            const v = roleVars(o.color || "accent-1");
-            el2.style.setProperty("--c", v.c);
-            el2.style.setProperty("--cf", v.fg);
-          }
-          press(el2.querySelector(".ic"), { tap: () => runAction(this, o, "tap"), hold: () => moreInfo(this, o.entity), isolate: true });
-          press(el2.querySelector(".nm"), { tap: () => moreInfo(this, o.entity), isolate: true });
-        } else {
-          el2.className = "kv";
-          el2.innerHTML = '<span class="ki"></span><span class="k"></span><span class="v"></span>';
-          press(el2, { tap: () => moreInfo(this, o.entity), isolate: true });
-        }
-        box.appendChild(el2);
-        return el2;
-      });
-    }
-    _update() {
-      const h = this._h;
-      this._rows.forEach((o, i) => {
-        const el2 = this._els[i];
-        if (!el2) return;
-        const s = h.states[o.entity], name = nameOf(h, o);
-        el2.classList.toggle("na", !s || s.state === "unavailable");
-        if (o.display === "toggle") {
-          const pr = !!PRESS[dom(o.entity)];
-          el2.classList.toggle("on", !pr && isOn(s));
-          setIcon(el2.querySelector(".ic"), iconOf(h, o, "mdi:toggle-switch"));
-          el2.querySelector("b").textContent = name;
-          el2.querySelector("small").textContent = !s ? "Nicht gefunden" : pr ? "Antippen zum Auslösen" : valueOf(h, s, o);
-        } else {
-          const ki = el2.querySelector(".ki");
-          if (o.icon) setIcon(ki, o.icon);
-          else {
-            ki.innerHTML = "";
-            ki._ic = null;
-          }
-          el2.querySelector(".k").textContent = name;
-          el2.querySelector(".v").textContent = s ? valueOf(h, s, o) : "Nicht gefunden";
-        }
-      });
-    }
-  };
-  define("info-card", NovaInfoCard, { name: "Nova Info Card", description: "Überschrift mit Zeilen: Name und Wert von Entitäten, optional als Schalter mit Icon und Zustand.", documentationURL: docUrl("nova-info-card") });
-  var GEN4 = [g2({ name: "title", selector: T }, { name: "icon", selector: I })];
-  var LOOK4 = [sel("style", [["box", "Block (wie im Pop-up)"], ["glass", "Glas (wie andere Nova-Karten)"]])];
-  var ROW = (it) => [
-    ENT,
-    NAMEICON,
-    sel("display", [["value", "Name links, Wert rechts"], ["toggle", "Icon, Name, Zustand (Tippen schaltet)"]]),
-    it.display === "toggle" ? ROLE("color") : { name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }
-  ];
-  var LABELS2 = {
-    title: "Überschrift",
-    icon: "Icon",
-    style: "Aussehen",
-    entity: "Entität",
-    name: "Eigener Name (optional)",
-    display: "Darstellung",
-    decimals: "Nachkommastellen",
-    color: "Farbe, wenn an"
-  };
-  var HELPERS2 = {
-    icon: "Optional. Bei „Name links, Wert rechts“ erscheint das Icon nur, wenn es hier gesetzt ist.",
-    color: "Nur für „Tippen schaltet“. Leer = Akzent 2 für Licht/Schalter, sonst Akzent 1."
-  };
-  var NovaInfoCardEditor = class extends NovaEditorBase {
-    _build() {
-      const r = this.shadowRoot;
-      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), data = { style: "box", ...this._config };
-      const form = (schema) => this._form(schema, data, (v) => {
-        const c = merge(this._config, names(schema), v);
-        if (c.style === "box") delete c.style;
-        this._emit(c);
-      });
-      w.append(
-        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN4))),
-        this._section("rows", "mdi:format-list-bulleted", "Zeilen", (b) => {
-          b.append(this._hint("Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details."));
-          this._itemList(b, "entities", (it) => ROW({ display: "value", ...it }), { item: "Zeile", icon: "mdi:format-list-bulleted" }, "Zeile hinzufügen", (it) => ({ display: "value", ...it }));
-        }),
-        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK4)))
-      );
-    }
-  };
-  __publicField(NovaInfoCardEditor, "labels", LABELS2);
-  __publicField(NovaInfoCardEditor, "helpers", HELPERS2);
-  __publicField(NovaInfoCardEditor, "openSections", ["general", "rows"]);
-  define("info-card-editor", NovaInfoCardEditor);
-
   // src/popup.js
   var DEF = { width: 1180, stack_below: 500, info_layout: "wrap" };
   var WIDTHS = [["auto", "Auto"], ["1/4", "1/4"], ["1/3", "1/3"], ["1/2", "1/2"], ["2/3", "2/3"], ["3/4", "3/4"], ["1", "Voll"]];
@@ -6273,7 +6117,7 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
     g2({ name: "alert_state", selector: T }, ROLE("alert_color")),
     g2(NUM("alert_above"), NUM("alert_below"))
   ];
-  var LABELS3 = {
+  var LABELS2 = {
     hash: "Hash (ohne #)",
     title: "Titel",
     icon: "Icon",
@@ -6293,7 +6137,7 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
     alert_above: "Achtung über",
     alert_below: "Achtung unter"
   };
-  var HELPERS3 = {
+  var HELPERS2 = {
     hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
     title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.",
     stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
@@ -6907,8 +6751,8 @@ hui-card-picker{flex:1;min-height:0}`;
       this._rebuild();
     }
   };
-  __publicField(NovaPopupCardEditor, "labels", LABELS3);
-  __publicField(NovaPopupCardEditor, "helpers", HELPERS3);
+  __publicField(NovaPopupCardEditor, "labels", LABELS2);
+  __publicField(NovaPopupCardEditor, "helpers", HELPERS2);
   define("popup-card-editor", NovaPopupCardEditor);
 
   // src/index.js

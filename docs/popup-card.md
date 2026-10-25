@@ -78,5 +78,3 @@ rows:
 Standard ist der bläuliche Nova-Glas-Look. Unter **Allgemein** → **Farbton** lässt er sich mit einer Nova-Farbrolle
 einfärben. Per Theme-Variablen anpassbar: `nova-popup-background`, `nova-popup-base-color`, `nova-popup-header-color`,
 `nova-popup-backdrop`, `nova-popup-radius`, `nova-popup-z-index`, Textfarbe über `nova-text-color`.
-
-Passend für Blöcke im Pop-up: die **Nova Info Card** (Überschrift + Zeilen mit Name und Wert oder Schaltern).

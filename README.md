@@ -2,7 +2,7 @@
 
 **Schöne Home-Assistant-Dashboards, ganz ohne YAML.**
 
-Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard: zwölf Karten mit Glas-Look, die zusammenpassen und sich
+Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard: elf Karten mit Glas-Look, die zusammenpassen und sich
 gemeinsam ans Theme anpassen. Gedacht für alle, die ein aufgeräumtes, modernes Dashboard wollen, ohne Code zu schreiben oder
 YAML zu pflegen.
 
@@ -42,14 +42,6 @@ Temperatursensor lassen sich dazuschalten.
 ➜ [Alle Optionen der Wetter Card](docs/weather-card.md)
 
 <!-- Screenshot/GIF: Wetter Card -->
-
-### Nova Info Card
-Eine Überschrift mit beliebig vielen Zeilen: links der Name, rechts der Wert, so wie Home Assistant ihn formatiert.
-Zeilen können auch Schalter sein, dann schaltet Antippen die Entität. Ideal für kleine Übersichten im Pop-up.
-
-➜ [Alle Optionen der Info Card](docs/info-card.md)
-
-<!-- Screenshot: Info Card -->
 
 ### Nova Müllkalender Card
 Liest die nächsten Abholtermine aus einem oder mehreren Kalendern und zeigt sie mit Müllart, Icon, Farbe und „heute“,
