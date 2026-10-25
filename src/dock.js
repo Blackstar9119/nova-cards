@@ -69,7 +69,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
 .dock.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.dock.top{top:14px}
 .dock::-webkit-scrollbar{display:none}
 .dock.inline{position:static;transform:none;margin:0 auto;width:max-content}
-.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:all .2s;-webkit-tap-highlight-color:transparent;outline:none}
+.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none}
 .d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .d:active{transform:scale(.9)}
 .d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}

@@ -57,6 +57,7 @@ class NovaInfoCard extends HTMLElement {
   _build() {
     this._built = true;
     const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'});
+    this.classList.toggle('nv-flat', c.style !== 'glass');
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${ICSS}</style><div class="g ${c.style === 'glass' ? '' : 'box'}"><div class="ht"></div><div class="rows"></div></div>`;
     const ht = r.querySelector('.ht');
     if (c.title || c.icon) ht.innerHTML = `${c.icon ? `<ha-icon icon="${esc(c.icon)}"></ha-icon>` : ''}<span></span>`;

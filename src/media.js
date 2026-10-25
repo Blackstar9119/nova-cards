@@ -31,7 +31,7 @@ const MPCSS = `
 .bar.seek .tr{cursor:pointer}
 .bar .tr i{display:block;height:100%;width:0;background:var(--nv-accent);border-radius:3px;transition:width 1s linear}
 .ctl{display:flex;align-items:center;justify-content:center;gap:14px}
-.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:all .2s}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
 .ctl .cb ha-icon{--mdc-icon-size:24px}
 .ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
@@ -170,6 +170,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
     const p = this._p, n = h.states[p.entity], s = h.states[this._eid], a = s?.attributes || {};
     const off = !s || ['off', 'unavailable', 'unknown', 'standby'].includes(s.state), play = s?.state === 'playing';
     e.g.classList.toggle('na', !s || s.state === 'unavailable');
+    this.classList.toggle('nv-na', !s || s.state === 'unavailable');
     e.g.classList.toggle('off', off);
     e.g.classList.toggle('play', play && c.glow !== false);
     const app = a.app_name || (a.app_id === 'music_assistant' ? 'Music Assistant' : a.source);

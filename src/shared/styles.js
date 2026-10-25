@@ -40,11 +40,21 @@ export const ROLES = {neutral: 'neutral', 'accent-1': 'a1', 'accent-2': 'a2', 'a
 // Rolle → {c, fg} als CSS-Variablen; unbekannt/leer = neutral
 export const roleVars = r => { const k = ROLES[r] || ROLES.neutral; return {c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`}; };
 
+// Glas: Unschärfe und Hintergrund liegen auf einer eigenen, leeren Ebene (:host::before) hinter dem Kartenkasten .g.
+// So muss Safari/WebKit die Unschärfe nicht bei jeder Animation im Inhalt neu rechnen. Der Kasten selbst darf weder
+// opacity < 1, filter, transform, will-change noch isolation bekommen, sonst sieht ::before das Dashboard nicht mehr.
+// Karten ohne Glas (z. B. Info im Box-Stil) setzen die Klasse nv-flat auf ihr Element, ausgegraute Karten (.g.na) zusätzlich nv-na.
+const GLASS = `:host{position:relative}
+:host::before{content:'';position:absolute;inset:0;border-radius:var(--nv-radius);background:var(--nv-bg);pointer-events:none;
+backdrop-filter:blur(var(--nv-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(150%)}
+:host(.nv-flat)::before{display:none}
+:host(.nv-na)::before{opacity:.4}`;
+
 // Glas-Hintergrund für Raum, Thermostat, Licht
 export const CARD_CSS = `${NOVA_VARS}
 :host{display:block;height:100%}
-.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);background:var(--nv-bg);
-backdrop-filter:blur(var(--nv-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(150%);
+${GLASS}
+.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);
 border:1px solid var(--nv-border);box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12);
 color:var(--nv-fg);overflow:hidden;position:relative;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 ha-icon{--mdc-icon-size:20px;display:flex}`;
@@ -52,8 +62,8 @@ ha-icon{--mdc-icon-size:20px;display:flex}`;
 // Gemeinsame Bausteine von Modular, Kamera, Media und Saugroboter
 export const PANEL_CSS = `
 :host{display:block;height:100%;container-type:inline-size}
-.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);background:var(--nv-bg);
-backdrop-filter:blur(var(--nv-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(150%);
+${GLASS}
+.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);
 border:1px solid var(--nv-border);box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12);
 color:var(--nv-fg);overflow:hidden;position:relative;font-family:var(--ha-font-family-body,Roboto,sans-serif);
 padding:14px 16px;display:flex;flex-direction:column;gap:12px;transition:box-shadow .4s}
@@ -66,7 +76,7 @@ img{object-fit:contain}
 .tap{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
 .tap:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .na{opacity:.4}
-.ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:all .25s}
+.ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color .25s,color .25s,border-color .25s,box-shadow .25s,transform .25s,opacity .25s}
 .ic ha-icon{--mdc-icon-size:18px}.ic img{width:20px;height:20px}
 .on>.ic{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 55%,transparent)}
 .nm{flex:1;min-width:0}.nm b,.nm small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -85,7 +95,7 @@ img{object-fit:contain}
 .kv .k{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kv .v{opacity:.8;text-align:right;white-space:nowrap}
 .pills{display:flex;flex-wrap:wrap;gap:7px}
-.pill{padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:12.5px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap;transition:all .2s;min-width:0}
+.pill{padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:12.5px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;min-width:0}
 .pill ha-icon{--mdc-icon-size:16px}.pill img{width:16px;height:16px}
 .pill.on{background:var(--nv-active);color:var(--nv-active-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--nv-active) 50%,transparent)}
 .pills.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-modular-button-width,104px),1fr));gap:8px}

@@ -165,6 +165,7 @@ class NovaCameraCard extends HTMLElement {
     const ov = c.buttons_position !== 'below';
     this._ptz = ptzMap(this._h, c);
     const pk = Object.keys(this._ptz), pov = c.ptz_position !== 'below';
+    this.classList.toggle('nv-flat', !!c.bare);
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${CCSS}</style><div class="g cam${c.bare ? ' bare' : ''}">
 ${c.show_header !== false ? `<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${hb ? '<div class="hb"></div>' : ''}</div>` : ''}
 <div class="media${ov && c.buttons.length ? ' has-ov' : ''}${pk.length && pov ? ' has-ptz' : ''}"><div class="ph"><ha-icon icon="mdi:cctv-off"></ha-icon></div><img class="still" alt=""><div class="live"></div>
@@ -228,6 +229,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
     if (!h || !e) return;
     const s = h.states[c.entity], st = c.status && h.states[c.status];
     e.g.classList.toggle('na', !s || s.state === 'unavailable');
+    this.classList.toggle('nv-na', !s || s.state === 'unavailable');
     if (e.hd) {
       e.name.textContent = c.name ?? s?.attributes.friendly_name ?? c.entity;
       setIcon(e.ic, c.icon || st?.attributes.icon || s?.attributes.icon || (dom(c.entity) === 'image' ? 'mdi:image' : 'mdi:cctv'));
