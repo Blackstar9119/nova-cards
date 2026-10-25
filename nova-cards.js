@@ -3656,16 +3656,18 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
   };
   define("media-card", NovaMediaCard, { name: "Nova Media Card", description: "Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.", documentationURL: docUrl("nova-media-card") });
   var MP = { domain: ["media_player"] };
-  var MPMAIN = [
+  var MPGEN = [
     { name: "entity", required: true, selector: { entity: MP } },
-    g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
-    g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A }),
-    g2(sel("artwork", [["background", "Hintergrund"], ["cover", "Cover + unscharfer Hintergrund"], ["none", "Kein Cover"]]), { name: "glow", selector: { boolean: {} } }),
+    g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } })
+  ];
+  var MPCTRL = (c) => [
     g2({ name: "show_progress", selector: { boolean: {} } }, { name: "show_power", selector: { boolean: {} } }),
     g2({ name: "show_volume", selector: { boolean: {} } }, { name: "show_mute", selector: { boolean: {} } }),
     { name: "show_source", selector: { boolean: {} } },
-    { name: "sources", selector: { text: { multiple: true } } }
+    ...c.show_source ? [{ name: "sources", selector: { text: { multiple: true } } }] : []
   ];
+  var MPLOOK = [g2(sel("artwork", [["background", "Hintergrund"], ["cover", "Cover + unscharfer Hintergrund"], ["none", "Kein Cover"]]), { name: "glow", selector: { boolean: {} } })];
+  var MPACT = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
   var MPMA = [g2({ name: "ma_auto", selector: { boolean: {} } }, { name: "ma_entity", selector: { entity: { domain: "media_player", integration: "music_assistant" } } })];
   var MPPLAY = [g2({ name: "show_players", selector: { boolean: {} } }, { name: "auto_switch", selector: { boolean: {} } })];
   var MPITEM = [{ name: "entity", required: true, selector: { entity: MP } }, NAMEICON, { name: "music_assistant", selector: { entity: { domain: "media_player", integration: "music_assistant" } } }];
@@ -3709,26 +3711,42 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
     }
     _build() {
       const r = this.shadowRoot, c0 = this._config;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), strip = (c) => {
         Object.entries(MDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         if (c.glow === true) delete c.glow;
         return c;
       };
-      w.append(this._form(MPMAIN, { ...MDEF, glow: true, ...c0 }, (v) => this._emit(strip(merge(this._config, names(MPMAIN), v)))));
-      w.append(this._h3("Music Assistant"));
-      const ma = c0.music_assistant;
-      w.append(this._form(MPMA, { ma_auto: ma !== false, ma_entity: typeof ma === "string" ? ma : void 0 }, (v) => {
-        const c = { ...this._config };
-        if (v.ma_entity) c.music_assistant = v.ma_entity;
-        else if (v.ma_auto === false) c.music_assistant = false;
-        else delete c.music_assistant;
+      const data = { ...MDEF, glow: true, ...c0 };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = strip(merge(this._config, names(schema), v));
         this._emit(c);
-      }));
-      w.append(this._h3("Weitere Player (umschaltbar)"));
-      if (this._items("players").length) w.append(this._form(MPPLAY, { ...MDEF, ...c0 }, (v) => this._emit(strip({ ...this._config, ...v }))));
-      this._itemList(w, "players", MPITEM, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
-      w.append(this._h3("App-Logos (icon_map)"));
+        if (!!c.show_source !== !!c0.show_source) this._rebuild();
+      });
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(MPGEN))),
+        this._section("controls", "mdi:play-pause", "Bedienung", (b) => b.append(form(MPCTRL(data)))),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(MPLOOK))),
+        this._section("ma", "mdi:music", "Music Assistant", (b) => {
+          const ma = c0.music_assistant;
+          b.append(this._form(MPMA, { ma_auto: ma !== false, ma_entity: typeof ma === "string" ? ma : void 0 }, (v) => {
+            const c = { ...this._config };
+            if (v.ma_entity) c.music_assistant = v.ma_entity;
+            else if (v.ma_auto === false) c.music_assistant = false;
+            else delete c.music_assistant;
+            this._emit(c);
+          }));
+        }),
+        this._section("players", "mdi:speaker-multiple", "Weitere Player", (b) => {
+          if (this._items("players").length) b.append(this._form(MPPLAY, data, (v) => this._emit(strip({ ...this._config, ...v }))));
+          this._itemList(b, "players", MPITEM, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
+        }),
+        this._section("logos", "mdi:application-outline", "App-Logos", (b) => this._logos(b, c0)),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(MPACT)))
+      );
+    }
+    // App-Logos (icon_map): Zeilen bleiben im Editor, auch solange sie noch leer sind
+    _logos(w, c0) {
       w.append(this._hint("Ersetzt das Icon oben und bei den Quellen durch ein Logo, passend zu App oder Quelle."), this._form(MPLOGO, c0, (v) => this._emit(merge(this._config, ["icon_entity"], v))));
       const map = this._map ||= Object.entries(c0.icon_map || {});
       const write = () => {
@@ -3761,6 +3779,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
   };
   __publicField(NovaMediaCardEditor, "labels", MPLABELS);
   __publicField(NovaMediaCardEditor, "helpers", MPHELPERS);
+  __publicField(NovaMediaCardEditor, "openSections", ["general"]);
   define("media-card-editor", NovaMediaCardEditor);
 
   // src/vacuum.js
