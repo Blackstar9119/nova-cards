@@ -67,6 +67,7 @@ rows:
       - width: 1/2
         card:
           type: custom:nova-light-card
+          area: wohnzimmer
       - card:
           type: custom:nova-thermostat-card
           entity: climate.wohnzimmer_heizung
