@@ -384,10 +384,10 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       (this._keep.get(type) || this._keep.set(type, []).get(type)).push(el2);
       return el2;
     }
-    _form(schema2, data, cb) {
-      const f = this._reuse(`form:${JSON.stringify(schema2)}`, () => {
+    _form(schema, data, cb) {
+      const f = this._reuse(`form:${JSON.stringify(schema)}`, () => {
         const f2 = document.createElement("ha-form");
-        f2.schema = schema2;
+        f2.schema = schema;
         f2.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
         f2.computeHelper = (s) => this.constructor.helpers?.[s.name];
         f2.addEventListener("value-changed", (e) => {
@@ -514,8 +514,8 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       this._emit(c);
     }
     // schema darf eine Funktion des Eintrags sein (Felder je nach Einstellung); ändert sich dadurch das Schema, wird neu aufgebaut
-    _itemList(w, k, schema2, m, addLabel, view = (it) => it) {
-      const items = this._items(k), sch = typeof schema2 === "function" ? schema2 : () => schema2;
+    _itemList(w, k, schema, m, addLabel, view = (it) => it) {
+      const items = this._items(k), sch = typeof schema === "function" ? schema : () => schema;
       items.forEach((it, j) => {
         const [d, s] = this._details(
           `${k}.${j}`,
@@ -732,7 +732,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     _build() {
       const r = this.shadowRoot;
       r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), save = (schema2) => (v) => this._emit(merge(this._config, names(schema2), v));
+      const w = r.querySelector(".wrap"), save = (schema) => (v) => this._emit(merge(this._config, names(schema), v));
       const main = this._main();
       w.append(this._form(main, this._config, (v) => {
         const c = merge(this._config, names(main), v);
@@ -1036,33 +1036,53 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     });
     return HISTORY[key].data;
   }
-  var schema = (h, entity) => {
-    const modes = h?.states[entity]?.attributes.hvac_modes || Object.keys(MODE_NAMES);
+  var grid = (...schema) => ({ type: "grid", name: "", schema });
+  var S_GEN = [
+    { name: "entity", required: true, selector: { entity: { domain: "climate" } } },
+    grid({ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } })
+  ];
+  var S_SENS = [
+    grid({ name: "sensor", selector: { entity: { domain: "sensor", device_class: "temperature" } } }, { name: "humidity", selector: { entity: { domain: "sensor", device_class: "humidity" } } }),
+    { name: "windows", selector: { entity: { multiple: true, domain: "binary_sensor" } } }
+  ];
+  var S_CTRL = (h, c) => {
+    const modes = h?.states[c.entity]?.attributes.hvac_modes || Object.keys(MODE_NAMES);
     return [
-      { name: "entity", required: true, selector: { entity: { domain: "climate" } } },
-      { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] },
-      { name: "sensor", selector: { entity: { domain: "sensor", device_class: "temperature" } } },
-      { name: "windows", selector: { entity: { multiple: true, domain: "binary_sensor" } } },
-      { type: "grid", name: "", schema: [{ name: "show_graph", selector: { boolean: {} } }, { name: "graph_hours", selector: { number: { min: 1, max: 168, mode: "box", unit_of_measurement: "h" } } }] },
-      { type: "grid", name: "", schema: [{ name: "show_modes", selector: { boolean: {} } }, { name: "show_presets", selector: { boolean: {} } }] },
-      { name: "compact", selector: { boolean: {} } },
-      { name: "modes", selector: { select: { multiple: true, options: modes.map((m) => ({ value: m, label: MODE_NAMES[m] || m })) } } },
-      { type: "grid", name: "", schema: [{ name: "step", selector: { number: { min: 0.1, max: 5, step: 0.1, mode: "box", unit_of_measurement: "°" } } }, { name: "humidity", selector: { entity: { domain: "sensor", device_class: "humidity" } } }] },
-      { name: "tap_action", selector: { ui_action: {} } }
+      grid({ name: "show_modes", selector: { boolean: {} } }, { name: "show_presets", selector: { boolean: {} } }),
+      ...c.show_modes ? [{ name: "modes", selector: { select: { multiple: true, options: modes.map((m) => ({ value: m, label: MODE_NAMES[m] || m })) } } }] : [],
+      { name: "step", selector: { number: { min: 0.1, max: 5, step: 0.1, mode: "box", unit_of_measurement: "°" } } }
     ];
   };
+  var S_LOOK = (c) => [
+    { name: "compact", selector: { boolean: {} } },
+    grid({ name: "show_graph", selector: { boolean: {} } }, ...c.show_graph ? [{ name: "graph_hours", selector: { number: { min: 1, max: 168, mode: "box", unit_of_measurement: "h" } } }] : [])
+  ];
+  var S_ACT = [{ name: "tap_action", selector: { ui_action: {} } }];
+  var VIS = ["entity", "show_modes", "show_graph"];
   var EDITOR_DEFAULTS = { show_graph: true, graph_hours: 24, show_modes: true, show_presets: false, compact: true };
   var NovaThermostatCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
-      const s = schema(this._hass, this._config.entity), keys = names(s);
-      r.querySelector(".wrap").append(this._form(s, { ...EDITOR_DEFAULTS, ...this._config }, (v) => {
-        const prev2 = this._config.entity, c = merge(this._config, keys, v);
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
+      const data = { ...EDITOR_DEFAULTS, ...this._config };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
         Object.entries(EDITOR_DEFAULTS).forEach(([k, x]) => c[k] === x && delete c[k]);
         this._emit(c);
-        if (c.entity !== prev2) this._rebuild();
-      }));
+      });
+      r.querySelector(".wrap").append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(S_GEN))),
+        this._section("sensors", "mdi:thermometer", "Sensoren", (b) => b.append(form(S_SENS))),
+        this._section("control", "mdi:tune-variant", "Bedienung", (b) => b.append(form(S_CTRL(this._hass, data)))),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK(data)))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT)))
+      );
+    }
+    // Anderes Thermostat (Modi-Liste) oder Schalter für abhängige Felder → neu aufbauen
+    _emit(c) {
+      const was = { ...EDITOR_DEFAULTS, ...this._config }, now = { ...EDITOR_DEFAULTS, ...c };
+      super._emit(c);
+      if (VIS.some((k) => now[k] !== was[k])) this._rebuild();
     }
   };
   __publicField(NovaThermostatCardEditor, "labels", {
@@ -1085,6 +1105,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     sensor: "Für Anzeige und Verlauf. Ohne: Ist-Temperatur des Thermostats",
     step: "Leer = Wert vom Thermostat (meist 0,5°)"
   });
+  __publicField(NovaThermostatCardEditor, "openSections", ["general"]);
   define("thermostat-card-editor", NovaThermostatCardEditor);
   var THERMO_CSS = `
 .th{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
@@ -1631,7 +1652,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
         const on = this._list.filter((id) => this._h.states[id]?.state === "on");
         if (on.length) this._h.callService("light", "turn_off", { entity_id: on });
       });
-      const grid = r.querySelector(".grid"), byId = Object.fromEntries(c.entities.map((l) => [l.entity, l]));
+      const grid2 = r.querySelector(".grid"), byId = Object.fromEntries(c.entities.map((l) => [l.entity, l]));
       this._tiles = this._list.map((id) => {
         const o = byId[id] || { entity: id }, tile = document.createElement("div");
         tile.className = "t";
@@ -1656,7 +1677,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
             tile._drag = false;
           }, 800);
         });
-        grid.appendChild(tile);
+        grid2.appendChild(tile);
         return { id, o, t: tile, ic: tile.querySelector("ha-icon"), nm: tile.querySelector("b"), st: tile.querySelector("small"), sl: slider, dots };
       });
     }
@@ -2089,10 +2110,10 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : it.tap_action?.navigation_path) || "Neuer Button"}`;
     }
     _item(it, i, n) {
-      const schema2 = this._schema();
-      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => b.append(this._form(schema2, it, (v) => {
+      const schema = this._schema();
+      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => b.append(this._form(schema, it, (v) => {
         const list2 = [...this._config.items];
-        const nx = merge(list2[i], names(schema2), v);
+        const nx = merge(list2[i], names(schema), v);
         if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
         if (!nx.popup_hash) delete nx.popup_hash;
         if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
@@ -2127,7 +2148,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   define("dock-card-editor", NovaDockCardEditor);
 
   // src/shared/editor-schema.js
-  var g2 = (...schema2) => ({ type: "grid", name: "", schema: schema2 });
+  var g2 = (...schema) => ({ type: "grid", name: "", schema });
   var T = { text: {} };
   var I = { icon: {} };
   var A = { ui_action: {} };
@@ -4471,9 +4492,9 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
         Object.entries(VDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         return c;
       };
-      const sec = (schema2, title) => {
+      const sec = (schema, title) => {
         if (title) w.append(this._h3(title));
-        w.append(this._form(schema2, { ...VDEF, ...c0 }, (v) => this._emit(strip(merge(this._config, names(schema2), v)))));
+        w.append(this._form(schema, { ...VDEF, ...c0 }, (v) => this._emit(strip(merge(this._config, names(schema), v)))));
       };
       sec(VMAIN);
       sec(VFAN, "Saugstärke");
@@ -4842,7 +4863,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         delete c.refresh;
         return c;
       };
-      const form = (schema2) => this._form(schema2, data, (v) => this._emit(strip(merge(this._config, names(schema2), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip(merge(this._config, names(schema), v))));
       w.append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(WGEN))),
         this._section("dates", "mdi:calendar-clock", "Termine", (b) => b.append(form(WDATES(data)))),
@@ -5321,7 +5342,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var TSENS = { entity: { domain: "sensor", device_class: "temperature" } };
   var BOOL = (n) => ({ name: n, selector: { boolean: {} } });
   var NUMB = (n, min, max, unit) => ({ name: n, selector: { number: { min, max, mode: "box", ...unit ? { unit_of_measurement: unit } : {} } } });
-  var S_GEN = [
+  var S_GEN2 = [
     { name: "entity", required: true, selector: { entity: { domain: "weather" } } },
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
     BOOL("show_name"),
@@ -5349,12 +5370,12 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     ] : []
   ];
   var S_RAIN = [g2(BOOL("show_probability"), BOOL("show_precipitation"))];
-  var S_LOOK = (c) => [
+  var S_LOOK2 = (c) => [
     sel("color", [["auto", "Automatisch (nach Wetter)"], ["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]),
     ...c.show_daily !== false || c.show_hourly ? [g2(BOOL("show_titles"), ...c.show_daily !== false && c.show_hourly ? [BOOL("hourly_first")] : [])] : []
   ];
-  var S_ACT = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
-  var VIS = ["entity", "show_feels_like", "show_details", "show_daily", "show_hourly"];
+  var S_ACT2 = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
+  var VIS2 = ["entity", "show_feels_like", "show_details", "show_daily", "show_hourly"];
   var WLABELS2 = {
     ...BASE_LABELS,
     entity: "Wetter-Entität",
@@ -5406,27 +5427,27 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         Object.entries(WDEF2).forEach(([k, x]) => JSON.stringify(c[k]) === JSON.stringify(x) && delete c[k]);
         return c;
       };
-      const form = (schema2) => this._form(schema2, data, (v) => this._emit(strip(merge(this._config, names(schema2), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip(merge(this._config, names(schema), v))));
       const s = this._hass?.states[c0.entity];
       const none = (t) => s && !hasF(s, FC[t]) ? [this._hint(`Diese Entität liefert keine ${FC_NAME[t]}.`)] : [];
       const fc = data.show_daily !== false || data.show_hourly;
       w.append(
-        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(S_GEN))),
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(S_GEN2))),
         this._section("current", "mdi:weather-partly-cloudy", "Aktuelles Wetter", (b) => b.append(form(S_CUR(data)))),
         this._section("details", "mdi:water-percent", "Zusatzwerte", (b) => b.append(form(S_DET(data)))),
         this._section("forecast", "mdi:calendar-week", "Vorhersage", (b) => {
           b.append(this._h4(FC_NAME.daily), ...none("daily"), form(S_DAY(data)), this._h4(FC_NAME.hourly), ...none("hourly"), form(S_HOUR(data)));
           if (fc) b.append(this._h4("Regen"), form(S_RAIN));
         }),
-        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK(data)))),
-        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT)))
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK2(data)))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT2)))
       );
     }
     // Entität oder ein Schalter für abhängige Felder geändert → Bereiche neu aufbauen (Felder werden weiterverwendet)
     _emit(c) {
       const was = this._config;
       super._emit(c);
-      if (VIS.some((k) => c[k] !== was?.[k])) this._rebuild();
+      if (VIS2.some((k) => c[k] !== was?.[k])) this._rebuild();
     }
   };
   __publicField(NovaWeatherCardEditor, "labels", WLABELS2);
@@ -5570,8 +5591,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), data = { style: "box", ...this._config };
-      const form = (schema2) => this._form(schema2, data, (v) => {
-        const c = merge(this._config, names(schema2), v);
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
         if (c.style === "box") delete c.style;
         this._emit(c);
       });
