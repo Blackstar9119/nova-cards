@@ -3,33 +3,33 @@ import {esc, dom, setIcon} from './shared/utils.js';
 import {isOn, fmtState, areaOf} from './shared/state.js';
 import {moreInfo, hassAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
-import {CARD_CSS, EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
+import {CARD_CSS, SECTION_EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
 import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {cleanHash, togglePopup, popupOptions} from './shared/popup-hub.js';
 
 /* ---------- Editor Raum Card ---------- */
-const MAIN = [
-  {type: 'grid', name: '', schema: [{name: 'name', required: true, selector: {text: {}}}, {name: 'icon', selector: {icon: {}}}]},
+const GEN = [{type: 'grid', name: '', schema: [{name: 'name', required: true, selector: {text: {}}}, {name: 'icon', selector: {icon: {}}}]}];
+// Suffix/Runden nur mit Info-Entität, Fenster-Icon nur mit Fenstern
+const VALUES = c => [
   {name: 'temperature', selector: {entity: {domain: ['sensor', 'climate']}}},
-  {name: 'windows', selector: {entity: {multiple: true, domain: 'binary_sensor'}}},
-  {name: 'tap_action', selector: {ui_action: {}}},
-  {name: 'popup', selector: {select: {mode: 'dropdown', custom_value: true, options: []}}},
-];
-const ADVANCED = [
   {name: 'info', selector: {entity: {}}},
-  {type: 'grid', name: '', schema: [{name: 'info_suffix', selector: {text: {}}}, {name: 'info_round', selector: {boolean: {}}}]},
-  {name: 'image', selector: {text: {}}},
-  {name: 'window_icon', selector: {icon: {}}},
+  ...(c.info ? [{type: 'grid', name: '', schema: [{name: 'info_suffix', selector: {text: {}}}, {name: 'info_round', selector: {boolean: {}}}]}] : []),
+  {name: 'windows', selector: {entity: {multiple: true, domain: 'binary_sensor'}}},
+  ...([].concat(c.windows || []).length ? [{name: 'window_icon', selector: {icon: {}}}] : []),
 ];
-const BUTTON = [
+const LOOK = [{name: 'image', selector: {text: {}}}];
+const ACTIONS = [
+  {name: 'popup', selector: {select: {mode: 'dropdown', custom_value: true, options: []}}},
+  {name: 'tap_action', selector: {ui_action: {}}},
+];
+const vis = c => `${!!c.info}|${!![].concat(c.windows || []).length}`;
+const B_MAIN = [
   {name: 'entity', required: true, selector: {entity: {}}},
   {type: 'grid', name: '', schema: [{name: 'icon', selector: {icon: {}}, context: {icon_entity: 'entity'}}, {name: 'name', selector: {text: {}}}]},
-  {name: 'state_entity', selector: {entity: {}}},
-  {name: 'tap_action', selector: {ui_action: {}}},
-  {name: 'hold_action', selector: {ui_action: {}}},
-  {name: 'icon_entity', selector: {entity: {}}},
 ];
+const B_ACT = [{name: 'tap_action', selector: {ui_action: {}}}, {name: 'hold_action', selector: {ui_action: {}}}];
+const B_ADV = [{name: 'state_entity', selector: {entity: {}}}, {name: 'icon_entity', selector: {entity: {}}}];
 const ICON_MAP_ROW = [{type: 'grid', name: '', schema: [{name: 'state', selector: {text: {}}}, {name: 'value', selector: {text: {}}}]}];
 
 class NovaRoomCardEditor extends NovaEditorBase {
@@ -52,32 +52,38 @@ class NovaRoomCardEditor extends NovaEditorBase {
     super.hass = h;
     if (h && !this._pops) { this._pops = []; popupOptions(h).then(o => { this._pops = o; this._rebuild(); }); }
   }
-  _main() {
+  _actions() {
     const opts = this._pops?.length ? this._pops : [{value: '', label: '– keins –'}];
-    return MAIN.map(x => x.name === 'popup' ? {...x, selector: {select: {...x.selector.select, options: opts}}} : x);
+    return ACTIONS.map(x => x.name === 'popup' ? {...x, selector: {select: {...x.selector.select, options: opts}}} : x);
   }
   _onExternalConfig() { this._maps = (this._config.buttons || []).map(b => Object.entries(b.icon_map || {})); }
+  static openSections = ['general'];
   _build() {
     const r = this.shadowRoot;
-    r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
-    const w = r.querySelector('.wrap'), save = schema => v => this._emit(merge(this._config, names(schema), v));
-    const main = this._main();
-    w.append(this._form(main, this._config, v => {
-      const c = merge(this._config, names(main), v);
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap'), c0 = this._config;
+    const form = schema => this._form(schema, c0, v => {
+      const c = merge(this._config, names(schema), v);
       if (c.popup) c.popup = cleanHash(c.popup); if (!c.popup) delete c.popup;
       this._emit(c);
-    }));
-    w.append(this._h3('Buttons'));
-    (this._config.buttons || []).forEach((b, i) => w.append(this._button(b, i)));
-    w.append(this._add('Button hinzufügen', () => {
-      const buttons = [...(this._config.buttons || []), {}];
-      this._maps.push([]);
-      this._open.add(buttons.length - 1);
-      this._emit({...this._config, buttons});
-      this._rebuild();
-    }));
-    const [adv] = this._details('adv', 'mdi:cog-outline', 'Erweitert', [], body => body.append(this._form(ADVANCED, this._config, save(ADVANCED))));
-    w.append(adv);
+      // Info-Entität oder Fenster dazu/weg → abhängige Felder ein-/ausblenden
+      if (vis(c) !== vis(c0)) this._rebuild();
+    });
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(GEN))),
+      this._section('values', 'mdi:thermometer', 'Anzeige', b => b.append(form(VALUES(c0)))),
+      this._section('buttons', 'mdi:gesture-tap-button', 'Buttons', b => {
+        (this._config.buttons || []).forEach((x, i) => b.append(this._button(x, i)));
+        b.append(this._add('Button hinzufügen', () => {
+          const buttons = [...(this._config.buttons || []), {}];
+          this._maps.push([]);
+          this._open.add(buttons.length - 1);
+          this._emit({...this._config, buttons});
+          this._rebuild();
+        }));
+      }),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(LOOK))),
+      this._section('actions', 'mdi:gesture-tap', 'Aktionen', b => b.append(form(this._actions()))));
   }
   _label(b, i) {
     const s = b.entity ? this._hass?.states[b.entity] : null;
@@ -86,14 +92,15 @@ class NovaRoomCardEditor extends NovaEditorBase {
   _button(b, i) {
     const n = (this._config.buttons || []).length;
     const [d, s] = this._details(i, b.icon || 'mdi:gesture-tap-button', this._label(b, i), this._itemBtns(i, n, dir => this._move(i, dir), () => this._remove(i)), body => {
-      body.append(this._form(BUTTON, b, v => {
+      const form = schema => this._form(schema, b, v => {
         const buttons = [...this._config.buttons], old = buttons[i];
-        buttons[i] = merge(old, names(BUTTON), v);
+        buttons[i] = merge(old, names(schema), v);
         this._emit({...this._config, buttons});
         s.querySelector('.lbl').textContent = this._label(buttons[i], i);
         // Icon-Entität dazu oder weg → Zeilen für icon_map ein-/ausblenden
         if (!!old.icon_entity !== !!buttons[i].icon_entity) this._rebuild();
-      }));
+      });
+      body.append(form(B_MAIN), this._h4('Aktionen'), form(B_ACT), this._h4('Status und Icon'), form(B_ADV));
       if (b.icon_entity) body.append(this._mapEditor(i));
     });
     return d;
