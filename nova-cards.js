@@ -7202,13 +7202,22 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 
   // src/appliance.js
   var TYPES = {
-    washer: { label: "Waschmaschine", icon: "mdi:washing-machine", color: "accent-1", run: "Wäscht", alt: "Schleudert", door: "Tür offen", phase: ["spin", "spinning", "schleudern"] },
-    dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", door: "Tür offen", phase: [] },
-    airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-2", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [] },
-    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-3", run: "Läuft", alt: "Brüht", door: "Tür offen", phase: ["brew", "brewing", "brühen"] },
+    washer: { label: "Waschmaschine", icon: "mdi:washing-machine", color: "accent-1", run: "Wäscht", alt: "Schleudert", door: "Tür offen", phase: ["spin", "spinning", "schleudern"], anims: ["detergent", "softener"], dview: true },
+    dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", door: "Tür offen", phase: [], dview: true },
+    airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-2", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
+    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-3", run: "Läuft", alt: "Brüht", door: "Tür offen", phase: ["brew", "brewing", "brühen"], anims: ["tank", "beans", "descale"] },
     generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
   };
   var typeOf = (c) => TYPES[c.device_type] ? c.device_type : "generic";
+  var HANIM = {
+    tank: ["Wassertank", "Wassertank leer", "mdi:cup-water"],
+    beans: ["Bohnen", "Bohnen nachfüllen", "mdi:coffee-outline"],
+    descale: ["Entkalken", "Entkalken", "mdi:water-alert-outline"],
+    detergent: ["Waschmittel", "Waschmittel leer", "mdi:bottle-tonic-outline"],
+    softener: ["Weichspüler", "Weichspüler leer", "mdi:bottle-tonic-plus-outline"],
+    warning: ["Allgemeine Warnung", "", "mdi:alert-outline"]
+  };
+  var animsOf = (t) => [...TYPES[t].anims || [], "warning"];
   var STATES = {
     run: ["run", "running", "on", "cooking", "brewing", "starting", "ending", "anti_wrinkle", "washing", "rinsing", "spinning", "drying", "aborting", "in_use", "programmed_running"],
     pause: ["pause", "paused", "user_paused"],
@@ -7228,7 +7237,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var TXT = { pause: "Pausiert", wait: "Startet später", done: "Fertig", err: "Störung", prep: "Wird eingestellt", heat: "Heizt auf", warm: "Hält warm", ready: "Bereit", off: "Aus" };
   var BAD = /* @__PURE__ */ new Set(["unavailable", "unknown", "none", ""]);
   var ok = (s) => !!s && !BAD.has(s.state);
-  var GDEF = { layout: "full", animation: true, glow: true, hide_when_off: false, start_at: "none", window: true };
+  var GDEF = { layout: "full", animation: true, glow: true, hide_when_off: false, start_at: "none", window: true, door_anim: true };
   var nice = (raw, t) => t === raw && /_/.test(raw) ? raw.replace(/_/g, " ").replace(/^./, (x) => x.toUpperCase()) : t;
   var fmtOpt = (h, s, o) => {
     let t = o;
@@ -7260,6 +7269,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   };
   var SA = '<div class="ct sa"><div class="kv"><ha-icon icon="mdi:clock-start"></ha-icon><span class="k">Starten um</span><input type="time" aria-label="Startzeit"><div class="pill now">Sofort</div></div><div class="sah"></div></div>';
   var IC = { start: "mdi:play", pause: "mdi:pause", resume: "mdi:play-pause", stop: "mdi:stop" };
+  var WARN = '<g class="wn"><path class="wt3" d="M14 3 l10 17 h-20 Z"/><line class="wx" x1="14" y1="9" x2="14" y2="14"/><circle class="wx2" cx="14" cy="17" r="1.1"/></g>';
   var DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
   var SV = {
     washer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvw"><circle cx="50" cy="58" r="21"/></clipPath></defs>
@@ -7269,17 +7279,18 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 <g clip-path="url(#nvw)"><g class="wl"><g class="wv"><path class="wt" d="M0 64 q6.25 -3 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V100 H0 Z"/></g></g>
 <g class="drum"><circle class="dm" cx="50" cy="58" r="17"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(120 50 58)"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(240 50 58)"/>
 <path class="cl" d="M40 64 q5 -6 10 -1 q4 4 9 -1 q2 6 -5 8 q-8 2 -14 -6 Z"/><path class="cl c2" d="M44 48 q6 -3 10 1 q-2 5 -7 4 q-4 -1 -3 -5 Z"/></g></g>
-<path class="sh" d="M35 47 a19 19 0 0 1 11 -8"/>${DONE}</svg>`,
+<g class="pd"><circle class="pdr" cx="50" cy="58" r="23"/><path class="sh" d="M35 47 a19 19 0 0 1 11 -8"/></g>
+<g class="lk"><rect x="67" y="35" width="8" height="6.5" rx="1.4"/><path d="M68.8 35 v-2 a2.2 2.2 0 0 1 4.4 0 v2"/></g>${DONE}${WARN}</svg>`,
     dishwasher: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvd"><rect x="22" y="26" width="56" height="60" rx="5"/></clipPath></defs>
 <rect class="bd" x="14" y="6" width="72" height="88" rx="9"/><line class="sep" x1="14" y1="20" x2="86" y2="20"/>
 <rect class="hd2" x="38" y="11" width="24" height="3.5" rx="1.75"/><circle class="led" cx="78" cy="13" r="2"/>
 <rect class="gl" x="22" y="26" width="56" height="60" rx="5"/>
-<g clip-path="url(#nvd)"><rect class="mist" x="22" y="26" width="56" height="60"/>
+<g class="dd"><g clip-path="url(#nvd)"><rect class="mist" x="22" y="26" width="56" height="60"/>
 <line class="rk" x1="24" y1="50" x2="76" y2="50"/><line class="rk" x1="24" y1="76" x2="76" y2="76"/>
 <rect class="pl" x="30" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="38" y="34" width="5" height="16" rx="2.5"/><rect class="pl" x="46" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="58" y="40" width="12" height="10" rx="3"/>
 <rect class="pl" x="30" y="60" width="5" height="16" rx="2.5"/><rect class="pl" x="38" y="58" width="5" height="18" rx="2.5"/><rect class="pl" x="56" y="62" width="14" height="14" rx="3"/>
 <g class="drops"><circle cx="34" cy="80" r="1.3"/><circle cx="44" cy="80" r="1.1"/><circle cx="50" cy="80" r="1.4"/><circle cx="57" cy="80" r="1.1"/><circle cx="66" cy="80" r="1.3"/><circle cx="40" cy="80" r="1"/></g>
-<g class="arm"><rect x="30" y="81" width="40" height="2.4" rx="1.2"/><circle cx="50" cy="82.2" r="2.4"/></g></g>${DONE}</svg>`,
+<g class="arm"><rect x="30" y="81" width="40" height="2.4" rx="1.2"/><circle cx="50" cy="82.2" r="2.4"/></g></g></g>${DONE}${WARN}</svg>`,
     // Airfryer: rundliches Gehäuse, Drehknopf mit Display und Fortschrittsring, Schublade mit Sichtfenster (abschaltbar)
     airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nva"><rect x="28" y="59" width="44" height="17" rx="7"/></clipPath></defs>
 <g class="heat"><path d="M38 9 q3 -4 0 -8"/><path d="M50 9 q3 -4 0 -8"/><path d="M62 9 q3 -4 0 -8"/></g>
@@ -7291,7 +7302,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 <g class="win"><rect class="wg" x="28" y="59" width="44" height="17" rx="7"/><g clip-path="url(#nva)"><rect class="glo" x="28" y="59" width="44" height="17"/>
 <g class="fr"><rect x="36" y="68" width="3" height="8" rx="1" transform="rotate(-20 37.5 72)"/><rect x="42" y="69" width="3" height="8" rx="1" transform="rotate(12 43.5 73)"/><rect x="48" y="68" width="3" height="8" rx="1" transform="rotate(-6 49.5 72)"/><rect x="54" y="69" width="3" height="8" rx="1" transform="rotate(18 55.5 73)"/><rect x="60" y="68" width="3" height="8" rx="1" transform="rotate(-14 61.5 72)"/></g>
 <g class="hw"><path d="M40 74 q2 -3 0 -6 q-2 -3 0 -6"/><path d="M50 74 q2 -3 0 -6 q-2 -3 0 -6"/><path d="M60 74 q2 -3 0 -6 q-2 -3 0 -6"/></g></g></g>
-<rect class="hd2" x="38" y="80" width="24" height="5" rx="2.5"/></g>${DONE}</svg>`,
+<rect class="hd2" x="38" y="80" width="24" height="5" rx="2.5"/></g>${DONE}${WARN}</svg>`,
     // Kaffeevollautomat (Vorbild Siemens EQ): Bohnenfach oben, Bedienfeld, mittiger Auslauf mit Tasse, Wassertank seitlich
     coffee: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvc"><path d="M41 66 h18 v10 a6 6 0 0 1 -6 6 h-6 a6 6 0 0 1 -6 -6 Z"/></clipPath><clipPath id="nvt"><rect x="80" y="26" width="7" height="50" rx="2.5"/></clipPath></defs>
 <path class="bn" d="M28 12.5 q11 -9 22 0 Z"/>
@@ -7304,9 +7315,9 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 <g clip-path="url(#nvc)"><rect class="cf" x="39" y="66" width="22" height="18"/></g>
 <path class="cup" d="M41 66 h18 v10 a6 6 0 0 1 -6 6 h-6 a6 6 0 0 1 -6 -6 Z"/><path class="cup" d="M59 69 h2.5 a3.5 3.5 0 0 1 0 7 h-2.5"/>
 <rect class="tray" x="28" y="85" width="44" height="4" rx="2"/>
-<g class="steam"><path d="M45 63 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 63 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M55 63 q3 -4 0 -8 q-3 -4 0 -8"/></g>${DONE}</svg>`,
+<g class="steam"><path d="M45 63 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 63 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M55 63 q3 -4 0 -8 q-3 -4 0 -8"/></g>${DONE}${WARN}</svg>`,
     generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
-<path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}</svg>`
+<path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}${WARN}</svg>`
   };
   var scene = (t) => `<div class="scene">${SV[t]}</div>`;
   var DCSS2 = `
@@ -7343,6 +7354,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .ab.dis{box-shadow:none}
 .ab:active{transform:scale(.95)}
 .als:empty{display:none}
+.dv .al[data-e]{cursor:pointer}.dv .al.hit{background:color-mix(in srgb,var(--c) 32%,transparent);font-weight:600}
 /* Kompakt: eine Zeile */
 .g.dv.cmp{gap:8px;padding:10px 14px}
 .cmp .hd .ic{width:40px;height:40px;position:relative}
@@ -7419,6 +7431,22 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .anim.st-prep .scene .kx,.anim.st-pause .w-airfryer .kp{animation:dv-blinko 1.4s ease-in-out infinite}
 .anim.st-done.fx .w-airfryer .puff path{animation:dv-steam 1.8s ease-out 2 both}
 .anim.st-done.fx .w-airfryer .drw{animation:dv-jolt .6s .1s ease-out both}
+/* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
+.scene .wn{display:none;transform-box:fill-box;transform-origin:center}
+.scene .wn{--wc:var(--nv-warn)}.st-err .scene .wn{--wc:var(--nv-error)}
+.scene .wt3{fill:var(--wc);fill-opacity:.25;stroke:var(--wc);stroke-width:1.8;stroke-linejoin:round}.scene .wx{stroke:var(--wc);stroke-width:2.2;stroke-linecap:round}.scene .wx2{fill:var(--wc)}
+.h-warning .scene .wn,.st-err .scene .wn{display:inline}
+.anim.h-warning .scene .wn,.anim.st-err .scene .wn{animation:dv-pop2 1.6s ease-in-out infinite}
+.scene .pd{transform-box:view-box;transform-origin:27px 58px;transition:transform .6s ease}
+.scene .pdr{fill:currentColor;fill-opacity:.05;stroke:currentColor;stroke-opacity:.45;stroke-width:1.6}
+.dopen .w-washer .pd{transform:scaleX(.28)}
+.scene .lk{display:none;fill:none;stroke:currentColor;stroke-opacity:.8;stroke-width:1.4}.scene .lk rect{fill:currentColor;fill-opacity:.8;stroke:none}
+.dlock .w-washer .lk{display:inline}
+.scene .dd{transform-box:view-box;transition:transform .5s ease}
+.dopen .w-dishwasher .dd{transform:translateY(8px)}
+.h-detergent .w-washer .dw,.h-softener .w-washer .dw,.h-beans .w-coffee .bn,.h-descale .w-coffee .dp{fill:var(--nv-warn);fill-opacity:.95}
+.h-tank .w-coffee .tw{transform:translateY(40px)}.h-tank .w-coffee .tk{stroke:var(--nv-warn);stroke-opacity:1;stroke-width:1.4}
+.anim.h-detergent .w-washer .dw,.anim.h-softener .w-washer .dw,.anim.h-tank .w-coffee .tk,.anim.h-beans .w-coffee .bn,.anim.h-descale .w-coffee .dp{animation:dv-blinko 1.3s ease-in-out infinite}
 /* Kaffeevollautomat */
 .scene .bn{fill:currentColor;fill-opacity:.16;stroke:currentColor;stroke-opacity:.28;stroke-width:1.2}
 .scene .tk{fill:rgba(0,0,0,.22);stroke:currentColor;stroke-opacity:.3;stroke-width:1}
@@ -7453,6 +7481,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 @keyframes dv-stk{0%,100%{stroke-opacity:.25}50%{stroke-opacity:.95}}
 @keyframes dv-glo{0%,100%{opacity:.18}50%{opacity:.5}}
 @keyframes dv-blinko{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes dv-pop2{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 @keyframes dv-blink{0%,100%{fill-opacity:.7}50%{fill-opacity:.15}}
 @keyframes dv-jolt{0%,100%{transform:translateY(0)}35%{transform:translateY(6px)}65%{transform:translateY(-1px)}}
 @keyframes dv-steam{0%{opacity:0;transform:translateY(4px)}35%{opacity:.6}100%{opacity:0;transform:translateY(-12px)}}
@@ -7583,6 +7612,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const e = this._e;
       press(e.ic, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
       if (cmp) press(e.name.parentElement, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
+      e.als.addEventListener("click", (ev) => {
+        const el2 = ev.target.closest?.(".al[data-e]");
+        if (el2) this._act({ entity: el2.dataset.e }, "tap", true);
+      });
       if (e.pw) press(e.pw, { tap: () => this._call(dom(c.power) === "input_boolean" ? "input_boolean" : "switch", "toggle", c.power, {}, "Ein/Aus") });
       if (e.ctls) this._ctl = c.controls.map((o) => this._mkCtl(o));
       if (e.sa) {
@@ -7775,8 +7808,6 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.g.classList.toggle("alt", alt);
       e.g.classList.toggle("fx", !!this._fx);
       e.g.classList.toggle("na", na);
-      const dr = this._S(c.door);
-      e.g.classList.toggle("dopen", !!dr && ["on", "open", "opened"].includes(dr.state));
       this.classList.toggle("nv-na", na);
       const hide = !!c.hide_when_off && ["off", "done", "ready"].includes(cls) && !this._pv && !this._em && !this.hasAttribute("preview");
       if (this.hidden !== hide) {
@@ -7909,26 +7940,40 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._e.acts.hidden = Object.values(b).every((x) => x.hidden);
     }
     _alerts(cls, stx) {
-      const c = this._c, h = this._h, TY = TYPES[typeOf(c)], out = [];
-      const add = (lvl, ic, msg) => out.push(`<div class="al ${lvl}"><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span></div>`);
+      const c = this._c, h = this._h, t = typeOf(c), TY = TYPES[t], g = this._e.g, out = [], on = /* @__PURE__ */ new Set();
+      const add = (lvl, ic, msg, e, hit) => out.push(`<div class="al ${lvl}${hit ? " hit" : ""}"${e ? ` data-e="${esc(e)}"` : ""}><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span></div>`);
       if (this._msg) add("error", "mdi:alert-circle-outline", this._msg);
-      if (cls === "err") add("error", "mdi:alert-circle-outline", stx);
+      if (cls === "err") add("error", "mdi:alert-circle-outline", stx, c.entity, true);
       const cn = this._S(c.connection);
-      if (c.connection && (!cn || ["off", "unavailable", "disconnected"].includes(cn.state))) add("error", "mdi:wifi-off", c.connection_text || "Keine Verbindung zum Gerät");
+      if (c.connection && (!cn || ["off", "unavailable", "disconnected"].includes(cn.state))) add("error", "mdi:wifi-off", c.connection_text || "Keine Verbindung zum Gerät", c.connection);
       const blk = c.layout !== "compact" && !isAct(cls) ? this._startBlock() : null;
       if (blk) add("warning", "mdi:play-circle-outline", blk);
-      const dr = this._S(c.door);
-      if (dr && ["on", "open", "opened"].includes(dr.state)) add("info", "mdi:door-open", c.door_text || TY.door);
+      const dr = this._S(c.door), dv = c.door_anim !== false && TY.dview;
+      const open = !!dr && ["on", "open", "opened"].includes(dr.state);
+      if (open) add("info", "mdi:door-open", c.door_text || TY.door, c.door, dv);
+      g.classList.toggle("dopen", open && dv);
+      g.classList.toggle("dlock", !!dr && dr.state === "locked" && dv);
+      const can = animsOf(t);
       c.hints.forEach((a) => {
         const s = this._S(a.entity);
-        if (alertHit(a, s)) add(["error", "info"].includes(a.level) ? a.level : "warning", a.icon || s?.attributes.icon || "mdi:information-outline", a.message || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`);
+        if (!alertHit(a, s)) return;
+        const an = can.includes(a.anim) ? a.anim : null, H = HANIM[an];
+        if (an) on.add(an);
+        add(
+          ["error", "info"].includes(a.level) ? a.level : "warning",
+          a.icon || (H && an !== "warning" ? H[2] : s?.attributes.icon) || "mdi:information-outline",
+          a.message || H && H[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`,
+          a.entity,
+          !!an
+        );
       });
+      Object.keys(HANIM).forEach((k) => g.classList.toggle(`h-${k}`, on.has(k)));
       const html = out.join("");
       if (this._alKey !== html) {
         this._alKey = html;
         this._e.als.innerHTML = html;
       }
-      this._e.g.classList.toggle("err", cls === "err" && c.glow !== false);
+      g.classList.toggle("err", cls === "err" && c.glow !== false);
     }
     // Sichtbarkeit: Animation und Countdown nur, wenn die Karte zu sehen und der Tab offen ist
     _tick() {
@@ -7980,13 +8025,15 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     g2({ name: "start_confirm", selector: T }, { name: "stop_confirm", selector: T }),
     sel("start_at", [["none", "Aus"], ["home_connect", "Home Connect (rechnet in „Fertig in“ um)"]])
   ];
-  var GINFO = [
+  var GINFO = (t) => [
     g2({ name: "remote_start", selector: ST }, { name: "remote_start_text", selector: T }),
     g2({ name: "door", selector: ST }, { name: "door_text", selector: T }),
+    ...TYPES[t].dview ? [{ name: "door_anim", selector: { boolean: {} } }] : [],
     g2({ name: "connection", selector: ST }, { name: "connection_text", selector: T })
   ];
-  var GHINT = [
+  var GHINT = (t) => [
     { name: "entity", required: true, selector: ST },
+    sel("anim", [["none", "Keine"], ...animsOf(t).map((k) => [k, HANIM[k][0]])]),
     g2({ name: "message", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
     g2({ name: "state", selector: T }, { name: "state_not", selector: T }),
     g2(NUM("above"), NUM("below")),
@@ -8042,6 +8089,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     remote_start: "Fernstart erlaubt",
     remote_start_text: "Hinweis, wenn Fernstart aus",
     door: "Tür / Schublade",
+    door_anim: "Tür im Bild zeigen",
+    anim: "Animation im Bild",
     door_text: "Hinweis, wenn offen",
     connection: "Verbindung",
     connection_text: "Hinweis ohne Verbindung",
@@ -8094,6 +8143,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     resume_with_start: "Bei Pause erscheint „Fortsetzen“ und drückt den Start-Knopf (z. B. Philips Airfryer). Nicht bei Start über ein Select",
     remote_start: "z. B. binary_sensor.waschmaschine_fernstart – aus = Start ausgegraut mit Hinweis",
     door: "Hinweis, wenn an bzw. open",
+    door_anim: "Offen = Tür bzw. Schublade im Bild offen, „locked“ = Schloss am Bullauge",
+    anim: "Was im Gerätebild passiert, solange der Hinweis aktiv ist. Ohne eigene Meldung erscheint ein passender Text",
     connection: "Hinweis, wenn aus bzw. nicht verfügbar",
     running_states: "Leer = übliche Rohzustände (run, running, cooking …). Genaue Zustände der Status-Entität",
     prep_states: "Gerät wird gerade eingestellt (z. B. Airfryer „setting“). Leer = setting, programming …",
@@ -8138,8 +8189,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           b.append(form(GACT(data)));
         }),
         this._section("hints", "mdi:alert-circle-outline", "Hinweise", (b) => {
-          b.append(form(GINFO), this._h4("Weitere Hinweise"), this._hint("z. B. Fehlercode (Warnen außer bei 0), Wartung fällig, Nachfüllen."));
-          this._itemList(b, "hints", GHINT, { item: "Hinweis", icon: "mdi:information-outline" }, "Hinweis hinzufügen");
+          b.append(form(GINFO(t)), this._h4("Weitere Hinweise"), this._hint("z. B. Fehlercode (Warnen außer bei 0), Wartung fällig, Nachfüllen."));
+          this._itemList(b, "hints", GHINT(t), { item: "Hinweis", icon: "mdi:information-outline" }, "Hinweis hinzufügen");
         }),
         this._section("states", "mdi:state-machine", "Zustände und Texte", (b) => {
           b.append(this._hint("Nur nötig, wenn die Karte den Zustand falsch einordnet. Zustände so eintragen, wie sie in den Entwicklerwerkzeugen stehen."));
