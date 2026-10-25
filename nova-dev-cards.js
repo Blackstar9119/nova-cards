@@ -1271,7 +1271,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
             p.classList.toggle("on", p.dataset.o === cur);
           });
         } else if (u.kind === "num") {
-          const pv = this._pend[o.entity]?.v, n = pv ?? (ok(s) ? +s.state : null);
+          const pv = this._pend[o.entity]?.v, raw = pv ?? (ok(s) ? +s.state : null), bad = raw != null && pv == null && (a.min != null && raw < a.min || a.max != null && raw > a.max);
+          const n = bad ? null : raw;
+          if (bad) el.classList.add("na");
           v.textContent = n == null ? "–" : isDur(s) ? fmtDur(n * (SECS[a.unit_of_measurement] || 1)) : valueOf(h, { ...s, state: String(n) }, o);
           if (u.rng) {
             Object.assign(u.rng, { min: a.min ?? 0, max: a.max ?? 100, step: o.step || a.step || 1 });
