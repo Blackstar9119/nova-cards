@@ -135,36 +135,6 @@ oder von der Raum Card. Kopfzeile mit Badges und Info-Leiste, auf dem Handy per 
 
 ---
 
-## Farben anpassen
-
-Die Karten verwenden Farbrollen statt fester Farben. Im Editor wählst du nur die Rolle, die eigentliche Farbe kommt aus
-deinem Theme. So passt alles zusammen, auch wenn du das Theme wechselst.
-
-| Rolle | Farbe | Text darauf | Standard |
-|---|---|---|---|
-| Neutral (`neutral`) | `--nova-neutral` | `--nova-neutral-text` | Grau |
-| Akzent 1 (`accent-1`) | `--nova-accent-1` | `--nova-accent-1-text` | Blau |
-| Akzent 2 (`accent-2`) | `--nova-accent-2` | `--nova-accent-2-text` | Gelb |
-| Akzent 3 (`accent-3`) | `--nova-accent-3` | `--nova-accent-3-text` | Braun |
-| Akzent 4 (`accent-4`) | `--nova-accent-4` | `--nova-accent-4-text` | Grün |
-
-Beispiel für ein eigenes Theme (in `themes.yaml` bzw. dem Ordner `themes`):
-
-```yaml
-nova-ozean:
-  nova-neutral: "#6b7a8f"
-  nova-accent-1: "#2f80ed"
-  nova-accent-2: "#f2c94c"
-  nova-accent-2-text: "#2b2100"
-  nova-accent-3: "#eb5757"
-  nova-accent-4: "#27ae60"
-```
-
-Danach das Theme im Profil oder im Dashboard auswählen. Alle weiteren Variablen (Radius, Unschärfe, Größen) stehen unter
-[Farben und Theme-Variablen](docs/theming.md).
-
----
-
 ## Lizenz
 
 Nova Cards steht unter der [MIT-Lizenz](LICENSE).

@@ -34,7 +34,7 @@ types:                      # erste passende Regel gewinnt
 | `layout` | `list` | `list` = nächste Termine untereinander, `compact` = nur der nächste Abholtag (mehrere Müllarten an dem Tag nebeneinander) |
 | `count` | `5` | Anzahl Termine in der Liste |
 | `days` | `30` | Zeitraum in Tagen ab heute |
-| `types[]` | – | Regeln: `match` (Stichwort, mehrere mit Komma), `name` (leer = Termintitel), `icon`, `color` (Farbrolle, siehe [Farben](theming.md); Standard `neutral`) |
+| `types[]` | – | Regeln: `match` (Stichwort, mehrere mit Komma), `name` (leer = Termintitel), `icon`, `color` (Farbrolle; Standard `neutral`) |
 | `hide_unmatched` | `false` | Termine ohne passende Regel ausblenden |
 | `glow` | `true` | Rahmen leuchtet bei einer Abholung heute oder morgen |
 
