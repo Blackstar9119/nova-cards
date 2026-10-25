@@ -1033,6 +1033,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           if (!ok(s)) return;
           const a = s.attributes, st = +o.step || +a.step || 1, cur = this._pend[o.entity]?.v ?? +s.state;
           const mn = a.min != null ? +a.min : -Infinity, mx = a.max != null ? +a.max : Infinity;
+          if (cur < mn || cur > mx) return this._setNum(o, isFinite(mn) ? mn : mx);
           this._setNum(o, Math.min(mx, Math.max(mn, Math.round((cur + dir * st) / st) * st)));
         };
         if (sl) {
@@ -1273,7 +1274,6 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         } else if (u.kind === "num") {
           const pv = this._pend[o.entity]?.v, raw = pv ?? (ok(s) ? +s.state : null), bad = raw != null && pv == null && (a.min != null && raw < a.min || a.max != null && raw > a.max);
           const n = bad ? null : raw;
-          if (bad) el.classList.add("na");
           v.textContent = n == null ? "–" : isDur(s) ? fmtDur(n * (SECS[a.unit_of_measurement] || 1)) : valueOf(h, { ...s, state: String(n) }, o);
           if (u.rng) {
             Object.assign(u.rng, { min: a.min ?? 0, max: a.max ?? 100, step: o.step || a.step || 1 });
