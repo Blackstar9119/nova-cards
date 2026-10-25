@@ -76,7 +76,7 @@ const THERMO_CSS = `
 .th{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .th.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent)}
 .hd{display:flex;align-items:center;gap:10px;cursor:pointer}
-.ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:all .3s}
+.ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color .3s,color .3s,border-color .3s,box-shadow .3s,transform .3s,opacity .3s}
 .ic.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 50%,transparent)}
 .ic.cool{background:var(--nv-active);color:var(--nv-active-fg)}
 .nm{flex:1;min-width:0}.nm b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -185,6 +185,7 @@ class NovaThermostatCard extends HTMLElement {
     if (!this._h || !this._e) return;
     const h = this._h, c = this._c, e = this._e, s = h.states[c.entity];
     e.card.classList.toggle('na', !s || s.state === 'unavailable');
+    this.classList.toggle('nv-na', !s || s.state === 'unavailable');
     if (!s) { e.name.textContent = c.name || c.entity; e.sub.textContent = 'nicht gefunden'; return; }
     const a = s.attributes, act = a.hvac_action, heat = act === 'heating' || act === 'preheating', cool = act === 'cooling';
     e.ic.classList.toggle('on', heat);

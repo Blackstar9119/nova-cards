@@ -27,7 +27,7 @@ const VCSS = `
 .map img{display:block;width:100%;height:auto;max-height:var(--nv-map-max,280px);object-fit:contain}
 .map.ar img{height:100%;object-fit:contain}
 .ctl{display:flex;align-items:center;justify-content:center;gap:14px}
-.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:all .2s}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
 .ctl .cb ha-icon{--mdc-icon-size:24px}
 .ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
@@ -118,7 +118,9 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
 .sc.empty .sled,.sc.wash .sled,.sc.dry .sled{opacity:1;animation:vc-pulse 2s ease-in-out infinite}
 .sc.empty .sled{fill:#b8a993}.sc.wash .sled{fill:var(--wc)}.sc.dry .sled{fill:var(--nv-accent)}
 .sc:not(.has-tanks) :is(.tank,.tkc,.tkd,.pipe,.drops,.dirt,.bubl),.sc:not(.has-bag) :is(.bin,.bag,.duct,.parts){display:none}
-.scene.still *{animation-play-state:paused!important}
+.scene.still *,.vc.still .hd .ic ha-icon{animation-play-state:paused!important}
+/* Eigene Ebene nur für die Szene, solange sie läuft: WebKit malt dann nur die Szene neu, nicht die ganze Karte */
+.scene:not(.still)>svg{will-change:transform}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important}}
 @keyframes vc-drive{0%,100%{transform:translateX(20px)}45%,50%{transform:translateX(150px)}}
 @keyframes vc-home{0%{transform:translateX(90px)}85%,100%{transform:translateX(240px)}}
@@ -463,6 +465,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     const s = this._st(), a = s?.attributes || {}, st = s?.state;
     const run = VRUN.includes(st), err = st === 'error';
     e.g.classList.toggle('na', !s || st === 'unavailable');
+    this.classList.toggle('nv-na', !s || st === 'unavailable');
     e.g.classList.toggle('run', run && c.glow !== false);
     e.name.textContent = c.name ?? a.friendly_name ?? c.entity;
     const ss = c.status && h.states[c.status];
@@ -576,6 +579,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
   }
   _tick() {
     this._e?.sc?.classList.toggle('still', this._vis === false);
+    this._e?.g?.classList.toggle('still', this._vis === false);
     const c = this._c, run = this._vis && c?.map && dom(c.map) === 'camera' && c.map_refresh > 0 && VRUN.includes(this._st()?.state);
     if (run && !this._tm) this._tm = setInterval(() => this._mapSync(true), c.map_refresh * 1000);
     if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
