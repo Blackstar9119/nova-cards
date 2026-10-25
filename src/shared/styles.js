@@ -27,7 +27,13 @@ export const NOVA_VARS = `:host{
 --nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
 --nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
 --nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
---nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff)}`;
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff);
+--nv-box:var(--nova-box-background,rgba(255,255,255,.09));--nv-box-border:var(--nova-box-border-color,rgba(255,255,255,.1));
+--nv-popup-bg:var(--nova-popup-background,linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88)));
+--nv-popup-base:var(--nova-popup-base-color,rgba(22,27,42,.88));
+--nv-popup-head:var(--nova-popup-header-color,rgba(60,72,100,.85));
+--nv-popup-backdrop:var(--nova-popup-backdrop,rgba(8,12,22,.5));
+--nv-popup-r:var(--nova-popup-radius,28px)}`;
 
 // Farbrollen: Karten wählen nur eine Rolle, die Farbe selbst kommt aus den Variablen oben (Theme-fähig)
 export const ROLES = {neutral: 'neutral', 'accent-1': 'a1', 'accent-2': 'a2', 'accent-3': 'a3', 'accent-4': 'a4'};
