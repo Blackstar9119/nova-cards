@@ -2,9 +2,9 @@
 
 [← Zurück zur Übersicht](../README.md)
 
-Eine Raumansicht als großer Glasrahmen: oben eine Kopfzeile mit Zurück-Knopf, Icon, Raumname und „Licht aus“,
-darunter Werte-Chips (Temperatur, Luftfeuchte) und dann beliebige Karten in Zeilen und Spalten – genau wie in der
-Nova Pop-up Card, nur fest im Dashboard. Gedacht für Raum-Unteransichten (z. B. `/zuhause/wohnzimmer`).
+Eine Raumansicht als großer Glasrahmen: oben eine Kopfzeile mit Zurück-Knopf, Icon und Raumname, darunter beliebige
+Karten in Zeilen und Spalten – genau wie in der Nova Pop-up Card, nur fest im Dashboard. Werte und Knöpfe wie
+„Alle Lichter im Raum aus“ kommen als [Nova Chips Card](chips-card.md) in eine Zeile des Rasters. Gedacht für Raum-Unteransichten (z. B. `/zuhause/wohnzimmer`).
 
 ## Anlegen
 
@@ -20,33 +20,10 @@ einem Abschnitt bzw. in einer Panel-Ansicht verwenden.
 
 | Option | Bedeutung |
 |---|---|
-| `area` | Area, aus der Name, Icon, Lampen und Sensoren kommen |
+| `area` | Area, aus der Name und Icon kommen |
 | `name`, `icon` | Eigener Name / eigenes Icon (leer = wie in der Area) |
 | `back_action` | Aktion des Zurück-Knopfs. Ohne Angabe eine Seite zurück, `action: none` blendet den Knopf aus |
 | `tint` | Farbton des Rahmens als Nova-Farbrolle (`neutral`, `accent-1` … `accent-4`), leer = Nova-Glas |
-
-## Licht aus
-
-Der Knopf erscheint, sobald eine Lampe der Area an ist, und schaltet die Lampen der Area aus.
-
-| Option | Bedeutung |
-|---|---|
-| `lights_off` | `false` blendet den Knopf aus (Standard `true`) |
-| `lights_off_exclude` | Lampen, die nicht mit ausgeschaltet werden. Lichtgruppen, in denen eine davon steckt, bleiben ebenfalls an |
-
-Versteckte Entitäten und Konfigurations-/Diagnose-Entitäten zählen nicht mit.
-
-## Werte-Chips
-
-Temperatur und Luftfeuchte kommen automatisch aus der Area: zuerst die Sensoren, die in Home Assistant bei der Area
-hinterlegt sind, sonst der erste passende Sensor der Area. Antippen öffnet die Details.
-
-| Option | Bedeutung |
-|---|---|
-| `show_temperature`, `show_humidity` | `false` blendet den Chip aus |
-| `temperature_entity`, `humidity_entity` | Eigener Sensor statt des automatischen |
-| `info` | Weitere Chips, gleiche Optionen wie die Info-Leiste der Pop-up Card (`entity`, `name`, `icon`, `decimals`, `alert`, `alert_state`, `alert_above`, `alert_below`, `alert_color`) |
-| `info_layout` | `wrap` (umbrechen, Standard) oder `scroll` (waagrecht scrollen) |
 
 ## Raster
 
@@ -63,9 +40,15 @@ area: wohnzimmer
 back_action:
   action: navigate
   navigation_path: /zuhause/home
-lights_off_exclude:
-  - light.vitrine
 rows:
+  - cells:
+      - card:
+          type: custom:nova-chips-card
+          area: wohnzimmer
+          chips:
+            - entity: sensor.wohnzimmer_temperatur
+            - type: button
+              preset: lights_off
   - cells:
       - width: 1/2
         card:

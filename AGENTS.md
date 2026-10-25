@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Dock,
-Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up und Bereich – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich und Chips – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -23,7 +23,8 @@ src/
   waste.js            Nova Müllkalender Card + Editor (Termine aus calendar.*-Entitäten)
   weather.js          Nova Wetter Card + Editor (aktuelles Wetter + Vorhersage per weather/subscribe_forecast)
   popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten)
-  area.js             Nova Bereich Card + Editor (Raumansicht: Kopfzeile, Werte-Chips der Area, Raster aus beliebigen Karten)
+  area.js             Nova Bereich Card + Editor (Raumansicht: Kopfzeile, Raster aus beliebigen Karten)
+  chips.js            Nova Chips Card + Editor (Reihe aus Wert- und Knopf-Chips)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
                       tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
@@ -39,6 +40,8 @@ src/
     card-grid.js      Raster aus beliebigen Karten (rows/cells, Karten erzeugen, Übergabe in der Vorschau) und Info-Chips –
                       Kartenseite von Pop-up und Bereich
     card-grid-editor.js  Editorseite dazu: Vorlagen, Miniatur-Raster, Kartenauswahl, Karteneditor, YAML (Mixin GridEditor)
+    chips.js          Nova Chips: Wert- und Knopf-Chips (Darstellung, Schnellauswahl wie „Alle Lichter im Raum aus“,
+                      Editor-Schema) – für die Chips Card, später auch Pop-up
     popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
                       Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Dock und Raum-Karte
 docs/
@@ -98,7 +101,6 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | `ha-yaml-editor` | `card-grid-editor.js` | Textfeld im JSON-Format |
 | `getStubConfig()` der Kartenklassen (`hui-<typ>-card`) | `popup.js` | nur `{type}` |
 | Elementnamen `hui-card-preview`, `hui-dialog-edit-card`, `hui-card-options`, `hui-card-edit-mode` … | `card-grid.js` (Pop-up, Bereich), `dock.js` | Karte gilt als normal eingebunden |
-| `temperature_entity_id` / `humidity_entity_id` der Area in `hass.areas` | `state.js` (`areaSensor`, Bereich Card) | erster passende Sensor der Area |
 | WebSocket `lovelace/config` | `popup-hub.js` (Pop-ups für Dock und Raum-Karte), `dock.js` | keine Pop-ups/Einträge aus dem Dashboard |
 | Event `ll-rebuild` | `card-grid.js` | Zelle wird neu aufgebaut, sonst nichts |
 | Elementname `hui-card-picker` (Vorschau in der Kartenauswahl erkennen) | `lifecycle.js` (`inPicker`) | Karte läuft wie normal eingebunden |

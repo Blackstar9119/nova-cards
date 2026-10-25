@@ -17,16 +17,6 @@ export const langOf = h => h.locale?.language || h.language || 'de';
 export const tzOf = h => h.locale?.time_zone === 'server' ? h.config?.time_zone : undefined;
 // Bereich einer Entität (direkt oder über ihr Gerät)
 export const areaOf = (h, id) => { const e = h.entities?.[id]; return (e && (e.area_id || h.devices?.[e.device_id]?.area_id)) || null; };
-// Sichtbare Entitäten einer Area (ohne versteckte und Konfig-/Diagnose-Entitäten), optional nur einer Domain
-export const areaEntities = (h, area, d) => !area || !h?.entities ? [] : Object.keys(h.entities).filter(id => {
-  const e = h.entities[id];
-  return (!d || dom(id) === d) && !!h.states[id] && !e.hidden && !e.entity_category && areaOf(h, id) === area;
-});
-// Messwert-Sensor einer Area: der in der Area hinterlegte (temperature_entity_id / humidity_entity_id), sonst der erste passende
-export const areaSensor = (h, area, dc) => {
-  const id = h?.areas?.[area]?.[`${dc}_entity_id`];
-  return id && h.states[id] ? id : areaEntities(h, area, 'sensor').find(x => h.states[x].attributes.device_class === dc) || null;
-};
 // supported_features prüfen
 export const hasF = (s, f) => ((s?.attributes.supported_features || 0) & f) === f;
 
