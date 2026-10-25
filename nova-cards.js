@@ -7214,11 +7214,12 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     pause: ["pause", "paused", "user_paused"],
     wait: ["delayedstart", "delayed_start", "delay_wait", "scheduled", "waiting_to_start"],
     done: ["finished", "finish", "done", "complete", "completed", "clean", "end", "programme_ended"],
-    err: ["error", "fault", "failure", "actionrequired", "action_required", "interrupted"]
+    err: ["error", "fault", "failure", "actionrequired", "action_required", "interrupted"],
+    prep: ["setting", "programming", "selecting", "adjusting"]
   };
-  var SKEY = { run: "running_states", pause: "paused_states", wait: "waiting_states", done: "finished_states", err: "error_states" };
-  var TKEY = { run: "text_running", pause: "text_paused", wait: "text_waiting", done: "text_finished", err: "text_error", off: "text_off" };
-  var TXT = { pause: "Pausiert", wait: "Startet später", done: "Fertig", err: "Störung", off: "Aus" };
+  var SKEY = { run: "running_states", pause: "paused_states", wait: "waiting_states", done: "finished_states", err: "error_states", prep: "prep_states" };
+  var TKEY = { run: "text_running", pause: "text_paused", wait: "text_waiting", done: "text_finished", err: "text_error", prep: "text_prep", off: "text_off" };
+  var TXT = { pause: "Pausiert", wait: "Startet später", done: "Fertig", err: "Störung", prep: "Wird eingestellt", off: "Aus" };
   var BAD = /* @__PURE__ */ new Set(["unavailable", "unknown", "none", ""]);
   var ok = (s) => !!s && !BAD.has(s.state);
   var GDEF = { layout: "full", animation: true, glow: true, hide_when_off: false, start_at: "none" };
@@ -7274,9 +7275,11 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 <g class="drops"><circle cx="34" cy="80" r="1.3"/><circle cx="44" cy="80" r="1.1"/><circle cx="50" cy="80" r="1.4"/><circle cx="57" cy="80" r="1.1"/><circle cx="66" cy="80" r="1.3"/><circle cx="40" cy="80" r="1"/></g>
 <g class="arm"><rect x="30" y="81" width="40" height="2.4" rx="1.2"/><circle cx="50" cy="82.2" r="2.4"/></g></g>${DONE}</svg>`,
     airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><g class="heat"><path d="M38 12 q3 -4 0 -8"/><path d="M50 12 q3 -4 0 -8"/><path d="M62 12 q3 -4 0 -8"/></g>
+<g class="puff"><path d="M36 64 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 64 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M64 64 q3 -4 0 -8 q-3 -4 0 -8"/></g>
 <rect class="bd" x="18" y="16" width="64" height="76" rx="15"/><circle class="gl" cx="50" cy="35" r="12"/>
+<g class="fr"><rect x="41" y="39" width="3" height="7" rx="1" transform="rotate(-20 42.5 42.5)"/><rect x="46" y="40" width="3" height="7" rx="1" transform="rotate(10 47.5 43.5)"/><rect x="51" y="39" width="3" height="7" rx="1" transform="rotate(-8 52.5 42.5)"/><rect x="56" y="40" width="3" height="6" rx="1" transform="rotate(22 57.5 43)"/></g>
 <g class="fan"><path d="M50 35 q-2 -8 3 -10 q2 5 -3 10 Z"/><path d="M50 35 q8 -2 10 3 q-5 2 -10 -3 Z"/><path d="M50 35 q2 8 -3 10 q-2 -5 3 -10 Z"/><path d="M50 35 q-8 2 -10 -3 q5 -2 10 3 Z"/><circle cx="50" cy="35" r="1.6"/></g>
-<rect class="disp" x="40" y="52" width="20" height="6" rx="2"/><rect class="dw" x="22" y="63" width="56" height="25" rx="9"/><rect class="hd2" x="38" y="73" width="24" height="5" rx="2.5"/>${DONE}</svg>`,
+<rect class="disp" x="40" y="52" width="20" height="6" rx="2"/><g class="drw"><rect class="dw" x="22" y="63" width="56" height="25" rx="9"/><rect class="hd2" x="38" y="73" width="24" height="5" rx="2.5"/></g>${DONE}</svg>`,
     coffee: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvc"><path d="M32 64 h22 v12 a7 7 0 0 1 -7 7 h-8 a7 7 0 0 1 -7 -7 Z"/></clipPath></defs>
 <rect class="bd" x="58" y="8" width="24" height="80" rx="6"/><rect class="bd" x="18" y="8" width="48" height="22" rx="6"/><rect class="bd" x="18" y="86" width="64" height="7" rx="3"/>
 <rect class="dw" x="37" y="30" width="12" height="6" rx="2"/><circle class="led" cx="27" cy="19" r="2"/><circle class="kn" cx="70" cy="22" r="3.6"/>
@@ -7374,6 +7377,18 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .anim.st-run .w-dishwasher .arm{animation:dv-arm 1.6s ease-in-out infinite alternate}
 .anim.st-run .w-dishwasher .drops circle{animation:dv-drop 1.4s ease-out infinite}
 .anim.st-run .w-dishwasher .mist{animation:dv-mist 3.2s ease-in-out infinite}
+.scene .fr rect{fill:color-mix(in srgb,var(--dc) var(--pp,0%),currentColor);fill-opacity:calc(.3 + var(--pf,0) * .55)}
+.scene .puff path{fill:none;stroke:currentColor;stroke-opacity:.6;stroke-width:1.6;stroke-linecap:round;opacity:0}
+.scene .drw{transform-box:view-box;transition:transform .5s ease}
+.dopen .w-airfryer .drw{transform:translateY(9px)}
+.st-run .w-airfryer .gl{fill:color-mix(in srgb,var(--dc) 30%,rgba(0,0,0,.28))}
+.st-prep .scene .disp,.st-pause .w-airfryer .disp{fill:var(--dc);fill-opacity:.7}
+.anim.st-prep .w-airfryer .disp,.anim.st-pause .w-airfryer .disp{animation:dv-blink 1.4s ease-in-out infinite}
+.anim.st-pause .w-airfryer .fan{animation:dv-spindown 2.6s cubic-bezier(.15,.7,.35,1) both}
+.anim.st-run .w-airfryer .gl{animation:dv-gl 3s ease-in-out infinite}
+.anim.st-run.last .w-airfryer .gl{animation-duration:.8s}
+.anim.st-done.fx .w-airfryer .puff path{animation:dv-steam 1.8s ease-out 2 both}
+.anim.st-done.fx .w-airfryer .drw{animation:dv-jolt .6s .1s ease-out both}
 .anim.st-run .w-airfryer .fan{animation:dv-spin 1s linear infinite}
 .anim.st-run .w-airfryer .heat path{animation:dv-heat 2.2s ease-out infinite}
 .anim.st-run.alt .w-airfryer .fan{animation-duration:3s}
@@ -7386,8 +7401,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .anim.st-run.alt .w-coffee .cf{animation:dv-fill 9s ease-out both}
 .st-run:not(.alt) .w-coffee .cf,.st-done .w-coffee .cf{transform:none}
 .anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
-.scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .steam path:nth-child(2){animation-delay:.5s}
-.scene .drops circle:nth-child(3),.scene .heat path:nth-child(3),.scene .steam path:nth-child(3){animation-delay:1s}
+.scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .steam path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}
+.scene .drops circle:nth-child(3),.scene .heat path:nth-child(3),.scene .steam path:nth-child(3),.scene .puff path:nth-child(3){animation-delay:1s}
 .scene .drops circle:nth-child(4){animation-delay:.25s}.scene .drops circle:nth-child(5){animation-delay:.75s}.scene .drops circle:nth-child(6){animation-delay:1.15s}
 .scene .drops circle:nth-child(odd){--dx:-6px}.scene .drops circle:nth-child(even){--dx:6px}
 /* Unsichtbar (außerhalb des Bildschirms, Tab im Hintergrund, Kartenauswahl): alles steht */
@@ -7402,6 +7417,10 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 @keyframes dv-mist{0%,100%{opacity:.04}50%{opacity:.16}}
 @keyframes dv-heat{0%{opacity:0;transform:translateY(4px)}40%{opacity:.85}100%{opacity:0;transform:translateY(-8px)}}
 @keyframes dv-glow{0%,100%{opacity:.25}50%{opacity:.8}}
+@keyframes dv-blink{0%,100%{fill-opacity:.7}50%{fill-opacity:.15}}
+@keyframes dv-gl{0%,100%{fill-opacity:.7}50%{fill-opacity:1}}
+@keyframes dv-spindown{from{transform:rotate(0)}to{transform:rotate(400deg)}}
+@keyframes dv-jolt{0%,100%{transform:translateY(0)}35%{transform:translateY(6px)}65%{transform:translateY(-1px)}}
 @keyframes dv-steam{0%{opacity:0;transform:translateY(4px)}35%{opacity:.6}100%{opacity:0;transform:translateY(-12px)}}
 @keyframes dv-flow{to{stroke-dashoffset:-7}}
 @keyframes dv-fill{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
@@ -7483,13 +7502,13 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     _S(id) {
       return id ? this._h?.states[id] : null;
     }
-    // Zustandsgruppe: run, pause, wait, done, err oder off
+    // Zustandsgruppe: run, pause, wait, done, err, prep oder off
     _cls() {
       const c = this._c, s = this._S(c.entity);
       if (!s) return "off";
       const v = String(s.state).toLowerCase();
       if (["binary_sensor", "switch", "input_boolean"].includes(dom(c.entity)) && !c.running_states) return v === "on" ? "run" : "off";
-      for (const k of ["err", "pause", "wait", "done", "run"]) {
+      for (const k of ["err", "pause", "wait", "done", "prep", "run"]) {
         const own = c[SKEY[k]] != null ? list(c[SKEY[k]]).map((x) => x.toLowerCase()) : STATES[k];
         if (own.includes(v)) return k;
       }
@@ -7717,10 +7736,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._prev = cls;
       const ph = this._S(c.phase || c.entity), phs = c.phase_states != null ? list(c.phase_states) : TY.phase;
       const alt = cls === "run" && !!ph && phs.map((x) => x.toLowerCase()).includes(String(ph.state).toLowerCase());
-      ["run", "pause", "wait", "done", "err", "off"].forEach((k) => e.g.classList.toggle(`st-${k}`, k === cls));
+      ["run", "pause", "wait", "done", "err", "prep", "off"].forEach((k) => e.g.classList.toggle(`st-${k}`, k === cls));
       e.g.classList.toggle("alt", alt);
       e.g.classList.toggle("fx", !!this._fx);
       e.g.classList.toggle("na", na);
+      const dr = this._S(c.door);
+      e.g.classList.toggle("dopen", !!dr && ["on", "open", "opened"].includes(dr.state));
       this.classList.toggle("nv-na", na);
       const hide = !!c.hide_when_off && ["off", "done"].includes(cls) && !this._pv && !this._em && !this.hasAttribute("preview");
       if (this.hidden !== hide) {
@@ -7746,6 +7767,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const { rem, end } = act ? this._time(cls) : { rem: null, end: null };
       const p = act || cls === "done" ? this._progress(cls, rem) : null;
       e.bar.hidden = p == null;
+      const pf = cls === "done" ? 1 : act && p != null ? p / 100 : 0;
+      e.g.style.setProperty("--pf", pf.toFixed(2));
+      e.g.style.setProperty("--pp", `${Math.round(pf * 70)}%`);
+      e.g.classList.toggle("last", cls === "run" && rem != null && rem <= 60);
       if (p != null) e.bari.style.width = `${p}%`;
       if (c.layout === "compact") {
         e.ic.style.setProperty("--p", `${p ?? 0}%`);
@@ -7934,12 +7959,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var GSTATE = [
     { name: "running_states", selector: { text: { multiple: true } } },
     g2({ name: "paused_states", selector: { text: { multiple: true } } }, { name: "waiting_states", selector: { text: { multiple: true } } }),
-    g2({ name: "finished_states", selector: { text: { multiple: true } } }, { name: "error_states", selector: { text: { multiple: true } } })
+    g2({ name: "finished_states", selector: { text: { multiple: true } } }, { name: "error_states", selector: { text: { multiple: true } } }),
+    { name: "prep_states", selector: { text: { multiple: true } } }
   ];
   var GTEXT = [
     g2({ name: "text_running", selector: T }, { name: "text_paused", selector: T }),
     g2({ name: "text_waiting", selector: T }, { name: "text_finished", selector: T }),
-    g2({ name: "text_error", selector: T }, { name: "text_off", selector: T })
+    g2({ name: "text_error", selector: T }, { name: "text_off", selector: T }),
+    { name: "text_prep", selector: T }
   ];
   var GLOOK = [
     sel("layout", [["full", "Voll"], ["compact", "Kompakt (läuft gerade)"]]),
@@ -7986,6 +8013,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     waiting_states: "Zustände „startet später“",
     finished_states: "Zustände „fertig“",
     error_states: "Zustände „Störung“",
+    prep_states: "Zustände „wird eingestellt“",
+    text_prep: "Text „wird eingestellt“",
     text_running: "Text „läuft“",
     text_paused: "Text „pausiert“",
     text_waiting: "Text „startet später“",
@@ -8021,6 +8050,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     door: "Hinweis, wenn an bzw. open",
     connection: "Hinweis, wenn aus bzw. nicht verfügbar",
     running_states: "Leer = übliche Rohzustände (run, running, cooking …). Genaue Zustände der Status-Entität",
+    prep_states: "Gerät wird gerade eingestellt (z. B. Airfryer „setting“). Leer = setting, programming …",
     text_running: "Leer = Übersetzung von HA, sonst Text zum Gerätetyp",
     hide_when_off: "Gut für die Startseite: Karte nur, solange etwas läuft. Im Bearbeitungsmodus bleibt sie sichtbar",
     color: "Farbrolle aus dem Theme (Fortschritt, Start-Knopf, Animation)",
