@@ -3,8 +3,9 @@
 [← Zurück zur Übersicht](../README.md)
 
 Eine Raumansicht als großer Glasrahmen: oben eine Kopfzeile mit Zurück-Knopf, Icon und Raumname, darunter beliebige
-Karten in Zeilen und Spalten – genau wie in der Nova Pop-up Card, nur fest im Dashboard. Werte und Knöpfe wie
-„Alle Lichter im Raum aus“ kommen als [Nova Chips Card](chips-card.md) in eine Zeile des Rasters. Gedacht für Raum-Unteransichten (z. B. `/zuhause/wohnzimmer`).
+Karten in Zeilen und Spalten – genau wie in der Nova Pop-up Card, nur fest im Dashboard. Rechts neben dem Raumnamen
+sitzen auf Wunsch Chips (Werte oder Knöpfe wie „Alle Lichter im Raum aus“) – derselbe Baustein wie in der
+[Nova Chips Card](chips-card.md), die es zusätzlich als eigene Karte für das Raster gibt. Gedacht für Raum-Unteransichten (z. B. `/zuhause/wohnzimmer`).
 
 ## Anlegen
 
@@ -25,6 +26,16 @@ einem Abschnitt bzw. in einer Panel-Ansicht verwenden.
 | `back_action` | Aktion des Zurück-Knopfs. Ohne Angabe eine Seite zurück, `action: none` blendet den Knopf aus |
 | `tint` | Farbton des Rahmens als Nova-Farbrolle (`neutral`, `accent-1` … `accent-4`), leer = Nova-Glas |
 
+## Chips in der Kopfzeile
+
+| Option | Bedeutung |
+|---|---|
+| `chips` | Liste der Chips, gleiche Optionen wie in der [Nova Chips Card](chips-card.md#optionen-je-chip). Standard: keine |
+| `chips_layout` | `wrap` (umbrechen, Standard) oder `scroll` (waagrecht scrollen) |
+
+„Alle Lichter im Raum aus“ schaltet die Lichter der gewählten `area` aus. Auf dem Handy zeigen Chips mit Icon nur das
+Icon (Wert-Chips Icon und Wert).
+
 ## Raster
 
 Wie bei der Pop-up Card: `rows` ist eine Liste von Zeilen, jede Zeile hat `cells` mit je einer Karte (`card`) und
@@ -40,6 +51,9 @@ area: wohnzimmer
 back_action:
   action: navigate
   navigation_path: /zuhause/home
+chips:
+  - type: button
+    preset: lights_off
 rows:
   - cells:
       - card:
