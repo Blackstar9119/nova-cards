@@ -1,5 +1,5 @@
 /* Nova Cards v0.10.1b1 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
   var __defProp = Object.defineProperty;
@@ -71,6 +71,14 @@
   var areaOf = (h, id) => {
     const e = h.entities?.[id];
     return e && (e.area_id || h.devices?.[e.device_id]?.area_id) || null;
+  };
+  var areaEntities = (h, area, d) => !area || !h?.entities ? [] : Object.keys(h.entities).filter((id) => {
+    const e = h.entities[id];
+    return (!d || dom(id) === d) && !!h.states[id] && !e.hidden && !e.entity_category && areaOf(h, id) === area;
+  });
+  var areaSensor = (h, area, dc) => {
+    const id = h?.areas?.[area]?.[`${dc}_entity_id`];
+    return id && h.states[id] ? id : areaEntities(h, area, "sensor").find((x) => h.states[x].attributes.device_class === dc) || null;
   };
   var hasF = (s, f) => ((s?.attributes.supported_features || 0) & f) === f;
   function valueOf(h, s, o) {
@@ -3712,14 +3720,14 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
     _build() {
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), strip = (c) => {
+      const w = r.querySelector(".wrap"), strip2 = (c) => {
         Object.entries(MDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         if (c.glow === true) delete c.glow;
         return c;
       };
       const data = { ...MDEF, glow: true, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
-        const c = strip(merge(this._config, names(schema), v));
+        const c = strip2(merge(this._config, names(schema), v));
         this._emit(c);
         if (!!c.show_source !== !!c0.show_source) this._rebuild();
       });
@@ -3738,7 +3746,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
           }));
         }),
         this._section("players", "mdi:speaker-multiple", "Weitere Player", (b) => {
-          if (this._items("players").length) b.append(this._form(MPPLAY, data, (v) => this._emit(strip({ ...this._config, ...v }))));
+          if (this._items("players").length) b.append(this._form(MPPLAY, data, (v) => this._emit(strip2({ ...this._config, ...v }))));
           this._itemList(b, "players", MPITEM, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
         }),
         this._section("logos", "mdi:application-outline", "App-Logos", (b) => this._logos(b, c0)),
@@ -4578,13 +4586,13 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     _build() {
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), strip = (c) => {
+      const w = r.querySelector(".wrap"), strip2 = (c) => {
         Object.entries(VDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         return c;
       };
       const data = { ...VDEF, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
-        const c = strip(merge(this._config, names(schema), v));
+        const c = strip2(merge(this._config, names(schema), v));
         this._emit(c);
         if (vvis(c) !== vvis(c0)) this._rebuild();
       });
@@ -4959,14 +4967,14 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), data = { ...WDEF, ...c0, entities: calsOf(c0) };
-      const strip = (c) => {
+      const strip2 = (c) => {
         if (c.entities === void 0 && c.entity !== void 0) c.entities = calsOf(c);
         Object.entries(WDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         delete c.entity;
         delete c.refresh;
         return c;
       };
-      const form = (schema) => this._form(schema, data, (v) => this._emit(strip(merge(this._config, names(schema), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip2(merge(this._config, names(schema), v))));
       w.append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(WGEN))),
         this._section("dates", "mdi:calendar-clock", "Termine", (b) => b.append(form(WDATES(data)))),
@@ -5526,11 +5534,11 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), data = { ...WDEF2, ...c0 };
-      const strip = (c) => {
+      const strip2 = (c) => {
         Object.entries(WDEF2).forEach(([k, x]) => JSON.stringify(c[k]) === JSON.stringify(x) && delete c[k]);
         return c;
       };
-      const form = (schema) => this._form(schema, data, (v) => this._emit(strip(merge(this._config, names(schema), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip2(merge(this._config, names(schema), v))));
       const s = this._hass?.states[c0.entity];
       const none = (t) => s && !hasF(s, FC[t]) ? [this._hint(`Diese Entität liefert keine ${FC_NAME[t]}.`)] : [];
       const fc = data.show_daily !== false || data.show_hourly;
@@ -5558,8 +5566,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   __publicField(NovaWeatherCardEditor, "openSections", ["general"]);
   define("weather-card-editor", NovaWeatherCardEditor);
 
-  // src/popup.js
-  var DEF = { width: 1180, stack_below: 500, info_layout: "wrap" };
+  // src/shared/card-grid.js
   var WIDTHS = [["auto", "Auto"], ["1/4", "1/4"], ["1/3", "1/3"], ["1/2", "1/2"], ["2/3", "2/3"], ["3/4", "3/4"], ["1", "Voll"]];
   var FR = { "1/4": 1 / 4, "1/3": 1 / 3, "1/2": 1 / 2, "2/3": 2 / 3, "3/4": 3 / 4, "1": 1 };
   var fracOf = (v) => Object.keys(FR).reduce((a, k) => Math.abs(FR[k] - v) < Math.abs(FR[a] - v) ? k : a, "1");
@@ -5586,417 +5593,109 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     helpersP = null;
     throw e;
   });
-  var wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  var haEdP;
-  var HA_ED = ["hui-card-picker", "hui-card-element-editor"];
-  var loadHaEditors = () => HA_ED.every((n) => customElements.get(n)) ? Promise.resolve() : haEdP ||= (async () => {
-    try {
-      (await helpers()).createCardElement({ type: "vertical-stack", cards: [] });
-      await Promise.race([customElements.whenDefined("hui-vertical-stack-card"), wait(3e3)]);
-      await customElements.get("hui-vertical-stack-card")?.getConfigElement?.();
-    } catch (e) {
-      console.warn("[nova-cards] Kartenauswahl von HA nicht vorgeladen", e);
-    }
-    await Promise.race([Promise.all(HA_ED.map((n) => customElements.whenDefined(n))), wait(3e3)]);
-  })();
-  var PCSS2 = `${NOVA_VARS}
-:host{display:block;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
-:host(.live){display:contents}
-ha-icon{--mdc-icon-size:20px;display:flex}
-.ph{display:none;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;border:1px dashed var(--divider-color,#666);color:var(--primary-text-color);font-size:13px}
-:host(.edit) .ph{display:flex}
-.ph .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pop{position:fixed;inset:0;z-index:var(--nova-popup-z-index,6);display:flex;align-items:center;justify-content:center}
-.pop[hidden]{display:none}
-.ov{position:absolute;inset:0;background:var(--nv-popup-backdrop);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .22s}
-.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96vw);max-height:88vh;
-background:var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
-box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s}
-.sh.tint{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,var(--nv-popup-base)),var(--nv-popup-base))}
-.pop.in .ov{opacity:1}.pop.in .sh{opacity:1;transform:none}
-.grip{display:none;justify-content:center;padding:8px 0 0;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.35}
-.hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
-background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bdg{display:flex;gap:6px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.bdg::-webkit-scrollbar{display:none}.bdg:empty{display:none}
-.bd{display:inline-flex;align-items:center;gap:5px;flex:none;padding:5px 10px;border-radius:999px;background:var(--c,var(--nv-chip));color:var(--cf,inherit);font-size:12px;white-space:nowrap;cursor:pointer;outline:none}
-.bd ha-icon{--mdc-icon-size:15px}.bd img{width:15px;height:15px}.bd:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.bd:active{transform:scale(.95)}
-.bd .bn:empty,.bd .bv:empty{display:none}.bd .bn:not(:empty)+.bv:not(:empty)::before{content:'· '}
-.bd[hidden]{display:none}
-.x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
-.x:active{transform:scale(.92)}
-.info{display:flex;flex-wrap:wrap;gap:7px;padding:0 14px 12px;flex:none}
+  var PREV = /* @__PURE__ */ new Set(["HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR", "HUI-CARD-PICKER"]);
+  var EDIT = /* @__PURE__ */ new Set(["HUI-CARD-OPTIONS", "HUI-CARD-EDIT-MODE"]);
+  var HANDOFF = /* @__PURE__ */ new Map();
+  var handoffT;
+  var handOff = (kind, pool) => {
+    pool.forEach((ws, k) => {
+      const key = `${kind}|${k}`;
+      (HANDOFF.get(key) || HANDOFF.set(key, []).get(key)).push(...ws);
+    });
+    clearTimeout(handoffT);
+    handoffT = setTimeout(() => HANDOFF.clear(), 3e3);
+  };
+  var takeOver = (kind, k) => HANDOFF.get(`${kind}|${k}`)?.shift();
+  var GRID_CSS = `
+.rw{display:flex;flex-wrap:wrap;gap:12px;flex:none}
+.rw>.cell.auto{min-width:min(100%,140px)}
+.stack .rw>.cell{flex:1 1 100%!important}
+.cell{min-width:0}
+.cell.empty{min-height:0}
+.err{display:flex;gap:8px;align-items:flex-start;padding:12px 14px;border-radius:20px;font-size:13px;
+background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid color-mix(in srgb,var(--nv-error) 50%,transparent)}
+.err ha-icon{color:var(--nv-error);flex:none}
+.hint{font-size:13px;opacity:.7;padding:8px 2px}`;
+  var CHIP_CSS = `
+.info{display:flex;flex-wrap:wrap;gap:7px;flex:none}
 .info.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.info.scroll::-webkit-scrollbar{display:none}
 .info[hidden]{display:none}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:12.5px;white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
 .chip ha-icon{--mdc-icon-size:16px}.chip img{width:16px;height:16px}.chip:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.chip:active{transform:scale(.95)}
 .chip .cn:empty{display:none}.chip .cn:not(:empty)::after{content:' ·'}
-.chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}
-.body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box;
-padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
-.rw{display:flex;flex-wrap:wrap;gap:12px;flex:none}
-.rw>.cell.auto{min-width:min(100%,140px)}
-.body.stack .rw>.cell{flex:1 1 100%!important}
-.cell{min-width:0}
-.cell.empty{min-height:0}
-.pop.inline .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
-.pop.inline .cell.empty::after{content:'Leerer Platz'}
-.err{display:flex;gap:8px;align-items:flex-start;padding:12px 14px;border-radius:20px;font-size:13px;
-background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid color-mix(in srgb,var(--nv-error) 50%,transparent)}
-.err ha-icon{color:var(--nv-error);flex:none}
-.hint{font-size:13px;opacity:.7;padding:8px 2px}
-@media(max-width:600px){
-.pop{align-items:flex-end}
-.bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
-.sh{width:100vw;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
-.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
-.body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
-.pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
-.pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
-.pop.inline .body{overflow:visible;padding-bottom:14px}
-@media(prefers-reduced-motion:reduce){.ov,.sh{transition:none}}`;
-  var HANDOFF = /* @__PURE__ */ new Map();
-  var handoffT;
-  var handOff = (pool) => {
-    pool.forEach((ws, k) => (HANDOFF.get(k) || HANDOFF.set(k, []).get(k)).push(...ws));
-    clearTimeout(handoffT);
-    handoffT = setTimeout(() => HANDOFF.clear(), 3e3);
-  };
-  var PREV = /* @__PURE__ */ new Set(["HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR", "HUI-CARD-PICKER"]);
-  var EDIT = /* @__PURE__ */ new Set(["HUI-CARD-OPTIONS", "HUI-CARD-EDIT-MODE"]);
-  var NovaPopupCard = class extends HTMLElement {
-    static getConfigElement() {
-      return document.createElement(tag("popup-card-editor"));
-    }
-    static getStubConfig() {
-      return { hash: "neu", rows: [{ cells: [{ card: null }] }, { cells: [{ card: null }, { card: null }] }] };
-    }
-    constructor() {
-      super();
-      const r = this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${PCSS2}</style>
-<div class="ph"><ha-icon icon="mdi:card-multiple-outline"></ha-icon><span class="t"></span></div>
-<div class="pop" hidden><div class="ov"></div><div class="sh" role="dialog" aria-modal="true">
-<div class="grip"><i></i></div>
-<div class="hd"><span class="hi"></span><span class="tt"></span><div class="bdg"></div><button type="button" class="x" aria-label="Schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
-<div class="info" hidden></div><div class="body"></div></div></div>`;
-      this._pop = r.querySelector(".pop");
-      this._sh = r.querySelector(".sh");
-      this._body = r.querySelector(".body");
-      this._infoEl = r.querySelector(".info");
-      this._bdgEl = r.querySelector(".bdg");
-      this._mode = "live";
-      r.querySelector(".x").addEventListener("click", () => this.close());
-      r.querySelector(".ov").addEventListener("click", () => this.close());
-      r.querySelector(".ov").addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
-      this._sync = () => this._syncOpen();
-      this._key = (e) => {
-        if (e.key !== "Escape" || e.defaultPrevented) return;
-        if (e.composedPath().some((n) => n.localName?.includes("dialog"))) return;
-        this.close();
-      };
-      this._swipe();
-      this._ro = new ResizeObserver(() => this._stack());
-    }
-    setConfig(c) {
-      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      const old = this._cfg?.hash;
-      this._cfg = {
-        ...DEF,
-        ...c,
-        hash: cleanHash(c.hash),
-        info: [].concat(c.info || []).map((x) => typeof x === "string" ? { entity: x } : x),
-        badges: [].concat(c.badges || []).map((x) => typeof x === "string" ? { entity: x } : x).filter((x) => x?.entity)
-      };
-      this._rows = normRows(c);
-      this._ids = entityIds([this._cfg.info, this._cfg.badges]);
-      if (this.isConnected && old !== this._cfg.hash) {
-        this._unreg(old);
-        this._reg();
-      }
-      this._head();
-      this._dirty = true;
-      if (this._isOpen || this._mode === "preview") this._grid();
-      this._syncOpen();
-    }
-    // Die eingebetteten Karten bekommen jedes Update (sie filtern selbst), Kopfzeile und Info-Leiste nur bei eigenen Änderungen
-    set hass(h) {
-      const old = this._h;
-      this._h = h;
-      if (!this._isOpen && this._mode !== "preview") return;
-      if (old === h || hassChanged(old, h, this._ids)) this._info();
-      this._cells().forEach((el2) => this._setHass(el2));
-    }
-    getCardSize() {
-      return this._mode === "live" ? 0 : 1;
-    }
-    getGridOptions() {
-      return { columns: "full", rows: "auto" };
-    }
-    connectedCallback() {
-      this._ro.observe(this._body);
-      ["hashchange", "popstate", "location-changed"].forEach((ev) => window.addEventListener(ev, this._sync));
-      this._detect();
-      requestAnimationFrame(() => this._detect());
-    }
-    disconnectedCallback() {
-      ["hashchange", "popstate", "location-changed"].forEach((ev) => window.removeEventListener(ev, this._sync));
-      this._ro.disconnect();
-      this._unreg(this._cfg?.hash);
-      if (this._isOpen) this._hide(true);
-      if (this._mode === "preview" && this._pool) {
-        handOff(this._pool);
-        this._pool = null;
-        this._dirty = true;
-      }
-    }
-    _reg() {
-      if (this._cfg?.hash && this._mode !== "preview") register(this._cfg.hash, this);
-    }
-    _unreg(h) {
-      if (h) unregister(h, this);
-    }
-    _detect() {
-      if (!this.isConnected) return;
-      let inDialog = false, inEdit = !!(this.preview || this.hasAttribute("preview") || this.editMode);
-      for (let n = this, i = 0; n && i < 80; i++) {
-        if (PREV.has(n.tagName) || n.tagName?.includes("DIALOG")) {
-          inDialog = true;
-          break;
-        }
-        if (EDIT.has(n.tagName)) inEdit = true;
-        n = n.parentElement || n.getRootNode?.().host;
-      }
-      let m = inDialog ? "preview" : inEdit ? "edit" : "live";
-      if (this._fallback) m = "live";
-      const was = this._mode;
-      this._mode = m;
-      ["live", "edit", "preview"].forEach((k) => this.classList.toggle(k, k === m));
-      this._pop.classList.toggle("inline", m === "preview");
-      this._unreg(this._cfg?.hash);
-      this._reg();
-      if (m === "preview") {
-        if (this._isOpen) this._hide(true);
-        this._pop.hidden = false;
-        if (this._dirty) this._grid();
-        if (this._h) this.hass = this._h;
-      } else if (was === "preview") this._pop.hidden = true;
-      this._syncOpen();
-    }
-    /* --- Öffnen & Schließen --- */
-    _syncOpen() {
-      if (!this._cfg || this._mode === "preview") return;
-      const want = this.isConnected && !!this._cfg.hash && curHash() === this._cfg.hash;
-      if (want && !this._isOpen) this._show();
-      else if (!want && this._isOpen) this._hide();
-    }
-    _show() {
-      if (this._fallback && hasPopup(this._cfg.hash)) return;
-      this._isOpen = true;
-      this._back = cameByNav();
-      clearTimeout(this._ht);
-      this._pop.hidden = false;
-      this._sh.style.transform = "";
-      lockScroll(true);
-      if (this._dirty) this._grid();
-      if (this._h) this.hass = this._h;
-      this._body.scrollTop = 0;
-      window.addEventListener("keydown", this._key);
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        if (this._isOpen) this._pop.classList.add("in");
-      }));
-    }
-    _hide(now) {
-      this._isOpen = false;
-      this._pop.classList.remove("in");
-      this._sh.style.transform = "";
-      lockScroll(false);
-      window.removeEventListener("keydown", this._key);
-      clearTimeout(this._ht);
-      if (now) this._pop.hidden = this._mode !== "preview";
-      else this._ht = setTimeout(() => {
-        if (!this._isOpen && this._mode !== "preview") this._pop.hidden = true;
-      }, 260);
-    }
-    // Schließen = Hash entfernen; das eigentliche Ausblenden folgt über _syncOpen
-    close() {
-      if (!this._isOpen) return;
-      if (curHash() === this._cfg.hash) clearHash(this._back);
-      else this._hide();
-    }
-    // Nach unten wischen (Handy): auf Griff/Kopfzeile immer, im Inhalt nur, wenn er ganz oben steht
-    _swipe() {
-      const sh = this._sh;
-      let y0 = 0, x0 = 0, dy = 0, t0 = 0, ok = false, drag = false;
-      const mobile = () => matchMedia("(max-width:600px)").matches;
-      sh.addEventListener("touchstart", (e) => {
-        ok = this._isOpen && mobile() && e.touches.length === 1 && (!e.composedPath().includes(this._body) || this._body.scrollTop <= 0);
-        if (!ok) return;
-        y0 = e.touches[0].clientY;
-        x0 = e.touches[0].clientX;
-        dy = 0;
-        t0 = Date.now();
-        drag = false;
-      }, { passive: true });
-      sh.addEventListener("touchmove", (e) => {
-        if (!ok) return;
-        const d = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
-        if (!drag) {
-          if (Math.abs(d) < 8 && Math.abs(dx) < 8) return;
-          if (d <= 0 || Math.abs(dx) > d) {
-            ok = false;
-            return;
-          }
-          drag = true;
-          sh.style.transition = "none";
-        }
-        dy = Math.max(0, d);
-        e.preventDefault();
-        sh.style.transform = `translateY(${dy}px)`;
-      }, { passive: false });
-      const end = () => {
-        if (!drag) {
-          ok = false;
-          return;
-        }
-        drag = false;
-        ok = false;
-        sh.style.transition = "";
-        if (dy > 120 || dy / Math.max(1, Date.now() - t0) > 0.6) this.close();
-        else sh.style.transform = "";
-      };
-      sh.addEventListener("touchend", end);
-      sh.addEventListener("touchcancel", end);
-    }
-    /* --- Kopfzeile --- */
-    _head() {
-      const c = this._cfg, r = this.shadowRoot;
-      r.querySelector(".tt").textContent = c.title || "";
-      const hi = r.querySelector(".hi");
-      if (c.icon) setIcon(hi, c.icon);
-      else {
-        hi.innerHTML = "";
-        hi._ic = null;
-      }
-      r.querySelector(".ph .t").textContent = c.title || (c.hash ? `#${c.hash}` : "Kein Hash eingestellt");
-      r.querySelector(".ph ha-icon").setAttribute("icon", c.icon || "mdi:card-multiple-outline");
-      this._sh.style.setProperty("--pw", `${+c.width || DEF.width}px`);
-      const tint = c.tint || c.color;
-      this._sh.classList.toggle("tint", !!tint);
-      if (tint) this._sh.style.setProperty("--tc", roleVars(tint).c);
-      if (c.title || c.hash) this._sh.setAttribute("aria-label", c.title || c.hash);
-      else this._sh.removeAttribute("aria-label");
-      this._infoEl.classList.toggle("scroll", c.info_layout === "scroll");
-      this._chips = null;
-      this._bds = null;
-      if (this._h) this._info();
-    }
-    // Badges in der Kopfzeile: optional nur bei bestimmtem Zustand, Farbe aus den Farbrollen
-    _badges() {
-      const items = this._cfg.badges, h = this._h, bar = this._bdgEl;
-      if (!this._bds || this._bds.length !== items.length) {
-        bar.innerHTML = "";
-        this._bds = items.map((o) => {
-          const d = document.createElement("div");
-          d.className = "bd";
-          d.tabIndex = 0;
-          d.setAttribute("role", "button");
-          d.innerHTML = '<span class="ci"></span><span class="bn"></span><span class="bv"></span>';
-          if (o.color) {
-            const v = roleVars(o.color);
-            d.style.setProperty("--c", v.c);
-            d.style.setProperty("--cf", v.fg);
-          }
-          const open = () => moreInfo(this, o.entity);
-          d.addEventListener("click", (e) => {
-            e.stopPropagation();
+.chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}`;
+  function renderChips(card, bar, items, h) {
+    bar.hidden = !items.length;
+    const key = JSON.stringify(items);
+    if (bar._key !== key) {
+      bar._key = key;
+      bar.innerHTML = "";
+      bar._chips = items.map((o) => {
+        const d = document.createElement("div");
+        d.className = "chip";
+        d.tabIndex = 0;
+        d.setAttribute("role", "button");
+        d.innerHTML = '<span class="ci"></span><span class="cn"></span><span class="cv"></span>';
+        const open = () => o.entity && moreInfo(card, o.entity);
+        d.addEventListener("click", open);
+        d.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
             open();
-          });
-          d.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              open();
-            }
-          });
-          bar.appendChild(d);
-          return d;
+          }
         });
-      }
-      items.forEach((o, i) => {
-        const d = this._bds[i], s = h.states[o.entity];
-        d.hidden = !s || o.state != null && o.state !== "" && !list(o.state).includes(s.state);
-        if (d.hidden) return;
-        setIcon(d.querySelector(".ci"), iconOf(h, o, "mdi:information-outline"));
-        d.querySelector(".bn").textContent = o.name || "";
-        d.querySelector(".bv").textContent = o.show_state === false ? "" : valueOf(h, s, o);
-        d.title = `${nameOf(h, o)}: ${valueOf(h, s, o)}`;
+        bar.appendChild(d);
+        return d;
       });
     }
-    _info() {
-      this._badges();
-      const items = this._cfg.info, h = this._h, bar = this._infoEl;
-      bar.hidden = !items.length;
-      if (!this._chips || this._chips.length !== items.length) {
-        bar.innerHTML = "";
-        this._chips = items.map((o) => {
-          const d = document.createElement("div");
-          d.className = "chip";
-          d.tabIndex = 0;
-          d.setAttribute("role", "button");
-          d.innerHTML = '<span class="ci"></span><span class="cn"></span><span class="cv"></span>';
-          const open = () => o.entity && moreInfo(this, o.entity);
-          d.addEventListener("click", open);
-          d.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              open();
-            }
-          });
-          bar.appendChild(d);
-          return d;
-        });
+    items.forEach((o, i) => {
+      const d = bar._chips[i], s = h.states[o.entity];
+      setIcon(d.querySelector(".ci"), iconOf(h, o, "mdi:information-outline"));
+      d.querySelector(".cn").textContent = o.name || "";
+      d.querySelector(".cv").textContent = s ? valueOf(h, s, o) : "Nicht gefunden";
+      d.title = nameOf(h, o);
+      const al = !!o.alert && alertHit({ state: o.alert_state, above: o.alert_above, below: o.alert_below }, s);
+      d.classList.toggle("al", al);
+      if (al) {
+        const v = roleVars(o.alert_color || "accent-2");
+        d.style.setProperty("--c", v.c);
+        d.style.setProperty("--cf", v.fg);
       }
-      items.forEach((o, i) => {
-        const d = this._chips[i], s = h.states[o.entity];
-        setIcon(d.querySelector(".ci"), iconOf(h, o, "mdi:information-outline"));
-        d.querySelector(".cn").textContent = o.name || "";
-        d.querySelector(".cv").textContent = s ? valueOf(h, s, o) : "Nicht gefunden";
-        d.title = nameOf(h, o);
-        const al = !!o.alert && alertHit({ state: o.alert_state, above: o.alert_above, below: o.alert_below }, s);
-        d.classList.toggle("al", al);
-        if (al) {
-          const v = roleVars(o.alert_color || "accent-2");
-          d.style.setProperty("--c", v.c);
-          d.style.setProperty("--cf", v.fg);
-        }
-      });
-    }
-    /* --- Raster --- */
+    });
+  }
+  var GridCard = (Base) => class extends Base {
     _cells() {
-      return [...this._body.querySelectorAll(":scope>.cell>*")].filter((el2) => !el2.classList.contains("err"));
+      return [...this._body.querySelectorAll(":scope>.rw>.cell>*")].filter((el2) => !el2.classList.contains("err"));
     }
     _setHass(el2) {
       if (!this._h) return;
       try {
         el2.hass = this._h;
       } catch (e) {
-        console.warn("[nova-cards] Karte im Pop-up:", e);
+        console.warn("[nova-cards] Karte im Raster:", e);
       }
     }
     _stack() {
       this._body.classList.toggle("stack", this._body.clientWidth > 0 && this._body.clientWidth < (+this._cfg?.stack_below || 0));
     }
+    // Zellen an die Nachfolgerin weitergeben (aus disconnectedCallback)
+    _handOffCells() {
+      if (this._pool) {
+        handOff(this.constructor.gridKind, this._pool);
+        this._pool = null;
+        this._dirty = true;
+      }
+    }
     _grid() {
       this._dirty = false;
-      const old = this._pool || /* @__PURE__ */ new Map(), pool = /* @__PURE__ */ new Map(), list2 = [];
+      const old = this._pool || /* @__PURE__ */ new Map(), pool = /* @__PURE__ */ new Map(), list2 = [], kind = this.constructor.gridKind;
       this._rows.forEach((row) => {
         const rw = document.createElement("div");
         rw.className = "rw";
         list2.push(rw);
         row.cells.forEach((cell) => {
           const key = JSON.stringify(cell.card);
-          let w = old.get(key)?.shift() || (this._mode === "preview" ? HANDOFF.get(key)?.shift() : null);
+          let w = old.get(key)?.shift() || (this._handoff() ? takeOver(kind, key) : null);
           if (!w) {
             w = document.createElement("div");
             w.className = "cell";
@@ -6046,7 +5745,21 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
       w.replaceChildren(el2);
     }
   };
-  define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – vom Dock oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
+
+  // src/shared/card-grid-editor.js
+  var wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  var haEdP;
+  var HA_ED = ["hui-card-picker", "hui-card-element-editor"];
+  var loadHaEditors = () => HA_ED.every((n) => customElements.get(n)) ? Promise.resolve() : haEdP ||= (async () => {
+    try {
+      (await helpers()).createCardElement({ type: "vertical-stack", cards: [] });
+      await Promise.race([customElements.whenDefined("hui-vertical-stack-card"), wait(3e3)]);
+      await customElements.get("hui-vertical-stack-card")?.getConfigElement?.();
+    } catch (e) {
+      console.warn("[nova-cards] Kartenauswahl von HA nicht vorgeladen", e);
+    }
+    await Promise.race([Promise.all(HA_ED.map((n) => customElements.whenDefined(n))), wait(3e3)]);
+  })();
   var A2 = "auto";
   var TEMPLATES = [
     { label: "Eine Karte groß", rows: [[A2]] },
@@ -6094,22 +5807,6 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
   };
   var cardTitle = (h, c) => c.title || c.name || c.heading || c.entity && (h?.states[c.entity]?.attributes.friendly_name || c.entity) || "";
   var cardIcon = (h, c) => c.icon || (c.entity && h ? iconOf(h, { entity: c.entity }, "") : "") || HA_CARDS[c.type]?.[1] || "mdi:card-outline";
-  var GENERAL = [
-    { name: "hash", required: true, selector: T },
-    g2({ name: "title", selector: T }, { name: "icon", selector: I }),
-    ROLE("tint"),
-    g2(
-      { name: "width", selector: { number: { min: 320, max: 1600, step: 10, mode: "box", unit_of_measurement: "px" } } },
-      { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } }
-    )
-  ];
-  var BADGE = [
-    ENT,
-    NAMEICON,
-    g2({ name: "show_state", selector: { boolean: {} } }, ROLE("color")),
-    { name: "state", selector: T }
-  ];
-  var HEAD = [sel("info_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])];
   var INFO = [
     ENT,
     NAMEICON,
@@ -6117,35 +5814,9 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
     g2({ name: "alert_state", selector: T }, ROLE("alert_color")),
     g2(NUM("alert_above"), NUM("alert_below"))
   ];
-  var LABELS2 = {
-    hash: "Hash (ohne #)",
-    title: "Titel",
-    icon: "Icon",
-    tint: "Farbton (leer = Nova-Glas)",
-    color: "Farbe",
-    show_state: "Zustand anzeigen",
-    state: "Nur anzeigen bei Zustand",
-    width: "Max. Breite (Desktop)",
-    stack_below: "Untereinander unter Breite",
-    info_layout: "Info-Leiste bei vielen Einträgen",
-    entity: "Entität",
-    name: "Eigener Name (optional)",
-    decimals: "Nachkommastellen",
-    alert: "Bei Achtung hervorheben",
-    alert_state: "Achtung bei Zustand",
-    alert_color: "Farbe",
-    alert_above: "Achtung über",
-    alert_below: "Achtung unter"
-  };
-  var HELPERS2 = {
-    hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
-    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.",
-    stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
-    state: "Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.",
-    color: "Leer = neutral.",
-    alert_state: "z. B. on oder open, mehrere mit Komma. Leer = an bzw. Problem (z. B. Fenster offen)."
-  };
-  var ED_CSS = `
+  var INFO_LABELS = { entity: "Entität", name: "Eigener Name (optional)", icon: "Icon", decimals: "Nachkommastellen", alert: "Bei Achtung hervorheben", alert_state: "Achtung bei Zustand", alert_color: "Farbe", alert_above: "Achtung über", alert_below: "Achtung unter" };
+  var INFO_HELPERS = { alert_state: "z. B. on oder open, mehrere mit Komma. Leer = an bzw. Problem (z. B. Fenster offen)." };
+  var GRID_ED_CSS = `
 details.item>.body{gap:12px}
 .mini{display:flex;flex-direction:column}
 .gap{height:10px;border-radius:4px}.gap.hot{background:var(--primary-color);opacity:.7}
@@ -6196,7 +5867,7 @@ ha-dialog{--dialog-content-padding:0}
 ha-dialog::part(body){overflow:hidden}
 .body{display:flex;flex-direction:column;flex:1;min-height:0;height:100%}
 hui-card-picker{flex:1;min-height:0}`;
-  var NovaPopupCardEditor = class extends NovaEditorBase {
+  var GridEditor = (Base) => class extends Base {
     set hass(h) {
       const old = this._hass;
       super.hass = h;
@@ -6237,66 +5908,11 @@ hui-card-picker{flex:1;min-height:0}`;
       }
       this._emit(c);
     }
-    _build() {
-      const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}${ED_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap");
+    _gridReset() {
       this._sub = this._pick = null;
       this._blocks = {};
-      if (!this._init) {
-        this._init = true;
-        this._secs = /* @__PURE__ */ new Set([this._config.hash ? "sec.content" : "sec.general"]);
-      }
-      this._secs.forEach((k) => this._open.add(k));
-      w.append(this._secGeneral(), this._secHead(), this._secLayout(), this._secContent());
     }
-    _sec(key, icon, label) {
-      const [d, , b] = this._details(key, icon, label, []);
-      d.addEventListener("toggle", () => {
-        if (d.open) this._secs.add(key);
-        else this._secs.delete(key);
-      });
-      return [d, b];
-    }
-    _secGeneral() {
-      const [d, b] = this._sec("sec.general", "mdi:cog-outline", "Allgemein");
-      const data = { ...this._config };
-      delete data.rows;
-      delete data.info;
-      delete data.badges;
-      if (data.color && !data.tint) data.tint = data.color;
-      const f = this._form(GENERAL, data, (v) => {
-        const c = merge(this._config, names(GENERAL), v);
-        delete c.color;
-        if (v.hash != null) {
-          const h = cleanHash(v.hash);
-          if (h !== v.hash) f.data = { ...v, hash: h };
-          if (h) c.hash = h;
-          else delete c.hash;
-        }
-        this._emit(c);
-      });
-      b.append(f);
-      if (!this._config.hash) b.append(this._hint("Ohne Hash lässt sich das Pop-up nicht öffnen."));
-      return d;
-    }
-    _secHead() {
-      const [d, b] = this._sec("sec.header", "mdi:information-outline", "Kopfzeile & Info-Leiste");
-      b.append(this._hint("Titel und Icon stehen unter „Allgemein“. Badges sitzen in der Kopfzeile, Info-Entitäten als Chips darunter. Antippen öffnet die Details."));
-      b.append(this._form(HEAD, { info_layout: DEF.info_layout, ...this._config }, (v) => {
-        const c = merge(this._config, names(HEAD), v);
-        if (c.info_layout === DEF.info_layout) delete c.info_layout;
-        this._emit(c);
-      }));
-      b.append(Object.assign(document.createElement("h4"), { textContent: "Badges" }));
-      b.append(this._hint("Kleine Anzeigen rechts neben dem Titel. Auf schmalen Bildschirmen nur Icon und Zustand, bei Platzmangel waagrecht scrollbar."));
-      this._itemList(b, "badges", BADGE, { item: "Badge", icon: "mdi:label-outline" }, "Badge hinzufügen", (it) => ({ show_state: true, ...it }));
-      b.append(Object.assign(document.createElement("h4"), { textContent: "Info-Leiste" }));
-      this._itemList(b, "info", INFO, { item: "Info", icon: "mdi:information-outline" }, "Info-Entität hinzufügen");
-      return d;
-    }
-    _secLayout() {
-      const [d, b] = this._sec("sec.layout", "mdi:view-grid-outline", "Layout & Vorlage");
+    _layoutBody(b) {
       b.append(this._hint("Vorlage legt leere Plätze an. Vorhandene Karten wandern der Reihe nach hinein, übrige bleiben unten erhalten."));
       const g = el("div", "tpls");
       TEMPLATES.forEach((t) => {
@@ -6311,23 +5927,21 @@ hui-card-picker{flex:1;min-height:0}`;
         g.append(btn);
       });
       b.append(g);
-      return d;
     }
     _template(t) {
       const left = this._rows().flatMap((r) => r.cells).filter((x) => x.card);
       const rows = t.rows.map((row) => ({ cells: row.map((width) => ({ width, card: left.shift()?.card ?? null })) }));
       left.forEach((x) => rows.push({ cells: [{ width: "auto", card: x.card }] }));
       this._sel = null;
-      this._secs.add("sec.content");
+      this._onTemplate?.();
       this._emitRows(rows);
       this._rebuild();
     }
     /* --- Inhalt: Miniatur des Rasters --- */
-    _secContent() {
-      const [d, b] = this._sec("sec.content", "mdi:view-dashboard-edit-outline", "Inhalt");
+    _contentBody(b) {
       const rows = this._rows();
       if (this._sel && !rows[this._sel[0]]?.cells[this._sel[1]]) this._sel = null;
-      b.append(this._hint("So sieht das Raster im Pop-up aus. Spalten einer Zeile stehen nebeneinander. Antippen zum Bearbeiten, am Griff ziehen zum Verschieben (am PC geht auch der ganze Block)."));
+      b.append(this._hint(`So sieht das Raster ${this.constructor.gridWhere || "in der Karte"} aus. Spalten einer Zeile stehen nebeneinander. Antippen zum Bearbeiten, am Griff ziehen zum Verschieben (am PC geht auch der ganze Block).`));
       const mini = this._mini = el("div", "mini");
       const insert = (fn, card) => {
         const rs = this._rows(), x = { width: "auto", card: card ?? null };
@@ -6375,7 +5989,6 @@ hui-card-picker{flex:1;min-height:0}`;
       mini.append(Object.assign(el("div", "gap"), { _i: rows.length }));
       b.append(mini);
       b.append(this._add("Zeile hinzufügen", () => add((rs, x) => rs.push({ cells: [x] }))));
-      return d;
     }
     _block(cell, ri, ci) {
       const b = el("div", "blk");
@@ -6751,9 +6364,666 @@ hui-card-picker{flex:1;min-height:0}`;
       this._rebuild();
     }
   };
+
+  // src/popup.js
+  var DEF = { width: 1180, stack_below: 500, info_layout: "wrap" };
+  var PCSS2 = `${NOVA_VARS}${GRID_CSS}${CHIP_CSS}
+:host{display:block;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+:host(.live){display:contents}
+ha-icon{--mdc-icon-size:20px;display:flex}
+.ph{display:none;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;border:1px dashed var(--divider-color,#666);color:var(--primary-text-color);font-size:13px}
+:host(.edit) .ph{display:flex}
+.ph .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop{position:fixed;inset:0;z-index:var(--nova-popup-z-index,6);display:flex;align-items:center;justify-content:center}
+.pop[hidden]{display:none}
+.ov{position:absolute;inset:0;background:var(--nv-popup-backdrop);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .22s}
+.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96vw);max-height:88vh;
+background:var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
+box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.sh.tint{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,var(--nv-popup-base)),var(--nv-popup-base))}
+.pop.in .ov{opacity:1}.pop.in .sh{opacity:1;transform:none}
+.grip{display:none;justify-content:center;padding:8px 0 0;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.35}
+.hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
+background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.hi:empty{display:none}
+.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bdg{display:flex;gap:6px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.bdg::-webkit-scrollbar{display:none}.bdg:empty{display:none}
+.bd{display:inline-flex;align-items:center;gap:5px;flex:none;padding:5px 10px;border-radius:999px;background:var(--c,var(--nv-chip));color:var(--cf,inherit);font-size:12px;white-space:nowrap;cursor:pointer;outline:none}
+.bd ha-icon{--mdc-icon-size:15px}.bd img{width:15px;height:15px}.bd:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.bd:active{transform:scale(.95)}
+.bd .bn:empty,.bd .bv:empty{display:none}.bd .bn:not(:empty)+.bv:not(:empty)::before{content:'· '}
+.bd[hidden]{display:none}
+.x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
+.x:active{transform:scale(.92)}
+.info{padding:0 14px 12px}
+.body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box;
+padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.pop.inline .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
+.pop.inline .cell.empty::after{content:'Leerer Platz'}
+@media(max-width:600px){
+.pop{align-items:flex-end}
+.bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
+.sh{width:100vw;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
+.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
+.body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
+.pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
+.pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
+.pop.inline .body{overflow:visible;padding-bottom:14px}
+@media(prefers-reduced-motion:reduce){.ov,.sh{transition:none}}`;
+  var NovaPopupCard = class extends GridCard(HTMLElement) {
+    static getConfigElement() {
+      return document.createElement(tag("popup-card-editor"));
+    }
+    static getStubConfig() {
+      return { hash: "neu", rows: [{ cells: [{ card: null }] }, { cells: [{ card: null }, { card: null }] }] };
+    }
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${PCSS2}</style>
+<div class="ph"><ha-icon icon="mdi:card-multiple-outline"></ha-icon><span class="t"></span></div>
+<div class="pop" hidden><div class="ov"></div><div class="sh" role="dialog" aria-modal="true">
+<div class="grip"><i></i></div>
+<div class="hd"><span class="hi"></span><span class="tt"></span><div class="bdg"></div><button type="button" class="x" aria-label="Schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
+<div class="info" hidden></div><div class="body"></div></div></div>`;
+      this._pop = r.querySelector(".pop");
+      this._sh = r.querySelector(".sh");
+      this._body = r.querySelector(".body");
+      this._infoEl = r.querySelector(".info");
+      this._bdgEl = r.querySelector(".bdg");
+      this._mode = "live";
+      r.querySelector(".x").addEventListener("click", () => this.close());
+      r.querySelector(".ov").addEventListener("click", () => this.close());
+      r.querySelector(".ov").addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+      this._sync = () => this._syncOpen();
+      this._key = (e) => {
+        if (e.key !== "Escape" || e.defaultPrevented) return;
+        if (e.composedPath().some((n) => n.localName?.includes("dialog"))) return;
+        this.close();
+      };
+      this._swipe();
+      this._ro = new ResizeObserver(() => this._stack());
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      const old = this._cfg?.hash;
+      this._cfg = {
+        ...DEF,
+        ...c,
+        hash: cleanHash(c.hash),
+        info: [].concat(c.info || []).map((x) => typeof x === "string" ? { entity: x } : x),
+        badges: [].concat(c.badges || []).map((x) => typeof x === "string" ? { entity: x } : x).filter((x) => x?.entity)
+      };
+      this._rows = normRows(c);
+      this._ids = entityIds([this._cfg.info, this._cfg.badges]);
+      if (this.isConnected && old !== this._cfg.hash) {
+        this._unreg(old);
+        this._reg();
+      }
+      this._head();
+      this._dirty = true;
+      if (this._isOpen || this._mode === "preview") this._grid();
+      this._syncOpen();
+    }
+    // Die eingebetteten Karten bekommen jedes Update (sie filtern selbst), Kopfzeile und Info-Leiste nur bei eigenen Änderungen
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._isOpen && this._mode !== "preview") return;
+      if (old === h || hassChanged(old, h, this._ids)) this._info();
+      this._cells().forEach((el2) => this._setHass(el2));
+    }
+    getCardSize() {
+      return this._mode === "live" ? 0 : 1;
+    }
+    getGridOptions() {
+      return { columns: "full", rows: "auto" };
+    }
+    connectedCallback() {
+      this._ro.observe(this._body);
+      ["hashchange", "popstate", "location-changed"].forEach((ev) => window.addEventListener(ev, this._sync));
+      this._detect();
+      requestAnimationFrame(() => this._detect());
+    }
+    disconnectedCallback() {
+      ["hashchange", "popstate", "location-changed"].forEach((ev) => window.removeEventListener(ev, this._sync));
+      this._ro.disconnect();
+      this._unreg(this._cfg?.hash);
+      if (this._isOpen) this._hide(true);
+      if (this._mode === "preview") this._handOffCells();
+    }
+    _reg() {
+      if (this._cfg?.hash && this._mode !== "preview") register(this._cfg.hash, this);
+    }
+    _unreg(h) {
+      if (h) unregister(h, this);
+    }
+    _detect() {
+      if (!this.isConnected) return;
+      let inDialog = false, inEdit = !!(this.preview || this.hasAttribute("preview") || this.editMode);
+      for (let n = this, i = 0; n && i < 80; i++) {
+        if (PREV.has(n.tagName) || n.tagName?.includes("DIALOG")) {
+          inDialog = true;
+          break;
+        }
+        if (EDIT.has(n.tagName)) inEdit = true;
+        n = n.parentElement || n.getRootNode?.().host;
+      }
+      let m = inDialog ? "preview" : inEdit ? "edit" : "live";
+      if (this._fallback) m = "live";
+      const was = this._mode;
+      this._mode = m;
+      ["live", "edit", "preview"].forEach((k) => this.classList.toggle(k, k === m));
+      this._pop.classList.toggle("inline", m === "preview");
+      this._unreg(this._cfg?.hash);
+      this._reg();
+      if (m === "preview") {
+        if (this._isOpen) this._hide(true);
+        this._pop.hidden = false;
+        if (this._dirty) this._grid();
+        if (this._h) this.hass = this._h;
+      } else if (was === "preview") this._pop.hidden = true;
+      this._syncOpen();
+    }
+    /* --- Öffnen & Schließen --- */
+    _syncOpen() {
+      if (!this._cfg || this._mode === "preview") return;
+      const want = this.isConnected && !!this._cfg.hash && curHash() === this._cfg.hash;
+      if (want && !this._isOpen) this._show();
+      else if (!want && this._isOpen) this._hide();
+    }
+    _show() {
+      if (this._fallback && hasPopup(this._cfg.hash)) return;
+      this._isOpen = true;
+      this._back = cameByNav();
+      clearTimeout(this._ht);
+      this._pop.hidden = false;
+      this._sh.style.transform = "";
+      lockScroll(true);
+      if (this._dirty) this._grid();
+      if (this._h) this.hass = this._h;
+      this._body.scrollTop = 0;
+      window.addEventListener("keydown", this._key);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (this._isOpen) this._pop.classList.add("in");
+      }));
+    }
+    _hide(now) {
+      this._isOpen = false;
+      this._pop.classList.remove("in");
+      this._sh.style.transform = "";
+      lockScroll(false);
+      window.removeEventListener("keydown", this._key);
+      clearTimeout(this._ht);
+      if (now) this._pop.hidden = this._mode !== "preview";
+      else this._ht = setTimeout(() => {
+        if (!this._isOpen && this._mode !== "preview") this._pop.hidden = true;
+      }, 260);
+    }
+    // Schließen = Hash entfernen; das eigentliche Ausblenden folgt über _syncOpen
+    close() {
+      if (!this._isOpen) return;
+      if (curHash() === this._cfg.hash) clearHash(this._back);
+      else this._hide();
+    }
+    // Nach unten wischen (Handy): auf Griff/Kopfzeile immer, im Inhalt nur, wenn er ganz oben steht
+    _swipe() {
+      const sh = this._sh;
+      let y0 = 0, x0 = 0, dy = 0, t0 = 0, ok = false, drag = false;
+      const mobile = () => matchMedia("(max-width:600px)").matches;
+      sh.addEventListener("touchstart", (e) => {
+        ok = this._isOpen && mobile() && e.touches.length === 1 && (!e.composedPath().includes(this._body) || this._body.scrollTop <= 0);
+        if (!ok) return;
+        y0 = e.touches[0].clientY;
+        x0 = e.touches[0].clientX;
+        dy = 0;
+        t0 = Date.now();
+        drag = false;
+      }, { passive: true });
+      sh.addEventListener("touchmove", (e) => {
+        if (!ok) return;
+        const d = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
+        if (!drag) {
+          if (Math.abs(d) < 8 && Math.abs(dx) < 8) return;
+          if (d <= 0 || Math.abs(dx) > d) {
+            ok = false;
+            return;
+          }
+          drag = true;
+          sh.style.transition = "none";
+        }
+        dy = Math.max(0, d);
+        e.preventDefault();
+        sh.style.transform = `translateY(${dy}px)`;
+      }, { passive: false });
+      const end = () => {
+        if (!drag) {
+          ok = false;
+          return;
+        }
+        drag = false;
+        ok = false;
+        sh.style.transition = "";
+        if (dy > 120 || dy / Math.max(1, Date.now() - t0) > 0.6) this.close();
+        else sh.style.transform = "";
+      };
+      sh.addEventListener("touchend", end);
+      sh.addEventListener("touchcancel", end);
+    }
+    /* --- Kopfzeile --- */
+    _head() {
+      const c = this._cfg, r = this.shadowRoot;
+      r.querySelector(".tt").textContent = c.title || "";
+      const hi = r.querySelector(".hi");
+      if (c.icon) setIcon(hi, c.icon);
+      else {
+        hi.innerHTML = "";
+        hi._ic = null;
+      }
+      r.querySelector(".ph .t").textContent = c.title || (c.hash ? `#${c.hash}` : "Kein Hash eingestellt");
+      r.querySelector(".ph ha-icon").setAttribute("icon", c.icon || "mdi:card-multiple-outline");
+      this._sh.style.setProperty("--pw", `${+c.width || DEF.width}px`);
+      const tint = c.tint || c.color;
+      this._sh.classList.toggle("tint", !!tint);
+      if (tint) this._sh.style.setProperty("--tc", roleVars(tint).c);
+      if (c.title || c.hash) this._sh.setAttribute("aria-label", c.title || c.hash);
+      else this._sh.removeAttribute("aria-label");
+      this._infoEl.classList.toggle("scroll", c.info_layout === "scroll");
+      this._bds = null;
+      if (this._h) this._info();
+    }
+    // Badges in der Kopfzeile: optional nur bei bestimmtem Zustand, Farbe aus den Farbrollen
+    _badges() {
+      const items = this._cfg.badges, h = this._h, bar = this._bdgEl;
+      if (!this._bds || this._bds.length !== items.length) {
+        bar.innerHTML = "";
+        this._bds = items.map((o) => {
+          const d = document.createElement("div");
+          d.className = "bd";
+          d.tabIndex = 0;
+          d.setAttribute("role", "button");
+          d.innerHTML = '<span class="ci"></span><span class="bn"></span><span class="bv"></span>';
+          if (o.color) {
+            const v = roleVars(o.color);
+            d.style.setProperty("--c", v.c);
+            d.style.setProperty("--cf", v.fg);
+          }
+          const open = () => moreInfo(this, o.entity);
+          d.addEventListener("click", (e) => {
+            e.stopPropagation();
+            open();
+          });
+          d.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              open();
+            }
+          });
+          bar.appendChild(d);
+          return d;
+        });
+      }
+      items.forEach((o, i) => {
+        const d = this._bds[i], s = h.states[o.entity];
+        d.hidden = !s || o.state != null && o.state !== "" && !list(o.state).includes(s.state);
+        if (d.hidden) return;
+        setIcon(d.querySelector(".ci"), iconOf(h, o, "mdi:information-outline"));
+        d.querySelector(".bn").textContent = o.name || "";
+        d.querySelector(".bv").textContent = o.show_state === false ? "" : valueOf(h, s, o);
+        d.title = `${nameOf(h, o)}: ${valueOf(h, s, o)}`;
+      });
+    }
+    _info() {
+      this._badges();
+      renderChips(this, this._infoEl, this._cfg.info, this._h);
+    }
+    /* --- Raster (GridCard) --- */
+    _handoff() {
+      return this._mode === "preview";
+    }
+  };
+  __publicField(NovaPopupCard, "gridKind", "popup");
+  define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – vom Dock oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
+  var GENERAL = [
+    { name: "hash", required: true, selector: T },
+    g2({ name: "title", selector: T }, { name: "icon", selector: I }),
+    ROLE("tint"),
+    g2(
+      { name: "width", selector: { number: { min: 320, max: 1600, step: 10, mode: "box", unit_of_measurement: "px" } } },
+      { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } }
+    )
+  ];
+  var BADGE = [
+    ENT,
+    NAMEICON,
+    g2({ name: "show_state", selector: { boolean: {} } }, ROLE("color")),
+    { name: "state", selector: T }
+  ];
+  var HEAD = [sel("info_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])];
+  var LABELS2 = {
+    hash: "Hash (ohne #)",
+    title: "Titel",
+    icon: "Icon",
+    tint: "Farbton (leer = Nova-Glas)",
+    color: "Farbe",
+    show_state: "Zustand anzeigen",
+    state: "Nur anzeigen bei Zustand",
+    width: "Max. Breite (Desktop)",
+    stack_below: "Untereinander unter Breite",
+    info_layout: "Info-Leiste bei vielen Einträgen",
+    entity: "Entität",
+    name: "Eigener Name (optional)",
+    decimals: "Nachkommastellen",
+    alert: "Bei Achtung hervorheben",
+    alert_state: "Achtung bei Zustand",
+    alert_color: "Farbe",
+    alert_above: "Achtung über",
+    alert_below: "Achtung unter"
+  };
+  var HELPERS2 = {
+    hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
+    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.",
+    stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
+    state: "Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.",
+    color: "Leer = neutral.",
+    alert_state: "z. B. on oder open, mehrere mit Komma. Leer = an bzw. Problem (z. B. Fenster offen)."
+  };
+  var NovaPopupCardEditor = class extends GridEditor(NovaEditorBase) {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}${GRID_ED_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap");
+      this._gridReset();
+      if (!this._init) {
+        this._init = true;
+        this._secs = /* @__PURE__ */ new Set([this._config.hash ? "sec.content" : "sec.general"]);
+      }
+      this._secs.forEach((k) => this._open.add(k));
+      w.append(this._secGeneral(), this._secHead(), this._secLayout(), this._secContent());
+    }
+    _sec(key, icon, label) {
+      const [d, , b] = this._details(key, icon, label, []);
+      d.addEventListener("toggle", () => {
+        if (d.open) this._secs.add(key);
+        else this._secs.delete(key);
+      });
+      return [d, b];
+    }
+    _secGeneral() {
+      const [d, b] = this._sec("sec.general", "mdi:cog-outline", "Allgemein");
+      const data = { ...this._config };
+      delete data.rows;
+      delete data.info;
+      delete data.badges;
+      if (data.color && !data.tint) data.tint = data.color;
+      const f = this._form(GENERAL, data, (v) => {
+        const c = merge(this._config, names(GENERAL), v);
+        delete c.color;
+        if (v.hash != null) {
+          const h = cleanHash(v.hash);
+          if (h !== v.hash) f.data = { ...v, hash: h };
+          if (h) c.hash = h;
+          else delete c.hash;
+        }
+        this._emit(c);
+      });
+      b.append(f);
+      if (!this._config.hash) b.append(this._hint("Ohne Hash lässt sich das Pop-up nicht öffnen."));
+      return d;
+    }
+    _secHead() {
+      const [d, b] = this._sec("sec.header", "mdi:information-outline", "Kopfzeile & Info-Leiste");
+      b.append(this._hint("Titel und Icon stehen unter „Allgemein“. Badges sitzen in der Kopfzeile, Info-Entitäten als Chips darunter. Antippen öffnet die Details."));
+      b.append(this._form(HEAD, { info_layout: DEF.info_layout, ...this._config }, (v) => {
+        const c = merge(this._config, names(HEAD), v);
+        if (c.info_layout === DEF.info_layout) delete c.info_layout;
+        this._emit(c);
+      }));
+      b.append(Object.assign(document.createElement("h4"), { textContent: "Badges" }));
+      b.append(this._hint("Kleine Anzeigen rechts neben dem Titel. Auf schmalen Bildschirmen nur Icon und Zustand, bei Platzmangel waagrecht scrollbar."));
+      this._itemList(b, "badges", BADGE, { item: "Badge", icon: "mdi:label-outline" }, "Badge hinzufügen", (it) => ({ show_state: true, ...it }));
+      b.append(Object.assign(document.createElement("h4"), { textContent: "Info-Leiste" }));
+      this._itemList(b, "info", INFO, { item: "Info", icon: "mdi:information-outline" }, "Info-Entität hinzufügen");
+      return d;
+    }
+    _secLayout() {
+      const [d, b] = this._sec("sec.layout", "mdi:view-grid-outline", "Layout & Vorlage");
+      this._layoutBody(b);
+      return d;
+    }
+    _onTemplate() {
+      this._secs.add("sec.content");
+    }
+    _secContent() {
+      const [d, b] = this._sec("sec.content", "mdi:view-dashboard-edit-outline", "Inhalt");
+      this._contentBody(b);
+      return d;
+    }
+  };
+  __publicField(NovaPopupCardEditor, "gridWhere", "im Pop-up");
   __publicField(NovaPopupCardEditor, "labels", LABELS2);
   __publicField(NovaPopupCardEditor, "helpers", HELPERS2);
   define("popup-card-editor", NovaPopupCardEditor);
+
+  // src/area.js
+  var DEF2 = { stack_below: 500, info_layout: "wrap", lights_off: true, show_temperature: true, show_humidity: true };
+  var AUTO = [["temperature", "mdi:thermometer"], ["humidity", "mdi:water-percent"]];
+  var ACSS = `${CARD_CSS}${GRID_CSS}${CHIP_CSS}
+:host{height:auto}
+:host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
+.g{height:auto;display:flex;flex-direction:column;gap:12px;padding:14px}
+.hd{display:flex;align-items:center;gap:10px;padding:6px;border-radius:999px;background:var(--nv-chip)}
+.hd.nb{padding-left:14px}
+.hi{display:flex}.hi:empty{display:none}
+.tt{flex:1 1 auto;min-width:0;font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
+.lo{display:inline-flex;align-items:center;gap:6px;flex:none;padding:8px 12px;border-radius:999px;border:none;background:var(--nv-chip);color:inherit;font:inherit;font-size:12.5px;cursor:pointer}
+.lo ha-icon{--mdc-icon-size:16px}
+.x:active,.lo:active{transform:scale(.92)}
+.x:focus-visible,.lo:focus-visible{outline:none;box-shadow:0 0 0 2px var(--nv-active)}
+.x[hidden],.lo[hidden]{display:none}
+.body{display:flex;flex-direction:column;gap:12px}
+.cell{display:grid}
+.cell>*{min-width:0}
+.prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
+.prev .cell.empty::after{content:'Leerer Platz'}
+@media(max-width:600px){.g{padding:12px}}`;
+  var NovaAreaCard = class extends GridCard(HTMLElement) {
+    static getConfigElement() {
+      return document.createElement(tag("area-card-editor"));
+    }
+    static getStubConfig(h) {
+      const area = Object.keys(h?.areas || {})[0];
+      return { ...area ? { area } : {}, rows: [{ cells: [{ card: null }, { card: null }] }] };
+    }
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${ACSS}</style>
+<div class="g"><div class="hd"><button type="button" class="x bk" aria-label="Zurück" title="Zurück"><ha-icon icon="mdi:arrow-left"></ha-icon></button>
+<span class="hi"></span><span class="tt"></span>
+<button type="button" class="lo" hidden><ha-icon icon="mdi:lightbulb-off-outline"></ha-icon><span>Licht aus</span></button></div>
+<div class="info" hidden></div><div class="body"></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._g = q(".g");
+      this._hd = q(".hd");
+      this._bk = q(".bk");
+      this._lo = q(".lo");
+      this._infoEl = q(".info");
+      this._body = q(".body");
+      this._bk.addEventListener("click", () => this._back());
+      this._lo.addEventListener("click", () => {
+        if (this._h && this._lights?.length) this._h.callService("light", "turn_off", { entity_id: this._lights });
+      });
+      this._ro = new ResizeObserver(() => this._stack());
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._cfg = { ...DEF2, ...c, info: [].concat(c.info || []).map((x) => typeof x === "string" ? { entity: x } : x).filter((x) => x?.entity) };
+      this._rows = normRows(c);
+      this._reg = null;
+      this._dirty = true;
+      if (this.isConnected) this._grid();
+      if (this._h) {
+        this._scan();
+        this._render();
+      }
+    }
+    // Die eingebetteten Karten bekommen jedes Update (sie filtern selbst), Kopfzeile und Chips nur bei eigenen Änderungen
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._cfg) return;
+      const fresh = this._scan();
+      if (fresh || hassChanged(old, h, this._ids)) this._render();
+      this._cells().forEach((el2) => this._setHass(el2));
+    }
+    getCardSize() {
+      return 2 + 3 * (this._rows?.length || 0);
+    }
+    getGridOptions() {
+      return { columns: "full", rows: "auto" };
+    }
+    connectedCallback() {
+      this._ro.observe(this._body);
+      this._detect();
+      requestAnimationFrame(() => this._detect());
+      if (this._dirty && this._cfg) this._grid();
+    }
+    disconnectedCallback() {
+      this._ro.disconnect();
+      if (this._prev) this._handOffCells();
+    }
+    // Editor-Vorschau (Zellen übernehmen) bzw. Bearbeitungsmodus (leere Plätze zeigen)
+    _detect() {
+      let prev2 = false, edit = !!(this.preview || this.editMode);
+      for (let n = this, i = 0; n && i < 80; i++) {
+        if (PREV.has(n.tagName) || n.tagName?.includes("DIALOG")) {
+          prev2 = true;
+          break;
+        }
+        if (EDIT.has(n.tagName)) edit = true;
+        n = n.parentElement || n.getRootNode?.().host;
+      }
+      this._prev = prev2;
+      this._g.classList.toggle("prev", prev2 || edit);
+    }
+    _handoff() {
+      return this._prev;
+    }
+    // Lampen und Sensoren der Area – nur neu bestimmen, wenn sich Konfig oder Registries ändern
+    _scan() {
+      const h = this._h, c = this._cfg, reg = [h.entities, h.devices, h.areas, c];
+      if (this._reg && reg.every((x, i) => x === this._reg[i])) return false;
+      this._reg = reg;
+      const ex = new Set([].concat(c.lights_off_exclude || []));
+      this._lights = areaEntities(h, c.area, "light").filter((id) => !ex.has(id) && ![].concat(h.states[id].attributes.entity_id || []).some((m) => ex.has(m)));
+      this._auto = AUTO.filter(([dc]) => c[`show_${dc}`] !== false).map(([dc, icon]) => ({ entity: c[`${dc}_entity`] || areaSensor(h, c.area, dc), icon })).filter((o) => o.entity);
+      this._ids = /* @__PURE__ */ new Set([...entityIds(c.info), ...this._lights, ...this._auto.map((o) => o.entity)]);
+      return true;
+    }
+    _back() {
+      const a = this._cfg.back_action;
+      if (!a?.action) return history.back();
+      hassAction(this, { tap_action: a }, "tap");
+    }
+    _render() {
+      const h = this._h, c = this._cfg, ar = h.areas?.[c.area];
+      const r = this.shadowRoot, noBack = c.back_action?.action === "none";
+      this._bk.hidden = noBack;
+      this._hd.classList.toggle("nb", noBack);
+      r.querySelector(".tt").textContent = c.name || ar?.name || (c.area ? c.area : "Keine Area gewählt");
+      setIcon(r.querySelector(".hi"), c.icon || ar?.icon || "mdi:texture-box");
+      this._lo.hidden = c.lights_off === false || !this._lights.some((id) => h.states[id]?.state === "on");
+      const tint = c.tint;
+      this.classList.toggle("tint", !!tint);
+      if (tint) this.style.setProperty("--tc", roleVars(tint).c);
+      else this.style.removeProperty("--tc");
+      this._infoEl.classList.toggle("scroll", c.info_layout === "scroll");
+      renderChips(this, this._infoEl, [...this._auto, ...c.info], h);
+    }
+  };
+  __publicField(NovaAreaCard, "gridKind", "area");
+  define("area-card", NovaAreaCard, { name: "Nova Bereich Card", description: "Raumansicht als Glasrahmen: Kopfzeile mit Zurück und „Licht aus“, Temperatur und Luftfeuchte der Area, darunter beliebige Karten in Zeilen und Spalten.", documentationURL: docUrl("nova-bereich-card") });
+  var SENSOR = (dc) => ({ entity: { domain: "sensor", device_class: dc } });
+  var S_GEN3 = (icon) => [
+    { name: "area", selector: { area: {} } },
+    g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon ? { placeholder: icon } : {} } }),
+    { name: "back_action", selector: A },
+    g2(ROLE("tint"), { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } })
+  ];
+  var S_LIGHT = (lights) => [
+    { name: "lights_off", selector: { boolean: {} } },
+    { name: "lights_off_exclude", selector: { entity: lights?.length ? { multiple: true, include_entities: lights } : { multiple: true, domain: "light" } } }
+  ];
+  var S_CHIPS = [
+    g2({ name: "show_temperature", selector: { boolean: {} } }, { name: "temperature_entity", selector: SENSOR("temperature") }),
+    g2({ name: "show_humidity", selector: { boolean: {} } }, { name: "humidity_entity", selector: SENSOR("humidity") }),
+    sel("info_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])
+  ];
+  var LABELS3 = {
+    ...INFO_LABELS,
+    area: "Area",
+    name: "Name",
+    icon: "Icon",
+    back_action: "Zurück-Knopf: Aktion",
+    tint: "Farbton (leer = Nova-Glas)",
+    stack_below: "Untereinander unter Breite",
+    lights_off: "„Licht aus“-Knopf anzeigen",
+    lights_off_exclude: "Diese Lampen nicht ausschalten",
+    show_temperature: "Temperatur anzeigen",
+    temperature_entity: "Temperatursensor (leer = aus der Area)",
+    show_humidity: "Luftfeuchte anzeigen",
+    humidity_entity: "Feuchtesensor (leer = aus der Area)",
+    info_layout: "Chips bei vielen Einträgen"
+  };
+  var HELPERS3 = {
+    ...INFO_HELPERS,
+    back_action: "Ohne Angabe geht es eine Seite zurück. „Keine Aktion“ blendet den Knopf aus.",
+    stack_below: "Ist die Karte schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
+    lights_off: "Erscheint, sobald eine Lampe der Area an ist, und schaltet alle Lampen der Area aus.",
+    lights_off_exclude: "Lichtgruppen, in denen eine dieser Lampen steckt, bleiben ebenfalls an."
+  };
+  var strip = (c) => {
+    Object.keys(DEF2).forEach((k) => {
+      if (c[k] === DEF2[k]) delete c[k];
+    });
+    return c;
+  };
+  var NovaAreaCardEditor = class extends GridEditor(NovaEditorBase) {
+    // Lampenliste und Area-Icon hängen an hass – beim ersten hass einmal neu aufbauen
+    set hass(h) {
+      const first = !this._hass;
+      super.hass = h;
+      if (first && h && this._config) this._rebuild();
+    }
+    _onTemplate() {
+      this._openSecs?.add("content");
+    }
+    _build() {
+      const r = this.shadowRoot, c = this._config, h = this._hass;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}${GRID_ED_CSS}</style><div class="wrap"></div>`;
+      this._gridReset();
+      const data = { ...DEF2, ...c };
+      const form = (sch) => this._form(sch, data, (v) => this._emit(strip(merge(this._config, names(sch), v))));
+      const lights = h ? areaEntities(h, c.area, "light") : null;
+      r.querySelector(".wrap").append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(S_GEN3(h?.areas?.[c.area]?.icon)), this._hint("Name und Icon leer = wie in der Area."))),
+        this._section("lights", "mdi:lightbulb-off-outline", "„Licht aus“", (b) => b.append(form(S_LIGHT(lights)))),
+        this._section("chips", "mdi:information-outline", "Werte-Chips", (b) => {
+          b.append(this._hint("Temperatur und Luftfeuchte kommen automatisch aus der Area (in HA unter Bereich → Einstellungen hinterlegt). Antippen öffnet die Details."));
+          b.append(form(S_CHIPS), this._h4("Weitere Chips"));
+          this._itemList(b, "info", INFO, { item: "Chip", icon: "mdi:information-outline" }, "Chip hinzufügen");
+        }),
+        this._section("layout", "mdi:view-grid-outline", "Layout & Vorlage", (b) => this._layoutBody(b)),
+        this._section("content", "mdi:view-dashboard-edit-outline", "Inhalt", (b) => this._contentBody(b))
+      );
+    }
+  };
+  __publicField(NovaAreaCardEditor, "gridWhere", "in der Karte");
+  __publicField(NovaAreaCardEditor, "labels", LABELS3);
+  __publicField(NovaAreaCardEditor, "helpers", HELPERS3);
+  __publicField(NovaAreaCardEditor, "openSections", ["general"]);
+  define("area-card-editor", NovaAreaCardEditor);
 
   // src/index.js
   console.info(`%c NOVA-CARDS %c v${"0.10.1b1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
