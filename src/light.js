@@ -83,17 +83,20 @@ const GEN = [
 // Ausblenden gibt es nur mit Bereich
 const SRC = c => [
   {name: 'area', selector: {area: {}}},
-  ...(c.area ? [{name: 'exclude', selector: {entity: {multiple: true, domain: 'light'}}}] : []),
+  ...(c.area ? [{name: 'exclude', selector: {entity: {multiple: true, domain: 'light'}}}, {name: 'hide_group_members', selector: {boolean: {}}}] : []),
 ];
 const COLORS = [{name: 'show_colors', selector: {boolean: {}}}];
-const LOOK = [{type: 'grid', name: '', schema: [{name: 'use_light_color', selector: {boolean: {}}}, {name: 'show_all_off', selector: {boolean: {}}}]}];
+const LOOK = [
+  {type: 'grid', name: '', schema: [{name: 'use_light_color', selector: {boolean: {}}}, {name: 'show_all_off', selector: {boolean: {}}}]},
+  {name: 'strip_area_name', selector: {boolean: {}}},
+];
 const vis = c => `${!!c.area}|${c.show_colors !== false}`;
 const LAMP = [
   {name: 'entity', required: true, selector: {entity: {domain: 'light'}}},
   {type: 'grid', name: '', schema: [{name: 'name', selector: {text: {}}}, {name: 'icon', selector: {icon: {}}, context: {icon_entity: 'entity'}}]},
 ];
 const LAMP_ACT = [{name: 'tap_action', selector: {ui_action: {}}}, {name: 'hold_action', selector: {ui_action: {}}}];
-const EDITOR_DEFAULTS = {show_header: true, show_all_off: true, use_light_color: true, show_colors: true};
+const EDITOR_DEFAULTS = {show_header: true, show_all_off: true, use_light_color: true, show_colors: true, hide_group_members: true, strip_area_name: true};
 const toLamp = x => typeof x === 'string' ? {entity: x} : {...x};
 const LIGHT_EDITOR_CSS = `
 .dots{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -106,8 +109,13 @@ class NovaLightCardEditor extends NovaEditorBase {
     title: 'Titel', icon: 'Icon', area: 'Bereich (alle Lampen automatisch)', exclude: 'Ausblenden (bei Bereich)', show_header: 'Kopfzeile',
     show_all_off: '„Alle aus“-Knopf', use_light_color: 'In Lichtfarbe leuchten', show_colors: 'Farbknöpfe anzeigen',
     entity: 'Lampe', name: 'Name', tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken',
+    hide_group_members: 'Lampen einer Lichtgruppe ausblenden', strip_area_name: 'Raumnamen aus Lampennamen entfernen',
   };
-  static helpers = {area: 'Optional. Neue Lampen im Bereich erscheinen von selbst'};
+  static helpers = {
+    area: 'Optional. Neue Lampen im Bereich erscheinen von selbst',
+    hide_group_members: 'Ist eine Lichtgruppe (z. B. Deckenlampen) im Bereich, erscheint nur die Gruppe, nicht jede einzelne Lampe darin.',
+    strip_area_name: '„Wohnzimmer Pilzlampe“ wird zu „Pilzlampe“. Eigene Namen bleiben, wie sie sind.',
+  };
   setConfig(c) { if (JSON.stringify(c) !== this._emitted) super.setConfig(c); }
   _onExternalConfig() {
     const c = this._config;
@@ -270,7 +278,7 @@ const LIGHT_CSS = `
 .ic ha-icon{--mdc-icon-size:18px}
 .t.on .ic{background:var(--lc,var(--nv-accent));color:var(--nv-accent-fg);box-shadow:0 0 12px color-mix(in srgb,var(--lc,var(--nv-accent)) 60%,transparent)}
 .top:active .ic{transform:scale(.9)}
-.nm{flex:1;min-width:0}.nm b{display:block;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nm small{display:block;font-size:11px;opacity:.6}
+.nm{flex:1;min-width:0}.nm b{display:block;font-size:13px;font-weight:500;overflow-wrap:anywhere;hyphens:auto;line-height:1.25}.nm small{display:block;font-size:11px;opacity:.6}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;border-radius:11px;margin:0;outline:none;
 background:linear-gradient(90deg,var(--lc,var(--nv-accent)) 0 var(--p,0%),rgba(255,255,255,.14) var(--p,0%) 100%)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
@@ -331,6 +339,12 @@ class NovaLightCard extends HTMLElement {
         .filter(id => { const e = h.entities?.[id]; return !e || (!e.hidden && !e.entity_category); })
         .sort((a, b) => (h.states[a].attributes.friendly_name || a).localeCompare(h.states[b].attributes.friendly_name || b))
         .forEach(id => ids.push(id));
+      // Lichtgruppen (Attribut entity_id): deren Mitglieder nicht zusätzlich zeigen, außer sie sind eingetragen
+      if (c.hide_group_members !== false) {
+        const mine = new Set(c.entities.map(l => l.entity));
+        const inGroup = new Set(ids.flatMap(id => [].concat(h.states[id]?.attributes.entity_id || [])));
+        return ids.filter(id => mine.has(id) || !inGroup.has(id));
+      }
     }
     return ids;
   }
@@ -388,7 +402,7 @@ class NovaLightCard extends HTMLElement {
       x.t.classList.toggle('on', on);
       x.t.classList.toggle('na', na);
       x.ic.setAttribute('icon', x.o.icon || a.icon || (on ? 'mdi:lightbulb-on' : 'mdi:lightbulb-outline'));
-      x.nm.textContent = x.o.name || this._strip(a.friendly_name || x.id);
+      x.nm.textContent = x.o.name || this._strip(a.friendly_name || x.id, x.id);
       x.st.textContent = na ? 'nicht erreichbar' : on ? (dimmable ? `${pct} %` : 'an') : 'aus';
       const rgb = this._c.use_light_color !== false && on && a.rgb_color;
       if (rgb) x.t.style.setProperty('--lc', `rgb(${rgb.join(',')})`); else x.t.style.removeProperty('--lc');
@@ -406,10 +420,19 @@ class NovaLightCard extends HTMLElement {
     if (this._cnt) this._cnt.textContent = count ? `${count} an` : '';
     this._all?.classList.toggle('show', !!this._c.show_all_off && count > 0);
   }
-  // Raumname vorne weglassen: „Küche Decke“ → „Decke“
-  _strip(name) {
-    const p = this._c.strip_prefix ?? this._c.title ?? (this._c.area ? this._h.areas?.[this._c.area]?.name : '');
-    return p && name.toLowerCase().startsWith(p.toLowerCase() + ' ') ? name.slice(p.length + 1) : name;
+  // Raumname vorne oder hinten weglassen: „Küche Decke“ → „Decke“. strip_prefix legt das Wort fest,
+  // sonst Name des Bereichs der Lampe (bzw. der Karte) und der Titel; strip_area_name: false schaltet es ab.
+  _strip(name, id) {
+    const c = this._c, h = this._h;
+    const words = c.strip_prefix != null ? [c.strip_prefix]
+      : c.strip_area_name === false ? [] : [h.areas?.[areaOf(h, id) || c.area]?.name, h.areas?.[c.area]?.name, c.title];
+    for (const w of words) {
+      if (!w) continue;
+      const n = name.toLowerCase(), p = w.toLowerCase();
+      if (n.startsWith(p + ' ') && name.length > w.length + 1) return name.slice(w.length + 1);
+      if (n.endsWith(' ' + p) && name.length > w.length + 1) return name.slice(0, -w.length - 1);
+    }
+    return name;
   }
 }
 define(TAG, NovaLightCard, {name: 'Nova Licht Card', description: 'Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.', documentationURL: docUrl('nova-licht-card')});

@@ -2,7 +2,7 @@
 
 **Schöne Home-Assistant-Dashboards, ganz ohne YAML.**
 
-Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard: elf Karten mit Glas-Look, die zusammenpassen und sich
+Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard: dreizehn Karten mit Glas-Look, die zusammenpassen und sich
 gemeinsam ans Theme anpassen. Gedacht für alle, die ein aufgeräumtes, modernes Dashboard wollen, ohne Code zu schreiben oder
 YAML zu pflegen.
 
@@ -124,6 +124,24 @@ oder von der Raum Card. Kopfzeile mit Badges und Info-Leiste, auf dem Handy per 
 ➜ [Alle Optionen der Pop-up Card](docs/popup-card.md)
 
 <!-- Screenshot/GIF: Pop-up Card -->
+
+### Nova Bereich Card
+Eine Raumansicht als großer Glasrahmen, fest im Dashboard: Kopfzeile mit Zurück-Knopf, Icon und Raumname aus der Area,
+rechts daneben auf Wunsch Chips. Darunter beliebige Karten in Zeilen und Spalten wie in der Pop-up Card, auf dem Handy
+untereinander. Ideal für Raum-Unteransichten.
+
+➜ [Alle Optionen der Bereich Card](docs/area-card.md)
+
+<!-- Screenshot: Bereich Card -->
+
+### Nova Chips Card
+Eine Reihe frei belegbarer Chips: Wert-Chips zeigen den Zustand einer Entität, Knopf-Chips führen eine Aktion aus, zum
+Beispiel „Alle Lichter im Raum aus“, eine Szene oder ein Skript. Farbe, Icon und Sichtbarkeit je nach Zustand stellst du
+pro Chip ein.
+
+➜ [Alle Optionen der Chips Card](docs/chips-card.md)
+
+<!-- Screenshot: Chips Card -->
 
 ---
 
