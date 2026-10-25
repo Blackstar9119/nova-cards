@@ -693,9 +693,8 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 .dv .hd small.er{color:var(--nv-error);opacity:1}
 .dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
 .mid{display:flex;gap:14px;align-items:center;min-width:0}
-.scene{flex:none;width:92px;height:92px;color:var(--nv-fg)}
+.scene{flex:none;width:144px;height:144px;color:var(--nv-fg)}
 .scene svg{display:block;width:100%;height:100%;overflow:visible}
-.w-airfryer .scene{width:128px;height:128px}
 .inf{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .pg{font-size:18px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .ph{font-size:12px;opacity:.65}
