@@ -13,23 +13,31 @@ import {g2, T, I, A, NUM, sel, ROLE, NAMEICON, BASE_LABELS} from './shared/edito
 const TYPES = {
   washer: {label: 'Waschmaschine', icon: 'mdi:washing-machine', color: 'accent-1', run: 'Wäscht', alt: 'Schleudert', door: 'Tür offen', phase: ['spin', 'spinning', 'schleudern']},
   dishwasher: {label: 'Spülmaschine', icon: 'mdi:dishwasher', color: 'accent-1', run: 'Spült', door: 'Tür offen', phase: []},
-  airfryer: {label: 'Airfryer', icon: 'mdi:toaster-oven', color: 'accent-2', run: 'Gart', alt: 'Heizt vor', door: 'Schublade offen', phase: ['preheat', 'preheating', 'vorheizen']},
+  airfryer: {label: 'Airfryer', icon: 'mdi:toaster-oven', color: 'accent-2', run: 'Gart', heat: 'Heizt vor', door: 'Schublade offen', phase: []},
   coffee: {label: 'Kaffeemaschine', icon: 'mdi:coffee-maker-outline', color: 'accent-3', run: 'Läuft', alt: 'Brüht', door: 'Tür offen', phase: ['brew', 'brewing', 'brühen']},
   generic: {label: 'Gerät', icon: 'mdi:power-plug-outline', color: 'accent-1', run: 'Läuft', door: 'Tür offen', phase: []},
 };
 const typeOf = c => TYPES[c.device_type] ? c.device_type : 'generic';
 // Zustandsgruppen; Rohzustände der gängigen Integrationen (Home Connect, WashData, Philips, Miele …), im Editor überschreibbar
 const STATES = {
-  run: ['run', 'running', 'on', 'cooking', 'brewing', 'heating', 'preheating', 'starting', 'ending', 'anti_wrinkle', 'washing', 'rinsing', 'spinning', 'drying', 'aborting', 'in_use', 'programmed_running'],
+  run: ['run', 'running', 'on', 'cooking', 'brewing', 'starting', 'ending', 'anti_wrinkle', 'washing', 'rinsing', 'spinning', 'drying', 'aborting', 'in_use', 'programmed_running'],
   pause: ['pause', 'paused', 'user_paused'],
   wait: ['delayedstart', 'delayed_start', 'delay_wait', 'scheduled', 'waiting_to_start'],
   done: ['finished', 'finish', 'done', 'complete', 'completed', 'clean', 'end', 'programme_ended'],
   err: ['error', 'fault', 'failure', 'actionrequired', 'action_required', 'interrupted'],
   prep: ['setting', 'programming', 'selecting', 'adjusting'],
+  heat: ['heating', 'preheating', 'preheat', 'heat_up'],
+  warm: ['maintain', 'keep_warm', 'keepwarm', 'warming'],
+  ready: ['ready', 'idle', 'standby', 'mainmenu'],
 };
-const SKEY = {run: 'running_states', pause: 'paused_states', wait: 'waiting_states', done: 'finished_states', err: 'error_states', prep: 'prep_states'};
-const TKEY = {run: 'text_running', pause: 'text_paused', wait: 'text_waiting', done: 'text_finished', err: 'text_error', prep: 'text_prep', off: 'text_off'};
-const TXT = {pause: 'Pausiert', wait: 'Startet später', done: 'Fertig', err: 'Störung', prep: 'Wird eingestellt', off: 'Aus'};
+// Reihenfolge der Prüfung; alles andere = aus
+const SORDER = ['err', 'pause', 'wait', 'done', 'prep', 'heat', 'warm', 'run', 'ready'];
+// Gerät arbeitet (Pause/Stopp statt Start)
+const ACT = ['run', 'pause', 'wait', 'heat', 'warm'];
+const isAct = cls => ACT.includes(cls);
+const SKEY = {run: 'running_states', pause: 'paused_states', wait: 'waiting_states', done: 'finished_states', err: 'error_states', prep: 'prep_states', heat: 'heat_states', warm: 'warm_states', ready: 'ready_states'};
+const TKEY = {run: 'text_running', pause: 'text_paused', wait: 'text_waiting', done: 'text_finished', err: 'text_error', prep: 'text_prep', heat: 'text_heat', warm: 'text_warm', ready: 'text_ready', off: 'text_off'};
+const TXT = {pause: 'Pausiert', wait: 'Startet später', done: 'Fertig', err: 'Störung', prep: 'Wird eingestellt', heat: 'Heizt auf', warm: 'Hält warm', ready: 'Bereit', off: 'Aus'};
 const BAD = new Set(['unavailable', 'unknown', 'none', '']);
 const ok = s => !!s && !BAD.has(s.state);
 const GDEF = {layout: 'full', animation: true, glow: true, hide_when_off: false, start_at: 'none'};
@@ -93,7 +101,7 @@ const scene = t => `<div class="scene">${SV[t]}</div>`;
 
 const DCSS = `
 .g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg)}
-.g.dv.glow.st-run{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.g.dv.glow.st-run,.g.dv.glow.st-heat{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
 .dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
 .dv .hd small.er{color:var(--nv-error);opacity:1}
 .dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
@@ -138,7 +146,9 @@ const DCSS = `
 .scene .sep,.scene .rk{stroke:currentColor;stroke-opacity:.22;stroke-width:1}
 .scene .dw,.scene .hd2,.scene .kn{fill:currentColor;fill-opacity:.16}
 .scene .led{fill:currentColor;fill-opacity:.25}
-.st-run .scene .led,.st-pause .scene .led,.st-wait .scene .led{fill:var(--dc);fill-opacity:1}
+.st-run .scene .led,.st-pause .scene .led,.st-wait .scene .led,.st-heat .scene .led,.st-warm .scene .led{fill:var(--dc);fill-opacity:1}
+.st-ready .scene .led{fill:var(--dc);fill-opacity:.45}
+.st-off .scene>svg{opacity:.55;transition:opacity .4s}
 .scene .door{fill:currentColor;fill-opacity:.08;stroke:currentColor;stroke-opacity:.35;stroke-width:2}
 .scene .gl{fill:rgba(0,0,0,.28);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
 .scene .sh{fill:none;stroke:#fff;stroke-opacity:.25;stroke-width:1.6;stroke-linecap:round}
@@ -278,13 +288,13 @@ class NovaApplianceCard extends HTMLElement {
     clearTimeout(this._ft);
   }
   _S(id) { return id ? this._h?.states[id] : null; }
-  // Zustandsgruppe: run, pause, wait, done, err, prep oder off
+  // Zustandsgruppe (SORDER) oder off
   _cls() {
     const c = this._c, s = this._S(c.entity);
     if (!s) return 'off';
     const v = String(s.state).toLowerCase();
     if (['binary_sensor', 'switch', 'input_boolean'].includes(dom(c.entity)) && !c.running_states) return v === 'on' ? 'run' : 'off';
-    for (const k of ['err', 'pause', 'wait', 'done', 'prep', 'run']) {
+    for (const k of SORDER) {
       const own = c[SKEY[k]] != null ? list(c[SKEY[k]]).map(x => x.toLowerCase()) : STATES[k];
       if (own.includes(v)) return k;
     }
@@ -454,7 +464,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   _update() {
     const h = this._h, c = this._c, e = this._e;
     if (!h || !e) return;
-    const t = typeOf(c), TY = TYPES[t], s = this._S(c.entity), cls = this._cls(), act = ['run', 'pause', 'wait'].includes(cls);
+    const t = typeOf(c), TY = TYPES[t], s = this._S(c.entity), cls = this._cls(), act = isAct(cls);
     const na = !!c.entity && (!s || s.state === 'unavailable');
     // Fertig-Effekt nur beim Wechsel in „fertig“, nicht beim Laden
     if (this._prev && this._prev !== cls) this._fx = cls === 'done';
@@ -462,7 +472,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     this._prev = cls;
     const ph = this._S(c.phase || c.entity), phs = c.phase_states != null ? list(c.phase_states) : TY.phase;
     const alt = cls === 'run' && !!ph && phs.map(x => x.toLowerCase()).includes(String(ph.state).toLowerCase());
-    ['run', 'pause', 'wait', 'done', 'err', 'prep', 'off'].forEach(k => e.g.classList.toggle(`st-${k}`, k === cls));
+    [...SORDER, 'off'].forEach(k => e.g.classList.toggle(`st-${k}`, k === cls));
     e.g.classList.toggle('alt', alt);
     e.g.classList.toggle('fx', !!this._fx);
     e.g.classList.toggle('na', na);
@@ -470,7 +480,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     e.g.classList.toggle('dopen', !!dr && ['on', 'open', 'opened'].includes(dr.state));
     this.classList.toggle('nv-na', na);
     // Ausblenden, wenn aus/fertig – im Bearbeitungsmodus sichtbar
-    const hide = !!c.hide_when_off && ['off', 'done'].includes(cls) && !this._pv && !this._em && !this.hasAttribute('preview');
+    const hide = !!c.hide_when_off && ['off', 'done', 'ready'].includes(cls) && !this._pv && !this._em && !this.hasAttribute('preview');
     if (this.hidden !== hide) {
       this.hidden = hide;
       // HA-INTERN: hui-card wertet element.hidden aus, sobald card-visibility-changed kommt (ohne: Karte ist nur leer)
@@ -482,7 +492,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     // Status: übersetzter Zustand von HA; fehlt die Übersetzung, der Text zum Gerätetyp
     const raw = s ? fmtState(h, s) : '';
     const own = c[TKEY[cls]];
-    const def = cls === 'run' ? (alt && TY.alt) || TY.run : TXT[cls];
+    const def = cls === 'run' ? (alt && TY.alt) || TY.run : TY[cls] || TXT[cls];
     const stx = !c.entity ? 'Status-Entität im Editor wählen' : na ? 'Nicht verfügbar' : own || (raw === s.state && def ? def : nice(s.state, raw));
     e.sub.textContent = stx;
     e.sub.classList.toggle('er', cls === 'err');
@@ -555,7 +565,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   _actUp(cls) {
     const c = this._c, b = this._ab, av = k => !!c[k] && this._S(c[k]) && this._S(c[k]).state !== 'unavailable';
     if (!b) return;
-    const act = ['run', 'pause', 'wait'].includes(cls), blk = this._startBlock();
+    const act = isAct(cls), blk = this._startBlock();
     b.start.hidden = act || !c.start;
     b.start.classList.toggle('dis', !!blk);
     const at = this._atCalc();
@@ -580,7 +590,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     if (cls === 'err') add('error', 'mdi:alert-circle-outline', stx);
     const cn = this._S(c.connection);
     if (c.connection && (!cn || ['off', 'unavailable', 'disconnected'].includes(cn.state))) add('error', 'mdi:wifi-off', c.connection_text || 'Keine Verbindung zum Gerät');
-    const blk = c.layout !== 'compact' && !['run', 'pause', 'wait'].includes(cls) ? this._startBlock() : null;
+    const blk = c.layout !== 'compact' && !isAct(cls) ? this._startBlock() : null;
     if (blk) add('warning', 'mdi:play-circle-outline', blk);
     const dr = this._S(c.door);
     if (dr && ['on', 'open', 'opened'].includes(dr.state)) add('info', 'mdi:door-open', c.door_text || TY.door);
@@ -646,22 +656,25 @@ const GHINT = [{name: 'entity', required: true, selector: ST}, g2({name: 'messag
 const GSTATE = [
   {name: 'running_states', selector: {text: {multiple: true}}}, g2({name: 'paused_states', selector: {text: {multiple: true}}}, {name: 'waiting_states', selector: {text: {multiple: true}}}),
   g2({name: 'finished_states', selector: {text: {multiple: true}}}, {name: 'error_states', selector: {text: {multiple: true}}}),
-  {name: 'prep_states', selector: {text: {multiple: true}}},
+  g2({name: 'prep_states', selector: {text: {multiple: true}}}, {name: 'ready_states', selector: {text: {multiple: true}}}),
+  g2({name: 'heat_states', selector: {text: {multiple: true}}}, {name: 'warm_states', selector: {text: {multiple: true}}}),
 ];
 const GTEXT = [g2({name: 'text_running', selector: T}, {name: 'text_paused', selector: T}), g2({name: 'text_waiting', selector: T}, {name: 'text_finished', selector: T}),
-  g2({name: 'text_error', selector: T}, {name: 'text_off', selector: T}), {name: 'text_prep', selector: T}];
+  g2({name: 'text_error', selector: T}, {name: 'text_off', selector: T}), g2({name: 'text_prep', selector: T}, {name: 'text_ready', selector: T}),
+  g2({name: 'text_heat', selector: T}, {name: 'text_warm', selector: T})];
 const GLOOK = [sel('layout', [['full', 'Voll'], ['compact', 'Kompakt (läuft gerade)']]), g2({name: 'hide_when_off', selector: {boolean: {}}}, {name: 'animation', selector: {boolean: {}}}),
   g2(ROLE('color'), {name: 'glow', selector: {boolean: {}}})];
 const GACTS = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
-const PHASE_LBL = {washer: 'Zustände „schleudert“ (schnelle Trommel)', airfryer: 'Zustände „heizt vor“ (ruhigere Animation)', coffee: 'Zustände „brüht“ (Kaffee läuft in die Tasse)'};
+const PHASE_LBL = {washer: 'Zustände „schleudert“ (schnelle Trommel)', coffee: 'Zustände „brüht“ (Kaffee läuft in die Tasse)'};
 const GLABELS = {...BASE_LABELS, device_type: 'Gerätetyp', entity: 'Status', power: 'Ein/Aus-Schalter', program: 'Programm', progress: 'Fortschritt (%)', duration: 'Gesamtdauer',
   remaining: 'Restzeit', end_time: 'Endzeit', phase: 'Phase (optional)', phase_states: 'Sonder-Zustände', display: 'Darstellung', step: 'Schrittweite', show: 'Anzeigen',
   start: 'Start', start_name: 'Text auf dem Start-Knopf', start_option: 'Programm für den Start', pause: 'Pause', resume: 'Fortsetzen', resume_with_start: 'Fortsetzen nutzt Start-Knopf', stop: 'Stopp',
   start_confirm: 'Rückfrage vor dem Start', start_at: '„Starten um“ (Uhrzeit wählen)', stop_confirm: 'Rückfrage vor dem Stopp', remote_start: 'Fernstart erlaubt', remote_start_text: 'Hinweis, wenn Fernstart aus',
   door: 'Tür / Schublade', door_text: 'Hinweis, wenn offen', connection: 'Verbindung', connection_text: 'Hinweis ohne Verbindung', message: 'Meldung', level: 'Stufe',
   running_states: 'Zustände „läuft“', paused_states: 'Zustände „pausiert“', waiting_states: 'Zustände „startet später“', finished_states: 'Zustände „fertig“', error_states: 'Zustände „Störung“', prep_states: 'Zustände „wird eingestellt“', text_prep: 'Text „wird eingestellt“',
+  ready_states: 'Zustände „bereit“', heat_states: 'Zustände „heizt auf“', warm_states: 'Zustände „hält warm“', text_ready: 'Text „bereit“', text_heat: 'Text „heizt auf“', text_warm: 'Text „hält warm“',
   text_running: 'Text „läuft“', text_paused: 'Text „pausiert“', text_waiting: 'Text „startet später“', text_finished: 'Text „fertig“', text_error: 'Text „Störung“', text_off: 'Text „aus“',
-  layout: 'Darstellung', hide_when_off: 'Ausblenden, wenn aus oder fertig', animation: 'Animation (aus = Standbild)', color: 'Farbe', glow: 'Rahmen leuchtet beim Laufen'};
+  layout: 'Darstellung', hide_when_off: 'Ausblenden, wenn aus, bereit oder fertig', animation: 'Animation (aus = Standbild)', color: 'Farbe', glow: 'Rahmen leuchtet beim Laufen'};
 const GHELPERS = {
   device_type: 'Bestimmt nur Symbol, Texte, Standardfarbe und Animation',
   entity: 'Betriebszustand, z. B. sensor.waschmaschine_betriebszustand – auch binary_sensor (an = läuft)',
@@ -686,6 +699,9 @@ const GHELPERS = {
   connection: 'Hinweis, wenn aus bzw. nicht verfügbar',
   running_states: 'Leer = übliche Rohzustände (run, running, cooking …). Genaue Zustände der Status-Entität',
   prep_states: 'Gerät wird gerade eingestellt (z. B. Airfryer „setting“). Leer = setting, programming …',
+  ready_states: 'An, aber nichts läuft. Leer = ready, idle, standby, mainmenu. Alles Unbekannte gilt als „aus“',
+  heat_states: 'Leer = heating, preheating, preheat. Ruhiges Glühen statt Lauf-Animation',
+  warm_states: 'Leer = maintain (Philips), keep_warm, warming. Schwaches Glühen',
   text_running: 'Leer = Übersetzung von HA, sonst Text zum Gerätetyp',
   hide_when_off: 'Gut für die Startseite: Karte nur, solange etwas läuft. Im Bearbeitungsmodus bleibt sie sichtbar',
   color: 'Farbrolle aus dem Theme (Fortschritt, Start-Knopf, Animation)',
