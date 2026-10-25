@@ -1380,25 +1380,28 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     }
   };
   define("color-input", NovaColorInput);
-  var MAIN = [
+  var GEN2 = [
     { type: "grid", name: "", schema: [{ name: "title", selector: { text: {} } }, { name: "icon", selector: { icon: {} } }] },
-    { name: "area", selector: { area: {} } },
-    { name: "exclude", selector: { entity: { multiple: true, domain: "light" } } },
-    { type: "grid", name: "", schema: [{ name: "show_header", selector: { boolean: {} } }, { name: "show_all_off", selector: { boolean: {} } }, { name: "use_light_color", selector: { boolean: {} } }, { name: "show_colors", selector: { boolean: {} } }] }
+    { name: "show_header", selector: { boolean: {} } }
   ];
+  var SRC = (c) => [
+    { name: "area", selector: { area: {} } },
+    ...c.area ? [{ name: "exclude", selector: { entity: { multiple: true, domain: "light" } } }] : []
+  ];
+  var COLORS = [{ name: "show_colors", selector: { boolean: {} } }];
+  var LOOK2 = [{ type: "grid", name: "", schema: [{ name: "use_light_color", selector: { boolean: {} } }, { name: "show_all_off", selector: { boolean: {} } }] }];
+  var vis2 = (c) => `${!!c.area}|${c.show_colors !== false}`;
   var LAMP = [
     { name: "entity", required: true, selector: { entity: { domain: "light" } } },
-    { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] },
-    { name: "tap_action", selector: { ui_action: {} } },
-    { name: "hold_action", selector: { ui_action: {} } }
+    { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] }
   ];
+  var LAMP_ACT = [{ name: "tap_action", selector: { ui_action: {} } }, { name: "hold_action", selector: { ui_action: {} } }];
   var EDITOR_DEFAULTS2 = { show_header: true, show_all_off: true, use_light_color: true, show_colors: true };
   var toLamp = (x) => typeof x === "string" ? { entity: x } : { ...x };
   var LIGHT_EDITOR_CSS = `
 .dots{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .dot{position:relative;width:30px;height:30px;border-radius:50%;border:2px solid var(--divider-color,#888);box-sizing:border-box}
-.dot button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;padding:0;border-radius:50%;border:none;background:var(--error-color,#db4437);color:#fff;font:700 12px/18px sans-serif;cursor:pointer}
-.sub{font-size:13px;font-weight:600;margin:4px 0 0}`;
+.dot button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;padding:0;border-radius:50%;border:none;background:var(--error-color,#db4437);color:#fff;font:700 12px/18px sans-serif;cursor:pointer}`;
   var NovaLightCardEditor = class extends NovaEditorBase {
     setConfig(c) {
       if (JSON.stringify(c) !== this._emitted) super.setConfig(c);
@@ -1413,22 +1416,35 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
       this._pickerOpen ||= /* @__PURE__ */ new Set();
     }
     _build() {
-      const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}${LIGHT_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), keys = names(MAIN);
-      w.append(this._form(MAIN, { ...EDITOR_DEFAULTS2, ...this._config }, (v) => this._emit(this._clean(merge(this._config, keys, v)))));
-      w.append(this._h3("Lampen"), this._hint("Genau eine Lampe (ohne Bereich) = Einzelkachel. Mehrere = Sammelkarte."));
-      this._config.entities.forEach((l, i) => w.append(this._lamp(l, i)));
-      w.append(this._add("Lampe hinzufügen", () => {
-        const lamps = [...this._config.entities, { entity: "" }];
-        this._open.add(lamps.length - 1);
-        this._set(lamps);
-        this._rebuild();
-      }));
-      w.append(this._h3("Farbknöpfe für alle Lampen"), this._colors("all", this._config.colors || [], (colors) => {
-        this._emit(this._clean({ ...this._config, colors }));
-        this._config.entities = this._internal;
-      }));
+      const r = this.shadowRoot, c0 = this._config;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}${LIGHT_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), data = { ...EDITOR_DEFAULTS2, ...c0 }, was = vis2(c0);
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
+        this._emit(this._clean(c));
+        if (vis2(c) !== was) this._rebuild();
+      });
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN2))),
+        this._section("lamps", "mdi:lightbulb-group", "Lampen", (b) => {
+          b.append(form(SRC(data)), this._hint("Genau eine Lampe (ohne Bereich) = Einzelkachel. Mehrere = Sammelkarte."));
+          this._config.entities.forEach((l, i) => b.append(this._lamp(l, i)));
+          b.append(this._add("Lampe hinzufügen", () => {
+            const lamps = [...this._config.entities, { entity: "" }];
+            this._open.add(lamps.length - 1);
+            this._set(lamps);
+            this._rebuild();
+          }));
+        }),
+        this._section("colors", "mdi:palette-swatch", "Farbknöpfe", (b) => {
+          b.append(form(COLORS));
+          if (data.show_colors !== false) b.append(this._hint("Gelten für alle Lampen; eigene Farbknöpfe je Lampe stehen bei der Lampe."), this._colors("all", this._config.colors || [], (colors) => {
+            this._emit(this._clean({ ...this._config, colors }));
+            this._config.entities = this._internal;
+          }));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK2)))
+      );
     }
     // Standardwerte und leere Farblisten weglassen, Lampen ohne Extras als reine Entity-ID
     _clean(c) {
@@ -1469,10 +1485,12 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
         s.querySelector(".lbl").textContent = this._label(lamps[i], i);
         if (old.entity !== lamps[i].entity) this._rebuild();
       }));
-      const sub = document.createElement("div");
-      sub.className = "sub";
-      sub.textContent = "Farbknöpfe dieser Lampe";
-      body.append(sub, this._colors(`l${i}`, l.colors || [], (colors) => {
+      body.append(this._h4("Aktionen"), this._form(LAMP_ACT, l, (v) => {
+        const lamps = [...this._config.entities];
+        lamps[i] = merge(lamps[i], names(LAMP_ACT), v);
+        this._set(lamps);
+      }));
+      body.append(this._h4("Farbknöpfe dieser Lampe"), this._colors(`l${i}`, l.colors || [], (colors) => {
         const lamps = [...this._config.entities];
         lamps[i] = { ...lamps[i], colors };
         this._set(lamps);
@@ -1553,6 +1571,7 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     hold_action: "Aktion bei langem Drücken"
   });
   __publicField(NovaLightCardEditor, "helpers", { area: "Optional. Neue Lampen im Bereich erscheinen von selbst" });
+  __publicField(NovaLightCardEditor, "openSections", ["general", "lamps"]);
   define("light-card-editor", NovaLightCardEditor);
   var TAG3 = "light-card";
   var LIGHT_CSS = `
@@ -1802,7 +1821,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
 .d.bn .num{display:block}.d.bn .dot{display:none}
 .empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
 @media(max-width:600px){.d{width:calc(var(--sz) * .875);height:calc(var(--sz) * .875)}.dock{gap:5px;padding:6px}}`;
-  var SRC = {};
+  var SRC2 = {};
   var findDock = (o) => {
     if (!o || typeof o !== "object") return null;
     if ((o.type === `custom:${tag("dock-card")}` || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
@@ -1864,8 +1883,8 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       if (this._loading) return;
       this._loading = true;
       const k = this._cfg.source;
-      SRC[k] = SRC[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findDock).catch(() => null);
-      const d = await SRC[k];
+      SRC2[k] = SRC2[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findDock).catch(() => null);
+      const d = await SRC2[k];
       this._loading = false;
       this._items = d ? d.items : [];
       this._srcCfg = d || {};
@@ -2024,7 +2043,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     }
   };
   define("dock-card", NovaDockCard, { name: "Nova Dock Card", description: "Schwebende Leiste unten mit Buttons: navigieren, Aktion auslösen oder Popup mit beliebigen Karten öffnen.", documentationURL: docUrl("nova-dock-card") });
-  var MAIN2 = [
+  var MAIN = [
     { type: "grid", name: "", schema: [
       { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
       { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
@@ -2089,8 +2108,8 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap");
       const main = { position: "bottom", button_size: 48, ...this._config };
-      w.append(this._form(MAIN2, main, (v) => {
-        const c = merge(this._config, names(MAIN2), v);
+      w.append(this._form(MAIN, main, (v) => {
+        const c = merge(this._config, names(MAIN), v);
         if (c.position === "bottom") delete c.position;
         if (c.button_size === 48) delete c.button_size;
         const hadSrc = !!this._config.source;
@@ -5570,8 +5589,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
   };
   define("info-card", NovaInfoCard, { name: "Nova Info Card", description: "Überschrift mit Zeilen: Name und Wert von Entitäten, optional als Schalter mit Icon und Zustand.", documentationURL: docUrl("nova-info-card") });
-  var GEN2 = [g2({ name: "title", selector: T }, { name: "icon", selector: I })];
-  var LOOK2 = [sel("style", [["box", "Block (wie im Pop-up)"], ["glass", "Glas (wie andere Nova-Karten)"]])];
+  var GEN3 = [g2({ name: "title", selector: T }, { name: "icon", selector: I })];
+  var LOOK3 = [sel("style", [["box", "Block (wie im Pop-up)"], ["glass", "Glas (wie andere Nova-Karten)"]])];
   var ROW = (it) => [
     ENT,
     NAMEICON,
@@ -5603,12 +5622,12 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
         this._emit(c);
       });
       w.append(
-        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN2))),
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN3))),
         this._section("rows", "mdi:format-list-bulleted", "Zeilen", (b) => {
           b.append(this._hint("Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details."));
           this._itemList(b, "entities", (it) => ROW({ display: "value", ...it }), { item: "Zeile", icon: "mdi:format-list-bulleted" }, "Zeile hinzufügen", (it) => ({ display: "value", ...it }));
         }),
-        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK2)))
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK3)))
       );
     }
   };

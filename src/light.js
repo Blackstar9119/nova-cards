@@ -3,7 +3,7 @@ import {esc} from './shared/utils.js';
 import {areaOf} from './shared/state.js';
 import {moreInfo, hassAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
-import {CARD_CSS, EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
+import {CARD_CSS, SECTION_EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
 import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 
@@ -76,25 +76,29 @@ class NovaColorInput extends HTMLElement {
 define('color-input', NovaColorInput);
 
 /* ---------- Editor Licht Card ---------- */
-const MAIN = [
+const GEN = [
   {type: 'grid', name: '', schema: [{name: 'title', selector: {text: {}}}, {name: 'icon', selector: {icon: {}}}]},
-  {name: 'area', selector: {area: {}}},
-  {name: 'exclude', selector: {entity: {multiple: true, domain: 'light'}}},
-  {type: 'grid', name: '', schema: [{name: 'show_header', selector: {boolean: {}}}, {name: 'show_all_off', selector: {boolean: {}}}, {name: 'use_light_color', selector: {boolean: {}}}, {name: 'show_colors', selector: {boolean: {}}}]},
+  {name: 'show_header', selector: {boolean: {}}},
 ];
+// Ausblenden gibt es nur mit Bereich
+const SRC = c => [
+  {name: 'area', selector: {area: {}}},
+  ...(c.area ? [{name: 'exclude', selector: {entity: {multiple: true, domain: 'light'}}}] : []),
+];
+const COLORS = [{name: 'show_colors', selector: {boolean: {}}}];
+const LOOK = [{type: 'grid', name: '', schema: [{name: 'use_light_color', selector: {boolean: {}}}, {name: 'show_all_off', selector: {boolean: {}}}]}];
+const vis = c => `${!!c.area}|${c.show_colors !== false}`;
 const LAMP = [
   {name: 'entity', required: true, selector: {entity: {domain: 'light'}}},
   {type: 'grid', name: '', schema: [{name: 'name', selector: {text: {}}}, {name: 'icon', selector: {icon: {}}, context: {icon_entity: 'entity'}}]},
-  {name: 'tap_action', selector: {ui_action: {}}},
-  {name: 'hold_action', selector: {ui_action: {}}},
 ];
+const LAMP_ACT = [{name: 'tap_action', selector: {ui_action: {}}}, {name: 'hold_action', selector: {ui_action: {}}}];
 const EDITOR_DEFAULTS = {show_header: true, show_all_off: true, use_light_color: true, show_colors: true};
 const toLamp = x => typeof x === 'string' ? {entity: x} : {...x};
 const LIGHT_EDITOR_CSS = `
 .dots{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .dot{position:relative;width:30px;height:30px;border-radius:50%;border:2px solid var(--divider-color,#888);box-sizing:border-box}
-.dot button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;padding:0;border-radius:50%;border:none;background:var(--error-color,#db4437);color:#fff;font:700 12px/18px sans-serif;cursor:pointer}
-.sub{font-size:13px;font-weight:600;margin:4px 0 0}`;
+.dot button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;padding:0;border-radius:50%;border:none;background:var(--error-color,#db4437);color:#fff;font:700 12px/18px sans-serif;cursor:pointer}`;
 
 // Intern sind Lampen immer Objekte in this._config.entities; gespeichert wird so knapp wie möglich ("- light.x")
 class NovaLightCardEditor extends NovaEditorBase {
@@ -111,23 +115,37 @@ class NovaLightCardEditor extends NovaEditorBase {
     c.entities = (c.entities || []).map(toLamp);
     this._pickerOpen ||= new Set();
   }
+  static openSections = ['general', 'lamps'];
   _build() {
-    const r = this.shadowRoot;
-    r.innerHTML = `<style>${EDITOR_CSS}${MAPROW_CSS}${LIGHT_EDITOR_CSS}</style><div class="wrap"></div>`;
-    const w = r.querySelector('.wrap'), keys = names(MAIN);
-    w.append(this._form(MAIN, {...EDITOR_DEFAULTS, ...this._config}, v => this._emit(this._clean(merge(this._config, keys, v)))));
-    w.append(this._h3('Lampen'), this._hint('Genau eine Lampe (ohne Bereich) = Einzelkachel. Mehrere = Sammelkarte.'));
-    this._config.entities.forEach((l, i) => w.append(this._lamp(l, i)));
-    w.append(this._add('Lampe hinzufügen', () => {
-      const lamps = [...this._config.entities, {entity: ''}];
-      this._open.add(lamps.length - 1);
-      this._set(lamps);
-      this._rebuild();
-    }));
-    w.append(this._h3('Farbknöpfe für alle Lampen'), this._colors('all', this._config.colors || [], colors => {
-      this._emit(this._clean({...this._config, colors}));
-      this._config.entities = this._internal;
-    }));
+    const r = this.shadowRoot, c0 = this._config;
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}${LIGHT_EDITOR_CSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap'), data = {...EDITOR_DEFAULTS, ...c0}, was = vis(c0);
+    const form = schema => this._form(schema, data, v => {
+      const c = merge(this._config, names(schema), v);
+      this._emit(this._clean(c));
+      // Bereich bzw. Farbknöpfe an/aus → abhängige Felder ein-/ausblenden
+      if (vis(c) !== was) this._rebuild();
+    });
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(GEN))),
+      this._section('lamps', 'mdi:lightbulb-group', 'Lampen', b => {
+        b.append(form(SRC(data)), this._hint('Genau eine Lampe (ohne Bereich) = Einzelkachel. Mehrere = Sammelkarte.'));
+        this._config.entities.forEach((l, i) => b.append(this._lamp(l, i)));
+        b.append(this._add('Lampe hinzufügen', () => {
+          const lamps = [...this._config.entities, {entity: ''}];
+          this._open.add(lamps.length - 1);
+          this._set(lamps);
+          this._rebuild();
+        }));
+      }),
+      this._section('colors', 'mdi:palette-swatch', 'Farbknöpfe', b => {
+        b.append(form(COLORS));
+        if (data.show_colors !== false) b.append(this._hint('Gelten für alle Lampen; eigene Farbknöpfe je Lampe stehen bei der Lampe.'), this._colors('all', this._config.colors || [], colors => {
+          this._emit(this._clean({...this._config, colors}));
+          this._config.entities = this._internal;
+        }));
+      }),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(LOOK))));
   }
   // Standardwerte und leere Farblisten weglassen, Lampen ohne Extras als reine Entity-ID
   _clean(c) {
@@ -169,10 +187,12 @@ class NovaLightCardEditor extends NovaEditorBase {
       // Andere Lampe → Kelvin-Bereich der Farbscheibe neu
       if (old.entity !== lamps[i].entity) this._rebuild();
     }));
-    const sub = document.createElement('div');
-    sub.className = 'sub';
-    sub.textContent = 'Farbknöpfe dieser Lampe';
-    body.append(sub, this._colors(`l${i}`, l.colors || [], colors => {
+    body.append(this._h4('Aktionen'), this._form(LAMP_ACT, l, v => {
+      const lamps = [...this._config.entities];
+      lamps[i] = merge(lamps[i], names(LAMP_ACT), v);
+      this._set(lamps);
+    }));
+    body.append(this._h4('Farbknöpfe dieser Lampe'), this._colors(`l${i}`, l.colors || [], colors => {
       const lamps = [...this._config.entities];
       lamps[i] = {...lamps[i], colors};
       this._set(lamps);
