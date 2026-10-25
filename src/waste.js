@@ -3,7 +3,7 @@ import {dom, esc, list, setIcon, ymdIn} from './shared/utils.js';
 import {langOf, tzOf} from './shared/state.js';
 import {moreInfo} from './shared/actions.js';
 import {press} from './shared/long-press.js';
-import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, roleVars} from './shared/styles.js';
+import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, roleVars} from './shared/styles.js';
 import {hassChanged, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, sel, ROLE, BASE_LABELS} from './shared/editor-schema.js';
@@ -268,13 +268,17 @@ class NovaWasteCard extends HTMLElement {
 define('waste-card', NovaWasteCard, {name: 'Nova Müllkalender Card', description: 'Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.', documentationURL: docUrl('nova-müllkalender-card')});
 
 /* ---------- Editor Müllkalender Card ---------- */
-const WMAIN = [
+const WGEN = [
   {name: 'entities', required: true, selector: {entity: {domain: 'calendar', multiple: true}}},
   g2({name: 'title', selector: T}, {name: 'icon', selector: I}),
-  g2(sel('layout', [['list', 'Liste'], ['compact', 'Kompakt (nur nächster Termin)']]), {name: 'count', selector: {number: {min: 1, max: 20, mode: 'box'}}}),
-  g2({name: 'days', selector: {number: {min: 1, max: 366, mode: 'box', unit_of_measurement: 'Tage'}}}, {name: 'show_header', selector: {boolean: {}}}),
-  g2({name: 'hide_unmatched', selector: {boolean: {}}}, {name: 'glow', selector: {boolean: {}}}),
 ];
+// Anzahl und Kopfzeile gibt es nur in der Liste
+const WDATES = c => [
+  g2(sel('layout', [['list', 'Liste'], ['compact', 'Kompakt (nur nächster Termin)']]), {name: 'days', selector: {number: {min: 1, max: 366, mode: 'box', unit_of_measurement: 'Tage'}}}),
+  ...(c.layout === 'compact' ? [] : [g2({name: 'count', selector: {number: {min: 1, max: 20, mode: 'box'}}}, {name: 'show_header', selector: {boolean: {}}})]),
+  {name: 'hide_unmatched', selector: {boolean: {}}},
+];
+const WLOOK = [{name: 'glow', selector: {boolean: {}}}];
 const WTYPE = [
   g2({name: 'match', required: true, selector: T}, {name: 'name', selector: T}),
   g2({name: 'icon', selector: I}, ROLE('color')),
@@ -284,12 +288,10 @@ const WLABELS = {...BASE_LABELS, entities: 'Kalender', title: 'Überschrift', la
   glow: 'Rahmen leuchtet bei Abholung heute/morgen', match: 'Stichwort im Termintitel', name: 'Anzeigename', color: 'Farbrolle'};
 const WHELPERS = {
   entities: 'Ein oder mehrere Kalender, z. B. ein iCal-Abfallkalender',
-  count: 'Nur bei Darstellung „Liste“',
   days: 'So weit im Voraus werden Termine geholt',
   icon: 'Leer = Icon der Karte',
   match: 'Groß/Klein egal, mehrere mit Komma: Papier, PPK',
   name: 'Leer = Termintitel',
-  show_header: 'Bei „Kompakt“ immer aus',
   color: 'Farben kommen aus dem Theme (--nova-accent-1 … 4, --nova-neutral)',
 };
 
@@ -297,17 +299,32 @@ class NovaWasteCardEditor extends NovaEditorBase {
   static labels = WLABELS;
   static helpers = WHELPERS;
   _ilabel(it, j) { return `${j + 1}. ${it.name || it.match || 'Neu: Müllart'}`; }
+  static openSections = ['general'];
   _build() {
     const r = this.shadowRoot, c0 = this._config;
-    r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-    const w = r.querySelector('.wrap');
-    const strip = c => { Object.entries(WDEF).forEach(([k, x]) => c[k] === x && delete c[k]); delete c.entity; delete c.refresh; return c; };
-    w.append(this._form(WMAIN, {...WDEF, ...c0, entities: calsOf(c0)}, v => this._emit(strip(merge(this._config, names(WMAIN), v)))));
-
-    w.append(this._h3('Müllarten'));
-    w.append(this._hint('Die erste Regel, deren Stichwort im Termintitel vorkommt, bestimmt Name, Icon und Farbe.'));
-    this._itemList(w, 'types', WTYPE, {item: 'Müllart', icon: 'mdi:trash-can-outline'}, 'Müllart hinzufügen');
-    if (!this._items('types').length) w.append(this._add('Standard-Müllarten einfügen', () => { this._setItems('types', WTYPES.map(t => ({...t}))); this._rebuild(); }));
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap'), data = {...WDEF, ...c0, entities: calsOf(c0)};
+    // alte Schreibweise entity → entities, auch wenn zuerst ein anderer Bereich geändert wird
+    const strip = c => {
+      if (c.entities === undefined && c.entity !== undefined) c.entities = calsOf(c);
+      Object.entries(WDEF).forEach(([k, x]) => c[k] === x && delete c[k]); delete c.entity; delete c.refresh; return c;
+    };
+    const form = schema => this._form(schema, data, v => this._emit(strip(merge(this._config, names(schema), v))));
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(WGEN))),
+      this._section('dates', 'mdi:calendar-clock', 'Termine', b => b.append(form(WDATES(data)))),
+      this._section('types', 'mdi:trash-can-outline', 'Müllarten', b => {
+        b.append(this._hint('Die erste Regel, deren Stichwort im Termintitel vorkommt, bestimmt Name, Icon und Farbe.'));
+        this._itemList(b, 'types', WTYPE, {item: 'Müllart', icon: 'mdi:trash-can-outline'}, 'Müllart hinzufügen');
+        if (!this._items('types').length) b.append(this._add('Standard-Müllarten einfügen', () => { this._setItems('types', WTYPES.map(t => ({...t}))); this._rebuild(); }));
+      }),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(WLOOK))));
+  }
+  // Darstellung geändert → Termin-Felder neu aufbauen
+  _emit(c) {
+    const was = this._config;
+    super._emit(c);
+    if (c.layout !== was?.layout) this._rebuild();
   }
 }
 define('waste-card-editor', NovaWasteCardEditor);
