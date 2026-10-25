@@ -1,0 +1,1381 @@
+/* Nova Cards v0.10.1b1 DEV (nur appliance) – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
+(() => {
+  var __defProp = Object.defineProperty;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
+  // src/shared/define.js
+  var DEV = true;
+  var tag = (name) => `${DEV ? "nova-dev-" : "nova-"}${name}`;
+  var define = (name, cls, meta) => {
+    const t = tag(name);
+    if (!customElements.get(t)) customElements.define(t, cls);
+    if (meta) {
+      window.customCards = window.customCards || [];
+      if (DEV) meta = { ...meta, name: `${meta.name} (Dev)` };
+      if (!window.customCards.some((c) => c.type === t)) window.customCards.push({ type: t, preview: true, ...meta });
+    }
+  };
+  var REPO = "https://github.com/Blackstar9119/nova-cards";
+  var docUrl = (anchor) => `${REPO}#${anchor}`;
+
+  // src/shared/utils.js
+  var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  var dom = (id) => String(id || "").split(".")[0];
+  var isImg = (s) => typeof s === "string" && /^(\/|https?:|data:image)/.test(s);
+  var list = (v) => [].concat(v ?? []).flatMap((x) => String(x).split(",")).map((x) => x.trim()).filter(Boolean);
+  var NUMRE = /^-?\d+(\.\d+)?$/;
+  var toObj = (x) => typeof x === "string" ? { entity: x } : { ...x };
+  var setIcon = (el, ic) => {
+    if (el._ic === ic) return;
+    el._ic = ic;
+    el.innerHTML = isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`;
+  };
+
+  // src/shared/state.js
+  var DICON = { light: "mdi:lightbulb", switch: "mdi:power-socket-eu", fan: "mdi:fan", input_boolean: "mdi:toggle-switch-outline", button: "mdi:gesture-tap-button", input_button: "mdi:gesture-tap-button", script: "mdi:script-text-outline", scene: "mdi:palette", automation: "mdi:robot", climate: "mdi:thermostat", cover: "mdi:window-shutter", media_player: "mdi:speaker", number: "mdi:ray-vertex", input_number: "mdi:ray-vertex", select: "mdi:format-list-bulleted", binary_sensor: "mdi:checkbox-blank-circle-outline", sensor: "mdi:eye" };
+  var TOGGLE = ["light", "switch", "input_boolean", "fan", "cover", "group", "siren", "humidifier", "automation", "media_player", "valve"];
+  var PRESS = { button: ["button", "press"], input_button: ["input_button", "press"], script: ["script", "turn_on"], scene: ["scene", "turn_on"] };
+  var fmtState = (h, s) => {
+    try {
+      return h.formatEntityState ? h.formatEntityState(s) : s.state + (s.attributes.unit_of_measurement ? " " + s.attributes.unit_of_measurement : "");
+    } catch {
+      return s.state;
+    }
+  };
+  var unitJoin = (v, u) => !u ? `${v}` : u.startsWith("°") ? `${v}${u}` : `${v} ${u}`;
+  var iconOf = (h, o, fb) => o.icon || h.states[o.entity]?.attributes.icon || DICON[dom(o.entity)] || fb;
+  var langOf = (h) => h.locale?.language || h.language || "de";
+  var tzOf = (h) => h.locale?.time_zone === "server" ? h.config?.time_zone : void 0;
+  function valueOf(h, s, o) {
+    if (!s) return "–";
+    if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
+      const n = o.decimals != null ? (+s.state).toFixed(o.decimals) : s.state;
+      return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
+    }
+    return fmtState(h, s);
+  }
+  function alertHit(a, s) {
+    if (!s) return false;
+    const v = s.state, n = parseFloat(v);
+    if (a.state != null) return list(a.state).includes(v);
+    if (a.state_not != null) return !["unavailable", "unknown"].includes(v) && !list(a.state_not).includes(v);
+    if (a.above != null || a.below != null) return NUMRE.test(v) && (a.above == null || n > a.above) && (a.below == null || n < a.below);
+    return ["on", "problem"].includes(v);
+  }
+
+  // src/shared/actions.js
+  var fire = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+  var moreInfo = (el, entityId) => fire(el, "hass-more-info", { entityId });
+  var hassAction = (el, config, action) => fire(el, "hass-action", { config, action });
+  function runAction(card, o, kind, info) {
+    const a = o[`${kind}_action`], id = o.entity;
+    if (a?.action === "none") return;
+    const custom = a?.action && a.action !== "default";
+    const d = dom(id), canRun = !!(PRESS[d] || TOGGLE.includes(d));
+    if (kind === "tap" && o.confirm && (custom || !info && canRun) && !window.confirm(o.confirm)) return;
+    if (custom) return hassAction(card, { entity: id, [`${kind}_action`]: a }, kind);
+    if (!id) return;
+    if (kind === "hold" || info || !canRun) return moreInfo(card, id);
+    if (PRESS[d]) return card._h.callService(...PRESS[d], { entity_id: id });
+    card._h.callService("homeassistant", "toggle", { entity_id: id });
+  }
+
+  // src/shared/long-press.js
+  function press(el, { tap, hold, holdMs = 500, isolate = false }) {
+    let t, held = false;
+    const clr = () => clearTimeout(t);
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
+    el.classList.add("tap");
+    el.addEventListener("pointerdown", () => {
+      held = false;
+      t = setTimeout(() => {
+        held = true;
+        hold && hold();
+      }, holdMs);
+    });
+    el.addEventListener("pointerup", (e) => {
+      clr();
+      if (!held && tap) tap();
+      e.stopPropagation();
+    });
+    el.addEventListener("pointerleave", clr);
+    el.addEventListener("pointercancel", clr);
+    el.addEventListener("contextmenu", (e) => e.preventDefault());
+    if (isolate) el.addEventListener("click", (e) => e.stopPropagation());
+    el.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      if (isolate) e.stopPropagation();
+      tap && tap();
+    });
+  }
+
+  // src/shared/styles.js
+  var NOVA_VARS = `:host{
+--nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
+--nv-border:var(--nova-border-color,rgba(255,255,255,.14));
+--nv-fg:var(--nova-text-color,#fff);
+--nv-accent:var(--nova-accent-color,#f5b83d);
+--nv-accent-fg:var(--nova-accent-text-color,#3a2a00);
+--nv-active:var(--nova-active-color,#3d8bf5);
+--nv-active-fg:var(--nova-active-text-color,#fff);
+--nv-warn:var(--nova-warning-color,#7cc4ff);
+--nv-error:var(--nova-error-color,#ff6b6b);
+--nv-chip:var(--nova-chip-color,rgba(255,255,255,.13));
+--nv-radius:var(--nova-radius,24px);
+--nv-blur:var(--nova-blur,20px);
+--nv-a1:var(--nova-accent-1,#3d8bf5);--nv-a1-fg:var(--nova-accent-1-text,#fff);
+--nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
+--nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
+--nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff);
+--nv-box:var(--nova-box-background,rgba(255,255,255,.09));--nv-box-border:var(--nova-box-border-color,rgba(255,255,255,.1));
+--nv-popup-bg:var(--nova-popup-background,linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88)));
+--nv-popup-base:var(--nova-popup-base-color,rgba(22,27,42,.88));
+--nv-popup-head:var(--nova-popup-header-color,rgba(60,72,100,.85));
+--nv-popup-backdrop:var(--nova-popup-backdrop,rgba(8,12,22,.5));
+--nv-popup-r:var(--nova-popup-radius,28px)}`;
+  var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
+  var roleVars = (r) => {
+    const k = ROLES[r] || ROLES.neutral;
+    return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)` };
+  };
+  var GLASS = `:host{position:relative}
+:host::before{content:'';position:absolute;inset:0;border-radius:var(--nv-radius);background:var(--nv-bg);pointer-events:none;
+backdrop-filter:blur(var(--nv-blur)) saturate(150%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(150%)}
+:host(.nv-flat)::before{display:none}
+:host(.nv-na)::before{opacity:.4}`;
+  var CARD_CSS = `${NOVA_VARS}
+:host{display:block;height:100%}
+${GLASS}
+.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);
+border:1px solid var(--nv-border);box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12);
+color:var(--nv-fg);overflow:hidden;position:relative;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+ha-icon{--mdc-icon-size:20px;display:flex}`;
+  var PANEL_CSS = `
+:host{display:block;height:100%;container-type:inline-size}
+${GLASS}
+.g{height:100%;box-sizing:border-box;border-radius:var(--nv-radius);
+border:1px solid var(--nv-border);box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.12);
+color:var(--nv-fg);overflow:hidden;position:relative;font-family:var(--ha-font-family-body,Roboto,sans-serif);
+padding:14px 16px;display:flex;flex-direction:column;gap:12px;transition:box-shadow .4s}
+.g.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.g.err{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-error) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+ha-icon{--mdc-icon-size:20px;display:flex}
+img{object-fit:contain}
+.blk[hidden],[hidden]{display:none!important}
+.bt{font-size:11.5px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.tap{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
+.tap:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.na{opacity:.4}
+.ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color .25s,color .25s,border-color .25s,box-shadow .25s,transform .25s,opacity .25s}
+.ic ha-icon{--mdc-icon-size:18px}.ic img{width:20px;height:20px}
+.on>.ic{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 55%,transparent)}
+.nm{flex:1;min-width:0}.nm b,.nm small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm b{font-weight:500;font-size:13.5px}.nm small{font-size:11.5px;opacity:.6}
+.hd{display:flex;align-items:center;gap:10px}
+.hd .ic{width:44px;height:44px}.hd .ic ha-icon{--mdc-icon-size:24px}.hd .ic img{width:26px;height:26px}
+.hd .nm b{font-weight:600;font-size:15px}.hd .nm small{font-size:12px;opacity:.65}
+.pct{font-weight:600;font-size:14px}
+.hb{width:36px;height:36px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
+.hb:active,.hd .ic:active,.pill:active,.row:active .ic{transform:scale(.92)}
+.prog{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;width:0;background:var(--nv-accent);border-radius:3px;transition:width 1s}
+.list{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));column-gap:14px}
+.kv{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 0;border-top:1px solid rgba(255,255,255,.08);min-width:0}
+.kv ha-icon{--mdc-icon-size:17px;opacity:.7}.kv img{width:17px;height:17px}
+.kv .k{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kv .v{opacity:.8;text-align:right;white-space:nowrap}
+.pills{display:flex;flex-wrap:wrap;gap:7px}
+.pill{padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:12.5px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;min-width:0}
+.pill ha-icon{--mdc-icon-size:16px}.pill img{width:16px;height:16px}
+.pill.on{background:var(--nv-active);color:var(--nv-active-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--nv-active) 50%,transparent)}
+.pills.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-modular-button-width,104px),1fr));gap:8px}
+.pills.grid .pill{flex-direction:column;justify-content:center;border-radius:16px;padding:10px 8px;white-space:normal;text-align:center}
+.pills.grid .pill ha-icon{--mdc-icon-size:22px}.pills.grid .pill img{width:22px;height:22px}
+.row{display:flex;align-items:center;gap:10px;padding:5px 0;min-width:0}
+.sw{width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,.18);position:relative;flex:none;transition:background .25s}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s}
+.row.on .sw{background:var(--nv-active)}.row.on .sw::after{transform:translateX(16px)}
+.sl{display:flex;flex-direction:column;gap:6px;padding:6px 0}
+.sl .kv{border:none;padding:0}
+.sl .v{font-weight:600;opacity:1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;border-radius:11px;margin:0;outline:none;
+background:linear-gradient(90deg,var(--nv-accent) 0 var(--p,0%),rgba(255,255,255,.14) var(--p,0%) 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:none}
+.als{display:flex;flex-direction:column;gap:6px}.als.chips{flex-direction:row;flex-wrap:wrap}
+.al{--c:var(--nv-warn);display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;font-size:13px;
+background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.al.error{--c:var(--nv-error)}.al.info{--c:var(--nv-active)}
+.al ha-icon{color:var(--c);--mdc-icon-size:18px}
+.chips .al{border-radius:999px;padding:5px 10px;font-size:12px}
+@container (max-width:280px){.list{grid-template-columns:1fr}.g{padding:12px}}`;
+  var EDITOR_CSS = `
+.wrap{display:flex;flex-direction:column;gap:16px}
+h3{margin:8px 0 0;font-size:15px;font-weight:600}
+details.item{border:1px solid var(--divider-color,#444);border-radius:12px;overflow:hidden}
+details.item>summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;list-style:none;background:var(--secondary-background-color)}
+details.item>summary::-webkit-details-marker{display:none}
+summary .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.body{padding:12px;display:flex;flex-direction:column;gap:12px}
+.ib{background:none;border:none;color:var(--primary-text-color);cursor:pointer;padding:4px;border-radius:50%;display:flex}
+.ib:hover{background:var(--secondary-background-color)}.ib[disabled]{opacity:.3;pointer-events:none}
+.add{align-self:flex-start;display:flex;gap:6px;align-items:center;padding:8px 14px;border-radius:999px;border:1px solid var(--primary-color);background:none;color:var(--primary-color);cursor:pointer;font:inherit}
+.hint{font-size:12px;opacity:.7;margin:0}
+`;
+  var EDITOR_ICON_CSS = `ha-icon{display:flex}`;
+  var EDITOR_LIST_CSS = `
+.adds{display:flex;flex-wrap:wrap;gap:8px}
+details.item details.item>summary{background:none}
+h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
+  var SECTION_EDITOR_CSS = `${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}`;
+
+  // src/shared/lifecycle.js
+  var GLOBAL = ["entities", "devices", "areas", "floors", "localize", "locale", "language", "themes", "selectedTheme", "config", "user", "connected"];
+  var ID = /^[a-z_]+\.[a-z0-9_]+$/;
+  var entityIds = (o, out = /* @__PURE__ */ new Set()) => {
+    if (typeof o === "string") {
+      if (ID.test(o)) out.add(o);
+    } else if (o && typeof o === "object") Object.values(o).forEach((v) => entityIds(v, out));
+    return out;
+  };
+  var hassChanged = (prev, next, ids) => {
+    if (prev === next) return false;
+    if (!prev || !next) return true;
+    if (GLOBAL.some((k) => prev[k] !== next[k])) return true;
+    const a = prev.states, b = next.states;
+    if (a === b) return false;
+    for (const id of ids || []) if (a?.[id] !== b?.[id]) return true;
+    return false;
+  };
+  var inPicker = (el) => {
+    for (let n = el, i = 0; n && i < 80; i++) {
+      if (n.localName === "hui-card-picker") return true;
+      n = n.parentElement || n.getRootNode?.().host;
+    }
+    return false;
+  };
+
+  // src/shared/editor-base.js
+  var preload;
+  var loadForm = () => customElements.get("ha-form") ? Promise.resolve() : preload ||= (async () => {
+    try {
+      await (await (await window.loadCardHelpers()).createCardElement({ type: "button", entity: "sun.sun" }))?.constructor?.getConfigElement?.();
+    } catch (e) {
+      console.warn("[nova-cards] Editor nicht vorgeladen", e);
+    }
+    await Promise.race([customElements.whenDefined("ha-form"), new Promise((r) => setTimeout(r, 3e3))]);
+  })();
+  var names = (s) => s.flatMap((x) => x.schema ? names(x.schema) : x.name ? [x.name] : []);
+  var empty = (v) => v == null || v === "" || Array.isArray(v) && !v.length;
+  var merge = (base, keys, val) => {
+    const o = { ...base };
+    keys.forEach((k) => empty(val[k]) ? delete o[k] : o[k] = val[k]);
+    return o;
+  };
+  var DEBOUNCE = 300;
+  var NovaEditorBase = class extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" });
+      this._forms = [];
+      this._open = /* @__PURE__ */ new Set();
+      this._keep = /* @__PURE__ */ new Map();
+      this._ids = /* @__PURE__ */ new Set();
+      this.addEventListener("focusout", () => this._flush());
+    }
+    // hass kommt mehrmals pro Sekunde – an die Felder nur weitergeben, wenn es den Editor betrifft
+    set hass(h) {
+      const old = this._hass;
+      this._hass = h;
+      if (hassChanged(old, h, this._ids)) this._forms.forEach((f) => {
+        f.hass = h;
+      });
+    }
+    setConfig(c) {
+      const s = JSON.stringify(c);
+      if (s === this._emitted || this._pending && s === JSON.stringify(this._pending)) {
+        this._config = c;
+        return;
+      }
+      clearTimeout(this._dt);
+      this._pending = null;
+      this._config = JSON.parse(s);
+      this._ids = entityIds(this._config);
+      this._onExternalConfig?.();
+      this._rebuild();
+    }
+    disconnectedCallback() {
+      this._flush();
+    }
+    async _rebuild() {
+      const id = this._bid = (this._bid || 0) + 1;
+      await loadForm();
+      if (id !== this._bid) return;
+      this._forms = [];
+      this._pool = this._keep;
+      this._keep = /* @__PURE__ */ new Map();
+      try {
+        this._build();
+      } finally {
+        this._pool = null;
+      }
+    }
+    _emit(c) {
+      this._config = c;
+      this._ids = entityIds(c);
+      this._pending = c;
+      clearTimeout(this._dt);
+      this._dt = setTimeout(() => this._flush(), DEBOUNCE);
+    }
+    _flush() {
+      clearTimeout(this._dt);
+      const c = this._pending;
+      if (!c) return;
+      this._pending = null;
+      this._emitted = JSON.stringify(c);
+      fire(this, "config-changed", { config: c });
+    }
+    // Element vom letzten Aufbau weiterverwenden (gleicher Typ, gleiche Reihenfolge), sonst mit create() neu erzeugen
+    _reuse(type, create) {
+      const el = this._pool?.get(type)?.shift() || create();
+      (this._keep.get(type) || this._keep.set(type, []).get(type)).push(el);
+      return el;
+    }
+    _form(schema, data, cb) {
+      const f = this._reuse(`form:${JSON.stringify(schema)}`, () => {
+        const f2 = document.createElement("ha-form");
+        f2.schema = schema;
+        f2.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f2.computeHelper = (s) => this.constructor.helpers?.[s.name];
+        f2.addEventListener("value-changed", (e) => {
+          e.stopPropagation();
+          f2.data = e.detail.value;
+          f2._dk = JSON.stringify(f2.data);
+          f2._cb(e.detail.value);
+        });
+        return f2;
+      });
+      if (f.hass !== this._hass) f.hass = this._hass;
+      const dk = JSON.stringify(data);
+      if (f._dk !== dk) {
+        f.data = data;
+        f._dk = dk;
+      }
+      f._cb = cb;
+      this._forms.push(f);
+      return f;
+    }
+    // Runder Icon-Button (Verschieben, Löschen …)
+    _btn(icon, title, fn, dis) {
+      const b = document.createElement("button");
+      b.className = "ib";
+      b.title = title;
+      b.disabled = !!dis;
+      b.innerHTML = `<ha-icon icon="${icon}"></ha-icon>`;
+      b.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fn();
+      });
+      return b;
+    }
+    // „+ … hinzufügen“
+    _add(label, fn) {
+      const a = document.createElement("button");
+      a.className = "add";
+      a.innerHTML = `<ha-icon icon="mdi:plus"></ha-icon>${esc(label)}`;
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        fn();
+      });
+      return a;
+    }
+    _h3(t) {
+      const h = document.createElement("h3");
+      h.textContent = t;
+      return h;
+    }
+    _hint(t) {
+      const p = document.createElement("p");
+      p.className = "hint";
+      p.textContent = t;
+      return p;
+    }
+    // Aufklapp-Eintrag; key merkt sich, ob er offen ist. Liefert [details, summary, body].
+    // Mit fill(body, summary) wird der Inhalt erst beim ersten Aufklappen gebaut – zugeklappte Einträge kosten dann nichts
+    _details(key, icon, label, btns, fill) {
+      const d = document.createElement("details");
+      d.className = "item";
+      d.open = this._open.has(key);
+      d.addEventListener("toggle", (e) => {
+        e.stopPropagation();
+        d.open ? this._open.add(key) : this._open.delete(key);
+      });
+      const s = document.createElement("summary");
+      s.innerHTML = `<ha-icon icon="${esc(icon)}"></ha-icon><span class="lbl"></span>`;
+      s.querySelector(".lbl").textContent = label;
+      s.append(...btns);
+      const body = document.createElement("div");
+      body.className = "body";
+      d.append(s, body);
+      if (fill) {
+        let done = false;
+        const go = () => {
+          if (!done && d.open) {
+            done = true;
+            fill(body, s);
+          }
+        };
+        d.addEventListener("toggle", go);
+        go();
+      }
+      return [d, s, body];
+    }
+    // Aufklappbarer Bereich im Stil des Pop-up-Editors (Icon + Überschrift, Inhalt erst beim Aufklappen).
+    // Welche Bereiche offen sind, bleibt beim Neuaufbau erhalten; anfangs offen: static openSections der Unterklasse.
+    _section(key, icon, label, fill) {
+      const open = this._openSecs ||= new Set(this.constructor.openSections || []), k = `sec.${key}`;
+      if (open.has(key)) this._open.add(k);
+      else this._open.delete(k);
+      const [d] = this._details(k, icon, label, [], fill);
+      d.classList.add("sec");
+      d.addEventListener("toggle", () => {
+        if (d.open) open.add(key);
+        else open.delete(key);
+      });
+      return d;
+    }
+    // Zwischenüberschrift innerhalb eines Bereichs
+    _h4(t) {
+      const h = document.createElement("h4");
+      h.textContent = t;
+      return h;
+    }
+    // Hoch / Runter / Löschen für Eintrag i von n
+    _itemBtns(i, n, move, del) {
+      return [
+        this._btn("mdi:arrow-up", "Nach oben", () => move(-1), i === 0),
+        this._btn("mdi:arrow-down", "Nach unten", () => move(1), i === n - 1),
+        this._btn("mdi:delete-outline", "Löschen", del)
+      ];
+    }
+    // Liste unter Konfig-Schlüssel k (z. B. buttons, rooms): Aufklapp-Einträge + „hinzufügen“.
+    // m = {item, icon}; view bereitet einen Eintrag fürs Formular auf
+    _items(k) {
+      return [].concat(this._config[k] || []).map(toObj);
+    }
+    _setItems(k, arr) {
+      const c = { ...this._config };
+      if (arr.length) c[k] = arr;
+      else delete c[k];
+      this._emit(c);
+    }
+    // schema darf eine Funktion des Eintrags sein (Felder je nach Einstellung); ändert sich dadurch das Schema, wird neu aufgebaut
+    _itemList(w, k, schema, m, addLabel, view = (it) => it) {
+      const items = this._items(k), sch = typeof schema === "function" ? schema : () => schema;
+      items.forEach((it, j) => {
+        const [d, s] = this._details(
+          `${k}.${j}`,
+          it.icon || m.icon,
+          this._ilabel(it, j, m),
+          this._itemBtns(
+            j,
+            items.length,
+            (dir) => this._moveItem(k, j, dir),
+            () => {
+              this._open = /* @__PURE__ */ new Set();
+              this._setItems(k, this._items(k).filter((_, x) => x !== j));
+              this._rebuild();
+            }
+          ),
+          (body) => {
+            const cur = this._items(k)[j] || it;
+            body.append(this._form(sch(cur), view(cur), (v) => {
+              const arr = this._items(k), was = JSON.stringify(sch(arr[j]));
+              arr[j] = merge(arr[j], names(sch(arr[j])), v);
+              this._setItems(k, arr);
+              s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
+              if (JSON.stringify(sch(arr[j])) !== was) this._rebuild();
+            }));
+          }
+        );
+        w.append(d);
+      });
+      w.append(this._add(addLabel, () => {
+        const n = [...this._items(k), {}];
+        this._open = new Set([...this._open].filter((x) => x.startsWith("sec.")).concat(`${k}.${n.length - 1}`));
+        this._setItems(k, n);
+        this._rebuild();
+      }));
+    }
+    _moveItem(k, j, dir) {
+      const arr = this._items(k), t = j + dir;
+      [arr[j], arr[t]] = [arr[t], arr[j]];
+      this._open = /* @__PURE__ */ new Set([`${k}.${t}`]);
+      this._setItems(k, arr);
+      this._rebuild();
+    }
+    _ilabel(it, j, m) {
+      return `${j + 1}. ${it.name || it.message || it.entity && this._hass?.states[it.entity]?.attributes.friendly_name || it.entity || `Neu: ${m.item}`}`;
+    }
+  };
+
+  // src/shared/editor-schema.js
+  var g2 = (...schema) => ({ type: "grid", name: "", schema });
+  var T = { text: {} };
+  var I = { icon: {} };
+  var A = { ui_action: {} };
+  var NUM = (n) => ({ name: n, selector: { number: { mode: "box", step: "any" } } });
+  var sel = (n, opts) => ({ name: n, selector: { select: { mode: "dropdown", options: opts.map(([value, label]) => ({ value, label })) } } });
+  var ROLE = (n) => sel(n, [["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]);
+  var NAMEICON = g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } });
+  var BASE_LABELS = {
+    name: "Name",
+    icon: "Icon",
+    status: "Status-Entität",
+    active: "Aktiv-Entität",
+    progress: "Fortschritt (%)",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken",
+    button_icon: "Touch-Button oben: Icon",
+    button_action: "Touch-Button oben: Aktion",
+    title: "Überschrift (optional)",
+    layout: "Darstellung",
+    columns: "Spalten",
+    entity: "Entität",
+    unit: "Einheit",
+    decimals: "Nachkommastellen",
+    min: "Min",
+    max: "Max",
+    step: "Schritt",
+    format: "Anzeige",
+    confirm: "Sicherheitsabfrage",
+    state: "Warnen bei Zustand",
+    state_not: "Warnen außer bei",
+    above: "Warnen über",
+    below: "Warnen unter",
+    message: "Meldung",
+    level: "Stufe",
+    glow: "Kartenrahmen einfärben"
+  };
+
+  // src/appliance.js
+  var TYPES = {
+    washer: { label: "Waschmaschine", icon: "mdi:washing-machine", color: "accent-1", run: "Wäscht", alt: "Schleudert", door: "Tür offen", phase: ["spin", "spinning", "schleudern"] },
+    dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", door: "Tür offen", phase: [] },
+    airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-2", run: "Gart", alt: "Heizt vor", door: "Schublade offen", phase: ["preheat", "preheating", "vorheizen"] },
+    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-3", run: "Läuft", alt: "Brüht", door: "Tür offen", phase: ["brew", "brewing", "brühen"] },
+    generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
+  };
+  var typeOf = (c) => TYPES[c.device_type] ? c.device_type : "generic";
+  var STATES = {
+    run: ["run", "running", "on", "cooking", "brewing", "heating", "preheating", "starting", "ending", "anti_wrinkle", "washing", "rinsing", "spinning", "drying", "aborting", "in_use", "programmed_running"],
+    pause: ["pause", "paused", "user_paused"],
+    wait: ["delayedstart", "delayed_start", "delay_wait", "scheduled", "waiting_to_start"],
+    done: ["finished", "finish", "done", "complete", "completed", "clean", "end", "programme_ended"],
+    err: ["error", "fault", "failure", "actionrequired", "action_required", "interrupted"]
+  };
+  var SKEY = { run: "running_states", pause: "paused_states", wait: "waiting_states", done: "finished_states", err: "error_states" };
+  var TKEY = { run: "text_running", pause: "text_paused", wait: "text_waiting", done: "text_finished", err: "text_error", off: "text_off" };
+  var TXT = { pause: "Pausiert", wait: "Startet später", done: "Fertig", err: "Störung", off: "Aus" };
+  var BAD = /* @__PURE__ */ new Set(["unavailable", "unknown", "none", ""]);
+  var ok = (s) => !!s && !BAD.has(s.state);
+  var GDEF = { layout: "full", animation: true, glow: true, hide_when_off: false };
+  var nice = (raw, t) => t === raw && /_/.test(raw) ? raw.replace(/_/g, " ").replace(/^./, (x) => x.toUpperCase()) : t;
+  var fmtOpt = (h, s, o) => {
+    let t = o;
+    try {
+      if (h.formatEntityState) t = h.formatEntityState(s, o);
+    } catch {
+    }
+    return nice(o, t);
+  };
+  var SECS = { s: 1, sec: 1, min: 60, m: 60, h: 3600, d: 86400 };
+  var isDur = (s) => !!s && (SECS[s.attributes.unit_of_measurement] != null || s.attributes.device_class === "duration");
+  function secsOf(s) {
+    if (!ok(s)) return null;
+    const v = String(s.state);
+    if (/^\d+:\d{2}(:\d{2})?$/.test(v)) {
+      const p = v.split(":").map(Number);
+      return p[0] * 3600 + p[1] * 60 + (p[2] || 0);
+    }
+    if (NUMRE.test(v)) {
+      const u = s.attributes.unit_of_measurement;
+      return +v * (SECS[u] ?? (s.attributes.device_class === "duration" ? 1 : 60));
+    }
+    const t = Date.parse(v);
+    return isNaN(t) ? null : Math.max(0, (t - Date.now()) / 1e3);
+  }
+  var fmtDur = (sec) => {
+    const m = Math.max(0, Math.round(sec / 60));
+    return m < 1 ? "< 1 min" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h`;
+  };
+  var IC = { start: "mdi:play", pause: "mdi:pause", resume: "mdi:play-pause", stop: "mdi:stop" };
+  var DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
+  var SV = {
+    washer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvw"><circle cx="50" cy="58" r="21"/></clipPath></defs>
+<rect class="bd" x="12" y="6" width="76" height="88" rx="10"/><line class="sep" x1="12" y1="22" x2="88" y2="22"/>
+<rect class="dw" x="19" y="11" width="18" height="6" rx="2"/><circle class="kn" cx="64" cy="14" r="3.6"/><circle class="led" cx="78" cy="14" r="2"/>
+<circle class="door" cx="50" cy="58" r="27"/><circle class="gl" cx="50" cy="58" r="21"/>
+<g clip-path="url(#nvw)"><g class="wl"><g class="wv"><path class="wt" d="M0 64 q6.25 -3 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V100 H0 Z"/></g></g>
+<g class="drum"><circle class="dm" cx="50" cy="58" r="17"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(120 50 58)"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(240 50 58)"/>
+<path class="cl" d="M40 64 q5 -6 10 -1 q4 4 9 -1 q2 6 -5 8 q-8 2 -14 -6 Z"/><path class="cl c2" d="M44 48 q6 -3 10 1 q-2 5 -7 4 q-4 -1 -3 -5 Z"/></g></g>
+<path class="sh" d="M35 47 a19 19 0 0 1 11 -8"/>${DONE}</svg>`,
+    dishwasher: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvd"><rect x="22" y="26" width="56" height="60" rx="5"/></clipPath></defs>
+<rect class="bd" x="14" y="6" width="72" height="88" rx="9"/><line class="sep" x1="14" y1="20" x2="86" y2="20"/>
+<rect class="hd2" x="38" y="11" width="24" height="3.5" rx="1.75"/><circle class="led" cx="78" cy="13" r="2"/>
+<rect class="gl" x="22" y="26" width="56" height="60" rx="5"/>
+<g clip-path="url(#nvd)"><rect class="mist" x="22" y="26" width="56" height="60"/>
+<line class="rk" x1="24" y1="50" x2="76" y2="50"/><line class="rk" x1="24" y1="76" x2="76" y2="76"/>
+<rect class="pl" x="30" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="38" y="34" width="5" height="16" rx="2.5"/><rect class="pl" x="46" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="58" y="40" width="12" height="10" rx="3"/>
+<rect class="pl" x="30" y="60" width="5" height="16" rx="2.5"/><rect class="pl" x="38" y="58" width="5" height="18" rx="2.5"/><rect class="pl" x="56" y="62" width="14" height="14" rx="3"/>
+<g class="drops"><circle cx="34" cy="80" r="1.3"/><circle cx="44" cy="80" r="1.1"/><circle cx="50" cy="80" r="1.4"/><circle cx="57" cy="80" r="1.1"/><circle cx="66" cy="80" r="1.3"/><circle cx="40" cy="80" r="1"/></g>
+<g class="arm"><rect x="30" y="81" width="40" height="2.4" rx="1.2"/><circle cx="50" cy="82.2" r="2.4"/></g></g>${DONE}</svg>`,
+    airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><g class="heat"><path d="M38 12 q3 -4 0 -8"/><path d="M50 12 q3 -4 0 -8"/><path d="M62 12 q3 -4 0 -8"/></g>
+<rect class="bd" x="18" y="16" width="64" height="76" rx="15"/><circle class="gl" cx="50" cy="35" r="12"/>
+<g class="fan"><path d="M50 35 q-2 -8 3 -10 q2 5 -3 10 Z"/><path d="M50 35 q8 -2 10 3 q-5 2 -10 -3 Z"/><path d="M50 35 q2 8 -3 10 q-2 -5 3 -10 Z"/><path d="M50 35 q-8 2 -10 -3 q5 -2 10 3 Z"/><circle cx="50" cy="35" r="1.6"/></g>
+<rect class="disp" x="40" y="52" width="20" height="6" rx="2"/><rect class="dw" x="22" y="63" width="56" height="25" rx="9"/><rect class="hd2" x="38" y="73" width="24" height="5" rx="2.5"/>${DONE}</svg>`,
+    coffee: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvc"><path d="M32 64 h22 v12 a7 7 0 0 1 -7 7 h-8 a7 7 0 0 1 -7 -7 Z"/></clipPath></defs>
+<rect class="bd" x="58" y="8" width="24" height="80" rx="6"/><rect class="bd" x="18" y="8" width="48" height="22" rx="6"/><rect class="bd" x="18" y="86" width="64" height="7" rx="3"/>
+<rect class="dw" x="37" y="30" width="12" height="6" rx="2"/><circle class="led" cx="27" cy="19" r="2"/><circle class="kn" cx="70" cy="22" r="3.6"/>
+<line class="flow" x1="43" y1="37" x2="43" y2="80"/>
+<g clip-path="url(#nvc)"><rect class="cf" x="30" y="64" width="26" height="22"/></g>
+<path class="cup" d="M32 64 h22 v12 a7 7 0 0 1 -7 7 h-8 a7 7 0 0 1 -7 -7 Z"/><path class="cup" d="M54 68 h3 a4 4 0 0 1 0 8 h-3"/>
+<g class="steam"><path d="M37 60 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M43 60 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M49 60 q3 -4 0 -8 q-3 -4 0 -8"/></g>${DONE}</svg>`,
+    generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
+<path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}</svg>`
+  };
+  var scene = (t) => `<div class="scene">${SV[t]}</div>`;
+  var DCSS = `
+.g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg)}
+.g.dv.glow.st-run{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
+.dv .hd small.er{color:var(--nv-error);opacity:1}
+.dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
+.mid{display:flex;gap:14px;align-items:center;min-width:0}
+.scene{flex:none;width:92px;height:92px;color:var(--nv-fg)}
+.scene svg{display:block;width:100%;height:100%;overflow:visible}
+.inf{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pg{font-size:18px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ph{font-size:12px;opacity:.65}
+.bar{height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--dc);border-radius:4px;transition:width 1s}
+.tm{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;flex-wrap:wrap}.tm .rm{font-weight:600}.tm .en{opacity:.7}
+.ctls{display:flex;flex-direction:column;gap:2px}
+.ct{border-top:1px solid rgba(255,255,255,.08);padding:8px 0 6px;min-width:0}
+.ct .kv{border:none;padding:0}.ct .kv .v{font-weight:600;opacity:1}
+.ct .pills{margin-top:8px}.ct .pill.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 45%,transparent)}
+.ct .cv{transition:transform .2s}.ct.open .cv{transform:rotate(180deg)}
+.stp{display:flex;align-items:center;gap:8px;flex:none}.stp .hb{width:32px;height:32px}.stp .v{min-width:64px;text-align:center}
+.ct input[type=range]{margin-top:8px;background:linear-gradient(90deg,var(--dc) 0 var(--p,0%),rgba(255,255,255,.14) var(--p,0%) 100%)}
+.ct .row{padding:0;font-size:13px}.ct .row.on .sw{background:var(--dc)}
+.ct.na,.ab.dis{opacity:.4;pointer-events:none}
+.acts{display:flex;gap:8px}
+.ab{flex:1;min-width:0;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;transition:background-color .2s,opacity .2s,transform .2s}
+.ab ha-icon{--mdc-icon-size:22px}
+.ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--dc) 40%,transparent)}
+.ab.dis{box-shadow:none}
+.ab:active{transform:scale(.95)}
+.als:empty{display:none}
+/* Kompakt: eine Zeile */
+.g.dv.cmp{gap:8px;padding:10px 14px}
+.cmp .hd .ic{width:40px;height:40px;position:relative}
+.cmp .hd .ic::before{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--dc) var(--p,0%),transparent 0);
+-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))}
+.cmp .hd .ic.on{background:color-mix(in srgb,var(--dc) 25%,transparent);color:var(--nv-fg);box-shadow:none}
+.cmp .rmc{font-size:13px;font-weight:600;white-space:nowrap}
+.cmp .bar{height:4px}
+/* Zeichnungen: Gehäuse in Textfarbe, Wasser/Hitze/LEDs in der Gerätefarbe */
+.scene .bd{fill:currentColor;fill-opacity:.1;stroke:currentColor;stroke-opacity:.28;stroke-width:1.2}
+.scene .sep,.scene .rk{stroke:currentColor;stroke-opacity:.22;stroke-width:1}
+.scene .dw,.scene .hd2,.scene .kn{fill:currentColor;fill-opacity:.16}
+.scene .led{fill:currentColor;fill-opacity:.25}
+.st-run .scene .led,.st-pause .scene .led,.st-wait .scene .led{fill:var(--dc);fill-opacity:1}
+.scene .door{fill:currentColor;fill-opacity:.08;stroke:currentColor;stroke-opacity:.35;stroke-width:2}
+.scene .gl{fill:rgba(0,0,0,.28);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
+.scene .sh{fill:none;stroke:#fff;stroke-opacity:.25;stroke-width:1.6;stroke-linecap:round}
+.scene .wt{fill:var(--dc);fill-opacity:.45}
+.scene .wl{transition:transform .8s}
+.scene .dm{fill:none;stroke:currentColor;stroke-opacity:.3;stroke-width:1.2;stroke-dasharray:3 3}
+.scene .lf{fill:currentColor;fill-opacity:.35}.scene .cl{fill:currentColor;fill-opacity:.32}.scene .cl.c2{fill-opacity:.22}
+.scene .drum,.scene .fan{transform-box:view-box}
+.scene .drum{transform-origin:50px 58px}.scene .fan{transform-origin:50px 35px}
+.scene .mist{fill:var(--dc);opacity:0}
+.scene .pl{fill:currentColor;fill-opacity:.22}
+.scene .drops circle{fill:var(--dc);opacity:0}
+.scene .arm{fill:currentColor;fill-opacity:.4;transform-box:view-box;transform-origin:50px 82px}
+.scene .fan path,.scene .fan circle{fill:currentColor;fill-opacity:.4}
+.scene .heat path,.scene .steam path{fill:none;stroke:var(--dc);stroke-width:1.6;stroke-linecap:round;opacity:0}
+.scene .steam path{stroke:currentColor;stroke-opacity:.6}
+.scene .disp{fill:currentColor;fill-opacity:.16}
+.st-run .scene .disp{fill:var(--dc);fill-opacity:.7}
+.scene .cup{fill:none;stroke:currentColor;stroke-opacity:.55;stroke-width:1.6;stroke-linejoin:round}
+.scene .cf{fill:var(--dc);fill-opacity:.75;transform-box:fill-box;transform-origin:center bottom;transform:scaleY(.15)}
+.scene .flow{stroke:var(--dc);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:4 3;opacity:0}
+.scene .pulse{fill:none;stroke:var(--dc);stroke-width:2;opacity:0;transform-box:view-box;transform-origin:50px 50px}
+.scene .pw{fill:none;stroke:currentColor;stroke-opacity:.55;stroke-width:3;stroke-linecap:round}
+.st-run .scene .pw{stroke:var(--dc);stroke-opacity:1}
+.scene .done{opacity:0}.scene .dc{fill:var(--dc)}.scene .dr{fill:none;stroke:var(--dc);stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center}
+.scene .dk{fill:none;stroke:var(--dc-fg);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:16;stroke-dashoffset:0}
+.st-done .scene .done{opacity:1}
+.st-done.fx .scene .done{animation:dv-pop .5s ease-out both}
+.st-done.fx .scene .dk{animation:dv-check .5s .25s ease-out both}
+.st-done.fx .scene .dr{animation:dv-ring 1.2s .3s ease-out both}
+/* Laufen */
+.anim.st-run .w-washer .drum{animation:dv-tumble 4s ease-in-out infinite}
+.anim.st-run .w-washer .wv{animation:dv-wave 2.4s linear infinite}
+.anim.st-run.alt .w-washer .drum{animation:dv-spin .55s linear infinite}
+.st-run.alt .w-washer .wl{transform:translateY(12px)}
+.anim.st-run .w-dishwasher .arm{animation:dv-arm 1.6s ease-in-out infinite alternate}
+.anim.st-run .w-dishwasher .drops circle{animation:dv-drop 1.4s ease-out infinite}
+.anim.st-run .w-dishwasher .mist{animation:dv-mist 3.2s ease-in-out infinite}
+.anim.st-run .w-airfryer .fan{animation:dv-spin 1s linear infinite}
+.anim.st-run .w-airfryer .heat path{animation:dv-heat 2.2s ease-out infinite}
+.anim.st-run.alt .w-airfryer .fan{animation-duration:3s}
+.anim.st-run.alt .w-airfryer .heat path{animation:dv-glow 3.6s ease-in-out infinite}
+.anim.st-run.alt .w-airfryer .disp{animation:dv-glow 3.6s ease-in-out infinite}
+.anim.st-run .w-coffee .steam path{animation:dv-steam 3s ease-out infinite}
+.anim.st-run.alt .w-coffee .steam path{animation:none}
+.st-run.alt .w-coffee .flow{opacity:.9}
+.anim.st-run.alt .w-coffee .flow{animation:dv-flow .5s linear infinite}
+.anim.st-run.alt .w-coffee .cf{animation:dv-fill 9s ease-out both}
+.st-run:not(.alt) .w-coffee .cf,.st-done .w-coffee .cf{transform:none}
+.anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
+.scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .steam path:nth-child(2){animation-delay:.5s}
+.scene .drops circle:nth-child(3),.scene .heat path:nth-child(3),.scene .steam path:nth-child(3){animation-delay:1s}
+.scene .drops circle:nth-child(4){animation-delay:.25s}.scene .drops circle:nth-child(5){animation-delay:.75s}.scene .drops circle:nth-child(6){animation-delay:1.15s}
+.scene .drops circle:nth-child(odd){--dx:-6px}.scene .drops circle:nth-child(even){--dx:6px}
+/* Unsichtbar (außerhalb des Bildschirms, Tab im Hintergrund, Kartenauswahl): alles steht */
+.still .scene *{animation-play-state:paused!important}
+.anim.st-run:not(.still) .scene>svg{will-change:transform}
+@media (prefers-reduced-motion:reduce){.scene *{animation:none!important}}
+@keyframes dv-tumble{0%{transform:rotate(0)}40%{transform:rotate(220deg)}50%{transform:rotate(220deg)}90%,100%{transform:rotate(0)}}
+@keyframes dv-spin{to{transform:rotate(360deg)}}
+@keyframes dv-wave{to{transform:translateX(-25px)}}
+@keyframes dv-arm{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+@keyframes dv-drop{0%{opacity:0;transform:translate(0,0)}20%{opacity:.9}100%{opacity:0;transform:translate(var(--dx,0),-46px)}}
+@keyframes dv-mist{0%,100%{opacity:.04}50%{opacity:.16}}
+@keyframes dv-heat{0%{opacity:0;transform:translateY(4px)}40%{opacity:.85}100%{opacity:0;transform:translateY(-8px)}}
+@keyframes dv-glow{0%,100%{opacity:.25}50%{opacity:.8}}
+@keyframes dv-steam{0%{opacity:0;transform:translateY(4px)}35%{opacity:.6}100%{opacity:0;transform:translateY(-12px)}}
+@keyframes dv-flow{to{stroke-dashoffset:-7}}
+@keyframes dv-fill{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+@keyframes dv-pulse{0%{opacity:.7;transform:scale(.85)}100%{opacity:0;transform:scale(1.25)}}
+@keyframes dv-pop{0%{opacity:0;transform:scale(.4)}70%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+@keyframes dv-check{from{stroke-dashoffset:16}to{stroke-dashoffset:0}}
+@keyframes dv-ring{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(2.2)}}
+.scene .done{transform-box:fill-box;transform-origin:center}
+@container (max-width:300px){.scene{width:72px;height:72px}.pg{font-size:16px}.ab span{display:none}}`;
+  var NovaApplianceCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("geraet-card-editor"));
+    }
+    static getStubConfig() {
+      return { device_type: "washer" };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (c.device_type && !TYPES[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee oder generic sein");
+      this._c = { ...GDEF, ...c, controls: [].concat(c.controls || []).map(toObj).filter((o) => o.entity), hints: [].concat(c.hints || []).map(toObj).filter((o) => o.entity) };
+      this._ids = entityIds(this._c);
+      this._built = false;
+      this._pend = {};
+      if (this._h) {
+        this._build();
+        this._update();
+      }
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
+      this._update();
+    }
+    // Bearbeitungsmodus: ausgeblendete Karte trotzdem zeigen, sonst findet man sie nicht wieder
+    set preview(v) {
+      this._pv = v;
+      this._update();
+    }
+    get preview() {
+      return this._pv;
+    }
+    set editMode(v) {
+      this._em = v;
+      this._update();
+    }
+    get editMode() {
+      return this._em;
+    }
+    getCardSize() {
+      return this._c?.layout === "compact" ? 1 : 3 + Math.ceil((this._c?.controls.length || 0) / 2);
+    }
+    getGridOptions() {
+      return this._c?.layout === "compact" ? { columns: 6, rows: "auto", min_columns: 3 } : { columns: 12, rows: "auto", min_columns: 4 };
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      this._onVis ||= () => this._tick();
+      document.addEventListener("visibilitychange", this._onVis);
+      if ("IntersectionObserver" in window) {
+        this._io ||= new IntersectionObserver((es) => {
+          this._inView = es[es.length - 1].isIntersecting;
+          this._tick();
+        }, { rootMargin: "100px" });
+        this._io.observe(this);
+      } else this._inView = true;
+      this._tick();
+    }
+    disconnectedCallback() {
+      document.removeEventListener("visibilitychange", this._onVis);
+      this._io?.disconnect();
+      this._inView = false;
+      this._tick();
+      Object.values(this._pend || {}).forEach((p) => clearTimeout(p.t));
+      clearTimeout(this._ft);
+    }
+    _S(id) {
+      return id ? this._h?.states[id] : null;
+    }
+    // Zustandsgruppe: run, pause, wait, done, err oder off
+    _cls() {
+      const c = this._c, s = this._S(c.entity);
+      if (!s) return "off";
+      const v = String(s.state).toLowerCase();
+      if (["binary_sensor", "switch", "input_boolean"].includes(dom(c.entity)) && !c.running_states) return v === "on" ? "run" : "off";
+      for (const k of ["err", "pause", "wait", "done", "run"]) {
+        const own = c[SKEY[k]] != null ? list(c[SKEY[k]]).map((x) => x.toLowerCase()) : STATES[k];
+        if (own.includes(v)) return k;
+      }
+      return "off";
+    }
+    _build() {
+      this._built = true;
+      const c = this._c, t = typeOf(c), r = this.shadowRoot || this.attachShadow({ mode: "open" }), cmp = c.layout === "compact";
+      const rv = roleVars(c.color || TYPES[t].color);
+      const anim = c.animation !== false && !cmp;
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${DCSS}:host([hidden]){display:none}</style>
+<div class="g dv t-${t}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ""}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
+${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
+<div class="ctls"></div><div class="acts"></div>`}<div class="als"></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = {
+        g: q(".g"),
+        ic: q(".hd .ic"),
+        name: q(".hd b"),
+        sub: q(".hd small"),
+        pw: q(".pw"),
+        pg: q(".pg"),
+        ph: q(".ph"),
+        bar: q(".bar"),
+        bari: q(".bar i"),
+        rm: q(".rm") || q(".rmc"),
+        en: q(".en"),
+        ctls: q(".ctls"),
+        acts: q(".acts"),
+        als: q(".als")
+      };
+      const e = this._e;
+      press(e.ic, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
+      if (cmp) press(e.name.parentElement, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
+      if (e.pw) press(e.pw, { tap: () => this._call(dom(c.power) === "input_boolean" ? "input_boolean" : "switch", "toggle", c.power, {}, "Ein/Aus") });
+      if (e.ctls) this._ctl = c.controls.map((o) => this._mkCtl(o));
+      if (e.acts) {
+        this._ab = {};
+        ["start", "pause", "resume", "stop"].forEach((k) => {
+          const el = document.createElement("div");
+          el.className = `ab a-${k}${k === "start" ? " pri" : ""}`;
+          el.innerHTML = `<ha-icon icon="${IC[k]}"></ha-icon><span></span>`;
+          el.hidden = true;
+          press(el, { tap: () => this._do(k), hold: () => c[k] && this._act({ entity: c[k] }, "hold") });
+          e.acts.append(el);
+          this._ab[k] = el;
+        });
+      }
+      this._prev = null;
+      this._tick();
+    }
+    // Regler: select = Pillen bzw. aufklappbar, number = Plus/Minus oder Schieber, Schalter = Kippschalter
+    _mkCtl(o) {
+      const el = document.createElement("div"), d = dom(o.entity);
+      el.className = "ct";
+      const S = () => this._S(o.entity), up = { o, el };
+      if (d === "select" || d === "input_select") {
+        el.innerHTML = '<div class="kv"><span class="i"></span><span class="k"></span><span class="v"></span><ha-icon class="cv" icon="mdi:chevron-down"></ha-icon></div><div class="pills"></div>';
+        up.kind = "sel";
+        up.pills = el.querySelector(".pills");
+        press(el.firstChild, { tap: () => {
+          if (up.mode !== "list") return;
+          el.classList.toggle("open");
+          up.pills.hidden = !el.classList.contains("open");
+        }, hold: () => this._act(o, "hold") });
+      } else if (d === "number" || d === "input_number") {
+        const sl = o.display === "slider";
+        el.innerHTML = `<div class="kv"><span class="i"></span><span class="k"></span>${sl ? '<span class="v"></span>' : '<div class="stp"><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div><span class="v"></span><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div></div>'}</div>${sl ? '<input type="range">' : ""}`;
+        up.kind = "num";
+        const step = (dir) => {
+          const s = S();
+          if (!ok(s)) return;
+          const a = s.attributes, st = +o.step || +a.step || 1, cur = this._pend[o.entity]?.v ?? +s.state;
+          const mn = a.min != null ? +a.min : -Infinity, mx = a.max != null ? +a.max : Infinity;
+          this._setNum(o, Math.min(mx, Math.max(mn, Math.round((cur + dir * st) / st) * st)));
+        };
+        if (sl) {
+          up.rng = el.querySelector("input");
+          up.rng.addEventListener("input", () => this._setNum(o, +up.rng.value));
+        } else {
+          press(el.querySelector(".mi"), { tap: () => step(-1), isolate: true });
+          press(el.querySelector(".pl"), { tap: () => step(1), isolate: true });
+        }
+        press(el.querySelector(".k"), { tap: () => this._act(o, "tap", true), hold: () => this._act(o, "hold") });
+      } else if (["switch", "input_boolean"].includes(d)) {
+        el.innerHTML = '<div class="row"><span class="i"></span><span class="k" style="flex:1"></span><div class="sw"></div></div>';
+        up.kind = "sw";
+        press(el.firstChild, { tap: () => this._call(d, "toggle", o.entity, {}, o.name || "Schalter"), hold: () => this._act(o, "hold") });
+      } else {
+        el.innerHTML = '<div class="kv"><span class="i"></span><span class="k"></span><span class="v"></span></div>';
+        up.kind = "val";
+        press(el.firstChild, { tap: () => this._act(o, "tap", true), hold: () => this._act(o, "hold") });
+      }
+      this._e.ctls.append(el);
+      return up;
+    }
+    // Zahlen gesammelt setzen: erst nach kurzer Pause wird der Dienst aufgerufen
+    _setNum(o, v) {
+      const p = this._pend[o.entity] ||= {};
+      p.v = v;
+      clearTimeout(p.t);
+      p.t = setTimeout(() => {
+        delete this._pend[o.entity];
+        this._call(dom(o.entity), "set_value", o.entity, { value: v }, o.name || "Wert");
+      }, 700);
+      this._update();
+    }
+    _call(d, s, id, data, what) {
+      return Promise.resolve(this._h.callService(d, s, { entity_id: id, ...data })).catch((err) => this._flash(`${what}: ${err?.message || err}`));
+    }
+    // Fehler beim Auslösen sichtbar in der Karte zeigen (8 s)
+    _flash(msg) {
+      this._msg = msg;
+      clearTimeout(this._ft);
+      this._ft = setTimeout(() => {
+        this._msg = null;
+        this._update();
+      }, 8e3);
+      this._update();
+    }
+    // Start über ein Select (Home Connect: „Aktives Programm“ setzen) – taugt nicht zum Fortsetzen
+    _selStart() {
+      return ["select", "input_select"].includes(dom(this._c.start));
+    }
+    _startBlock() {
+      const c = this._c, s = this._S(c.start), rs = this._S(c.remote_start);
+      if (!c.start) return null;
+      if (c.remote_start && rs && rs.state !== "on") return c.remote_start_text || "Fernstart ist aus – an der Maschine aktivieren";
+      if (!s || s.state === "unavailable") return "Start gerade nicht möglich (Entität nicht verfügbar)";
+      if (this._selStart()) {
+        if (!c.start_option) return "Start: Programm-Quelle fehlt (Editor → Bedienung)";
+        const o = this._S(c.start_option);
+        if (!ok(o)) return "Erst ein Programm wählen";
+        if (!(s.attributes.options || []).includes(o.state)) return `Programm „${fmtOpt(this._h, o, o.state)}“ kann nicht gestartet werden`;
+      }
+      return null;
+    }
+    _do(k) {
+      const c = this._c, id = c[k] || (k === "resume" && !this._selStart() ? c.start : null), d = dom(id);
+      if (!id) return;
+      if (k === "start" && this._startBlock()) return;
+      const conf = k === "start" ? c.start_confirm : k === "stop" ? c.stop_confirm : null;
+      if (conf && !window.confirm(conf)) return;
+      const what = { start: c.start_name || "Start", pause: "Pause", resume: "Fortsetzen", stop: "Stopp" }[k];
+      if (d === "select" || d === "input_select") return this._call(d, "select_option", id, { option: this._S(c.start_option)?.state }, what);
+      if (d === "button" || d === "input_button") return this._call(d, "press", id, {}, what);
+      if (d === "script" || d === "scene") return this._call(d, "turn_on", id, {}, what);
+      if (d === "switch" || d === "input_boolean") return this._call(d, k === "stop" || k === "pause" ? "turn_off" : "turn_on", id, {}, what);
+      this._flash(`${what}: ${id} kann nicht ausgelöst werden`);
+    }
+    // Restzeit in s und Endzeitpunkt (ms)
+    _time(cls) {
+      const c = this._c, es = this._S(c.end_time), rs = this._S(c.remaining);
+      let end = null, rem = null;
+      if (ok(es)) {
+        const t = Date.parse(es.state);
+        if (!isNaN(t)) end = t;
+      }
+      const r0 = secsOf(rs);
+      if (r0 != null) {
+        if (cls === "pause") rem = r0;
+        else if (end == null) end = Date.parse(rs.last_changed) + r0 * 1e3;
+      }
+      if (end != null && rem == null) rem = Math.max(0, (end - Date.now()) / 1e3);
+      if (cls === "pause" && rem != null && end != null) end = Date.now() + rem * 1e3;
+      return { rem, end };
+    }
+    _progress(cls, rem) {
+      const c = this._c, ps = this._S(c.progress);
+      if (cls === "done") return 100;
+      if (ok(ps) && NUMRE.test(ps.state)) return Math.max(0, Math.min(100, +ps.state));
+      const tot = secsOf(this._S(c.duration));
+      if (tot > 0 && rem != null) return Math.max(0, Math.min(100, (1 - rem / tot) * 100));
+      return null;
+    }
+    _update() {
+      const h = this._h, c = this._c, e = this._e;
+      if (!h || !e) return;
+      const t = typeOf(c), TY = TYPES[t], s = this._S(c.entity), cls = this._cls(), act = ["run", "pause", "wait"].includes(cls);
+      const na = !!c.entity && (!s || s.state === "unavailable");
+      if (this._prev && this._prev !== cls) this._fx = cls === "done";
+      if (cls !== "done") this._fx = false;
+      this._prev = cls;
+      const ph = this._S(c.phase || c.entity), phs = c.phase_states != null ? list(c.phase_states) : TY.phase;
+      const alt = cls === "run" && !!ph && phs.map((x) => x.toLowerCase()).includes(String(ph.state).toLowerCase());
+      ["run", "pause", "wait", "done", "err", "off"].forEach((k) => e.g.classList.toggle(`st-${k}`, k === cls));
+      e.g.classList.toggle("alt", alt);
+      e.g.classList.toggle("fx", !!this._fx);
+      e.g.classList.toggle("na", na);
+      this.classList.toggle("nv-na", na);
+      const hide = !!c.hide_when_off && ["off", "done"].includes(cls) && !this._pv && !this._em && !this.hasAttribute("preview");
+      if (this.hidden !== hide) {
+        this.hidden = hide;
+        this.dispatchEvent(new CustomEvent("card-visibility-changed", { bubbles: true, composed: true, detail: { value: !hide } }));
+      }
+      e.name.textContent = c.name ?? s?.attributes.friendly_name ?? TY.label;
+      setIcon(e.ic, c.icon || TY.icon);
+      e.ic.classList.toggle("on", act);
+      const raw = s ? fmtState(h, s) : "";
+      const own = c[TKEY[cls]];
+      const def = cls === "run" ? alt && TY.alt || TY.run : TXT[cls];
+      const stx = !c.entity ? "Status-Entität im Editor wählen" : na ? "Nicht verfügbar" : own || (raw === s.state && def ? def : nice(s.state, raw));
+      e.sub.textContent = stx;
+      e.sub.classList.toggle("er", cls === "err");
+      if (e.pw) {
+        const p2 = this._S(c.power);
+        e.pw.classList.toggle("on", p2?.state === "on");
+        e.pw.classList.toggle("na", !p2 || p2.state === "unavailable");
+      }
+      const pgS = [this._S(c.program), this._S(c.start_option)].find((x) => ok(x) && x.state !== "off");
+      const pg = pgS ? nice(pgS.state, fmtState(h, pgS)) : "";
+      const { rem, end } = act ? this._time(cls) : { rem: null, end: null };
+      const p = act || cls === "done" ? this._progress(cls, rem) : null;
+      e.bar.hidden = p == null;
+      if (p != null) e.bari.style.width = `${p}%`;
+      if (c.layout === "compact") {
+        e.ic.style.setProperty("--p", `${p ?? 0}%`);
+        e.sub.textContent = [pg && act ? pg : stx, p != null && act ? `${Math.round(p)} %` : ""].filter(Boolean).join(" · ");
+        e.rm.textContent = rem != null ? fmtDur(rem) : "";
+      } else {
+        e.pg.textContent = pg || stx;
+        const phx = c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : "";
+        e.ph.hidden = !phx;
+        e.ph.textContent = phx;
+        e.rm.textContent = rem != null && cls !== "wait" ? `noch ${fmtDur(rem)}` : p != null && act ? `${Math.round(p)} %` : "";
+        e.en.textContent = end != null ? `fertig um ${this._clock(end)}` : "";
+        this._ctlUp(act);
+        this._actUp(cls);
+      }
+      this._alerts(cls, stx);
+      this._tick();
+    }
+    _clock(ms) {
+      const h = this._h, d = new Date(ms), far = ms - Date.now() > 20 * 36e5;
+      try {
+        return new Intl.DateTimeFormat(langOf(h), { hour: "2-digit", minute: "2-digit", ...far ? { weekday: "short" } : {}, timeZone: tzOf(h) }).format(d);
+      } catch {
+        return d.toLocaleTimeString().slice(0, 5);
+      }
+    }
+    _ctlUp(act) {
+      const h = this._h;
+      (this._ctl || []).forEach((u) => {
+        const { o, el } = u, s = this._S(o.entity), a = s?.attributes || {};
+        el.hidden = o.show === "idle" ? act : o.show === "running" ? !act : false;
+        el.classList.toggle("na", !s || s.state === "unavailable");
+        const ic = el.querySelector(".i");
+        if (ic) setIcon(ic, iconOf(h, o, "mdi:tune"));
+        el.querySelector(".k").textContent = o.name ?? a.friendly_name ?? o.entity;
+        const v = el.querySelector(".v");
+        if (u.kind === "sel") {
+          const opts = (a.options || []).map(String), cur = ok(s) ? s.state : null;
+          u.mode = o.display === "pills" || o.display === "list" ? o.display : opts.length <= 5 ? "pills" : "list";
+          el.querySelector(".cv").hidden = u.mode !== "list";
+          if (u.mode === "pills") u.pills.hidden = false;
+          else u.pills.hidden = !el.classList.contains("open");
+          v.textContent = cur != null ? fmtOpt(h, s, cur) : "–";
+          v.hidden = u.mode === "pills";
+          const key = opts.join("|");
+          if (u.key !== key) {
+            u.key = key;
+            u.pills.replaceChildren(...opts.map((x) => {
+              const p = document.createElement("div");
+              p.className = "pill";
+              p.dataset.o = x;
+              press(p, { tap: () => {
+                this._call(dom(o.entity), "select_option", o.entity, { option: x }, o.name || "Auswahl");
+                if (u.mode === "list") {
+                  el.classList.remove("open");
+                  u.pills.hidden = true;
+                }
+              }, isolate: true });
+              return p;
+            }));
+          }
+          [...u.pills.children].forEach((p) => {
+            p.textContent = fmtOpt(h, s, p.dataset.o);
+            p.classList.toggle("on", p.dataset.o === cur);
+          });
+        } else if (u.kind === "num") {
+          const pv = this._pend[o.entity]?.v, n = pv ?? (ok(s) ? +s.state : null);
+          v.textContent = n == null ? "–" : isDur(s) ? fmtDur(n * (SECS[a.unit_of_measurement] || 1)) : valueOf(h, { ...s, state: String(n) }, o);
+          if (u.rng) {
+            Object.assign(u.rng, { min: a.min ?? 0, max: a.max ?? 100, step: o.step || a.step || 1 });
+            if (n != null && pv == null) u.rng.value = n;
+            u.rng.style.setProperty("--p", `${((n ?? 0) - (a.min ?? 0)) / ((a.max ?? 100) - (a.min ?? 0) || 1) * 100}%`);
+          }
+        } else if (u.kind === "sw") el.firstChild.classList.toggle("on", s?.state === "on");
+        else v.textContent = valueOf(h, s, o);
+      });
+    }
+    // Knöpfe nur mit eingetragener, verfügbarer Entität; Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen
+    _actUp(cls) {
+      const c = this._c, b = this._ab, av = (k) => !!c[k] && this._S(c[k]) && this._S(c[k]).state !== "unavailable";
+      if (!b) return;
+      const act = ["run", "pause", "wait"].includes(cls), blk = this._startBlock();
+      b.start.hidden = act || !c.start;
+      b.start.classList.toggle("dis", !!blk);
+      b.start.lastChild.textContent = c.start_name || "Start";
+      b.pause.hidden = cls !== "run" || !av("pause");
+      b.resume.hidden = cls !== "pause" || !(av("resume") || !c.resume && av("start") && !this._selStart());
+      b.stop.hidden = !act || !av("stop");
+      ["pause", "resume", "stop"].forEach((k) => {
+        b[k].lastChild.textContent = { pause: "Pause", resume: "Fortsetzen", stop: "Stopp" }[k];
+      });
+      this._e.acts.hidden = Object.values(b).every((x) => x.hidden);
+    }
+    _alerts(cls, stx) {
+      const c = this._c, h = this._h, TY = TYPES[typeOf(c)], out = [];
+      const add = (lvl, ic, msg) => out.push(`<div class="al ${lvl}"><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span></div>`);
+      if (this._msg) add("error", "mdi:alert-circle-outline", this._msg);
+      if (cls === "err") add("error", "mdi:alert-circle-outline", stx);
+      const cn = this._S(c.connection);
+      if (c.connection && (!cn || ["off", "unavailable", "disconnected"].includes(cn.state))) add("error", "mdi:wifi-off", c.connection_text || "Keine Verbindung zum Gerät");
+      const blk = c.layout !== "compact" && !["run", "pause", "wait"].includes(cls) ? this._startBlock() : null;
+      if (blk) add("warning", "mdi:play-circle-outline", blk);
+      const dr = this._S(c.door);
+      if (dr && ["on", "open", "opened"].includes(dr.state)) add("info", "mdi:door-open", c.door_text || TY.door);
+      c.hints.forEach((a) => {
+        const s = this._S(a.entity);
+        if (alertHit(a, s)) add(["error", "info"].includes(a.level) ? a.level : "warning", a.icon || s?.attributes.icon || "mdi:information-outline", a.message || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`);
+      });
+      const html = out.join("");
+      if (this._alKey !== html) {
+        this._alKey = html;
+        this._e.als.innerHTML = html;
+      }
+      this._e.g.classList.toggle("err", cls === "err" && c.glow !== false);
+    }
+    // Sichtbarkeit: Animation und Countdown nur, wenn die Karte zu sehen und der Tab offen ist
+    _tick() {
+      const vis = !!this._inView && !document.hidden && !this._quiet && this.isConnected;
+      this._e?.g.classList.toggle("still", !vis);
+      const run = vis && this._e && ["run", "wait"].includes(this._prev) && (this._c.end_time || this._c.remaining);
+      if (run && !this._tm) this._tm = setInterval(() => this._update(), 3e4);
+      if (!run && this._tm) {
+        clearInterval(this._tm);
+        this._tm = null;
+      }
+    }
+    _act(o, kind, info) {
+      return runAction(this, o, kind, info);
+    }
+  };
+  define("geraet-card", NovaApplianceCard, { name: "Nova Gerät Card", description: "Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.", documentationURL: docUrl("nova-gerät-card") });
+  var ST = { entity: {} };
+  var BTN = { entity: { domain: ["button", "input_button", "script", "scene", "switch", "input_boolean"] } };
+  var GGEN = [
+    sel("device_type", Object.entries(TYPES).map(([k, v]) => [k, k === "generic" ? "Allgemein" : v.label])),
+    g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
+    { name: "entity", selector: ST },
+    { name: "power", selector: { entity: { domain: ["switch", "input_boolean"] } } }
+  ];
+  var GPROG = (t) => [
+    { name: "program", selector: ST },
+    g2({ name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "duration", selector: ST }),
+    g2({ name: "remaining", selector: ST }, { name: "end_time", selector: ST }),
+    { name: "phase", selector: ST },
+    ...TYPES[t].alt ? [{ name: "phase_states", selector: { text: { multiple: true } }, context: { t } }] : []
+  ];
+  var GCTL = (it) => {
+    const d = dom(it.entity);
+    return [
+      { name: "entity", required: true, selector: { entity: { domain: ["select", "input_select", "number", "input_number", "switch", "input_boolean", "sensor"] } } },
+      NAMEICON,
+      ...d === "select" || d === "input_select" ? [sel("display", [["auto", "Automatisch"], ["pills", "Alle Optionen als Pillen"], ["list", "Aufklappen"]])] : [],
+      ...d === "number" || d === "input_number" ? [g2(sel("display", [["buttons", "Plus / Minus"], ["slider", "Schieber"]]), NUM("step"))] : [],
+      sel("show", [["always", "Immer"], ["idle", "Nur vor dem Start"], ["running", "Nur während des Laufs"]])
+    ];
+  };
+  var GACT = (c) => [
+    g2({ name: "start", selector: { entity: { domain: [...BTN.entity.domain, "select", "input_select"] } } }, { name: "start_name", selector: T }),
+    ...["select", "input_select"].includes(dom(c.start)) ? [{ name: "start_option", selector: { entity: { domain: ["select", "input_select", "sensor", "input_text"] } } }] : [],
+    g2({ name: "pause", selector: BTN }, { name: "resume", selector: BTN }),
+    { name: "stop", selector: BTN },
+    g2({ name: "start_confirm", selector: T }, { name: "stop_confirm", selector: T })
+  ];
+  var GINFO = [
+    g2({ name: "remote_start", selector: ST }, { name: "remote_start_text", selector: T }),
+    g2({ name: "door", selector: ST }, { name: "door_text", selector: T }),
+    g2({ name: "connection", selector: ST }, { name: "connection_text", selector: T })
+  ];
+  var GHINT = [
+    { name: "entity", required: true, selector: ST },
+    g2({ name: "message", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
+    g2({ name: "state", selector: T }, { name: "state_not", selector: T }),
+    g2(NUM("above"), NUM("below")),
+    sel("level", [["warning", "Warnung"], ["error", "Fehler"], ["info", "Info"]])
+  ];
+  var GSTATE = [
+    { name: "running_states", selector: { text: { multiple: true } } },
+    g2({ name: "paused_states", selector: { text: { multiple: true } } }, { name: "waiting_states", selector: { text: { multiple: true } } }),
+    g2({ name: "finished_states", selector: { text: { multiple: true } } }, { name: "error_states", selector: { text: { multiple: true } } })
+  ];
+  var GTEXT = [
+    g2({ name: "text_running", selector: T }, { name: "text_paused", selector: T }),
+    g2({ name: "text_waiting", selector: T }, { name: "text_finished", selector: T }),
+    g2({ name: "text_error", selector: T }, { name: "text_off", selector: T })
+  ];
+  var GLOOK = [
+    sel("layout", [["full", "Voll"], ["compact", "Kompakt (läuft gerade)"]]),
+    g2({ name: "hide_when_off", selector: { boolean: {} } }, { name: "animation", selector: { boolean: {} } }),
+    g2(ROLE("color"), { name: "glow", selector: { boolean: {} } })
+  ];
+  var GACTS = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
+  var PHASE_LBL = { washer: "Zustände „schleudert“ (schnelle Trommel)", airfryer: "Zustände „heizt vor“ (ruhigere Animation)", coffee: "Zustände „brüht“ (Kaffee läuft in die Tasse)" };
+  var GLABELS = {
+    ...BASE_LABELS,
+    device_type: "Gerätetyp",
+    entity: "Status",
+    power: "Ein/Aus-Schalter",
+    program: "Programm",
+    progress: "Fortschritt (%)",
+    duration: "Gesamtdauer",
+    remaining: "Restzeit",
+    end_time: "Endzeit",
+    phase: "Phase (optional)",
+    phase_states: "Sonder-Zustände",
+    display: "Darstellung",
+    step: "Schrittweite",
+    show: "Anzeigen",
+    start: "Start",
+    start_name: "Text auf dem Start-Knopf",
+    start_option: "Programm für den Start",
+    pause: "Pause",
+    resume: "Fortsetzen",
+    stop: "Stopp",
+    start_confirm: "Rückfrage vor dem Start",
+    stop_confirm: "Rückfrage vor dem Stopp",
+    remote_start: "Fernstart erlaubt",
+    remote_start_text: "Hinweis, wenn Fernstart aus",
+    door: "Tür / Schublade",
+    door_text: "Hinweis, wenn offen",
+    connection: "Verbindung",
+    connection_text: "Hinweis ohne Verbindung",
+    message: "Meldung",
+    level: "Stufe",
+    running_states: "Zustände „läuft“",
+    paused_states: "Zustände „pausiert“",
+    waiting_states: "Zustände „startet später“",
+    finished_states: "Zustände „fertig“",
+    error_states: "Zustände „Störung“",
+    text_running: "Text „läuft“",
+    text_paused: "Text „pausiert“",
+    text_waiting: "Text „startet später“",
+    text_finished: "Text „fertig“",
+    text_error: "Text „Störung“",
+    text_off: "Text „aus“",
+    layout: "Darstellung",
+    hide_when_off: "Ausblenden, wenn aus oder fertig",
+    animation: "Animation (aus = Standbild)",
+    color: "Farbe",
+    glow: "Rahmen leuchtet beim Laufen"
+  };
+  var GHELPERS = {
+    device_type: "Bestimmt nur Symbol, Texte, Standardfarbe und Animation",
+    entity: "Betriebszustand, z. B. sensor.waschmaschine_betriebszustand – auch binary_sensor (an = läuft)",
+    power: "Optional: runder Knopf oben rechts",
+    program: "Laufendes Programm (Select oder Sensor). Leer bzw. ohne Wert = Programm für den Start",
+    progress: "Leer = aus Restzeit und Gesamtdauer berechnet",
+    duration: "Nur für den Fortschritt, wenn es keinen Fortschritts-Sensor gibt",
+    remaining: "Sensor mit s/min/h oder H:MM. Endzeit wird daraus berechnet",
+    end_time: "Zeitpunkt-Sensor. Restzeit wird daraus berechnet",
+    phase: "Leer = Status. Steuert die Sonder-Animation und wird unter dem Programm angezeigt",
+    phase_states: "Leer = Vorschlag zum Gerätetyp",
+    show: "z. B. Temperatur und Schleudern nur vor dem Start",
+    step: "Leer = Schritt der Entität (bei „Fertig in“ in Sekunden z. B. 1800 = 30 min)",
+    start: "Button, Skript, Schalter – oder ein Select wie „Aktives Programm“ bei Home Connect",
+    start_option: "Dessen Wert wird beim Start gesetzt, z. B. select.waschmaschine_ausgewahltes_programm",
+    start_name: "Leer = „Start“",
+    resume: "Leer = beim Fortsetzen wird Start ausgelöst (nicht bei Start über ein Select)",
+    remote_start: "z. B. binary_sensor.waschmaschine_fernstart – aus = Start ausgegraut mit Hinweis",
+    door: "Hinweis, wenn an bzw. open",
+    connection: "Hinweis, wenn aus bzw. nicht verfügbar",
+    running_states: "Leer = übliche Rohzustände (run, running, cooking …). Genaue Zustände der Status-Entität",
+    text_running: "Leer = Übersetzung von HA, sonst Text zum Gerätetyp",
+    hide_when_off: "Gut für die Startseite: Karte nur, solange etwas läuft. Im Bearbeitungsmodus bleibt sie sichtbar",
+    color: "Farbrolle aus dem Theme (Fortschritt, Start-Knopf, Animation)",
+    message: "Leer = Name: Zustand",
+    state: "Hinweis bei diesem Zustand (mehrere mit Komma)",
+    state_not: "Hinweis bei jedem Zustand außer diesem, z. B. 0 bei einem Fehlercode"
+  };
+  var gvis = (c) => `${typeOf(c)}|${["select", "input_select"].includes(dom(c.start))}`;
+  var NovaApplianceCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot, c0 = this._config, t = typeOf(c0);
+      GLABELS.phase_states = PHASE_LBL[t] || "Sonder-Zustände";
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap");
+      const strip = (c) => {
+        Object.entries(GDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
+        if (c.color === TYPES[typeOf(c)].color) delete c.color;
+        return c;
+      };
+      const data = { ...GDEF, color: TYPES[t].color, ...c0 };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = strip(merge(this._config, names(schema), v));
+        this._emit(c);
+        if (gvis(c) !== gvis(c0)) this._rebuild();
+      });
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GGEN))),
+        this._section("program", "mdi:progress-clock", "Programm und Zeit", (b) => b.append(form(GPROG(t)))),
+        this._section("controls", "mdi:tune-variant", "Regler", (b) => {
+          b.append(this._hint("Einstellungen vor dem Start, z. B. Programm, Temperatur, Schleudern, „Fertig in“, Kochzeit. Select = Auswahl, Zahl = Plus/Minus, Schalter = Kippschalter."));
+          this._itemList(b, "controls", GCTL, { item: "Regler", icon: "mdi:tune" }, "Regler hinzufügen");
+        }),
+        this._section("buttons", "mdi:play-pause", "Bedienung", (b) => {
+          b.append(this._hint("Knöpfe erscheinen nur, wenn eine Entität eingetragen und verfügbar ist: Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen."));
+          b.append(form(GACT(data)));
+        }),
+        this._section("hints", "mdi:alert-circle-outline", "Hinweise", (b) => {
+          b.append(form(GINFO), this._h4("Weitere Hinweise"), this._hint("z. B. Fehlercode (Warnen außer bei 0), Wartung fällig, Nachfüllen."));
+          this._itemList(b, "hints", GHINT, { item: "Hinweis", icon: "mdi:information-outline" }, "Hinweis hinzufügen");
+        }),
+        this._section("states", "mdi:state-machine", "Zustände und Texte", (b) => {
+          b.append(this._hint("Nur nötig, wenn die Karte den Zustand falsch einordnet. Zustände so eintragen, wie sie in den Entwicklerwerkzeugen stehen."));
+          b.append(form(GSTATE), this._h4("Texte"), form(GTEXT));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(GLOOK))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(GACTS)))
+      );
+    }
+  };
+  __publicField(NovaApplianceCardEditor, "labels", GLABELS);
+  __publicField(NovaApplianceCardEditor, "helpers", GHELPERS);
+  __publicField(NovaApplianceCardEditor, "openSections", ["general"]);
+  define("geraet-card-editor", NovaApplianceCardEditor);
+})();
