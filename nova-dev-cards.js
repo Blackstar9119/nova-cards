@@ -992,6 +992,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _selStart() {
       return ["select", "input_select"].includes(dom(this._c.start));
     }
+    // Fortsetzen über den Start-Knopf (z. B. Philips) – nur wenn im Editor eingeschaltet und keine eigene Fortsetzen-Entität
+    _resStart() {
+      const c = this._c;
+      return !!c.resume_with_start && !c.resume && !!c.start && !this._selStart();
+    }
     // „Starten um“ → Startzeitpunkt und „Fertig in“ (s) = Zeit bis zum Start + Programmdauer, auf volle Minuten
     _atCalc() {
       const c = this._c;
@@ -1022,7 +1027,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       return null;
     }
     _do(k) {
-      const c = this._c, id = c[k] || (k === "resume" && !this._selStart() ? c.start : null), d = dom(id);
+      const c = this._c, id = c[k] || (k === "resume" && this._resStart() ? c.start : null), d = dom(id);
       if (!id) return;
       if (k === "start" && this._startBlock()) return;
       const conf = k === "start" ? c.start_confirm : k === "stop" ? c.stop_confirm : null;
@@ -1198,7 +1203,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         e.sah.textContent = at && !at.err ? `Fertig ca. ${this._clock(at.end)} · „Fertig in“ ${fmtDur(at.fin)}` : "";
       }
       b.pause.hidden = cls !== "run" || !av("pause");
-      b.resume.hidden = cls !== "pause" || !(av("resume") || !c.resume && av("start") && !this._selStart());
+      b.resume.hidden = cls !== "pause" || !(av("resume") || this._resStart() && av("start"));
       b.stop.hidden = !act || !av("stop");
       ["pause", "resume", "stop"].forEach((k) => {
         b[k].lastChild.textContent = { pause: "Pause", resume: "Fortsetzen", stop: "Stopp" }[k];
@@ -1272,6 +1277,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     g2({ name: "start", selector: { entity: { domain: [...BTN.entity.domain, "select", "input_select"] } } }, { name: "start_name", selector: T }),
     ...["select", "input_select"].includes(dom(c.start)) ? [{ name: "start_option", selector: { entity: { domain: ["select", "input_select", "sensor", "input_text"] } } }] : [],
     g2({ name: "pause", selector: BTN }, { name: "resume", selector: BTN }),
+    ...!c.resume && !["select", "input_select"].includes(dom(c.start)) ? [{ name: "resume_with_start", selector: { boolean: {} } }] : [],
     { name: "stop", selector: BTN },
     g2({ name: "start_confirm", selector: T }, { name: "stop_confirm", selector: T }),
     sel("start_at", [["none", "Aus"], ["home_connect", "Home Connect (rechnet in „Fertig in“ um)"]])
@@ -1325,6 +1331,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     start_option: "Programm für den Start",
     pause: "Pause",
     resume: "Fortsetzen",
+    resume_with_start: "Fortsetzen nutzt Start-Knopf",
     stop: "Stopp",
     start_confirm: "Rückfrage vor dem Start",
     start_at: "„Starten um“ (Uhrzeit wählen)",
@@ -1371,7 +1378,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     start_at: "Startzeit in der Karte wählen. Braucht die Gesamtdauer (Programm und Zeit), z. B. number.…_beenden_in_relativ – Home Connect meldet dort vor dem Start die Programmdauer",
     start_option: "Dessen Wert wird beim Start gesetzt, z. B. select.waschmaschine_ausgewahltes_programm",
     start_name: "Leer = „Start“",
-    resume: "Leer = beim Fortsetzen wird Start ausgelöst (nicht bei Start über ein Select)",
+    resume: "Leer = kein Fortsetzen-Knopf, außer „Fortsetzen nutzt Start-Knopf“ ist an",
+    resume_with_start: "Bei Pause erscheint „Fortsetzen“ und drückt den Start-Knopf (z. B. Philips Airfryer). Nicht bei Start über ein Select",
     remote_start: "z. B. binary_sensor.waschmaschine_fernstart – aus = Start ausgegraut mit Hinweis",
     door: "Hinweis, wenn an bzw. open",
     connection: "Hinweis, wenn aus bzw. nicht verfügbar",
@@ -1383,7 +1391,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     state: "Hinweis bei diesem Zustand (mehrere mit Komma)",
     state_not: "Hinweis bei jedem Zustand außer diesem, z. B. 0 bei einem Fehlercode"
   };
-  var gvis = (c) => `${typeOf(c)}|${["select", "input_select"].includes(dom(c.start))}`;
+  var gvis = (c) => `${typeOf(c)}|${["select", "input_select"].includes(dom(c.start))}|${!c.resume}`;
   var NovaApplianceCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot, c0 = this._config, t = typeOf(c0);
