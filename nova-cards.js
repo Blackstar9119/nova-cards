@@ -513,8 +513,9 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       else delete c[k];
       this._emit(c);
     }
+    // schema darf eine Funktion des Eintrags sein (Felder je nach Einstellung); ändert sich dadurch das Schema, wird neu aufgebaut
     _itemList(w, k, schema2, m, addLabel, view = (it) => it) {
-      const items = this._items(k), keys = names(schema2);
+      const items = this._items(k), sch = typeof schema2 === "function" ? schema2 : () => schema2;
       items.forEach((it, j) => {
         const [d, s] = this._details(
           `${k}.${j}`,
@@ -530,18 +531,22 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
               this._rebuild();
             }
           ),
-          (body) => body.append(this._form(schema2, view(this._items(k)[j] || it), (v) => {
-            const arr = this._items(k);
-            arr[j] = merge(arr[j], keys, v);
-            this._setItems(k, arr);
-            s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
-          }))
+          (body) => {
+            const cur2 = this._items(k)[j] || it;
+            body.append(this._form(sch(cur2), view(cur2), (v) => {
+              const arr = this._items(k), was = JSON.stringify(sch(arr[j]));
+              arr[j] = merge(arr[j], names(sch(arr[j])), v);
+              this._setItems(k, arr);
+              s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
+              if (JSON.stringify(sch(arr[j])) !== was) this._rebuild();
+            }));
+          }
         );
         w.append(d);
       });
       w.append(this._add(addLabel, () => {
         const n = [...this._items(k), {}];
-        this._open = /* @__PURE__ */ new Set([`${k}.${n.length - 1}`]);
+        this._open = new Set([...this._open].filter((x) => x.startsWith("sec.")).concat(`${k}.${n.length - 1}`));
         this._setItems(k, n);
         this._rebuild();
       }));
@@ -5523,18 +5528,13 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     }
   };
   define("info-card", NovaInfoCard, { name: "Nova Info Card", description: "Überschrift mit Zeilen: Name und Wert von Entitäten, optional als Schalter mit Icon und Zustand.", documentationURL: docUrl("nova-info-card") });
-  var MAIN4 = [
-    g2({ name: "title", selector: T }, { name: "icon", selector: I }),
-    sel("style", [["box", "Block (wie im Pop-up)"], ["glass", "Glas (wie andere Nova-Karten)"]])
-  ];
-  var ROW = [
+  var GEN = [g2({ name: "title", selector: T }, { name: "icon", selector: I })];
+  var LOOK = [sel("style", [["box", "Block (wie im Pop-up)"], ["glass", "Glas (wie andere Nova-Karten)"]])];
+  var ROW = (it) => [
     ENT,
     NAMEICON,
-    g2(
-      sel("display", [["value", "Name links, Wert rechts"], ["toggle", "Icon, Name, Zustand (Tippen schaltet)"]]),
-      { name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }
-    ),
-    ROLE("color")
+    sel("display", [["value", "Name links, Wert rechts"], ["toggle", "Icon, Name, Zustand (Tippen schaltet)"]]),
+    it.display === "toggle" ? ROLE("color") : { name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }
   ];
   var LABELS2 = {
     title: "Überschrift",
@@ -5553,20 +5553,26 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var NovaInfoCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap");
-      w.append(this._form(MAIN4, { style: "box", ...this._config }, (v) => {
-        const c = merge(this._config, names(MAIN4), v);
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), data = { style: "box", ...this._config };
+      const form = (schema2) => this._form(schema2, data, (v) => {
+        const c = merge(this._config, names(schema2), v);
         if (c.style === "box") delete c.style;
         this._emit(c);
-      }));
-      w.append(this._h3("Zeilen"));
-      w.append(this._hint("Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details."));
-      this._itemList(w, "entities", ROW, { item: "Zeile", icon: "mdi:format-list-bulleted" }, "Zeile hinzufügen", (it) => ({ display: "value", ...it }));
+      });
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN))),
+        this._section("rows", "mdi:format-list-bulleted", "Zeilen", (b) => {
+          b.append(this._hint("Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details."));
+          this._itemList(b, "entities", (it) => ROW({ display: "value", ...it }), { item: "Zeile", icon: "mdi:format-list-bulleted" }, "Zeile hinzufügen", (it) => ({ display: "value", ...it }));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK)))
+      );
     }
   };
   __publicField(NovaInfoCardEditor, "labels", LABELS2);
   __publicField(NovaInfoCardEditor, "helpers", HELPERS2);
+  __publicField(NovaInfoCardEditor, "openSections", ["general", "rows"]);
   define("info-card-editor", NovaInfoCardEditor);
 
   // src/popup.js

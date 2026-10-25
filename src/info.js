@@ -3,7 +3,7 @@ import {dom, esc, setIcon, toObj} from './shared/utils.js';
 import {isOn, PRESS, nameOf, iconOf, valueOf} from './shared/state.js';
 import {moreInfo, runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
-import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, roleVars} from './shared/styles.js';
+import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, roleVars} from './shared/styles.js';
 import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, ENT, sel, ROLE, NAMEICON} from './shared/editor-schema.js';
@@ -108,15 +108,13 @@ class NovaInfoCard extends HTMLElement {
 define('info-card', NovaInfoCard, {name: 'Nova Info Card', description: 'Überschrift mit Zeilen: Name und Wert von Entitäten, optional als Schalter mit Icon und Zustand.', documentationURL: docUrl('nova-info-card')});
 
 /* ---------- Editor ---------- */
-const MAIN = [
-  g2({name: 'title', selector: T}, {name: 'icon', selector: I}),
-  sel('style', [['box', 'Block (wie im Pop-up)'], ['glass', 'Glas (wie andere Nova-Karten)']]),
-];
-const ROW = [
+const GEN = [g2({name: 'title', selector: T}, {name: 'icon', selector: I})];
+const LOOK = [sel('style', [['box', 'Block (wie im Pop-up)'], ['glass', 'Glas (wie andere Nova-Karten)']])];
+// Felder je Zeile: Nachkommastellen nur bei „Wert“, Farbe nur bei „Tippen schaltet“
+const ROW = it => [
   ENT, NAMEICON,
-  g2(sel('display', [['value', 'Name links, Wert rechts'], ['toggle', 'Icon, Name, Zustand (Tippen schaltet)']]),
-    {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}),
-  ROLE('color'),
+  sel('display', [['value', 'Name links, Wert rechts'], ['toggle', 'Icon, Name, Zustand (Tippen schaltet)']]),
+  it.display === 'toggle' ? ROLE('color') : {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}},
 ];
 const LABELS = {
   title: 'Überschrift', icon: 'Icon', style: 'Aussehen', entity: 'Entität', name: 'Eigener Name (optional)',
@@ -130,18 +128,23 @@ const HELPERS = {
 class NovaInfoCardEditor extends NovaEditorBase {
   static labels = LABELS;
   static helpers = HELPERS;
+  static openSections = ['general', 'rows'];
   _build() {
     const r = this.shadowRoot;
-    r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-    const w = r.querySelector('.wrap');
-    w.append(this._form(MAIN, {style: 'box', ...this._config}, v => {
-      const c = merge(this._config, names(MAIN), v);
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap'), data = {style: 'box', ...this._config};
+    const form = schema => this._form(schema, data, v => {
+      const c = merge(this._config, names(schema), v);
       if (c.style === 'box') delete c.style;
       this._emit(c);
-    }));
-    w.append(this._h3('Zeilen'));
-    w.append(this._hint('Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details.'));
-    this._itemList(w, 'entities', ROW, {item: 'Zeile', icon: 'mdi:format-list-bulleted'}, 'Zeile hinzufügen', it => ({display: 'value', ...it}));
+    });
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(GEN))),
+      this._section('rows', 'mdi:format-list-bulleted', 'Zeilen', b => {
+        b.append(this._hint('Werte werden wie in HA formatiert (Einheit, Rundung, „Offen“, „Ein“ …). Antippen öffnet die Details.'));
+        this._itemList(b, 'entities', it => ROW({display: 'value', ...it}), {item: 'Zeile', icon: 'mdi:format-list-bulleted'}, 'Zeile hinzufügen', it => ({display: 'value', ...it}));
+      }),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(LOOK))));
   }
 }
 define('info-card-editor', NovaInfoCardEditor);
