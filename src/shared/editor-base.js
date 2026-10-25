@@ -153,21 +153,23 @@ export class NovaEditorBase extends HTMLElement {
   // m = {item, icon}; view bereitet einen Eintrag fürs Formular auf
   _items(k) { return [].concat(this._config[k] || []).map(toObj); }
   _setItems(k, arr) { const c = {...this._config}; if (arr.length) c[k] = arr; else delete c[k]; this._emit(c); }
+  // schema darf eine Funktion des Eintrags sein (Felder je nach Einstellung); ändert sich dadurch das Schema, wird neu aufgebaut
   _itemList(w, k, schema, m, addLabel, view = it => it) {
-    const items = this._items(k), keys = names(schema);
+    const items = this._items(k), sch = typeof schema === 'function' ? schema : () => schema;
     items.forEach((it, j) => {
       const [d, s] = this._details(`${k}.${j}`, it.icon || m.icon, this._ilabel(it, j, m), this._itemBtns(j, items.length,
         dir => this._moveItem(k, j, dir),
         () => { this._open = new Set(); this._setItems(k, this._items(k).filter((_, x) => x !== j)); this._rebuild(); }),
-        body => body.append(this._form(schema, view(this._items(k)[j] || it), v => {
-          const arr = this._items(k);
-          arr[j] = merge(arr[j], keys, v);
+        body => { const cur = this._items(k)[j] || it; body.append(this._form(sch(cur), view(cur), v => {
+          const arr = this._items(k), was = JSON.stringify(sch(arr[j]));
+          arr[j] = merge(arr[j], names(sch(arr[j])), v);
           this._setItems(k, arr);
           s.querySelector('.lbl').textContent = this._ilabel(arr[j], j, m);
-        })));
+          if (JSON.stringify(sch(arr[j])) !== was) this._rebuild();
+        })); });
       w.append(d);
     });
-    w.append(this._add(addLabel, () => { const n = [...this._items(k), {}]; this._open = new Set([`${k}.${n.length - 1}`]); this._setItems(k, n); this._rebuild(); }));
+    w.append(this._add(addLabel, () => { const n = [...this._items(k), {}]; this._open = new Set([...this._open].filter(x => x.startsWith('sec.')).concat(`${k}.${n.length - 1}`)); this._setItems(k, n); this._rebuild(); }));
   }
   _moveItem(k, j, dir) {
     const arr = this._items(k), t = j + dir;
