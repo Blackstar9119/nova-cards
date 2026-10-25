@@ -270,6 +270,7 @@ summary .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow
 .adds{display:flex;flex-wrap:wrap;gap:8px}
 details.item details.item>summary{background:none}
 h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
+  var SECTION_EDITOR_CSS = `${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}`;
 
   // src/shared/lifecycle.js
   var GLOBAL = ["entities", "devices", "areas", "floors", "localize", "locale", "language", "themes", "selectedTheme", "config", "user", "connected"];
@@ -472,6 +473,26 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
         go();
       }
       return [d, s, body];
+    }
+    // Aufklappbarer Bereich im Stil des Pop-up-Editors (Icon + Überschrift, Inhalt erst beim Aufklappen).
+    // Welche Bereiche offen sind, bleibt beim Neuaufbau erhalten; anfangs offen: static openSections der Unterklasse.
+    _section(key, icon, label, fill) {
+      const open = this._openSecs ||= new Set(this.constructor.openSections || []), k = `sec.${key}`;
+      if (open.has(key)) this._open.add(k);
+      else this._open.delete(k);
+      const [d] = this._details(k, icon, label, [], fill);
+      d.classList.add("sec");
+      d.addEventListener("toggle", () => {
+        if (d.open) open.add(key);
+        else open.delete(key);
+      });
+      return d;
+    }
+    // Zwischenüberschrift innerhalb eines Bereichs
+    _h4(t) {
+      const h = document.createElement("h4");
+      h.textContent = t;
+      return h;
     }
     // Hoch / Runter / Löschen für Eintrag i von n
     _itemBtns(i, n, move, del) {
@@ -5280,27 +5301,40 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var TSENS = { entity: { domain: "sensor", device_class: "temperature" } };
   var BOOL = (n) => ({ name: n, selector: { boolean: {} } });
   var NUMB = (n, min, max, unit) => ({ name: n, selector: { number: { min, max, mode: "box", ...unit ? { unit_of_measurement: unit } : {} } } });
-  var S_CUR = [
+  var S_GEN = [
     { name: "entity", required: true, selector: { entity: { domain: "weather" } } },
-    g2(BOOL("show_clock"), BOOL("show_date")),
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
-    g2({ name: "temperature_entity", selector: TSENS }, { name: "feels_like_entity", selector: TSENS }),
-    g2(BOOL("show_name"), BOOL("show_feels_like")),
-    g2(BOOL("show_high_low"), NUMB("decimals", 0, 2)),
-    sel("color", [["auto", "Automatisch (nach Wetter)"], ["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]])
+    BOOL("show_name"),
+    g2(BOOL("show_clock"), BOOL("show_date"))
   ];
-  var S_DET = [
-    g2(BOOL("show_details"), BOOL("label_details")),
-    { name: "details", selector: { select: { multiple: true, mode: "list", options: Object.entries(DETAILS).map(([value, d]) => ({ value, label: d.label })) } } }
+  var S_CUR = (c) => [
+    { name: "temperature_entity", selector: TSENS },
+    g2(BOOL("show_feels_like"), BOOL("show_high_low")),
+    ...c.show_feels_like !== false ? [{ name: "feels_like_entity", selector: TSENS }] : [],
+    NUMB("decimals", 0, 2)
   ];
-  var S_DAY = [g2(BOOL("show_daily"), NUMB("days", 1, 14, "Tage")), BOOL("daily_bar")];
-  var S_HOUR = [
-    g2(BOOL("show_hourly"), sel("hourly_layout", [["columns", "Spalten"], ["list", "Liste mit Balken"]])),
-    g2(NUMB("hours", 1, 72, "h"), NUMB("hour_step", 1, 12, "h")),
-    BOOL("hourly_graph")
+  var S_DET = (c) => [
+    BOOL("show_details"),
+    ...c.show_details !== false ? [
+      BOOL("label_details"),
+      { name: "details", selector: { select: { multiple: true, mode: "list", options: Object.entries(DETAILS).map(([value, d]) => ({ value, label: d.label })) } } }
+    ] : []
   ];
-  var S_ALL = [g2(BOOL("show_probability"), BOOL("show_precipitation")), g2(BOOL("show_titles"), BOOL("hourly_first"))];
+  var S_DAY = (c) => [BOOL("show_daily"), ...c.show_daily !== false ? [g2(NUMB("days", 1, 14, "Tage"), BOOL("daily_bar"))] : []];
+  var S_HOUR = (c) => [
+    BOOL("show_hourly"),
+    ...c.show_hourly ? [
+      g2(sel("hourly_layout", [["columns", "Spalten"], ["list", "Liste mit Balken"]]), BOOL("hourly_graph")),
+      g2(NUMB("hours", 1, 72, "h"), NUMB("hour_step", 1, 12, "h"))
+    ] : []
+  ];
+  var S_RAIN = [g2(BOOL("show_probability"), BOOL("show_precipitation"))];
+  var S_LOOK = (c) => [
+    sel("color", [["auto", "Automatisch (nach Wetter)"], ["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]),
+    ...c.show_daily !== false || c.show_hourly ? [g2(BOOL("show_titles"), ...c.show_daily !== false && c.show_hourly ? [BOOL("hourly_first")] : [])] : []
+  ];
   var S_ACT = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
+  var VIS = ["entity", "show_feels_like", "show_details", "show_daily", "show_hourly"];
   var WLABELS2 = {
     ...BASE_LABELS,
     entity: "Wetter-Entität",
@@ -5346,7 +5380,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   var NovaWeatherCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot, c0 = this._config;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}</style><div class="wrap"></div>`;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), data = { ...WDEF2, ...c0 };
       const strip = (c) => {
         Object.entries(WDEF2).forEach(([k, x]) => JSON.stringify(c[k]) === JSON.stringify(x) && delete c[k]);
@@ -5355,32 +5389,29 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const form = (schema2) => this._form(schema2, data, (v) => this._emit(strip(merge(this._config, names(schema2), v))));
       const s = this._hass?.states[c0.entity];
       const none = (t) => s && !hasF(s, FC[t]) ? [this._hint(`Diese Entität liefert keine ${FC_NAME[t]}.`)] : [];
+      const fc = data.show_daily !== false || data.show_hourly;
       w.append(
-        this._h3("Aktuelles Wetter"),
-        form(S_CUR),
-        this._h3("Zusatzwerte"),
-        form(S_DET),
-        this._h3("Tagesvorhersage"),
-        ...none("daily"),
-        form(S_DAY),
-        this._h3("Stundenvorhersage"),
-        ...none("hourly"),
-        form(S_HOUR),
-        this._h3("Vorhersage allgemein"),
-        form(S_ALL),
-        this._h3("Aktionen"),
-        form(S_ACT)
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(S_GEN))),
+        this._section("current", "mdi:weather-partly-cloudy", "Aktuelles Wetter", (b) => b.append(form(S_CUR(data)))),
+        this._section("details", "mdi:water-percent", "Zusatzwerte", (b) => b.append(form(S_DET(data)))),
+        this._section("forecast", "mdi:calendar-week", "Vorhersage", (b) => {
+          b.append(this._h4(FC_NAME.daily), ...none("daily"), form(S_DAY(data)), this._h4(FC_NAME.hourly), ...none("hourly"), form(S_HOUR(data)));
+          if (fc) b.append(this._h4("Regen"), form(S_RAIN));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK(data)))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT)))
       );
     }
-    // Entität gewechselt → Hinweise zur Vorhersage neu aufbauen
+    // Entität oder ein Schalter für abhängige Felder geändert → Bereiche neu aufbauen (Felder werden weiterverwendet)
     _emit(c) {
-      const was = this._config?.entity;
+      const was = this._config;
       super._emit(c);
-      if (c.entity !== was) this._rebuild();
+      if (VIS.some((k) => c[k] !== was?.[k])) this._rebuild();
     }
   };
   __publicField(NovaWeatherCardEditor, "labels", WLABELS2);
   __publicField(NovaWeatherCardEditor, "helpers", WHELPERS2);
+  __publicField(NovaWeatherCardEditor, "openSections", ["general"]);
   define("weather-card-editor", NovaWeatherCardEditor);
 
   // src/info.js

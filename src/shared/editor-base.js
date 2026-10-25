@@ -130,6 +130,18 @@ export class NovaEditorBase extends HTMLElement {
     }
     return [d, s, body];
   }
+  // Aufklappbarer Bereich im Stil des Pop-up-Editors (Icon + Überschrift, Inhalt erst beim Aufklappen).
+  // Welche Bereiche offen sind, bleibt beim Neuaufbau erhalten; anfangs offen: static openSections der Unterklasse.
+  _section(key, icon, label, fill) {
+    const open = this._openSecs ||= new Set(this.constructor.openSections || []), k = `sec.${key}`;
+    if (open.has(key)) this._open.add(k); else this._open.delete(k);
+    const [d] = this._details(k, icon, label, [], fill);
+    d.classList.add('sec');
+    d.addEventListener('toggle', () => { if (d.open) open.add(key); else open.delete(key); });
+    return d;
+  }
+  // Zwischenüberschrift innerhalb eines Bereichs
+  _h4(t) { const h = document.createElement('h4'); h.textContent = t; return h; }
   // Hoch / Runter / Löschen für Eintrag i von n
   _itemBtns(i, n, move, del) {
     return [
