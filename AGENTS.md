@@ -25,6 +25,7 @@ src/
   popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten)
   area.js             Nova Bereich Card + Editor (Raumansicht: Kopfzeile, Raster aus beliebigen Karten)
   chips.js            Nova Chips Card + Editor (Reihe aus Wert- und Knopf-Chips)
+  appliance.js        Nova Gerät Card + Editor (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Allgemein)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
                       tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
@@ -104,6 +105,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | WebSocket `lovelace/config` | `popup-hub.js` (Pop-ups für Dock und Raum-Karte), `dock.js` | keine Pop-ups/Einträge aus dem Dashboard |
 | Event `ll-rebuild` | `card-grid.js` | Zelle wird neu aufgebaut, sonst nichts |
 | Elementname `hui-card-picker` (Vorschau in der Kartenauswahl erkennen) | `lifecycle.js` (`inPicker`) | Karte läuft wie normal eingebunden |
+| Event `card-visibility-changed` + `element.hidden` (Karte ausblenden) | `appliance.js` | Karte ist leer (`:host([hidden])`), Platz im Raster bleibt |
 
 ## Dev-Workflow
 

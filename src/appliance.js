@@ -1,0 +1,664 @@
+import {define, docUrl, tag} from './shared/define.js';
+import {esc, dom, setIcon, list, NUMRE, toObj} from './shared/utils.js';
+import {fmtState, iconOf, valueOf, alertHit, langOf, tzOf} from './shared/state.js';
+import {runAction} from './shared/actions.js';
+import {press} from './shared/long-press.js';
+import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, roleVars} from './shared/styles.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
+import {NovaEditorBase, names, merge} from './shared/editor-base.js';
+import {g2, T, I, A, NUM, sel, ROLE, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
+
+/* ---------- Nova Gerät Card ---------- */
+// Gerätetypen: bestimmen nur Symbol, Standardtexte, Standardfarbe und Animation – die Entitäten wählt der Nutzer
+const TYPES = {
+  washer: {label: 'Waschmaschine', icon: 'mdi:washing-machine', color: 'accent-1', run: 'Wäscht', alt: 'Schleudert', door: 'Tür offen', phase: ['spin', 'spinning', 'schleudern']},
+  dishwasher: {label: 'Spülmaschine', icon: 'mdi:dishwasher', color: 'accent-1', run: 'Spült', door: 'Tür offen', phase: []},
+  airfryer: {label: 'Airfryer', icon: 'mdi:toaster-oven', color: 'accent-2', run: 'Gart', alt: 'Heizt vor', door: 'Schublade offen', phase: ['preheat', 'preheating', 'vorheizen']},
+  coffee: {label: 'Kaffeemaschine', icon: 'mdi:coffee-maker-outline', color: 'accent-3', run: 'Läuft', alt: 'Brüht', door: 'Tür offen', phase: ['brew', 'brewing', 'brühen']},
+  generic: {label: 'Gerät', icon: 'mdi:power-plug-outline', color: 'accent-1', run: 'Läuft', door: 'Tür offen', phase: []},
+};
+const typeOf = c => TYPES[c.device_type] ? c.device_type : 'generic';
+// Zustandsgruppen; Rohzustände der gängigen Integrationen (Home Connect, WashData, Philips, Miele …), im Editor überschreibbar
+const STATES = {
+  run: ['run', 'running', 'on', 'cooking', 'brewing', 'heating', 'preheating', 'starting', 'ending', 'anti_wrinkle', 'washing', 'rinsing', 'spinning', 'drying', 'aborting', 'in_use', 'programmed_running'],
+  pause: ['pause', 'paused', 'user_paused'],
+  wait: ['delayedstart', 'delayed_start', 'delay_wait', 'scheduled', 'waiting_to_start'],
+  done: ['finished', 'finish', 'done', 'complete', 'completed', 'clean', 'end', 'programme_ended'],
+  err: ['error', 'fault', 'failure', 'actionrequired', 'action_required', 'interrupted'],
+};
+const SKEY = {run: 'running_states', pause: 'paused_states', wait: 'waiting_states', done: 'finished_states', err: 'error_states'};
+const TKEY = {run: 'text_running', pause: 'text_paused', wait: 'text_waiting', done: 'text_finished', err: 'text_error', off: 'text_off'};
+const TXT = {pause: 'Pausiert', wait: 'Startet später', done: 'Fertig', err: 'Störung', off: 'Aus'};
+const BAD = new Set(['unavailable', 'unknown', 'none', '']);
+const ok = s => !!s && !BAD.has(s.state);
+const GDEF = {layout: 'full', animation: true, glow: true, hide_when_off: false};
+// Rohwert ohne Übersetzung (z. B. fresh_fries) lesbar machen
+const nice = (raw, t) => t === raw && /_/.test(raw) ? raw.replace(/_/g, ' ').replace(/^./, x => x.toUpperCase()) : t;
+const fmtOpt = (h, s, o) => { let t = o; try { if (h.formatEntityState) t = h.formatEntityState(s, o); } catch { /* Rohwert */ } return nice(o, t); };
+const SECS = {s: 1, sec: 1, min: 60, m: 60, h: 3600, d: 86400};
+const isDur = s => !!s && (SECS[s.attributes.unit_of_measurement] != null || s.attributes.device_class === 'duration');
+// Dauer in Sekunden: Zahl mit Einheit (s/min/h), „H:MM(:SS)“ oder Zeitpunkt
+function secsOf(s) {
+  if (!ok(s)) return null;
+  const v = String(s.state);
+  if (/^\d+:\d{2}(:\d{2})?$/.test(v)) { const p = v.split(':').map(Number); return p[0] * 3600 + p[1] * 60 + (p[2] || 0); }
+  if (NUMRE.test(v)) { const u = s.attributes.unit_of_measurement; return +v * (SECS[u] ?? (s.attributes.device_class === 'duration' ? 1 : 60)); }
+  const t = Date.parse(v);
+  return isNaN(t) ? null : Math.max(0, (t - Date.now()) / 1000);
+}
+const fmtDur = sec => { const m = Math.max(0, Math.round(sec / 60)); return m < 1 ? '< 1 min' : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} h`; };
+const IC = {start: 'mdi:play', pause: 'mdi:pause', resume: 'mdi:play-pause', stop: 'mdi:stop'};
+
+// Fertig-Haken, in allen Zeichnungen unten rechts
+const DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
+/* Animationen: reines SVG + CSS, laufen nur bei .st-run (bzw. Fertig-Effekt einmalig), stehen bei .still */
+const SV = {
+  washer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvw"><circle cx="50" cy="58" r="21"/></clipPath></defs>
+<rect class="bd" x="12" y="6" width="76" height="88" rx="10"/><line class="sep" x1="12" y1="22" x2="88" y2="22"/>
+<rect class="dw" x="19" y="11" width="18" height="6" rx="2"/><circle class="kn" cx="64" cy="14" r="3.6"/><circle class="led" cx="78" cy="14" r="2"/>
+<circle class="door" cx="50" cy="58" r="27"/><circle class="gl" cx="50" cy="58" r="21"/>
+<g clip-path="url(#nvw)"><g class="wl"><g class="wv"><path class="wt" d="M0 64 q6.25 -3 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V100 H0 Z"/></g></g>
+<g class="drum"><circle class="dm" cx="50" cy="58" r="17"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(120 50 58)"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(240 50 58)"/>
+<path class="cl" d="M40 64 q5 -6 10 -1 q4 4 9 -1 q2 6 -5 8 q-8 2 -14 -6 Z"/><path class="cl c2" d="M44 48 q6 -3 10 1 q-2 5 -7 4 q-4 -1 -3 -5 Z"/></g></g>
+<path class="sh" d="M35 47 a19 19 0 0 1 11 -8"/>${DONE}</svg>`,
+  dishwasher: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvd"><rect x="22" y="26" width="56" height="60" rx="5"/></clipPath></defs>
+<rect class="bd" x="14" y="6" width="72" height="88" rx="9"/><line class="sep" x1="14" y1="20" x2="86" y2="20"/>
+<rect class="hd2" x="38" y="11" width="24" height="3.5" rx="1.75"/><circle class="led" cx="78" cy="13" r="2"/>
+<rect class="gl" x="22" y="26" width="56" height="60" rx="5"/>
+<g clip-path="url(#nvd)"><rect class="mist" x="22" y="26" width="56" height="60"/>
+<line class="rk" x1="24" y1="50" x2="76" y2="50"/><line class="rk" x1="24" y1="76" x2="76" y2="76"/>
+<rect class="pl" x="30" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="38" y="34" width="5" height="16" rx="2.5"/><rect class="pl" x="46" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="58" y="40" width="12" height="10" rx="3"/>
+<rect class="pl" x="30" y="60" width="5" height="16" rx="2.5"/><rect class="pl" x="38" y="58" width="5" height="18" rx="2.5"/><rect class="pl" x="56" y="62" width="14" height="14" rx="3"/>
+<g class="drops"><circle cx="34" cy="80" r="1.3"/><circle cx="44" cy="80" r="1.1"/><circle cx="50" cy="80" r="1.4"/><circle cx="57" cy="80" r="1.1"/><circle cx="66" cy="80" r="1.3"/><circle cx="40" cy="80" r="1"/></g>
+<g class="arm"><rect x="30" y="81" width="40" height="2.4" rx="1.2"/><circle cx="50" cy="82.2" r="2.4"/></g></g>${DONE}</svg>`,
+  airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><g class="heat"><path d="M38 12 q3 -4 0 -8"/><path d="M50 12 q3 -4 0 -8"/><path d="M62 12 q3 -4 0 -8"/></g>
+<rect class="bd" x="18" y="16" width="64" height="76" rx="15"/><circle class="gl" cx="50" cy="35" r="12"/>
+<g class="fan"><path d="M50 35 q-2 -8 3 -10 q2 5 -3 10 Z"/><path d="M50 35 q8 -2 10 3 q-5 2 -10 -3 Z"/><path d="M50 35 q2 8 -3 10 q-2 -5 3 -10 Z"/><path d="M50 35 q-8 2 -10 -3 q5 -2 10 3 Z"/><circle cx="50" cy="35" r="1.6"/></g>
+<rect class="disp" x="40" y="52" width="20" height="6" rx="2"/><rect class="dw" x="22" y="63" width="56" height="25" rx="9"/><rect class="hd2" x="38" y="73" width="24" height="5" rx="2.5"/>${DONE}</svg>`,
+  coffee: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvc"><path d="M32 64 h22 v12 a7 7 0 0 1 -7 7 h-8 a7 7 0 0 1 -7 -7 Z"/></clipPath></defs>
+<rect class="bd" x="58" y="8" width="24" height="80" rx="6"/><rect class="bd" x="18" y="8" width="48" height="22" rx="6"/><rect class="bd" x="18" y="86" width="64" height="7" rx="3"/>
+<rect class="dw" x="37" y="30" width="12" height="6" rx="2"/><circle class="led" cx="27" cy="19" r="2"/><circle class="kn" cx="70" cy="22" r="3.6"/>
+<line class="flow" x1="43" y1="37" x2="43" y2="80"/>
+<g clip-path="url(#nvc)"><rect class="cf" x="30" y="64" width="26" height="22"/></g>
+<path class="cup" d="M32 64 h22 v12 a7 7 0 0 1 -7 7 h-8 a7 7 0 0 1 -7 -7 Z"/><path class="cup" d="M54 68 h3 a4 4 0 0 1 0 8 h-3"/>
+<g class="steam"><path d="M37 60 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M43 60 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M49 60 q3 -4 0 -8 q-3 -4 0 -8"/></g>${DONE}</svg>`,
+  generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
+<path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}</svg>`,
+};
+const scene = t => `<div class="scene">${SV[t]}</div>`;
+
+const DCSS = `
+.g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg)}
+.g.dv.glow.st-run{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
+.dv .hd small.er{color:var(--nv-error);opacity:1}
+.dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
+.mid{display:flex;gap:14px;align-items:center;min-width:0}
+.scene{flex:none;width:92px;height:92px;color:var(--nv-fg)}
+.scene svg{display:block;width:100%;height:100%;overflow:visible}
+.inf{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pg{font-size:18px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ph{font-size:12px;opacity:.65}
+.bar{height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--dc);border-radius:4px;transition:width 1s}
+.tm{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;flex-wrap:wrap}.tm .rm{font-weight:600}.tm .en{opacity:.7}
+.ctls{display:flex;flex-direction:column;gap:2px}
+.ct{border-top:1px solid rgba(255,255,255,.08);padding:8px 0 6px;min-width:0}
+.ct .kv{border:none;padding:0}.ct .kv .v{font-weight:600;opacity:1}
+.ct .pills{margin-top:8px}.ct .pill.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 45%,transparent)}
+.ct .cv{transition:transform .2s}.ct.open .cv{transform:rotate(180deg)}
+.stp{display:flex;align-items:center;gap:8px;flex:none}.stp .hb{width:32px;height:32px}.stp .v{min-width:64px;text-align:center}
+.ct input[type=range]{margin-top:8px;background:linear-gradient(90deg,var(--dc) 0 var(--p,0%),rgba(255,255,255,.14) var(--p,0%) 100%)}
+.ct .row{padding:0;font-size:13px}.ct .row.on .sw{background:var(--dc)}
+.ct.na,.ab.dis{opacity:.4;pointer-events:none}
+.acts{display:flex;gap:8px}
+.ab{flex:1;min-width:0;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;transition:background-color .2s,opacity .2s,transform .2s}
+.ab ha-icon{--mdc-icon-size:22px}
+.ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--dc) 40%,transparent)}
+.ab.dis{box-shadow:none}
+.ab:active{transform:scale(.95)}
+.als:empty{display:none}
+/* Kompakt: eine Zeile */
+.g.dv.cmp{gap:8px;padding:10px 14px}
+.cmp .hd .ic{width:40px;height:40px;position:relative}
+.cmp .hd .ic::before{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--dc) var(--p,0%),transparent 0);
+-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))}
+.cmp .hd .ic.on{background:color-mix(in srgb,var(--dc) 25%,transparent);color:var(--nv-fg);box-shadow:none}
+.cmp .rmc{font-size:13px;font-weight:600;white-space:nowrap}
+.cmp .bar{height:4px}
+/* Zeichnungen: Gehäuse in Textfarbe, Wasser/Hitze/LEDs in der Gerätefarbe */
+.scene .bd{fill:currentColor;fill-opacity:.1;stroke:currentColor;stroke-opacity:.28;stroke-width:1.2}
+.scene .sep,.scene .rk{stroke:currentColor;stroke-opacity:.22;stroke-width:1}
+.scene .dw,.scene .hd2,.scene .kn{fill:currentColor;fill-opacity:.16}
+.scene .led{fill:currentColor;fill-opacity:.25}
+.st-run .scene .led,.st-pause .scene .led,.st-wait .scene .led{fill:var(--dc);fill-opacity:1}
+.scene .door{fill:currentColor;fill-opacity:.08;stroke:currentColor;stroke-opacity:.35;stroke-width:2}
+.scene .gl{fill:rgba(0,0,0,.28);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
+.scene .sh{fill:none;stroke:#fff;stroke-opacity:.25;stroke-width:1.6;stroke-linecap:round}
+.scene .wt{fill:var(--dc);fill-opacity:.45}
+.scene .wl{transition:transform .8s}
+.scene .dm{fill:none;stroke:currentColor;stroke-opacity:.3;stroke-width:1.2;stroke-dasharray:3 3}
+.scene .lf{fill:currentColor;fill-opacity:.35}.scene .cl{fill:currentColor;fill-opacity:.32}.scene .cl.c2{fill-opacity:.22}
+.scene .drum,.scene .fan{transform-box:view-box}
+.scene .drum{transform-origin:50px 58px}.scene .fan{transform-origin:50px 35px}
+.scene .mist{fill:var(--dc);opacity:0}
+.scene .pl{fill:currentColor;fill-opacity:.22}
+.scene .drops circle{fill:var(--dc);opacity:0}
+.scene .arm{fill:currentColor;fill-opacity:.4;transform-box:view-box;transform-origin:50px 82px}
+.scene .fan path,.scene .fan circle{fill:currentColor;fill-opacity:.4}
+.scene .heat path,.scene .steam path{fill:none;stroke:var(--dc);stroke-width:1.6;stroke-linecap:round;opacity:0}
+.scene .steam path{stroke:currentColor;stroke-opacity:.6}
+.scene .disp{fill:currentColor;fill-opacity:.16}
+.st-run .scene .disp{fill:var(--dc);fill-opacity:.7}
+.scene .cup{fill:none;stroke:currentColor;stroke-opacity:.55;stroke-width:1.6;stroke-linejoin:round}
+.scene .cf{fill:var(--dc);fill-opacity:.75;transform-box:fill-box;transform-origin:center bottom;transform:scaleY(.15)}
+.scene .flow{stroke:var(--dc);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:4 3;opacity:0}
+.scene .pulse{fill:none;stroke:var(--dc);stroke-width:2;opacity:0;transform-box:view-box;transform-origin:50px 50px}
+.scene .pw{fill:none;stroke:currentColor;stroke-opacity:.55;stroke-width:3;stroke-linecap:round}
+.st-run .scene .pw{stroke:var(--dc);stroke-opacity:1}
+.scene .done{opacity:0}.scene .dc{fill:var(--dc)}.scene .dr{fill:none;stroke:var(--dc);stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center}
+.scene .dk{fill:none;stroke:var(--dc-fg);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:16;stroke-dashoffset:0}
+.st-done .scene .done{opacity:1}
+.st-done.fx .scene .done{animation:dv-pop .5s ease-out both}
+.st-done.fx .scene .dk{animation:dv-check .5s .25s ease-out both}
+.st-done.fx .scene .dr{animation:dv-ring 1.2s .3s ease-out both}
+/* Laufen */
+.anim.st-run .w-washer .drum{animation:dv-tumble 4s ease-in-out infinite}
+.anim.st-run .w-washer .wv{animation:dv-wave 2.4s linear infinite}
+.anim.st-run.alt .w-washer .drum{animation:dv-spin .55s linear infinite}
+.st-run.alt .w-washer .wl{transform:translateY(12px)}
+.anim.st-run .w-dishwasher .arm{animation:dv-arm 1.6s ease-in-out infinite alternate}
+.anim.st-run .w-dishwasher .drops circle{animation:dv-drop 1.4s ease-out infinite}
+.anim.st-run .w-dishwasher .mist{animation:dv-mist 3.2s ease-in-out infinite}
+.anim.st-run .w-airfryer .fan{animation:dv-spin 1s linear infinite}
+.anim.st-run .w-airfryer .heat path{animation:dv-heat 2.2s ease-out infinite}
+.anim.st-run.alt .w-airfryer .fan{animation-duration:3s}
+.anim.st-run.alt .w-airfryer .heat path{animation:dv-glow 3.6s ease-in-out infinite}
+.anim.st-run.alt .w-airfryer .disp{animation:dv-glow 3.6s ease-in-out infinite}
+.anim.st-run .w-coffee .steam path{animation:dv-steam 3s ease-out infinite}
+.anim.st-run.alt .w-coffee .steam path{animation:none}
+.st-run.alt .w-coffee .flow{opacity:.9}
+.anim.st-run.alt .w-coffee .flow{animation:dv-flow .5s linear infinite}
+.anim.st-run.alt .w-coffee .cf{animation:dv-fill 9s ease-out both}
+.st-run:not(.alt) .w-coffee .cf,.st-done .w-coffee .cf{transform:none}
+.anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
+.scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .steam path:nth-child(2){animation-delay:.5s}
+.scene .drops circle:nth-child(3),.scene .heat path:nth-child(3),.scene .steam path:nth-child(3){animation-delay:1s}
+.scene .drops circle:nth-child(4){animation-delay:.25s}.scene .drops circle:nth-child(5){animation-delay:.75s}.scene .drops circle:nth-child(6){animation-delay:1.15s}
+.scene .drops circle:nth-child(odd){--dx:-6px}.scene .drops circle:nth-child(even){--dx:6px}
+/* Unsichtbar (außerhalb des Bildschirms, Tab im Hintergrund, Kartenauswahl): alles steht */
+.still .scene *{animation-play-state:paused!important}
+.anim.st-run:not(.still) .scene>svg{will-change:transform}
+@media (prefers-reduced-motion:reduce){.scene *{animation:none!important}}
+@keyframes dv-tumble{0%{transform:rotate(0)}40%{transform:rotate(220deg)}50%{transform:rotate(220deg)}90%,100%{transform:rotate(0)}}
+@keyframes dv-spin{to{transform:rotate(360deg)}}
+@keyframes dv-wave{to{transform:translateX(-25px)}}
+@keyframes dv-arm{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+@keyframes dv-drop{0%{opacity:0;transform:translate(0,0)}20%{opacity:.9}100%{opacity:0;transform:translate(var(--dx,0),-46px)}}
+@keyframes dv-mist{0%,100%{opacity:.04}50%{opacity:.16}}
+@keyframes dv-heat{0%{opacity:0;transform:translateY(4px)}40%{opacity:.85}100%{opacity:0;transform:translateY(-8px)}}
+@keyframes dv-glow{0%,100%{opacity:.25}50%{opacity:.8}}
+@keyframes dv-steam{0%{opacity:0;transform:translateY(4px)}35%{opacity:.6}100%{opacity:0;transform:translateY(-12px)}}
+@keyframes dv-flow{to{stroke-dashoffset:-7}}
+@keyframes dv-fill{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+@keyframes dv-pulse{0%{opacity:.7;transform:scale(.85)}100%{opacity:0;transform:scale(1.25)}}
+@keyframes dv-pop{0%{opacity:0;transform:scale(.4)}70%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+@keyframes dv-check{from{stroke-dashoffset:16}to{stroke-dashoffset:0}}
+@keyframes dv-ring{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(2.2)}}
+.scene .done{transform-box:fill-box;transform-origin:center}
+@container (max-width:300px){.scene{width:72px;height:72px}.pg{font-size:16px}.ab span{display:none}}`;
+
+class NovaApplianceCard extends HTMLElement {
+  static getConfigElement() { return document.createElement(tag('geraet-card-editor')); }
+  static getStubConfig() { return {device_type: 'washer'}; }
+  setConfig(c) {
+    if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
+    if (c.device_type && !TYPES[c.device_type]) throw new Error('device_type muss washer, dishwasher, airfryer, coffee oder generic sein');
+    this._c = {...GDEF, ...c, controls: [].concat(c.controls || []).map(toObj).filter(o => o.entity), hints: [].concat(c.hints || []).map(toObj).filter(o => o.entity)};
+    this._ids = entityIds(this._c);
+    this._built = false;
+    this._pend = {};
+    if (this._h) { this._build(); this._update(); }
+  }
+  set hass(h) {
+    const old = this._h;
+    this._h = h;
+    if (!this._c) return;
+    if (!this._built) this._build();
+    else if (!hassChanged(old, h, this._ids)) return;
+    this._update();
+  }
+  // Bearbeitungsmodus: ausgeblendete Karte trotzdem zeigen, sonst findet man sie nicht wieder
+  set preview(v) { this._pv = v; this._update(); }
+  get preview() { return this._pv; }
+  set editMode(v) { this._em = v; this._update(); }
+  get editMode() { return this._em; }
+  getCardSize() { return this._c?.layout === 'compact' ? 1 : 3 + Math.ceil((this._c?.controls.length || 0) / 2); }
+  getGridOptions() { return this._c?.layout === 'compact' ? {columns: 6, rows: 'auto', min_columns: 3} : {columns: 12, rows: 'auto', min_columns: 4}; }
+  connectedCallback() {
+    // In der Kartenauswahl: Standbild, kein Takt
+    this._quiet = inPicker(this);
+    this._onVis ||= () => this._tick();
+    document.addEventListener('visibilitychange', this._onVis);
+    if ('IntersectionObserver' in window) {
+      this._io ||= new IntersectionObserver(es => { this._inView = es[es.length - 1].isIntersecting; this._tick(); }, {rootMargin: '100px'});
+      this._io.observe(this);
+    } else this._inView = true;
+    this._tick();
+  }
+  disconnectedCallback() {
+    document.removeEventListener('visibilitychange', this._onVis);
+    this._io?.disconnect();
+    this._inView = false;
+    this._tick();
+    Object.values(this._pend || {}).forEach(p => clearTimeout(p.t));
+    clearTimeout(this._ft);
+  }
+  _S(id) { return id ? this._h?.states[id] : null; }
+  // Zustandsgruppe: run, pause, wait, done, err oder off
+  _cls() {
+    const c = this._c, s = this._S(c.entity);
+    if (!s) return 'off';
+    const v = String(s.state).toLowerCase();
+    if (['binary_sensor', 'switch', 'input_boolean'].includes(dom(c.entity)) && !c.running_states) return v === 'on' ? 'run' : 'off';
+    for (const k of ['err', 'pause', 'wait', 'done', 'run']) {
+      const own = c[SKEY[k]] != null ? list(c[SKEY[k]]).map(x => x.toLowerCase()) : STATES[k];
+      if (own.includes(v)) return k;
+    }
+    return 'off';
+  }
+  _build() {
+    this._built = true;
+    const c = this._c, t = typeOf(c), r = this.shadowRoot || this.attachShadow({mode: 'open'}), cmp = c.layout === 'compact';
+    const rv = roleVars(c.color || TYPES[t].color);
+    const anim = c.animation !== false && !cmp;
+    r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${DCSS}:host([hidden]){display:none}</style>
+<div class="g dv t-${t}${cmp ? ' cmp' : ''}${anim ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ''}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ''}</div>
+${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
+<div class="ctls"></div><div class="acts"></div>`}<div class="als"></div></div>`;
+    const q = s => r.querySelector(s);
+    this._e = {g: q('.g'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), pw: q('.pw'), pg: q('.pg'), ph: q('.ph'), bar: q('.bar'), bari: q('.bar i'),
+      rm: q('.rm') || q('.rmc'), en: q('.en'), ctls: q('.ctls'), acts: q('.acts'), als: q('.als')};
+    const e = this._e;
+    press(e.ic, {tap: () => this._act({entity: c.entity, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: c.entity, hold_action: c.hold_action}, 'hold')});
+    if (cmp) press(e.name.parentElement, {tap: () => this._act({entity: c.entity, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: c.entity, hold_action: c.hold_action}, 'hold')});
+    if (e.pw) press(e.pw, {tap: () => this._call(dom(c.power) === 'input_boolean' ? 'input_boolean' : 'switch', 'toggle', c.power, {}, 'Ein/Aus')});
+    if (e.ctls) this._ctl = c.controls.map(o => this._mkCtl(o));
+    if (e.acts) {
+      this._ab = {};
+      ['start', 'pause', 'resume', 'stop'].forEach(k => {
+        const el = document.createElement('div');
+        el.className = `ab a-${k}${k === 'start' ? ' pri' : ''}`;
+        el.innerHTML = `<ha-icon icon="${IC[k]}"></ha-icon><span></span>`;
+        el.hidden = true;
+        press(el, {tap: () => this._do(k), hold: () => c[k] && this._act({entity: c[k]}, 'hold')});
+        e.acts.append(el);
+        this._ab[k] = el;
+      });
+    }
+    this._prev = null;
+    this._tick();
+  }
+  // Regler: select = Pillen bzw. aufklappbar, number = Plus/Minus oder Schieber, Schalter = Kippschalter
+  _mkCtl(o) {
+    const el = document.createElement('div'), d = dom(o.entity);
+    el.className = 'ct';
+    const S = () => this._S(o.entity), up = {o, el};
+    if (d === 'select' || d === 'input_select') {
+      el.innerHTML = '<div class="kv"><span class="i"></span><span class="k"></span><span class="v"></span><ha-icon class="cv" icon="mdi:chevron-down"></ha-icon></div><div class="pills"></div>';
+      up.kind = 'sel'; up.pills = el.querySelector('.pills');
+      press(el.firstChild, {tap: () => { if (up.mode !== 'list') return; el.classList.toggle('open'); up.pills.hidden = !el.classList.contains('open'); }, hold: () => this._act(o, 'hold')});
+    } else if (d === 'number' || d === 'input_number') {
+      const sl = o.display === 'slider';
+      el.innerHTML = `<div class="kv"><span class="i"></span><span class="k"></span>${sl ? '<span class="v"></span>' : '<div class="stp"><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div><span class="v"></span><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div></div>'}</div>${sl ? '<input type="range">' : ''}`;
+      up.kind = 'num';
+      const step = dir => { const s = S(); if (!ok(s)) return; const a = s.attributes, st = +o.step || +a.step || 1, cur = this._pend[o.entity]?.v ?? +s.state;
+        const mn = a.min != null ? +a.min : -Infinity, mx = a.max != null ? +a.max : Infinity;
+        this._setNum(o, Math.min(mx, Math.max(mn, Math.round((cur + dir * st) / st) * st))); };
+      if (sl) { up.rng = el.querySelector('input'); up.rng.addEventListener('input', () => this._setNum(o, +up.rng.value)); }
+      else { press(el.querySelector('.mi'), {tap: () => step(-1), isolate: true}); press(el.querySelector('.pl'), {tap: () => step(1), isolate: true}); }
+      press(el.querySelector('.k'), {tap: () => this._act(o, 'tap', true), hold: () => this._act(o, 'hold')});
+    } else if (['switch', 'input_boolean'].includes(d)) {
+      el.innerHTML = '<div class="row"><span class="i"></span><span class="k" style="flex:1"></span><div class="sw"></div></div>';
+      up.kind = 'sw';
+      press(el.firstChild, {tap: () => this._call(d, 'toggle', o.entity, {}, o.name || 'Schalter'), hold: () => this._act(o, 'hold')});
+    } else {
+      el.innerHTML = '<div class="kv"><span class="i"></span><span class="k"></span><span class="v"></span></div>';
+      up.kind = 'val';
+      press(el.firstChild, {tap: () => this._act(o, 'tap', true), hold: () => this._act(o, 'hold')});
+    }
+    this._e.ctls.append(el);
+    return up;
+  }
+  // Zahlen gesammelt setzen: erst nach kurzer Pause wird der Dienst aufgerufen
+  _setNum(o, v) {
+    const p = this._pend[o.entity] ||= {};
+    p.v = v; clearTimeout(p.t);
+    p.t = setTimeout(() => { delete this._pend[o.entity]; this._call(dom(o.entity), 'set_value', o.entity, {value: v}, o.name || 'Wert'); }, 700);
+    this._update();
+  }
+  _call(d, s, id, data, what) {
+    return Promise.resolve(this._h.callService(d, s, {entity_id: id, ...data})).catch(err => this._flash(`${what}: ${err?.message || err}`));
+  }
+  // Fehler beim Auslösen sichtbar in der Karte zeigen (8 s)
+  _flash(msg) {
+    this._msg = msg; clearTimeout(this._ft);
+    this._ft = setTimeout(() => { this._msg = null; this._update(); }, 8000);
+    this._update();
+  }
+  // Start über ein Select (Home Connect: „Aktives Programm“ setzen) – taugt nicht zum Fortsetzen
+  _selStart() { return ['select', 'input_select'].includes(dom(this._c.start)); }
+  _startBlock() {
+    const c = this._c, s = this._S(c.start), rs = this._S(c.remote_start);
+    if (!c.start) return null;
+    if (c.remote_start && rs && rs.state !== 'on') return c.remote_start_text || 'Fernstart ist aus – an der Maschine aktivieren';
+    if (!s || s.state === 'unavailable') return 'Start gerade nicht möglich (Entität nicht verfügbar)';
+    if (this._selStart()) {
+      if (!c.start_option) return 'Start: Programm-Quelle fehlt (Editor → Bedienung)';
+      const o = this._S(c.start_option);
+      if (!ok(o)) return 'Erst ein Programm wählen';
+      if (!(s.attributes.options || []).includes(o.state)) return `Programm „${fmtOpt(this._h, o, o.state)}“ kann nicht gestartet werden`;
+    }
+    return null;
+  }
+  _do(k) {
+    const c = this._c, id = c[k] || (k === 'resume' && !this._selStart() ? c.start : null), d = dom(id);
+    if (!id) return;
+    if (k === 'start' && this._startBlock()) return;
+    const conf = k === 'start' ? c.start_confirm : k === 'stop' ? c.stop_confirm : null;
+    if (conf && !window.confirm(conf)) return;
+    const what = {start: c.start_name || 'Start', pause: 'Pause', resume: 'Fortsetzen', stop: 'Stopp'}[k];
+    if (d === 'select' || d === 'input_select') return this._call(d, 'select_option', id, {option: this._S(c.start_option)?.state}, what);
+    if (d === 'button' || d === 'input_button') return this._call(d, 'press', id, {}, what);
+    if (d === 'script' || d === 'scene') return this._call(d, 'turn_on', id, {}, what);
+    if (d === 'switch' || d === 'input_boolean') return this._call(d, k === 'stop' || k === 'pause' ? 'turn_off' : 'turn_on', id, {}, what);
+    this._flash(`${what}: ${id} kann nicht ausgelöst werden`);
+  }
+  // Restzeit in s und Endzeitpunkt (ms)
+  _time(cls) {
+    const c = this._c, es = this._S(c.end_time), rs = this._S(c.remaining);
+    let end = null, rem = null;
+    if (ok(es)) { const t = Date.parse(es.state); if (!isNaN(t)) end = t; }
+    const r0 = secsOf(rs);
+    if (r0 != null) {
+      if (cls === 'pause') rem = r0;
+      else if (end == null) end = Date.parse(rs.last_changed) + r0 * 1000;
+    }
+    if (end != null && rem == null) rem = Math.max(0, (end - Date.now()) / 1000);
+    if (cls === 'pause' && rem != null && end != null) end = Date.now() + rem * 1000;
+    return {rem, end};
+  }
+  _progress(cls, rem) {
+    const c = this._c, ps = this._S(c.progress);
+    if (cls === 'done') return 100;
+    if (ok(ps) && NUMRE.test(ps.state)) return Math.max(0, Math.min(100, +ps.state));
+    const tot = secsOf(this._S(c.duration));
+    if (tot > 0 && rem != null) return Math.max(0, Math.min(100, (1 - rem / tot) * 100));
+    return null;
+  }
+  _update() {
+    const h = this._h, c = this._c, e = this._e;
+    if (!h || !e) return;
+    const t = typeOf(c), TY = TYPES[t], s = this._S(c.entity), cls = this._cls(), act = ['run', 'pause', 'wait'].includes(cls);
+    const na = !!c.entity && (!s || s.state === 'unavailable');
+    // Fertig-Effekt nur beim Wechsel in „fertig“, nicht beim Laden
+    if (this._prev && this._prev !== cls) this._fx = cls === 'done';
+    if (cls !== 'done') this._fx = false;
+    this._prev = cls;
+    const ph = this._S(c.phase || c.entity), phs = c.phase_states != null ? list(c.phase_states) : TY.phase;
+    const alt = cls === 'run' && !!ph && phs.map(x => x.toLowerCase()).includes(String(ph.state).toLowerCase());
+    ['run', 'pause', 'wait', 'done', 'err', 'off'].forEach(k => e.g.classList.toggle(`st-${k}`, k === cls));
+    e.g.classList.toggle('alt', alt);
+    e.g.classList.toggle('fx', !!this._fx);
+    e.g.classList.toggle('na', na);
+    this.classList.toggle('nv-na', na);
+    // Ausblenden, wenn aus/fertig – im Bearbeitungsmodus sichtbar
+    const hide = !!c.hide_when_off && ['off', 'done'].includes(cls) && !this._pv && !this._em && !this.hasAttribute('preview');
+    if (this.hidden !== hide) {
+      this.hidden = hide;
+      // HA-INTERN: hui-card wertet element.hidden aus, sobald card-visibility-changed kommt (ohne: Karte ist nur leer)
+      this.dispatchEvent(new CustomEvent('card-visibility-changed', {bubbles: true, composed: true, detail: {value: !hide}}));
+    }
+    e.name.textContent = c.name ?? s?.attributes.friendly_name ?? TY.label;
+    setIcon(e.ic, c.icon || TY.icon);
+    e.ic.classList.toggle('on', act);
+    // Status: übersetzter Zustand von HA; fehlt die Übersetzung, der Text zum Gerätetyp
+    const raw = s ? fmtState(h, s) : '';
+    const own = c[TKEY[cls]];
+    const def = cls === 'run' ? (alt && TY.alt) || TY.run : TXT[cls];
+    const stx = !c.entity ? 'Status-Entität im Editor wählen' : na ? 'Nicht verfügbar' : own || (raw === s.state && def ? def : nice(s.state, raw));
+    e.sub.textContent = stx;
+    e.sub.classList.toggle('er', cls === 'err');
+    if (e.pw) { const p = this._S(c.power); e.pw.classList.toggle('on', p?.state === 'on'); e.pw.classList.toggle('na', !p || p.state === 'unavailable'); }
+    // Programm: laufendes Programm, sonst das gewählte (Quelle für den Start)
+    const pgS = [this._S(c.program), this._S(c.start_option)].find(x => ok(x) && x.state !== 'off');
+    const pg = pgS ? nice(pgS.state, fmtState(h, pgS)) : '';
+    const {rem, end} = act ? this._time(cls) : {rem: null, end: null};
+    const p = act || cls === 'done' ? this._progress(cls, rem) : null;
+    e.bar.hidden = p == null;
+    if (p != null) e.bari.style.width = `${p}%`;
+    if (c.layout === 'compact') {
+      e.ic.style.setProperty('--p', `${p ?? 0}%`);
+      e.sub.textContent = [pg && act ? pg : stx, p != null && act ? `${Math.round(p)} %` : ''].filter(Boolean).join(' · ');
+      e.rm.textContent = rem != null ? fmtDur(rem) : '';
+    } else {
+      e.pg.textContent = pg || stx;
+      const phx = c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : '';
+      e.ph.hidden = !phx; e.ph.textContent = phx;
+      e.rm.textContent = rem != null && cls !== 'wait' ? `noch ${fmtDur(rem)}` : p != null && act ? `${Math.round(p)} %` : '';
+      e.en.textContent = end != null ? `fertig um ${this._clock(end)}` : '';
+      this._ctlUp(act);
+      this._actUp(cls);
+    }
+    this._alerts(cls, stx);
+    this._tick();
+  }
+  _clock(ms) {
+    const h = this._h, d = new Date(ms), far = ms - Date.now() > 20 * 3600e3;
+    try { return new Intl.DateTimeFormat(langOf(h), {hour: '2-digit', minute: '2-digit', ...(far ? {weekday: 'short'} : {}), timeZone: tzOf(h)}).format(d); } catch { return d.toLocaleTimeString().slice(0, 5); }
+  }
+  _ctlUp(act) {
+    const h = this._h;
+    (this._ctl || []).forEach(u => {
+      const {o, el} = u, s = this._S(o.entity), a = s?.attributes || {};
+      el.hidden = o.show === 'idle' ? act : o.show === 'running' ? !act : false;
+      el.classList.toggle('na', !s || s.state === 'unavailable');
+      const ic = el.querySelector('.i'); if (ic) setIcon(ic, iconOf(h, o, 'mdi:tune'));
+      el.querySelector('.k').textContent = o.name ?? a.friendly_name ?? o.entity;
+      const v = el.querySelector('.v');
+      if (u.kind === 'sel') {
+        const opts = (a.options || []).map(String), cur = ok(s) ? s.state : null;
+        u.mode = o.display === 'pills' || o.display === 'list' ? o.display : opts.length <= 5 ? 'pills' : 'list';
+        el.querySelector('.cv').hidden = u.mode !== 'list';
+        if (u.mode === 'pills') u.pills.hidden = false; else u.pills.hidden = !el.classList.contains('open');
+        v.textContent = cur != null ? fmtOpt(h, s, cur) : '–';
+        v.hidden = u.mode === 'pills';
+        const key = opts.join('|');
+        if (u.key !== key) {
+          u.key = key;
+          u.pills.replaceChildren(...opts.map(x => { const p = document.createElement('div'); p.className = 'pill'; p.dataset.o = x;
+            press(p, {tap: () => { this._call(dom(o.entity), 'select_option', o.entity, {option: x}, o.name || 'Auswahl'); if (u.mode === 'list') { el.classList.remove('open'); u.pills.hidden = true; } }, isolate: true});
+            return p; }));
+        }
+        [...u.pills.children].forEach(p => { p.textContent = fmtOpt(h, s, p.dataset.o); p.classList.toggle('on', p.dataset.o === cur); });
+      } else if (u.kind === 'num') {
+        const pv = this._pend[o.entity]?.v, n = pv ?? (ok(s) ? +s.state : null);
+        v.textContent = n == null ? '–' : isDur(s) ? fmtDur(n * (SECS[a.unit_of_measurement] || 1)) : valueOf(h, {...s, state: String(n)}, o);
+        if (u.rng) { Object.assign(u.rng, {min: a.min ?? 0, max: a.max ?? 100, step: o.step || a.step || 1}); if (n != null && pv == null) u.rng.value = n;
+          u.rng.style.setProperty('--p', `${((n ?? 0) - (a.min ?? 0)) / (((a.max ?? 100) - (a.min ?? 0)) || 1) * 100}%`); }
+      } else if (u.kind === 'sw') el.firstChild.classList.toggle('on', s?.state === 'on');
+      else v.textContent = valueOf(h, s, o);
+    });
+  }
+  // Knöpfe nur mit eingetragener, verfügbarer Entität; Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen
+  _actUp(cls) {
+    const c = this._c, b = this._ab, av = k => !!c[k] && this._S(c[k]) && this._S(c[k]).state !== 'unavailable';
+    if (!b) return;
+    const act = ['run', 'pause', 'wait'].includes(cls), blk = this._startBlock();
+    b.start.hidden = act || !c.start;
+    b.start.classList.toggle('dis', !!blk);
+    b.start.lastChild.textContent = c.start_name || 'Start';
+    b.pause.hidden = cls !== 'run' || !av('pause');
+    b.resume.hidden = cls !== 'pause' || !(av('resume') || (!c.resume && av('start') && !this._selStart()));
+    b.stop.hidden = !act || !av('stop');
+    ['pause', 'resume', 'stop'].forEach(k => { b[k].lastChild.textContent = {pause: 'Pause', resume: 'Fortsetzen', stop: 'Stopp'}[k]; });
+    this._e.acts.hidden = Object.values(b).every(x => x.hidden);
+  }
+  _alerts(cls, stx) {
+    const c = this._c, h = this._h, TY = TYPES[typeOf(c)], out = [];
+    const add = (lvl, ic, msg) => out.push(`<div class="al ${lvl}"><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span></div>`);
+    if (this._msg) add('error', 'mdi:alert-circle-outline', this._msg);
+    if (cls === 'err') add('error', 'mdi:alert-circle-outline', stx);
+    const cn = this._S(c.connection);
+    if (c.connection && (!cn || ['off', 'unavailable', 'disconnected'].includes(cn.state))) add('error', 'mdi:wifi-off', c.connection_text || 'Keine Verbindung zum Gerät');
+    const blk = c.layout !== 'compact' && !['run', 'pause', 'wait'].includes(cls) ? this._startBlock() : null;
+    if (blk) add('warning', 'mdi:play-circle-outline', blk);
+    const dr = this._S(c.door);
+    if (dr && ['on', 'open', 'opened'].includes(dr.state)) add('info', 'mdi:door-open', c.door_text || TY.door);
+    c.hints.forEach(a => { const s = this._S(a.entity); if (alertHit(a, s)) add(['error', 'info'].includes(a.level) ? a.level : 'warning', a.icon || s?.attributes.icon || 'mdi:information-outline', a.message || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`); });
+    const html = out.join('');
+    if (this._alKey !== html) { this._alKey = html; this._e.als.innerHTML = html; }
+    this._e.g.classList.toggle('err', cls === 'err' && c.glow !== false);
+  }
+  // Sichtbarkeit: Animation und Countdown nur, wenn die Karte zu sehen und der Tab offen ist
+  _tick() {
+    const vis = !!this._inView && !document.hidden && !this._quiet && this.isConnected;
+    this._e?.g.classList.toggle('still', !vis);
+    const run = vis && this._e && ['run', 'wait'].includes(this._prev) && (this._c.end_time || this._c.remaining);
+    if (run && !this._tm) this._tm = setInterval(() => this._update(), 30000);
+    if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
+  }
+  _act(o, kind, info) { return runAction(this, o, kind, info); }
+}
+define('geraet-card', NovaApplianceCard, {name: 'Nova Gerät Card', description: 'Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.', documentationURL: docUrl('nova-gerät-card')});
+
+/* ---------- Editor Gerät Card ---------- */
+const ST = {entity: {}};
+const BTN = {entity: {domain: ['button', 'input_button', 'script', 'scene', 'switch', 'input_boolean']}};
+const GGEN = [
+  sel('device_type', Object.entries(TYPES).map(([k, v]) => [k, k === 'generic' ? 'Allgemein' : v.label])),
+  g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
+  {name: 'entity', selector: ST},
+  {name: 'power', selector: {entity: {domain: ['switch', 'input_boolean']}}},
+];
+const GPROG = t => [
+  {name: 'program', selector: ST},
+  g2({name: 'progress', selector: {entity: {domain: ['sensor', 'number', 'input_number']}}}, {name: 'duration', selector: ST}),
+  g2({name: 'remaining', selector: ST}, {name: 'end_time', selector: ST}),
+  {name: 'phase', selector: ST},
+  ...(TYPES[t].alt ? [{name: 'phase_states', selector: {text: {multiple: true}}, context: {t}}] : []),
+];
+const GCTL = it => {
+  const d = dom(it.entity);
+  return [
+    {name: 'entity', required: true, selector: {entity: {domain: ['select', 'input_select', 'number', 'input_number', 'switch', 'input_boolean', 'sensor']}}},
+    NAMEICON,
+    ...(d === 'select' || d === 'input_select' ? [sel('display', [['auto', 'Automatisch'], ['pills', 'Alle Optionen als Pillen'], ['list', 'Aufklappen']])] : []),
+    ...(d === 'number' || d === 'input_number' ? [g2(sel('display', [['buttons', 'Plus / Minus'], ['slider', 'Schieber']]), NUM('step'))] : []),
+    sel('show', [['always', 'Immer'], ['idle', 'Nur vor dem Start'], ['running', 'Nur während des Laufs']]),
+  ];
+};
+const GACT = c => [
+  g2({name: 'start', selector: {entity: {domain: [...BTN.entity.domain, 'select', 'input_select']}}}, {name: 'start_name', selector: T}),
+  ...(['select', 'input_select'].includes(dom(c.start)) ? [{name: 'start_option', selector: {entity: {domain: ['select', 'input_select', 'sensor', 'input_text']}}}] : []),
+  g2({name: 'pause', selector: BTN}, {name: 'resume', selector: BTN}),
+  {name: 'stop', selector: BTN},
+  g2({name: 'start_confirm', selector: T}, {name: 'stop_confirm', selector: T}),
+];
+const GINFO = [
+  g2({name: 'remote_start', selector: ST}, {name: 'remote_start_text', selector: T}),
+  g2({name: 'door', selector: ST}, {name: 'door_text', selector: T}),
+  g2({name: 'connection', selector: ST}, {name: 'connection_text', selector: T}),
+];
+const GHINT = [{name: 'entity', required: true, selector: ST}, g2({name: 'message', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
+  g2({name: 'state', selector: T}, {name: 'state_not', selector: T}), g2(NUM('above'), NUM('below')), sel('level', [['warning', 'Warnung'], ['error', 'Fehler'], ['info', 'Info']])];
+const GSTATE = [
+  {name: 'running_states', selector: {text: {multiple: true}}}, g2({name: 'paused_states', selector: {text: {multiple: true}}}, {name: 'waiting_states', selector: {text: {multiple: true}}}),
+  g2({name: 'finished_states', selector: {text: {multiple: true}}}, {name: 'error_states', selector: {text: {multiple: true}}}),
+];
+const GTEXT = [g2({name: 'text_running', selector: T}, {name: 'text_paused', selector: T}), g2({name: 'text_waiting', selector: T}, {name: 'text_finished', selector: T}),
+  g2({name: 'text_error', selector: T}, {name: 'text_off', selector: T})];
+const GLOOK = [sel('layout', [['full', 'Voll'], ['compact', 'Kompakt (läuft gerade)']]), g2({name: 'hide_when_off', selector: {boolean: {}}}, {name: 'animation', selector: {boolean: {}}}),
+  g2(ROLE('color'), {name: 'glow', selector: {boolean: {}}})];
+const GACTS = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
+const PHASE_LBL = {washer: 'Zustände „schleudert“ (schnelle Trommel)', airfryer: 'Zustände „heizt vor“ (ruhigere Animation)', coffee: 'Zustände „brüht“ (Kaffee läuft in die Tasse)'};
+const GLABELS = {...BASE_LABELS, device_type: 'Gerätetyp', entity: 'Status', power: 'Ein/Aus-Schalter', program: 'Programm', progress: 'Fortschritt (%)', duration: 'Gesamtdauer',
+  remaining: 'Restzeit', end_time: 'Endzeit', phase: 'Phase (optional)', phase_states: 'Sonder-Zustände', display: 'Darstellung', step: 'Schrittweite', show: 'Anzeigen',
+  start: 'Start', start_name: 'Text auf dem Start-Knopf', start_option: 'Programm für den Start', pause: 'Pause', resume: 'Fortsetzen', stop: 'Stopp',
+  start_confirm: 'Rückfrage vor dem Start', stop_confirm: 'Rückfrage vor dem Stopp', remote_start: 'Fernstart erlaubt', remote_start_text: 'Hinweis, wenn Fernstart aus',
+  door: 'Tür / Schublade', door_text: 'Hinweis, wenn offen', connection: 'Verbindung', connection_text: 'Hinweis ohne Verbindung', message: 'Meldung', level: 'Stufe',
+  running_states: 'Zustände „läuft“', paused_states: 'Zustände „pausiert“', waiting_states: 'Zustände „startet später“', finished_states: 'Zustände „fertig“', error_states: 'Zustände „Störung“',
+  text_running: 'Text „läuft“', text_paused: 'Text „pausiert“', text_waiting: 'Text „startet später“', text_finished: 'Text „fertig“', text_error: 'Text „Störung“', text_off: 'Text „aus“',
+  layout: 'Darstellung', hide_when_off: 'Ausblenden, wenn aus oder fertig', animation: 'Animation (aus = Standbild)', color: 'Farbe', glow: 'Rahmen leuchtet beim Laufen'};
+const GHELPERS = {
+  device_type: 'Bestimmt nur Symbol, Texte, Standardfarbe und Animation',
+  entity: 'Betriebszustand, z. B. sensor.waschmaschine_betriebszustand – auch binary_sensor (an = läuft)',
+  power: 'Optional: runder Knopf oben rechts',
+  program: 'Laufendes Programm (Select oder Sensor). Leer bzw. ohne Wert = Programm für den Start',
+  progress: 'Leer = aus Restzeit und Gesamtdauer berechnet',
+  duration: 'Nur für den Fortschritt, wenn es keinen Fortschritts-Sensor gibt',
+  remaining: 'Sensor mit s/min/h oder H:MM. Endzeit wird daraus berechnet',
+  end_time: 'Zeitpunkt-Sensor. Restzeit wird daraus berechnet',
+  phase: 'Leer = Status. Steuert die Sonder-Animation und wird unter dem Programm angezeigt',
+  phase_states: 'Leer = Vorschlag zum Gerätetyp',
+  show: 'z. B. Temperatur und Schleudern nur vor dem Start',
+  step: 'Leer = Schritt der Entität (bei „Fertig in“ in Sekunden z. B. 1800 = 30 min)',
+  start: 'Button, Skript, Schalter – oder ein Select wie „Aktives Programm“ bei Home Connect',
+  start_option: 'Dessen Wert wird beim Start gesetzt, z. B. select.waschmaschine_ausgewahltes_programm',
+  start_name: 'Leer = „Start“',
+  resume: 'Leer = beim Fortsetzen wird Start ausgelöst (nicht bei Start über ein Select)',
+  remote_start: 'z. B. binary_sensor.waschmaschine_fernstart – aus = Start ausgegraut mit Hinweis',
+  door: 'Hinweis, wenn an bzw. open',
+  connection: 'Hinweis, wenn aus bzw. nicht verfügbar',
+  running_states: 'Leer = übliche Rohzustände (run, running, cooking …). Genaue Zustände der Status-Entität',
+  text_running: 'Leer = Übersetzung von HA, sonst Text zum Gerätetyp',
+  hide_when_off: 'Gut für die Startseite: Karte nur, solange etwas läuft. Im Bearbeitungsmodus bleibt sie sichtbar',
+  color: 'Farbrolle aus dem Theme (Fortschritt, Start-Knopf, Animation)',
+  message: 'Leer = Name: Zustand',
+  state: 'Hinweis bei diesem Zustand (mehrere mit Komma)',
+  state_not: 'Hinweis bei jedem Zustand außer diesem, z. B. 0 bei einem Fehlercode',
+};
+const gvis = c => `${typeOf(c)}|${['select', 'input_select'].includes(dom(c.start))}`;
+
+class NovaApplianceCardEditor extends NovaEditorBase {
+  static labels = GLABELS;
+  static helpers = GHELPERS;
+  static openSections = ['general'];
+  _build() {
+    const r = this.shadowRoot, c0 = this._config, t = typeOf(c0);
+    GLABELS.phase_states = PHASE_LBL[t] || 'Sonder-Zustände';
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap');
+    const strip = c => { Object.entries(GDEF).forEach(([k, x]) => c[k] === x && delete c[k]); if (c.color === TYPES[typeOf(c)].color) delete c.color; return c; };
+    const data = {...GDEF, color: TYPES[t].color, ...c0};
+    const form = schema => this._form(schema, data, v => {
+      const c = strip(merge(this._config, names(schema), v));
+      this._emit(c);
+      // Gerätetyp oder Art des Starts geändert → passende Felder zeigen
+      if (gvis(c) !== gvis(c0)) this._rebuild();
+    });
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(GGEN))),
+      this._section('program', 'mdi:progress-clock', 'Programm und Zeit', b => b.append(form(GPROG(t)))),
+      this._section('controls', 'mdi:tune-variant', 'Regler', b => {
+        b.append(this._hint('Einstellungen vor dem Start, z. B. Programm, Temperatur, Schleudern, „Fertig in“, Kochzeit. Select = Auswahl, Zahl = Plus/Minus, Schalter = Kippschalter.'));
+        this._itemList(b, 'controls', GCTL, {item: 'Regler', icon: 'mdi:tune'}, 'Regler hinzufügen');
+      }),
+      this._section('buttons', 'mdi:play-pause', 'Bedienung', b => {
+        b.append(this._hint('Knöpfe erscheinen nur, wenn eine Entität eingetragen und verfügbar ist: Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen.'));
+        b.append(form(GACT(data)));
+      }),
+      this._section('hints', 'mdi:alert-circle-outline', 'Hinweise', b => {
+        b.append(form(GINFO), this._h4('Weitere Hinweise'), this._hint('z. B. Fehlercode (Warnen außer bei 0), Wartung fällig, Nachfüllen.'));
+        this._itemList(b, 'hints', GHINT, {item: 'Hinweis', icon: 'mdi:information-outline'}, 'Hinweis hinzufügen');
+      }),
+      this._section('states', 'mdi:state-machine', 'Zustände und Texte', b => {
+        b.append(this._hint('Nur nötig, wenn die Karte den Zustand falsch einordnet. Zustände so eintragen, wie sie in den Entwicklerwerkzeugen stehen.'));
+        b.append(form(GSTATE), this._h4('Texte'), form(GTEXT));
+      }),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', b => b.append(form(GLOOK))),
+      this._section('actions', 'mdi:gesture-tap', 'Aktionen', b => b.append(form(GACTS))));
+  }
+}
+define('geraet-card-editor', NovaApplianceCardEditor);
