@@ -3,7 +3,7 @@ import {dom, setIcon, toObj, stamp} from './shared/utils.js';
 import {isOn, TOGGLE, fmtState, nameOf, iconOf, valueOf, alertHit} from './shared/state.js';
 import {moreInfo, runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
-import {NOVA_VARS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from './shared/styles.js';
+import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS} from './shared/styles.js';
 import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, ENT, NUM, sel, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
@@ -356,19 +356,25 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
 define('camera-card', NovaCameraCard, {name: 'Nova Kamera Card', description: 'Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.', documentationURL: docUrl('nova-kamera-card')});
 
 /* ---------- Editor Kamera Card ---------- */
-const CMAIN = [
+const C_GEN = [
   {name: 'entity', required: true, selector: {entity: {domain: ['camera', 'image']}}},
   g2({name: 'name', selector: T}, {name: 'icon', selector: I, context: {icon_entity: 'entity'}}),
   {name: 'status', selector: {entity: {}}},
-  g2({name: 'show_header', selector: {boolean: {}}}, {name: 'glow', selector: {boolean: {}}}),
-  {name: 'tap_action', selector: A},
-  g2({name: 'button_icon', selector: I}, {name: 'button_action', selector: A}),
-  g2(sel('aspect_ratio', [['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '1:1']]), sel('fit', [['cover', 'Füllen'], ['contain', 'Ganzes Bild']])),
-  g2(sel('image_action', [['more-info', 'Details (more-info)'], ['fullscreen', 'Vollbild'], ['none', 'Nichts']]),
-     sel('stream', [['auto', 'Automatisch'], ['mjpeg', 'MJPEG'], ['webrtc', 'WebRTC-Karte'], ['snapshot', 'Nur Standbild']])),
-  g2({name: 'refresh', selector: {number: {min: 0, max: 300, mode: 'box', unit_of_measurement: 's'}}}, sel('buttons_position', [['overlay', 'Über dem Bild'], ['below', 'Darunter']])),
+  {name: 'show_header', selector: {boolean: {}}},
 ];
-CMAIN.push(sel('split_layout', [['grid', 'Raster (2 Spalten)'], ['row', 'Nebeneinander'], ['column', 'Untereinander']]));
+const C_IMG = [
+  g2(sel('aspect_ratio', [['16:9', '16:9'], ['4:3', '4:3'], ['1:1', '1:1']]), sel('fit', [['cover', 'Füllen'], ['contain', 'Ganzes Bild']])),
+  g2(sel('stream', [['auto', 'Automatisch'], ['mjpeg', 'MJPEG'], ['webrtc', 'WebRTC-Karte'], ['snapshot', 'Nur Standbild']]),
+     {name: 'refresh', selector: {number: {min: 0, max: 300, mode: 'box', unit_of_measurement: 's'}}}),
+];
+const C_BTN = [sel('buttons_position', [['overlay', 'Über dem Bild'], ['below', 'Darunter']])];
+const C_WARN = [{name: 'glow', selector: {boolean: {}}}];
+const C_SPLIT = [sel('split_layout', [['grid', 'Raster (2 Spalten)'], ['row', 'Nebeneinander'], ['column', 'Untereinander']])];
+const C_ACT = [
+  {name: 'tap_action', selector: A},
+  sel('image_action', [['more-info', 'Details (more-info)'], ['fullscreen', 'Vollbild'], ['none', 'Nichts']]),
+];
+const C_HBTN = [g2({name: 'button_icon', selector: I}, {name: 'button_action', selector: A})];
 const CPTZ = [g2(sel('ptz', [['auto', 'Automatisch (Geräte-Buttons)'], ['manual', 'Manuell'], ['onvif', 'ONVIF'], ['off', 'Aus']]), sel('ptz_position', [['overlay', 'Über dem Bild'], ['below', 'Darunter']]))];
 const PBTN = {entity: {domain: ['button', 'input_button', 'script', 'scene']}};
 const CPTZM = [g2({name: 'up', selector: PBTN}, {name: 'down', selector: PBTN}), g2({name: 'left', selector: PBTN}, {name: 'right', selector: PBTN}),
@@ -398,24 +404,42 @@ const CHELPERS = {
   state: 'Komma-Liste. Chips: leer = immer sichtbar · Warnungen: leer = bei „on“/„problem“',
   tap_action: 'Gilt für das Icon oben. Standard: Details der Kamera',
   message: 'Leer = Name: Zustand. {state} wird ersetzt',
-  split_layout: 'Nur mit weiteren Kameras unter „Splitscreen“. Schmale Karten stapeln automatisch',
+  split_layout: 'Schmale Karten stapeln automatisch',
   ptz: 'Automatisch sucht Schwenk-/Neige-Buttons am Gerät der Kamera. Gedrückt halten = weiterfahren',
 };
 
 class NovaCameraCardEditor extends NovaEditorBase {
   static labels = CLABELS;
   static helpers = CHELPERS;
+  static openSections = ['general'];
   _build() {
-    const r = this.shadowRoot;
-    r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-    const w = r.querySelector('.wrap');
-    w.append(this._form(CMAIN, {...CDEF, glow: true, ...this._config}, v => {
-      const c = merge(this._config, names(CMAIN), v);
+    const r = this.shadowRoot, c0 = this._config;
+    r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+    const w = r.querySelector('.wrap'), data = {...CDEF, glow: true, ...c0};
+    const form = schema => this._form(schema, data, v => {
+      const c = merge(this._config, names(schema), v);
       Object.entries(CDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
       if (c.glow === true) delete c.glow;
       this._emit(c);
-    }));
-    w.append(this._h3('Steuerkreuz (Schwenken / Neigen)'));
+    });
+    const list = (b, k) => { const m = CM[k]; this._itemList(b, k, m.items, m, `${m.item} hinzufügen`); };
+    w.append(
+      this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(C_GEN))),
+      this._section('image', 'mdi:image-outline', 'Bild und Stream', b => b.append(form(C_IMG))),
+      this._section('ptz', 'mdi:arrow-all', 'Steuerkreuz', b => this._ptz(b)),
+      this._section('buttons', CM.buttons.icon, CM.buttons.label, b => { b.append(form(C_BTN)); list(b, 'buttons'); }),
+      this._section('info', 'mdi:information-outline', 'Infos und Warnungen', b => {
+        b.append(this._h4(CM.chips.label)); list(b, 'chips');
+        b.append(this._h4(CM.alerts.label), form(C_WARN)); list(b, 'alerts');
+      }),
+      this._section('split', CM.split.icon, CM.split.label, b => {
+        if (this._items('split').length) b.append(form(C_SPLIT));
+        list(b, 'split');
+      }),
+      this._section('actions', 'mdi:gesture-tap', 'Aktionen', b => b.append(form(C_ACT), this._h4('Button in der Kopfzeile'), form(C_HBTN))));
+  }
+  // Steuerkreuz: Modus, bei „Manuell“ die Buttons, bei „Automatisch“ was gefunden wurde
+  _ptz(w) {
     const p = this._config.ptz, mode = p === undefined || p === true ? 'auto' : p === false ? 'off' : typeof p === 'object' ? 'manual' : p;
     w.append(this._form(CPTZ, {ptz: mode, ptz_position: this._config.ptz_position || 'overlay'}, v => {
       const c = {...this._config};
@@ -433,10 +457,6 @@ class NovaCameraCardEditor extends NovaEditorBase {
       const found = Object.keys(ptzAuto(this._hass, this._config.entity));
       w.append(this._hint(found.length ? `Gefunden: ${found.map(k => PTZ_NAME[k]).join(', ')}` : 'Keine Schwenk-/Neige-Buttons am Gerät gefunden – dann „Manuell“ wählen.'));
     }
-    Object.entries(CM).forEach(([k, m]) => {
-      w.append(this._h3(m.label));
-      this._itemList(w, k, m.items, m, `${m.item} hinzufügen`);
-    });
   }
 }
 define('camera-card-editor', NovaCameraCardEditor);
