@@ -7263,6 +7263,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     const t = Date.parse(v);
     return isNaN(t) ? null : Math.max(0, (t - Date.now()) / 1e3);
   }
+  var fmtDisp = (sec) => sec < 60 ? `${Math.ceil(sec)}"` : sec < 3600 ? `${Math.ceil(sec / 60)}'` : ((m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`)(Math.ceil(sec / 60));
   var fmtDur = (sec) => {
     const m = Math.max(0, Math.round(sec / 60));
     return m < 1 ? "< 1 min" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h`;
@@ -7291,17 +7292,20 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 <rect class="pl" x="30" y="60" width="5" height="16" rx="2.5"/><rect class="pl" x="38" y="58" width="5" height="18" rx="2.5"/><rect class="pl" x="56" y="62" width="14" height="14" rx="3"/>
 <g class="drops"><circle cx="34" cy="80" r="1.3"/><circle cx="44" cy="80" r="1.1"/><circle cx="50" cy="80" r="1.4"/><circle cx="57" cy="80" r="1.1"/><circle cx="66" cy="80" r="1.3"/><circle cx="40" cy="80" r="1"/></g>
 <g class="arm"><rect x="30" y="81" width="40" height="2.4" rx="1.2"/><circle cx="50" cy="82.2" r="2.4"/></g></g></g>${DONE}${WARN}</svg>`,
-    // Airfryer: rundliches Gehäuse, Drehknopf mit Display und Fortschrittsring, Schublade mit Sichtfenster (abschaltbar)
-    airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nva"><rect x="31" y="61" width="38" height="14" rx="7"/></clipPath></defs>
-<g class="heat"><path d="M38 9 q3 -4 0 -8"/><path d="M50 9 q3 -4 0 -8"/><path d="M62 9 q3 -4 0 -8"/></g>
-<g class="puff"><path d="M38 10 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 10 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M62 10 q3 -4 0 -8 q-3 -4 0 -8"/></g>
-<g class="afb"><rect class="bd" x="16" y="12" width="68" height="82" rx="20"/><rect class="opn" x="21" y="54" width="58" height="35" rx="10"/>
-<circle class="kr" cx="50" cy="31" r="14"/><circle class="kp" cx="50" cy="31" r="14" pathLength="100" transform="rotate(-90 50 31)"/>
-<circle class="kb" cx="50" cy="31" r="10.5"/><rect class="kd" x="44" y="28" width="12" height="6" rx="1.8"/><rect class="kx" x="46" y="30.2" width="8" height="1.6" rx=".8"/></g>
-<g class="drw"><rect class="dw" x="20" y="53" width="60" height="37" rx="11"/>
-<g class="win"><rect class="wg" x="31" y="61" width="38" height="14" rx="7"/><g clip-path="url(#nva)"><rect class="glo" x="31" y="61" width="38" height="14"/>
-<g class="fr"><rect x="39" y="66" width="3" height="10" rx="1.5"/><rect x="44.5" y="68" width="3" height="8" rx="1.5"/><rect x="50" y="65.5" width="3" height="10.5" rx="1.5"/><rect x="55.5" y="67.5" width="3" height="8.5" rx="1.5"/></g></g></g>
-<rect class="hd2" x="40" y="80" width="20" height="4.5" rx="2.25"/></g>${DONE}${WARN}</svg>`,
+    // Airfryer: weiches Gehäuse, rundes Display mit Restzeit und Ring (Eieruhr), Schublade mit Fuge, Griff und Sichtfenster (abschaltbar)
+    airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nva"><path d="M31 54 h38 a6 6 0 0 1 6 6 v1 a8 8 0 0 1 -8 8 h-34 a8 8 0 0 1 -8 -8 v-1 a6 6 0 0 1 6 -6 Z"/></clipPath></defs>
+<g class="heat"><path d="M38 8 q3 -4 0 -7"/><path d="M50 8 q3 -4 0 -7"/><path d="M62 8 q3 -4 0 -7"/></g>
+<g class="puff"><path d="M38 9 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 9 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M62 9 q3 -4 0 -8 q-3 -4 0 -8"/></g>
+<g class="afb"><ellipse class="ash" cx="50" cy="96.5" rx="32" ry="2.6"/><rect class="bd" x="17" y="10" width="66" height="85" rx="24"/>
+<rect class="pnl" x="25" y="16" width="50" height="26" rx="13"/><circle class="kbn" cx="33" cy="29" r="2.6"/><circle class="kbn" cx="67" cy="29" r="2.6"/>
+<circle class="kr" cx="50" cy="29" r="10"/><circle class="kp" cx="50" cy="29" r="10" pathLength="100" transform="rotate(-90 50 29)"/>
+<circle class="kd" cx="50" cy="29" r="7.5"/><text class="kt" x="50" y="31.2"></text>
+<rect class="opn" x="23" y="49" width="54" height="42" rx="17"/></g>
+<g class="drw"><ellipse class="ash dsh" cx="50" cy="94" rx="30" ry="3.5"/><rect class="gap" x="22" y="48" width="56" height="44" rx="18"/>
+<rect class="dw" x="23.5" y="49" width="53" height="41" rx="16.5"/><path class="dhl" d="M34 50.5 h32"/>
+<g class="win"><path class="wg" d="M31 54 h38 a6 6 0 0 1 6 6 v1 a8 8 0 0 1 -8 8 h-34 a8 8 0 0 1 -8 -8 v-1 a6 6 0 0 1 6 -6 Z"/><g clip-path="url(#nva)"><rect class="glo" x="25" y="54" width="50" height="15"/>
+<g class="fr"><line x1="37" y1="65" x2="44" y2="60"/><line x1="48.5" y1="65.5" x2="58" y2="62"/><line x1="61.5" y1="65" x2="64" y2="60.5"/></g></g></g>
+<path class="ahs" d="M36 84 q14 6 28 0 v-2 h-28 Z"/><path class="ahd" d="M36 74 h28 a4 4 0 0 1 4 4 a5 5 0 0 1 -5 5 h-26 a5 5 0 0 1 -5 -5 a4 4 0 0 1 4 -4 Z"/></g>${DONE}${WARN}</svg>`,
     // Kaffeevollautomat (Vorbild Siemens EQ): Bohnenfach oben, Bedienfeld, mittiger Auslauf mit Tasse, Wassertank seitlich
     coffee: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvc"><path d="M41 66 h18 v10 a6 6 0 0 1 -6 6 h-6 a6 6 0 0 1 -6 -6 Z"/></clipPath><clipPath id="nvt"><rect x="80" y="26" width="7" height="50" rx="2.5"/></clipPath></defs>
 <path class="bn" d="M28 12.5 q11 -9 22 0 Z"/>
@@ -7404,26 +7408,32 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .anim.st-run .w-dishwasher .arm{animation:dv-arm 1.6s ease-in-out infinite alternate}
 .anim.st-run .w-dishwasher .drops circle{animation:dv-drop 1.4s ease-out infinite}
 .anim.st-run .w-dishwasher .mist{animation:dv-mist 3.2s ease-in-out infinite}
-.scene .fr rect{fill:color-mix(in srgb,var(--dc) var(--pp,0%),currentColor);fill-opacity:calc(.3 + var(--pf,0) * .55)}
+.scene .fr line{stroke:color-mix(in srgb,var(--dc) var(--pp,0%),currentColor);stroke-opacity:calc(.35 + var(--pf,0) * .5);stroke-width:3.6;stroke-linecap:round}
 .scene .puff path{fill:none;stroke:currentColor;stroke-opacity:.6;stroke-width:1.6;stroke-linecap:round;opacity:0}
 /* Airfryer */
-.scene .kr{fill:none;stroke:currentColor;stroke-opacity:.22;stroke-width:2.4}
-.scene .kp{fill:none;stroke:var(--dc);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;opacity:0;transition:stroke-dashoffset 1s}
-.st-run .w-airfryer .kp,.st-pause .w-airfryer .kp{opacity:1}
+.scene .kr{fill:none;stroke:currentColor;stroke-opacity:.18;stroke-width:2.2}
+.scene .kp{fill:none;stroke:var(--dc);stroke-width:2.2;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;opacity:0;transition:stroke-dashoffset 1s}
+.kring .w-airfryer .kp{opacity:1}
+.scene .kt{fill:var(--dc);font:700 6px system-ui,sans-serif;text-anchor:middle}
+.scene .kbn{fill:currentColor;fill-opacity:.3}
+.scene .ash{fill:rgba(0,0,0,.3)}.scene .dsh{opacity:0;transition:opacity .6s}.dopen .w-airfryer .dsh{opacity:1}
+.scene .gap{fill:rgba(0,0,0,.42)}.scene .ahs{fill:rgba(0,0,0,.35)}
+.scene .dhl{fill:none;stroke:currentColor;stroke-opacity:.35;stroke-width:1.2;stroke-linecap:round}
+.scene .ahd{fill:currentColor;fill-opacity:.5;stroke:currentColor;stroke-opacity:.7;stroke-width:1}
 .scene .kd,.scene .pnl{fill:rgba(0,0,0,.3);stroke:currentColor;stroke-opacity:.18;stroke-width:1}
 .scene .kb{fill:currentColor;fill-opacity:.14;stroke:currentColor;stroke-opacity:.32;stroke-width:1}
-.scene .opn{fill:rgba(0,0,0,.35);stroke:currentColor;stroke-opacity:.15;stroke-width:1}
-.w-airfryer .dw{fill:currentColor;fill-opacity:.15;stroke:currentColor;stroke-opacity:.38;stroke-width:1.2}
-.scene .afb{transform-box:view-box;transition:transform .6s ease}
+.scene .opn{fill:rgba(0,0,0,.55);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
+.w-airfryer .dw{fill:currentColor;fill-opacity:.2;stroke:currentColor;stroke-opacity:.45;stroke-width:1.2}
+.scene .afb{transform-box:view-box;transform-origin:0 0;transition:transform .6s ease}
 .scene .kx{fill:currentColor;fill-opacity:.15}
 .st-ready .scene .kx{fill:var(--dc);fill-opacity:.45}
 .st-run .scene .kx,.st-prep .scene .kx,.st-heat .scene .kx,.st-warm .scene .kx,.st-pause .scene .kx,.st-wait .scene .kx{fill:var(--dc);fill-opacity:.85}
 .scene .wg{fill:rgba(0,0,0,.28);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
 .scene .glo{fill:var(--dc);opacity:0;transition:opacity .6s}
-.scene .drw{transform-box:view-box;transform-origin:50px 72px;transition:transform .6s ease}
-/* Schublade offen: komplett herausgenommen, liegt neben dem Gerät */
-.dopen .w-airfryer .afb{transform:translateX(-14px)}
-.dopen .w-airfryer .drw{transform:translate(36px,12px) scale(.7)}
+.scene .drw{transform-box:view-box;transform-origin:0 0;transition:transform .6s ease}
+/* Schublade offen: herausgenommen und verkleinert neben dem Gerät, im Gehäuse bleibt die leere Öffnung */
+.dopen .w-airfryer .afb{transform:translate(-5px,8px) scale(.82)}
+.dopen .w-airfryer .drw{transform:translate(50px,34px) scale(.66)}
 .nowin .w-airfryer .win{display:none}
 .st-heat .w-airfryer .kr{stroke:var(--dc);stroke-opacity:.8}
 .anim.st-heat .w-airfryer .kr{animation:dv-stk 2.6s ease-in-out infinite}
@@ -7432,7 +7442,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .anim.st-run.last .w-airfryer .glo,.anim.st-run.last .w-airfryer .kp{animation:dv-glo .8s ease-in-out infinite}
 .anim.st-run.nowin .w-airfryer .heat path{animation:dv-heat 2.2s ease-out infinite}
 .st-warm.nowin .w-airfryer .kr{stroke:var(--dc);stroke-opacity:.35}
-.anim.st-prep .scene .kx,.anim.st-pause .w-airfryer .kp{animation:dv-blinko 1.4s ease-in-out infinite}
+.anim.st-prep .scene .kx,.anim.st-prep .w-airfryer .kt,.anim.st-pause .w-airfryer .kp,.anim.st-pause .w-airfryer .kt{animation:dv-blinko 1.4s ease-in-out infinite}
 .anim.st-done.fx .w-airfryer .puff path{animation:dv-steam 1.8s ease-out 2 both}
 .anim.st-done.fx .w-airfryer .drw{animation:dv-jolt .6s .1s ease-out}
 /* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
@@ -7604,6 +7614,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         bari: q(".bar i"),
         rm: q(".rm") || q(".rmc"),
         kp: q(".kp"),
+        kt: q(".kt"),
         en: q(".en"),
         ctls: q(".ctls"),
         acts: q(".acts"),
@@ -7842,7 +7853,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.g.style.setProperty("--pf", pf.toFixed(2));
       e.g.style.setProperty("--pp", `${Math.round(pf * 70)}%`);
       e.g.classList.toggle("last", cls === "run" && rem != null && rem <= 60);
-      if (e.kp) e.kp.style.strokeDashoffset = String(100 - (act && p != null ? p : 0));
+      if (e.kp) {
+        const r = secsOf(this._S(c.remaining)), tot = secsOf(this._S(c.duration));
+        const f = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
+        e.g.classList.toggle("kring", f != null);
+        e.kp.style.strokeDashoffset = String(100 - (f ?? 0) * 100);
+        if (e.kt) e.kt.textContent = r > 0 ? fmtDisp(r) : "";
+      }
       if (p != null) e.bari.style.width = `${p}%`;
       if (c.layout === "compact") {
         e.ic.style.setProperty("--p", `${p ?? 0}%`);
