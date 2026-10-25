@@ -2480,13 +2480,12 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   define("modular-card", NovaModularCard, { name: "Nova Modular Card", description: "Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.", documentationURL: docUrl("nova-modular-card") });
   var BM = {
-    header: { label: "Kopfzeile", icon: "mdi:page-layout-header", schema: [
-      g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "status" } }),
-      { name: "status", selector: { entity: {} } },
-      g2({ name: "active", selector: { entity: {} } }, { name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }),
-      { name: "tap_action", selector: A },
-      { name: "button_icon", selector: I },
-      { name: "button_action", selector: A }
+    // parts: Einstellungen in Gruppen mit Zwischenüberschrift (sonst ein Formular aus schema)
+    header: { label: "Kopfzeile", icon: "mdi:page-layout-header", parts: [
+      [null, [g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "status" } }), { name: "status", selector: { entity: {} } }]],
+      ["Aktiv und Fortschritt", [g2({ name: "active", selector: { entity: {} } }, { name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } })]],
+      ["Aktionen", [{ name: "tap_action", selector: A }]],
+      ["Button rechts", [{ name: "button_icon", selector: I }, { name: "button_action", selector: A }]]
     ] },
     info: {
       label: "Info-Entitäten",
@@ -2569,9 +2568,12 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     }
     _build() {
       const r = this.shadowRoot;
-      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), bl = this._blocks();
-      w.append(this._h3("Bausteine"), this._hint("Frei kombinierbar – die Reihenfolge hier ist die Reihenfolge auf der Karte."));
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      r.querySelector(".wrap").append(this._section("blocks", "mdi:view-dashboard-outline", "Bausteine", (w) => this._blockList(w)));
+    }
+    _blockList(w) {
+      const bl = this._blocks();
+      w.append(this._hint("Frei kombinierbar – die Reihenfolge hier ist die Reihenfolge auf der Karte."));
       bl.forEach((b, i) => w.append(this._block(b, i, bl.length)));
       const adds = document.createElement("div");
       adds.className = "adds";
@@ -2606,19 +2608,20 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
         body.append(this._hint(`Unbekannter Baustein „${b.type}“ – nur per YAML bearbeitbar.`));
         return;
       }
-      const keys = names(m.schema), def = m.defaults || {};
-      body.append(this._form(m.schema, { ...def, ...b }, (v) => {
-        const bl = this._blocks(), nb = merge(bl[i], keys, v);
-        Object.entries(def).forEach(([k, x]) => nb[k] === x && delete nb[k]);
-        bl[i] = nb;
-        this._set(bl);
-        s.querySelector(".lbl").textContent = this._blabel(nb, i);
-      }));
+      const def = m.defaults || {};
+      (m.parts || [[null, m.schema]]).forEach(([title, schema]) => {
+        if (title) body.append(this._h4(title));
+        body.append(this._form(schema, { ...def, ...b }, (v) => {
+          const bl = this._blocks(), nb = merge(bl[i], names(schema), v);
+          Object.entries(def).forEach(([k, x]) => nb[k] === x && delete nb[k]);
+          bl[i] = nb;
+          this._set(bl);
+          s.querySelector(".lbl").textContent = this._blabel(nb, i);
+        }));
+      });
       if (m.items) {
         const k = m.key || "entities", items = b[k] || [];
-        const h = document.createElement("h4");
-        h.textContent = m.plural;
-        body.append(h);
+        body.append(this._h4(m.plural));
         items.forEach((it, j) => body.append(this._sub(i, j, it, items.length, m, k)));
         body.append(this._add(`${m.item} hinzufügen`, () => {
           const bl = this._blocks();
@@ -2677,6 +2680,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
   __publicField(NovaModularCardEditor, "labels", BASE_LABELS);
   __publicField(NovaModularCardEditor, "helpers", MHELPERS);
+  __publicField(NovaModularCardEditor, "openSections", ["blocks"]);
   define("modular-card-editor", NovaModularCardEditor);
 
   // src/camera.js
