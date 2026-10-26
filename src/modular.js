@@ -217,6 +217,9 @@ class NovaModularCard extends HTMLElement {
     const r = this.shadowRoot || this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}</style><div class="g"></div>`;
     this._g = r.querySelector('.g');
+    // Größe in Prozent: skaliert die ganze Karte (Schrift, Icons, Abstände)
+    const z = +this._c.size;
+    if (z > 0 && z !== 100) this._g.style.zoom = z / 100;
     this._ups = this._c.blocks.map(b => {
       const w = document.createElement('div');
       w.className = `blk ${b.type}`;
@@ -265,7 +268,10 @@ const BM = {
       {name: 'message', selector: T}, g2({name: 'icon', selector: I}, sel('level', [['warning', 'Warnung'], ['error', 'Fehler'], ['info', 'Hinweis']]))]},
 };
 
+const MLOOK = [{name: 'size', selector: {number: {min: 50, max: 250, step: 10, mode: 'slider', unit_of_measurement: '%'}}}];
+
 const MHELPERS = {
+  size: 'Skaliert die ganze Karte, z. B. 150 % für Wandpanels. Standard 100 %',
   status: 'Text unter dem Namen. Aus/Standby/Idle = inaktiv',
   active: 'Optional: bestimmt, ob das Icon leuchtet (statt Status-Entität)',
   button_icon: 'Button erscheint, sobald Icon oder Aktion gesetzt ist',
@@ -280,7 +286,7 @@ const MHELPERS = {
 const normItems = b => { const k = ITEMS[b.type]; return k && Array.isArray(b[k]) ? {...b, [k]: b[k].map(x => typeof x === 'string' ? {entity: x} : x)} : {...b}; };
 
 class NovaModularCardEditor extends NovaEditorBase {
-  static labels = BASE_LABELS;
+  static labels = {...BASE_LABELS, size: 'Größe'};
   static helpers = MHELPERS;
   _blocks() { return (this._config.blocks || []).map(normItems); }
   _set(bl) { this._emit({...this._config, blocks: bl}); }
@@ -288,7 +294,12 @@ class NovaModularCardEditor extends NovaEditorBase {
   _build() {
     const r = this.shadowRoot;
     r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-    r.querySelector('.wrap').append(this._section('blocks', 'mdi:view-dashboard-outline', 'Bausteine', w => this._blockList(w)));
+    r.querySelector('.wrap').append(this._section('blocks', 'mdi:view-dashboard-outline', 'Bausteine', w => this._blockList(w)),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', w => w.append(this._form(MLOOK, {size: 100, ...this._config}, v => {
+        const n = merge(this._config, ['size'], v);
+        if (n.size === 100) delete n.size;
+        this._emit(n);
+      }))));
   }
   _blockList(w) {
     const bl = this._blocks();
