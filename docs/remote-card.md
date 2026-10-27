@@ -9,7 +9,7 @@ die das Gerät nicht kennt, werden ausgeblendet. Pfeile, Lautstärke, Kanäle un
 |---|---|---|---|
 | `androidtv_remote` | Android TV Remote (Xiaomi TV Box, Chromecast mit Google TV, Sony, Philips mit Google TV …) | `remote.*` | App-Link (`remote.turn_on` mit `activity`), notfalls Paketname |
 | `androidtv` | Android Debug Bridge (Fire TV, Android TV) | `media_player.*` | Paketname (`select_source`) |
-| `philips_js` | Philips TV (Menü = Schnelleinstellungen `Adjust`, Play/Pause über den Media-Player) | `remote.*` | Quelle des Players |
+| `philips_js` | Philips TV (Play/Pause sendet abwechselnd `Pause` und `Play`) | `remote.*` | Quelle des Players |
 | `apple_tv` | Apple TV | `remote.*` | Quelle des Players |
 | `roku` | Roku | `remote.*` | Quelle des Players |
 | `samsungtv` | Samsung Smart TV | `remote.*` | Quelle des Players |
@@ -50,8 +50,8 @@ keys:                        # optional: eigene Belegung
 | `show_channels` | `false` | Kanal runter, Eingang, Kanal hoch |
 | `volume_entity` | – | Lautstärke über einen anderen `media_player` (Fernseher, AV-Receiver) |
 | `apps[]` | – | App-Kacheln, siehe unten. Die laufende App leuchtet |
-| `buttons[]` | – | Eigene Tasten: `name`, `icon`, `command` (mehrere mit Komma) oder `tap_action` |
-| `keys` | – | Eigene Befehle je Taste: `up`, `down`, `left`, `right`, `ok`, `back`, `home`, `menu`, `play_pause`, `rewind`, `forward`, `vol_down`, `mute`, `vol_up`, `ch_down`, `input`, `ch_up`, `power` |
+| `buttons[]` | – | Eigene Tasten: `name`, `icon`, `command` (mehrere nacheinander mit Komma, abwechselnd mit `\|`) oder `tap_action` |
+| `keys` | – | Eigene Befehle je Taste: `up`, `down`, `left`, `right`, `ok`, `back`, `home`, `menu`, `play_pause`, `rewind`, `forward`, `vol_down`, `mute`, `vol_up`, `ch_down`, `input`, `ch_up`, `power`. Mehrere Befehle nacheinander mit Komma, abwechselnd bei jedem Druck mit `\|` (z. B. `Pause\|Play`) |
 | `tap_action`, `hold_action` | more-info | Icon oben antippen / lange drücken |
 
 ## Apps

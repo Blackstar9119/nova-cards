@@ -8338,8 +8338,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       ok: "Confirm",
       back: "Back",
       home: "Home",
-      menu: "Adjust",
-      play_pause: "PlayPause",
+      menu: "Options",
+      play_pause: "Pause|Play",
       rewind: "Rewind",
       forward: "FastForward",
       vol_up: "VolumeUp",
@@ -8624,13 +8624,20 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
       if (v && !c.keys?.[k] && ["vol_up", "vol_down", "mute"].includes(k)) {
         return k === "mute" ? h.callService("media_player", "volume_mute", { entity_id: v, is_volume_muted: !h.states[v]?.attributes.is_volume_muted }) : h.callService("media_player", k === "vol_up" ? "volume_up" : "volume_down", { entity_id: v });
       }
-      if (k === "play_pause" && !c.keys?.[k] && this._plat === "philips_js" && this._mp) return h.callService("media_player", "media_play_pause", { entity_id: this._mp });
-      this._send(this._cmd(k));
+      this._send(this._alt(k, this._cmd(k)));
+    }
+    // „A|B“: abwechselnd A und B senden (z. B. Philips kennt kein PlayPause, nur Pause und Play)
+    _alt(k, cmd) {
+      const p = String(cmd || "").split("|");
+      if (p.length < 2) return cmd;
+      const alt = this._altIdx ||= {}, i = alt[k] || 0;
+      alt[k] = (i + 1) % p.length;
+      return p[i].trim();
     }
     _button(b) {
       fire(this, "haptic", "light");
       if (b.tap_action?.action && b.tap_action.action !== "default") return runAction(this, { tap_action: b.tap_action }, "tap");
-      this._send(b.command);
+      this._send(this._alt(`b:${b.name}:${b.command}`, b.command));
     }
     // App öffnen: Android TV Remote über Paketname/Deep-Link, sonst über die Quelle des Players
     _launch(a) {
@@ -8711,7 +8718,7 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
     volume_entity: "z. B. Fernseher oder AV-Receiver, wenn die Box die Lautstärke nicht selbst regelt",
     app: "Android TV: Link, mit dem die App startet (z. B. https://www.youtube.com). Andere Geräte: Name der Quelle. Leer = aus der Vorlage",
     package: "Erkennt die laufende App (z. B. com.netflix.ninja). Ohne Link wird damit gestartet – das lehnen manche Boxen ab",
-    command: "Befehl für remote.send_command, mehrere mit Komma (z. B. DPAD_DOWN, DPAD_CENTER)",
+    command: "Befehl für remote.send_command, mehrere nacheinander mit Komma (z. B. DPAD_DOWN, DPAD_CENTER), abwechselnd mit | (z. B. Pause|Play)",
     tap_action: "Optional statt App bzw. Befehl, z. B. ein Skript"
   };
   var NovaRemoteCardEditor = class extends NovaEditorBase {
@@ -8754,14 +8761,14 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
     // Eigene Tastenbelegung: leer = Standard der Integration (steht als Hilfetext darunter)
     _keys(b) {
       const plat = platformOf(this._hass, this._config), map = KEYMAPS[plat] || {};
-      b.append(this._hint("Nur ausfüllen, wenn eine Taste anders belegt sein soll. Mehrere Befehle mit Komma."));
+      b.append(this._hint("Nur ausfüllen, wenn eine Taste anders belegt sein soll. Mehrere Befehle nacheinander mit Komma, abwechselnd bei jedem Druck mit | (z. B. Pause|Play)."));
       const f = this._form(RKEYS, { ...this._config.keys }, (v) => {
         const keys = Object.fromEntries(KEYS.filter((k) => v[k]).map((k) => [k, v[k]])), c = { ...this._config };
         if (Object.keys(keys).length) c.keys = keys;
         else delete c.keys;
         this._emit(c);
       });
-      f.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : s.name === "play_pause" && plat === "philips_js" ? "Standard: Play/Pause des Media-Players" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
+      f.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
       b.append(f);
     }
   };
