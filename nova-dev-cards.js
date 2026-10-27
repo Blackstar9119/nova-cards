@@ -8338,7 +8338,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       ok: "Confirm",
       back: "Back",
       home: "Home",
-      menu: "Options",
+      menu: "Adjust",
       play_pause: "PlayPause",
       rewind: "Rewind",
       forward: "FastForward",
@@ -8624,6 +8624,7 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
       if (v && !c.keys?.[k] && ["vol_up", "vol_down", "mute"].includes(k)) {
         return k === "mute" ? h.callService("media_player", "volume_mute", { entity_id: v, is_volume_muted: !h.states[v]?.attributes.is_volume_muted }) : h.callService("media_player", k === "vol_up" ? "volume_up" : "volume_down", { entity_id: v });
       }
+      if (k === "play_pause" && !c.keys?.[k] && this._plat === "philips_js" && this._mp) return h.callService("media_player", "media_play_pause", { entity_id: this._mp });
       this._send(this._cmd(k));
     }
     _button(b) {
@@ -8760,7 +8761,7 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
         else delete c.keys;
         this._emit(c);
       });
-      f.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
+      f.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : s.name === "play_pause" && plat === "philips_js" ? "Standard: Play/Pause des Media-Players" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
       b.append(f);
     }
   };

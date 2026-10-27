@@ -52,7 +52,7 @@ const KEYMAPS = {
   androidtv: {up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', ok: 'CENTER', back: 'BACK', home: 'HOME', menu: 'MENU',
     play_pause: 'input keyevent 85', rewind: 'input keyevent 89', forward: 'input keyevent 90', vol_up: 'input keyevent 24', vol_down: 'input keyevent 25',
     mute: 'input keyevent 164', ch_up: 'input keyevent 166', ch_down: 'input keyevent 167', input: 'input keyevent 178'},
-  philips_js: {up: 'CursorUp', down: 'CursorDown', left: 'CursorLeft', right: 'CursorRight', ok: 'Confirm', back: 'Back', home: 'Home', menu: 'Options',
+  philips_js: {up: 'CursorUp', down: 'CursorDown', left: 'CursorLeft', right: 'CursorRight', ok: 'Confirm', back: 'Back', home: 'Home', menu: 'Adjust',
     play_pause: 'PlayPause', rewind: 'Rewind', forward: 'FastForward', vol_up: 'VolumeUp', vol_down: 'VolumeDown', mute: 'Mute',
     ch_up: 'ChannelStepUp', ch_down: 'ChannelStepDown', input: 'Source'},
   apple_tv: {up: 'up', down: 'down', left: 'left', right: 'right', ok: 'select', back: 'menu', home: 'home', menu: 'top_menu',
@@ -232,6 +232,8 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ''}</div>`;
       return k === 'mute' ? h.callService('media_player', 'volume_mute', {entity_id: v, is_volume_muted: !h.states[v]?.attributes.is_volume_muted})
         : h.callService('media_player', k === 'vol_up' ? 'volume_up' : 'volume_down', {entity_id: v});
     }
+    // Philips: PlayPause ignorieren Android-Modelle – Play/Pause des Players kennt den Umweg der Integration
+    if (k === 'play_pause' && !c.keys?.[k] && this._plat === 'philips_js' && this._mp) return h.callService('media_player', 'media_play_pause', {entity_id: this._mp});
     this._send(this._cmd(k));
   }
   _button(b) {
@@ -349,7 +351,7 @@ class NovaRemoteCardEditor extends NovaEditorBase {
       if (Object.keys(keys).length) c.keys = keys; else delete c.keys;
       this._emit(c);
     });
-    f.computeHelper = s => s.name === 'power' ? 'Standard: Ein/Aus der Entität' : `Standard: ${map[s.name] || '– (ausgeblendet)'}`;
+    f.computeHelper = s => s.name === 'power' ? 'Standard: Ein/Aus der Entität' : s.name === 'play_pause' && plat === 'philips_js' ? 'Standard: Play/Pause des Media-Players' : `Standard: ${map[s.name] || '– (ausgeblendet)'}`;
     b.append(f);
   }
 }

@@ -9,7 +9,7 @@ die das Gerät nicht kennt, werden ausgeblendet. Pfeile, Lautstärke, Kanäle un
 |---|---|---|---|
 | `androidtv_remote` | Android TV Remote (Xiaomi TV Box, Chromecast mit Google TV, Sony, Philips mit Google TV …) | `remote.*` | App-Link (`remote.turn_on` mit `activity`), notfalls Paketname |
 | `androidtv` | Android Debug Bridge (Fire TV, Android TV) | `media_player.*` | Paketname (`select_source`) |
-| `philips_js` | Philips TV | `remote.*` | Quelle des Players |
+| `philips_js` | Philips TV (Menü = Schnelleinstellungen `Adjust`, Play/Pause über den Media-Player) | `remote.*` | Quelle des Players |
 | `apple_tv` | Apple TV | `remote.*` | Quelle des Players |
 | `roku` | Roku | `remote.*` | Quelle des Players |
 | `samsungtv` | Samsung Smart TV | `remote.*` | Quelle des Players |
