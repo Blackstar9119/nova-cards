@@ -8257,6 +8257,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .vol input::-webkit-slider-thumb{width:30px;height:30px}.vol input::-moz-range-thumb{width:30px;height:30px}
 .vol .v{min-width:40px;text-align:right;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 .vol .cb.on{background:var(--nv-error);color:#fff}
+.vs{position:relative;height:64px;border-radius:20px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
+.vs ha-icon{--mdc-icon-size:24px;opacity:.6;transition:opacity .15s,transform .15s}
+.vs .mid{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;opacity:.7}
+.vs .mid b{font-size:15px;font-variant-numeric:tabular-nums}
+.vs.up .pl,.vs.down .mi{opacity:1;transform:scale(1.25)}
+.vs.muted .mid{color:var(--nv-error);opacity:1}
 @container (max-width:280px){.cb{width:40px;height:40px}}`;
   var KEYS = ["up", "down", "left", "right", "ok", "back", "home", "menu", "play_pause", "rewind", "forward", "vol_down", "mute", "vol_up", "ch_down", "input", "ch_up", "power"];
   var KEYLABELS = {
@@ -8496,6 +8502,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._mp = playerOf(this._h, c);
       this._stops = /* @__PURE__ */ new Set();
       this._vp = c.volume_mode === "slider" ? volOf(this._h, c, this._mp) : null;
+      this._vi = c.volume_entity || this._mp;
       const k = (id) => this._has(id) ? `<div class="cb" data-k="${id}" title="${KEYLABELS[id]}"><ha-icon icon="${KEYICONS[id]}"></ha-icon></div>` : "";
       const row = (ids) => {
         const h = ids.map(k).join("");
@@ -8509,7 +8516,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 ${pad}
 ${c.show_nav !== false ? row(["back", "home", "menu"]) : ""}
 ${c.show_media !== false ? row(["rewind", "play_pause", "forward"]) : ""}
-${c.show_volume === false ? "" : this._vp ? `<div class="vol">${k("mute")}<input type="range" min="0" max="100" step="1" aria-label="Lautstärke"><span class="v"></span></div>` : row(["vol_down", "mute", "vol_up"])}
+${c.show_volume === false ? "" : c.volume_mode === "swipe" ? '<div class="vs" title="Wischen: rechts/oben lauter, links/unten leiser · Tippen: stumm"><ha-icon class="mi" icon="mdi:volume-minus"></ha-icon><div class="mid"><b></b><span>Lautstärke</span></div><ha-icon class="pl" icon="mdi:volume-plus"></ha-icon></div>' : this._vp ? `<div class="vol">${k("mute")}<input type="range" min="0" max="100" step="1" aria-label="Lautstärke"><span class="v"></span></div>` : row(["vol_down", "mute", "vol_up"])}
 ${c.show_channels ? row(["ch_down", "input", "ch_up"]) : ""}
 ${btns.length ? '<div class="pills grid btns"></div>' : ""}
 ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
@@ -8540,6 +8547,8 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
         this._e.vv = q(".vol .v");
         this._e.mu = q(".vol [data-k=mute]");
       }
+      const vs = q(".vs");
+      if (vs) this._swipeVol(vs);
       const tp = q(".tp");
       if (tp) this._touch(tp);
       const pill = (o, fn) => {
@@ -8637,6 +8646,49 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
         }
       });
     }
+    // Wischfläche Lautstärke: alle 22 px ein Schritt (rechts/oben lauter), Tippen = stumm
+    _swipeVol(el2) {
+      let sx = null, sy, moved, ft;
+      this._stops.add(() => clearTimeout(ft));
+      this._e.vs = el2;
+      this._e.vsv = el2.querySelector(".mid b");
+      el2.tabIndex = 0;
+      el2.addEventListener("pointerdown", (e) => {
+        sx = e.clientX;
+        sy = e.clientY;
+        moved = false;
+        el2.setPointerCapture?.(e.pointerId);
+      });
+      el2.addEventListener("pointermove", (e) => {
+        if (sx == null) return;
+        const d = e.clientX - sx - (e.clientY - sy);
+        if (Math.abs(d) < 22) return;
+        const up = d > 0;
+        this._key(up ? "vol_up" : "vol_down", moved);
+        el2.classList.remove("up", "down");
+        el2.classList.add(up ? "up" : "down");
+        clearTimeout(ft);
+        ft = setTimeout(() => el2.classList.remove("up", "down"), 200);
+        sx = e.clientX;
+        sy = e.clientY;
+        moved = true;
+      });
+      el2.addEventListener("pointerup", () => {
+        if (sx != null && !moved) this._key("mute");
+        sx = null;
+      });
+      el2.addEventListener("pointercancel", () => {
+        sx = null;
+      });
+      el2.addEventListener("contextmenu", (e) => e.preventDefault());
+      el2.addEventListener("keydown", (e) => {
+        const k = { ArrowUp: "vol_up", ArrowRight: "vol_up", ArrowDown: "vol_down", ArrowLeft: "vol_down", Enter: "mute", " ": "mute" }[e.key];
+        if (k) {
+          e.preventDefault();
+          this._key(k);
+        }
+      });
+    }
     _send(cmd) {
       const c = this._c, cmds = list(cmd);
       if (!cmds.length) return;
@@ -8698,6 +8750,11 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
       e.ic.parentElement.classList.toggle("on", !off2);
       e.pw?.classList.toggle("on", !off2);
       this._pills.forEach((el2, i) => el2.classList.toggle("on", !off2 && this._apps[i] === hit));
+      if (e.vs) {
+        const a = this._vi && h.states[this._vi]?.attributes || {};
+        e.vsv.textContent = a.volume_level != null ? `${Math.round(a.volume_level * 100)} %` : "";
+        e.vs.classList.toggle("muted", !!a.is_volume_muted);
+      }
       const va = this._vp && h.states[this._vp]?.attributes;
       if (e.vol && va) {
         if (!this._drag && va.volume_level != null) {
@@ -8720,7 +8777,7 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
     sel("layout", [["dpad", "Steuerkreuz"], ["touchpad", "Touchpad (wischen)"]]),
     g2({ name: "show_power", selector: { boolean: {} } }, { name: "show_nav", selector: { boolean: {} } }),
     g2({ name: "show_media", selector: { boolean: {} } }, { name: "show_volume", selector: { boolean: {} } }),
-    sel("volume_mode", [["buttons", "Tasten (− / +)"], ["slider", "Schieberegler"]]),
+    sel("volume_mode", [["buttons", "Tasten (− / +)"], ["swipe", "Wischen (in Schritten)"], ["slider", "Schieberegler"]]),
     { name: "show_channels", selector: { boolean: {} } },
     { name: "volume_entity", selector: { entity: { domain: "media_player" } } }
   ];
