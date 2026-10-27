@@ -67,23 +67,26 @@ const KEYMAPS = {
 const PLATFORMS = [['androidtv_remote', 'Android TV / Google TV (Android TV Remote)'], ['androidtv', 'Fire TV / Android TV (ADB)'],
   ['philips_js', 'Philips TV'], ['apple_tv', 'Apple TV'], ['roku', 'Roku'], ['samsungtv', 'Samsung TV']];
 
-// App-Vorlagen: Name, Icon, Paketname (Android). Andere Geräte öffnen die App über die gleichnamige Quelle
+// App-Vorlagen: Name, Icon, Paketname, App-Link. Android TV Remote öffnet über den Link – manche Geräte (z. B. Xiaomi TV Box)
+// lehnen reine Paketnamen ab. ADB öffnet über den Paketnamen, andere Geräte über die gleichnamige Quelle
 export const APPS = {
-  netflix: ['Netflix', 'mdi:netflix', 'com.netflix.ninja'],
-  youtube: ['YouTube', 'mdi:youtube', 'com.google.android.youtube.tv'],
-  prime: ['Prime Video', 'mdi:filmstrip-box-multiple', 'com.amazon.amazonvideo.livingroom'],
-  disney: ['Disney+', 'mdi:castle', 'com.disney.disneyplus'],
-  appletv: ['Apple TV', 'mdi:apple', 'com.apple.atve.androidtv.appletv'],
-  spotify: ['Spotify', 'mdi:spotify', 'com.spotify.tv.android'],
-  ytmusic: ['YouTube Music', 'mdi:music-circle', 'com.google.android.youtube.tvmusic'],
-  plex: ['Plex', 'mdi:plex', 'com.plexapp.android'],
+  netflix: ['Netflix', 'mdi:netflix', 'com.netflix.ninja', 'https://www.netflix.com/title'],
+  youtube: ['YouTube', 'mdi:youtube', 'com.google.android.youtube.tv', 'https://www.youtube.com'],
+  prime: ['Prime Video', 'mdi:filmstrip-box-multiple', 'com.amazon.amazonvideo.livingroom', 'https://app.primevideo.com'],
+  disney: ['Disney+', 'mdi:castle', 'com.disney.disneyplus', 'https://www.disneyplus.com'],
+  appletv: ['Apple TV', 'mdi:apple', 'com.apple.atve.androidtv.appletv', 'https://tv.apple.com'],
+  spotify: ['Spotify', 'mdi:spotify', 'com.spotify.tv.android', 'spotify://'],
+  ytmusic: ['YouTube Music', 'mdi:music-circle', 'com.google.android.youtube.tvmusic', 'https://music.youtube.com'],
+  plex: ['Plex', 'mdi:plex', 'com.plexapp.android', 'plex://'],
   kodi: ['Kodi', 'mdi:kodi', 'org.xbmc.kodi'],
-  twitch: ['Twitch', 'mdi:twitch', 'tv.twitch.android.app'],
-  dazn: ['DAZN', 'mdi:soccer', 'com.dazn'],
+  twitch: ['Twitch', 'mdi:twitch', 'tv.twitch.android.app', 'twitch://home'],
+  dazn: ['DAZN', 'mdi:soccer', 'com.dazn', 'https://www.dazn.com'],
   playstore: ['Play Store', 'mdi:google-play', 'com.android.vending'],
   settings: ['Einstellungen', 'mdi:cog-outline', 'com.android.tv.settings'],
 };
-const appOf = a => { const p = APPS[a.preset] || []; return {...a, name: a.name ?? p[0], icon: a.icon || p[1] || 'mdi:application-outline', app: a.app || p[2]}; };
+// pkg = Paketname (Erkennen der laufenden App, ADB), link = App-Link der Vorlage
+const appOf = a => { const p = APPS[a.preset] || []; return {...a, name: a.name ?? p[0], icon: a.icon || p[1] || 'mdi:application-outline', pkg: a.package || p[2], link: p[3]}; };
+const isApp = (a, cur) => same(a.app, cur) || same(a.pkg, cur) || same(a.name, cur);
 
 const RDEF = {layout: 'dpad', show_power: true, show_nav: true, show_media: true, show_volume: true, show_channels: false};
 
@@ -241,10 +244,12 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ''}</div>`;
     const c = this._c, h = this._h;
     fire(this, 'haptic', 'light');
     if (a.tap_action?.action && a.tap_action.action !== 'default') return runAction(this, {tap_action: a.tap_action}, 'tap');
-    const id = a.app || a.name;
-    if (!id) return;
-    if (dom(c.entity) === 'remote' && (this._plat === 'androidtv_remote' || !this._mp)) return h.callService('remote', 'turn_on', {entity_id: c.entity, activity: id});
-    h.callService('media_player', 'select_source', {entity_id: this._mp || c.entity, source: id});
+    if (dom(c.entity) === 'remote' && (this._plat === 'androidtv_remote' || !this._mp)) {
+      const id = a.app || a.link || a.pkg;
+      return id && h.callService('remote', 'turn_on', {entity_id: c.entity, activity: id});
+    }
+    const id = a.app || (this._plat === 'androidtv' ? a.pkg : null) || a.name;
+    if (id) h.callService('media_player', 'select_source', {entity_id: this._mp || c.entity, source: id});
   }
   _update() {
     const h = this._h, c = this._c, e = this._e;
@@ -255,7 +260,7 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ''}</div>`;
     this.classList.toggle('nv-na', na);
     e.g.classList.toggle('na', na);
     e.g.classList.toggle('off', !!off);
-    const cur = currentApp(h, c, this._mp), hit = this._apps.find(a => same(a.app, cur) || same(a.name, cur) || same(a.name, m?.attributes.app_name));
+    const cur = currentApp(h, c, this._mp), hit = this._apps.find(a => isApp(a, cur) || same(a.name, m?.attributes.app_name));
     e.name.textContent = c.name ?? s?.attributes.friendly_name ?? m?.attributes.friendly_name ?? c.entity;
     e.sub.textContent = !s ? 'nicht gefunden' : off ? fmtState(h, m && !na ? m : s) : hit?.name || m?.attributes.app_name || cur || fmtState(h, s);
     setIcon(e.ic, c.icon || (!off && hit?.icon) || (m?.attributes.device_class === 'tv' ? 'mdi:television' : 'mdi:remote-tv'));
@@ -284,19 +289,21 @@ const RAPP = [
   sel('preset', [['', 'Eigene App'], ...Object.entries(APPS).map(([k, [n]]) => [k, n])]),
   g2({name: 'name', selector: T}, {name: 'icon', selector: I}),
   {name: 'app', selector: T},
+  {name: 'package', selector: T},
   {name: 'tap_action', selector: A},
 ];
 const RBTN = [g2({name: 'name', selector: T}, {name: 'icon', selector: I}), {name: 'command', selector: T}, {name: 'tap_action', selector: A}];
 const RKEYS = [g2(...KEYS.map(k => ({name: k, selector: T})))];
 const RLABELS = {...BASE_LABELS, ...KEYLABELS, entity: 'Fernbedienung (remote.* oder ADB-Player)', platform: 'Gerätetyp', media_player: 'Media-Player (optional)',
   layout: 'Bedienfeld', show_power: 'Ein/Aus-Button', show_nav: 'Zurück / Home / Menü', show_media: 'Medientasten', show_volume: 'Lautstärke',
-  show_channels: 'Kanäle und Eingang', volume_entity: 'Lautstärke über anderen Player (optional)', preset: 'Vorlage', app: 'App (Paketname, Deep-Link oder Quelle)',
+  show_channels: 'Kanäle und Eingang', volume_entity: 'Lautstärke über anderen Player (optional)', preset: 'Vorlage', app: 'App-Link oder Quelle', package: 'Paketname',
   command: 'Befehl', tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken'};
 const RHELPERS = {
   platform: 'Bestimmt die Tastenbefehle. Automatisch = nach Integration der Entität',
   media_player: 'Leer = automatisch (Player am selben Gerät). Liefert Zustand und laufende App',
   volume_entity: 'z. B. Fernseher oder AV-Receiver, wenn die Box die Lautstärke nicht selbst regelt',
-  app: 'Android TV: Paketname (com.netflix.ninja) oder Deep-Link (https://www.youtube.com). Andere Geräte: Name der Quelle. Leer = aus der Vorlage',
+  app: 'Android TV: Link, mit dem die App startet (z. B. https://www.youtube.com). Andere Geräte: Name der Quelle. Leer = aus der Vorlage',
+  package: 'Erkennt die laufende App (z. B. com.netflix.ninja). Ohne Link wird damit gestartet – das lehnen manche Boxen ab',
   command: 'Befehl für remote.send_command, mehrere mit Komma (z. B. DPAD_DOWN, DPAD_CENTER)',
   tap_action: 'Optional statt App bzw. Befehl, z. B. ein Skript',
 };
@@ -305,7 +312,7 @@ class NovaRemoteCardEditor extends NovaEditorBase {
   static labels = RLABELS;
   static helpers = RHELPERS;
   static openSections = ['general'];
-  _ilabel(it, j, m) { return `${j + 1}. ${it.name || APPS[it.preset]?.[0] || it.app || it.command || `Neu: ${m.item}`}`; }
+  _ilabel(it, j, m) { return `${j + 1}. ${it.name || APPS[it.preset]?.[0] || it.app || it.package || it.command || `Neu: ${m.item}`}`; }
   _build() {
     const r = this.shadowRoot, c0 = this._config;
     r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
@@ -323,10 +330,10 @@ class NovaRemoteCardEditor extends NovaEditorBase {
   _appList(b) {
     const h = this._hass, c = this._config, cur = h && c.entity && currentApp(h, c, playerOf(h, c));
     const apps = this._items('apps').map(appOf);
-    if (cur && !apps.some(a => same(a.app, cur) || same(a.name, cur))) {
-      b.append(this._hint(`Gerade läuft: ${cur}`), this._add('Laufende App übernehmen', () => {
+    if (cur && cur.includes('.') && !apps.some(a => isApp(a, cur))) {
+      b.append(this._hint(`Gerade läuft: ${cur}. Startet die App danach nicht, unter „App-Link“ einen Link eintragen.`), this._add('Laufende App übernehmen', () => {
         const preset = Object.keys(APPS).find(k => same(APPS[k][2], cur) || same(APPS[k][0], cur));
-        const n = [...this._items('apps'), preset ? {preset} : {name: cur.split('.').pop(), app: cur}];
+        const n = [...this._items('apps'), preset ? {preset} : {name: cur.split('.').pop(), package: cur}];
         this._open = new Set([...this._open].filter(x => x.startsWith('sec.')).concat(`apps.${n.length - 1}`));
         this._setItems('apps', n); this._rebuild();
       }));

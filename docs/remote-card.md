@@ -7,7 +7,7 @@ die das Gerät nicht kennt, werden ausgeblendet. Pfeile, Lautstärke, Kanäle un
 
 | Gerätetyp (`platform`) | Integration | Entität | Apps öffnen über |
 |---|---|---|---|
-| `androidtv_remote` | Android TV Remote (Xiaomi TV Box, Chromecast mit Google TV, Sony, Philips mit Google TV …) | `remote.*` | Paketname oder Deep-Link (`remote.turn_on` mit `activity`) |
+| `androidtv_remote` | Android TV Remote (Xiaomi TV Box, Chromecast mit Google TV, Sony, Philips mit Google TV …) | `remote.*` | App-Link (`remote.turn_on` mit `activity`), notfalls Paketname |
 | `androidtv` | Android Debug Bridge (Fire TV, Android TV) | `media_player.*` | Paketname (`select_source`) |
 | `philips_js` | Philips TV | `remote.*` | Quelle des Players |
 | `apple_tv` | Apple TV | `remote.*` | Quelle des Players |
@@ -24,7 +24,8 @@ apps:
   - preset: youtube
   - name: ARD
     icon: mdi:numeric-1-box
-    app: de.swr.avp.ard.tv
+    app: https://www.ardmediathek.de
+    package: de.swr.avp.ard.tv
 buttons:
   - name: Einstellungen
     icon: mdi:cog
@@ -59,8 +60,10 @@ keys:                        # optional: eigene Belegung
 |---|---|
 | `preset` | Vorlage: `netflix`, `youtube`, `prime`, `disney`, `appletv`, `spotify`, `ytmusic`, `plex`, `kodi`, `twitch`, `dazn`, `playstore`, `settings` |
 | `name`, `icon` | Eigener Name / eigenes Icon (sonst aus der Vorlage) |
-| `app` | Android TV: Paketname (`com.netflix.ninja`) oder Deep-Link (`https://www.youtube.com`). Andere Geräte: Name der Quelle |
+| `app` | Android TV Remote: App-Link, mit dem die App startet (`https://www.youtube.com`, `spotify://`). Andere Geräte: Name der Quelle |
+| `package` | Paketname (`com.netflix.ninja`): erkennt die laufende App. Ohne `app` wird damit gestartet – über ADB klappt das immer, über Android TV Remote lehnen manche Boxen (z. B. Xiaomi TV Box) reine Paketnamen ab |
 | `tap_action` | Optional statt App öffnen, z. B. ein Skript |
 
 Den Paketnamen einer App muss man nicht suchen: App am Gerät öffnen, dann im Editor unter **Apps** auf
-**Laufende App übernehmen** tippen.
+**Laufende App übernehmen** tippen. Startet die App über die Karte danach nicht, braucht sie zusätzlich einen App-Link
+(meist die Webadresse des Anbieters).
