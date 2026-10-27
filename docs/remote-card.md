@@ -19,6 +19,7 @@ type: custom:nova-remote-card
 entity: remote.wohnzimmer_tv_box
 layout: dpad                 # dpad | touchpad
 volume_entity: media_player.wohnzimmer_fernseher   # optional: Lautstärke am Fernseher regeln
+volume_mode: slider         # buttons | slider
 apps:
   - preset: netflix
   - preset: youtube
@@ -47,6 +48,7 @@ keys:                        # optional: eigene Belegung
 | `show_nav` | `true` | Zurück, Home, Menü |
 | `show_media` | `true` | Zurückspulen, Play/Pause, Vorspulen |
 | `show_volume` | `true` | Leiser, Stumm, Lauter |
+| `volume_mode` | `buttons` | `buttons` = Leiser/Stumm/Lauter, `slider` = Stumm + Schieberegler (wischen). Braucht einen Player, der die Lautstärke direkt setzen kann (`volume_entity` oder `media_player`), sonst bleiben die Tasten |
 | `show_channels` | `false` | Kanal runter, Eingang, Kanal hoch |
 | `volume_entity` | – | Lautstärke über einen anderen `media_player` (Fernseher, AV-Receiver) |
 | `apps[]` | – | App-Kacheln, siehe unten. Die laufende App leuchtet |

@@ -31,6 +31,11 @@ const RCSS = `
 .tp.ok-hit .ok{opacity:1}
 .apps .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
 .rc.off .pad,.rc.off .tp{opacity:.55}
+.vol{display:flex;align-items:center;gap:12px}
+.vol input{flex:1;height:30px;border-radius:15px;touch-action:none}
+.vol input::-webkit-slider-thumb{width:30px;height:30px}.vol input::-moz-range-thumb{width:30px;height:30px}
+.vol .v{min-width:40px;text-align:right;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.vol .cb.on{background:var(--nv-error);color:#fff}
 @container (max-width:280px){.cb{width:40px;height:40px}}`;
 
 // Logische Tasten der Karte
@@ -88,7 +93,7 @@ export const APPS = {
 const appOf = a => { const p = APPS[a.preset] || []; return {...a, name: a.name ?? p[0], icon: a.icon || p[1] || 'mdi:application-outline', pkg: a.package || p[2], link: p[3]}; };
 const isApp = (a, cur) => same(a.app, cur) || same(a.pkg, cur) || same(a.name, cur);
 
-const RDEF = {layout: 'dpad', show_power: true, show_nav: true, show_media: true, show_volume: true, show_channels: false};
+const RDEF = {layout: 'dpad', show_power: true, show_nav: true, show_media: true, show_volume: true, volume_mode: 'buttons', show_channels: false};
 
 // Plattform der Entität (Integration), ohne Treffer: remote.* → Android TV Remote, media_player.* → ADB
 const platformOf = (h, c) => c.platform && c.platform !== 'auto' ? c.platform : h?.entities?.[c.entity]?.platform in KEYMAPS ? h.entities[c.entity].platform : dom(c.entity) === 'media_player' ? 'androidtv' : 'androidtv_remote';
@@ -99,6 +104,8 @@ const playerOf = (h, c) => {
   const dev = h?.entities?.[c.entity]?.device_id;
   return (dev && Object.values(h.entities).find(e => e.device_id === dev && dom(e.entity_id) === 'media_player' && h.states[e.entity_id])?.entity_id) || null;
 };
+// Player für den Lautstärkeregler: eigener Lautstärke-Player, sonst der Media-Player – nur wenn er volume_set kann
+const volOf = (h, c, mp) => [c.volume_entity, mp].find(id => id && (h?.states[id]?.attributes.supported_features & 4)) || null;
 // Laufende App: Paketname der Fernbedienung, sonst App bzw. Quelle des Players
 const currentApp = (h, c, mp) => { const r = h.states[c.entity]?.attributes || {}, m = (mp && h.states[mp]?.attributes) || {}; return r.current_activity || m.app_id || m.app_name || m.source || null; };
 const same = (a, b) => !!a && !!b && String(a).toLowerCase() === String(b).toLowerCase();
@@ -124,7 +131,7 @@ class NovaRemoteCard extends HTMLElement {
     this._h = h;
     if (!this._c) return;
     // Registry kommt evtl. erst später: dann Gerätetyp und Player neu bestimmen
-    if (!this._built || (old?.entities !== h.entities && (platformOf(h, this._c) !== this._plat || playerOf(h, this._c) !== this._mp))) this._build();
+    if (!this._built || (old?.entities !== h.entities && (platformOf(h, this._c) !== this._plat || playerOf(h, this._c) !== this._mp)) || (this._c.volume_mode === 'slider' && !this._vp && volOf(h, this._c, this._mp))) this._build();
     else if (!hassChanged(old, h, [...this._ids, this._mp].filter(Boolean))) return;
     this._update();
   }
@@ -138,6 +145,7 @@ class NovaRemoteCard extends HTMLElement {
     this._plat = platformOf(this._h, c);
     this._mp = playerOf(this._h, c);
     this._stops = new Set();
+    this._vp = c.volume_mode === 'slider' ? volOf(this._h, c, this._mp) : null;
     const k = id => this._has(id) ? `<div class="cb" data-k="${id}" title="${KEYLABELS[id]}"><ha-icon icon="${KEYICONS[id]}"></ha-icon></div>` : '';
     const row = ids => { const h = ids.map(k).join(''); return h ? `<div class="row3">${h}</div>` : ''; };
     const pad = c.layout === 'touchpad'
@@ -150,7 +158,7 @@ class NovaRemoteCard extends HTMLElement {
 ${pad}
 ${c.show_nav !== false ? row(['back', 'home', 'menu']) : ''}
 ${c.show_media !== false ? row(['rewind', 'play_pause', 'forward']) : ''}
-${c.show_volume !== false ? row(['vol_down', 'mute', 'vol_up']) : ''}
+${c.show_volume === false ? '' : this._vp ? `<div class="vol">${k('mute')}<input type="range" min="0" max="100" step="1" aria-label="Lautstärke"><span class="v"></span></div>` : row(['vol_down', 'mute', 'vol_up'])}
 ${c.show_channels ? row(['ch_down', 'input', 'ch_up']) : ''}
 ${btns.length ? '<div class="pills grid btns"></div>' : ''}
 ${this._apps.length ? '<div class="pills grid apps"></div>' : ''}</div>`;
@@ -159,6 +167,14 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ''}</div>`;
     press(this._e.ic, {tap: () => runAction(this, {entity: c.entity, tap_action: c.tap_action}, 'tap', true), hold: () => runAction(this, {entity: c.entity, hold_action: c.hold_action}, 'hold')});
     if (this._e.pw) press(this._e.pw, {tap: () => this._key('power')});
     r.querySelectorAll('[data-k]').forEach(el => this._rep(el, el.dataset.k));
+    const vol = q('.vol input');
+    if (vol) {
+      const show = () => { vol.style.setProperty('--p', `${vol.value}%`); q('.vol .v').textContent = `${vol.value} %`; };
+      vol.addEventListener('pointerdown', () => { this._drag = true; });
+      vol.addEventListener('input', () => { this._drag = true; show(); });
+      vol.addEventListener('change', () => { this._drag = false; show(); this._h.callService('media_player', 'volume_set', {entity_id: this._vp, volume_level: +vol.value / 100}); });
+      this._e.vol = vol; this._e.vv = q('.vol .v'); this._e.mu = q('.vol [data-k=mute]');
+    }
     const tp = q('.tp');
     if (tp) this._touch(tp);
     const pill = (o, fn) => {
@@ -275,6 +291,14 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ''}</div>`;
     e.ic.parentElement.classList.toggle('on', !off);
     e.pw?.classList.toggle('on', !off);
     this._pills.forEach((el, i) => el.classList.toggle('on', !off && this._apps[i] === hit));
+    const va = this._vp && h.states[this._vp]?.attributes;
+    if (e.vol && va) {
+      if (!this._drag && va.volume_level != null) {
+        const v = Math.round(va.volume_level * 100);
+        e.vol.value = v; e.vol.style.setProperty('--p', `${v}%`); e.vv.textContent = `${v} %`;
+      }
+      e.mu?.classList.toggle('on', !!va.is_volume_muted);
+    }
   }
 }
 define('remote-card', NovaRemoteCard, {name: 'Nova Fernbedienung', description: 'Fernbedienung für Fernseher und Streaming-Boxen (Android TV/Google TV, Fire TV, Philips, Apple TV, Roku, Samsung): Steuerkreuz oder Touchpad, Medien, Lautstärke und Apps.', documentationURL: docUrl('nova-fernbedienung')});
@@ -289,6 +313,7 @@ const RCTRL = [
   sel('layout', [['dpad', 'Steuerkreuz'], ['touchpad', 'Touchpad (wischen)']]),
   g2({name: 'show_power', selector: {boolean: {}}}, {name: 'show_nav', selector: {boolean: {}}}),
   g2({name: 'show_media', selector: {boolean: {}}}, {name: 'show_volume', selector: {boolean: {}}}),
+  sel('volume_mode', [['buttons', 'Tasten (− / +)'], ['slider', 'Schieberegler']]),
   {name: 'show_channels', selector: {boolean: {}}},
   {name: 'volume_entity', selector: {entity: {domain: 'media_player'}}},
 ];
@@ -303,12 +328,13 @@ const RAPP = [
 const RBTN = [g2({name: 'name', selector: T}, {name: 'icon', selector: I}), {name: 'command', selector: T}, {name: 'tap_action', selector: A}];
 const RKEYS = [g2(...KEYS.map(k => ({name: k, selector: T})))];
 const RLABELS = {...BASE_LABELS, ...KEYLABELS, entity: 'Fernbedienung (remote.* oder ADB-Player)', platform: 'Gerätetyp', media_player: 'Media-Player (optional)',
-  layout: 'Bedienfeld', show_power: 'Ein/Aus-Button', show_nav: 'Zurück / Home / Menü', show_media: 'Medientasten', show_volume: 'Lautstärke',
+  layout: 'Bedienfeld', show_power: 'Ein/Aus-Button', show_nav: 'Zurück / Home / Menü', show_media: 'Medientasten', show_volume: 'Lautstärke', volume_mode: 'Lautstärke als',
   show_channels: 'Kanäle und Eingang', volume_entity: 'Lautstärke über anderen Player (optional)', preset: 'Vorlage', app: 'App-Link oder Quelle', package: 'Paketname',
   command: 'Befehl', tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken'};
 const RHELPERS = {
   platform: 'Bestimmt die Tastenbefehle. Automatisch = nach Integration der Entität',
   media_player: 'Leer = automatisch (Player am selben Gerät). Liefert Zustand und laufende App',
+  volume_mode: 'Schieberegler braucht einen Player mit einstellbarer Lautstärke (hier oder unter „Lautstärke über anderen Player“), sonst bleibt es bei den Tasten',
   volume_entity: 'z. B. Fernseher oder AV-Receiver, wenn die Box die Lautstärke nicht selbst regelt',
   app: 'Android TV: Link, mit dem die App startet (z. B. https://www.youtube.com). Andere Geräte: Name der Quelle. Leer = aus der Vorlage',
   package: 'Erkennt die laufende App (z. B. com.netflix.ninja). Ohne Link wird damit gestartet – das lehnen manche Boxen ab',
