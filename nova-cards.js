@@ -1,5 +1,5 @@
 /* Nova Cards v0.10.1b1 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips, Fernbedienung – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
   var __defProp = Object.defineProperty;
@@ -8228,6 +8228,542 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   __publicField(NovaApplianceCardEditor, "helpers", GHELPERS);
   __publicField(NovaApplianceCardEditor, "openSections", ["general"]);
   define("geraet-card-editor", NovaApplianceCardEditor);
+
+  // src/remote.js
+  var RCSS = `
+.g.rc{gap:14px;align-items:stretch}
+.rc .ic img{border-radius:6px}
+.hb.on{background:var(--nv-accent);color:var(--nv-accent-fg)}
+.cb{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .15s,transform .15s}
+.cb ha-icon{--mdc-icon-size:22px}
+.cb:active,.cb.hit{transform:scale(.9);background:color-mix(in srgb,var(--nv-active) 40%,var(--nv-chip))}
+.row3{display:flex;justify-content:space-around;align-items:center;gap:10px}
+.pad{position:relative;width:min(230px,72cqw);aspect-ratio:1;margin:2px auto;border-radius:50%;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 18px rgba(0,0,0,.18)}
+.pad .k{position:absolute;width:32%;height:32%;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background-color .15s,transform .15s}
+.pad .k ha-icon{--mdc-icon-size:30px;opacity:.85}
+.pad .k:active,.pad .k.hit{background:rgba(255,255,255,.12)}
+.pad .up{top:2%;left:34%}.pad .down{bottom:2%;left:34%}.pad .left{left:2%;top:34%}.pad .right{right:2%;top:34%}
+.pad .ok{left:29%;top:29%;width:42%;height:42%;background:var(--nv-accent);color:var(--nv-accent-fg);font-weight:700;font-size:15px;letter-spacing:.04em;box-shadow:0 0 18px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.pad .ok:active,.pad .ok.hit{transform:scale(.93);background:var(--nv-accent)}
+.tp{position:relative;height:min(230px,62cqw);border-radius:22px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
+.tp>ha-icon{--mdc-icon-size:42px;opacity:.25;transition:opacity .2s,transform .2s}
+.tp.hit>ha-icon{opacity:.6;transform:scale(1.15)}
+.tp .ok{position:absolute;inset:0;background:radial-gradient(circle,color-mix(in srgb,var(--nv-accent) 35%,transparent),transparent 60%);opacity:0;transition:opacity .25s;pointer-events:none}
+.tp.ok-hit .ok{opacity:1}
+.apps .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.rc.off .pad,.rc.off .tp{opacity:.55}
+@container (max-width:280px){.cb{width:40px;height:40px}}`;
+  var KEYS = ["up", "down", "left", "right", "ok", "back", "home", "menu", "play_pause", "rewind", "forward", "vol_down", "mute", "vol_up", "ch_down", "input", "ch_up", "power"];
+  var KEYLABELS = {
+    up: "Hoch",
+    down: "Runter",
+    left: "Links",
+    right: "Rechts",
+    ok: "OK",
+    back: "Zurück",
+    home: "Home",
+    menu: "Menü",
+    play_pause: "Play/Pause",
+    rewind: "Zurückspulen",
+    forward: "Vorspulen",
+    vol_down: "Leiser",
+    mute: "Stumm",
+    vol_up: "Lauter",
+    ch_down: "Kanal runter",
+    input: "Eingang",
+    ch_up: "Kanal hoch",
+    power: "Ein/Aus"
+  };
+  var KEYICONS = {
+    up: "mdi:chevron-up",
+    down: "mdi:chevron-down",
+    left: "mdi:chevron-left",
+    right: "mdi:chevron-right",
+    back: "mdi:arrow-left",
+    home: "mdi:home-outline",
+    menu: "mdi:menu",
+    play_pause: "mdi:play-pause",
+    rewind: "mdi:rewind",
+    forward: "mdi:fast-forward",
+    vol_down: "mdi:volume-minus",
+    mute: "mdi:volume-off",
+    vol_up: "mdi:volume-plus",
+    ch_down: "mdi:minus",
+    input: "mdi:import",
+    ch_up: "mdi:plus"
+  };
+  var REPEAT = /* @__PURE__ */ new Set(["up", "down", "left", "right", "vol_down", "vol_up", "ch_down", "ch_up", "rewind", "forward"]);
+  var KEYMAPS = {
+    androidtv_remote: {
+      up: "DPAD_UP",
+      down: "DPAD_DOWN",
+      left: "DPAD_LEFT",
+      right: "DPAD_RIGHT",
+      ok: "DPAD_CENTER",
+      back: "BACK",
+      home: "HOME",
+      menu: "MENU",
+      play_pause: "MEDIA_PLAY_PAUSE",
+      rewind: "MEDIA_REWIND",
+      forward: "MEDIA_FAST_FORWARD",
+      vol_up: "VOLUME_UP",
+      vol_down: "VOLUME_DOWN",
+      mute: "VOLUME_MUTE",
+      ch_up: "CHANNEL_UP",
+      ch_down: "CHANNEL_DOWN",
+      input: "TV_INPUT"
+    },
+    androidtv: {
+      up: "UP",
+      down: "DOWN",
+      left: "LEFT",
+      right: "RIGHT",
+      ok: "CENTER",
+      back: "BACK",
+      home: "HOME",
+      menu: "MENU",
+      play_pause: "input keyevent 85",
+      rewind: "input keyevent 89",
+      forward: "input keyevent 90",
+      vol_up: "input keyevent 24",
+      vol_down: "input keyevent 25",
+      mute: "input keyevent 164",
+      ch_up: "input keyevent 166",
+      ch_down: "input keyevent 167",
+      input: "input keyevent 178"
+    },
+    philips_js: {
+      up: "CursorUp",
+      down: "CursorDown",
+      left: "CursorLeft",
+      right: "CursorRight",
+      ok: "Confirm",
+      back: "Back",
+      home: "Home",
+      menu: "Options",
+      play_pause: "PlayPause",
+      rewind: "Rewind",
+      forward: "FastForward",
+      vol_up: "VolumeUp",
+      vol_down: "VolumeDown",
+      mute: "Mute",
+      ch_up: "ChannelStepUp",
+      ch_down: "ChannelStepDown",
+      input: "Source"
+    },
+    apple_tv: {
+      up: "up",
+      down: "down",
+      left: "left",
+      right: "right",
+      ok: "select",
+      back: "menu",
+      home: "home",
+      menu: "top_menu",
+      play_pause: "play_pause",
+      rewind: "skip_backward",
+      forward: "skip_forward",
+      vol_up: "volume_up",
+      vol_down: "volume_down"
+    },
+    roku: {
+      up: "up",
+      down: "down",
+      left: "left",
+      right: "right",
+      ok: "select",
+      back: "back",
+      home: "home",
+      menu: "info",
+      play_pause: "play",
+      rewind: "reverse",
+      forward: "forward",
+      vol_up: "volume_up",
+      vol_down: "volume_down",
+      mute: "volume_mute",
+      ch_up: "channel_up",
+      ch_down: "channel_down"
+    },
+    samsungtv: {
+      up: "KEY_UP",
+      down: "KEY_DOWN",
+      left: "KEY_LEFT",
+      right: "KEY_RIGHT",
+      ok: "KEY_ENTER",
+      back: "KEY_RETURN",
+      home: "KEY_HOME",
+      menu: "KEY_MENU",
+      play_pause: "KEY_PLAY",
+      rewind: "KEY_REWIND",
+      forward: "KEY_FF",
+      vol_up: "KEY_VOLUP",
+      vol_down: "KEY_VOLDOWN",
+      mute: "KEY_MUTE",
+      ch_up: "KEY_CHUP",
+      ch_down: "KEY_CHDOWN",
+      input: "KEY_SOURCE"
+    }
+  };
+  var PLATFORMS = [
+    ["androidtv_remote", "Android TV / Google TV (Android TV Remote)"],
+    ["androidtv", "Fire TV / Android TV (ADB)"],
+    ["philips_js", "Philips TV"],
+    ["apple_tv", "Apple TV"],
+    ["roku", "Roku"],
+    ["samsungtv", "Samsung TV"]
+  ];
+  var APPS = {
+    netflix: ["Netflix", "mdi:netflix", "com.netflix.ninja"],
+    youtube: ["YouTube", "mdi:youtube", "com.google.android.youtube.tv"],
+    prime: ["Prime Video", "mdi:filmstrip-box-multiple", "com.amazon.amazonvideo.livingroom"],
+    disney: ["Disney+", "mdi:castle", "com.disney.disneyplus"],
+    appletv: ["Apple TV", "mdi:apple", "com.apple.atve.androidtv.appletv"],
+    spotify: ["Spotify", "mdi:spotify", "com.spotify.tv.android"],
+    ytmusic: ["YouTube Music", "mdi:music-circle", "com.google.android.youtube.tvmusic"],
+    plex: ["Plex", "mdi:plex", "com.plexapp.android"],
+    kodi: ["Kodi", "mdi:kodi", "org.xbmc.kodi"],
+    twitch: ["Twitch", "mdi:twitch", "tv.twitch.android.app"],
+    dazn: ["DAZN", "mdi:soccer", "com.dazn"],
+    playstore: ["Play Store", "mdi:google-play", "com.android.vending"],
+    settings: ["Einstellungen", "mdi:cog-outline", "com.android.tv.settings"]
+  };
+  var appOf = (a) => {
+    const p = APPS[a.preset] || [];
+    return { ...a, name: a.name ?? p[0], icon: a.icon || p[1] || "mdi:application-outline", app: a.app || p[2] };
+  };
+  var RDEF = { layout: "dpad", show_power: true, show_nav: true, show_media: true, show_volume: true, show_channels: false };
+  var platformOf = (h, c) => c.platform && c.platform !== "auto" ? c.platform : h?.entities?.[c.entity]?.platform in KEYMAPS ? h.entities[c.entity].platform : dom(c.entity) === "media_player" ? "androidtv" : "androidtv_remote";
+  var playerOf = (h, c) => {
+    if (c.media_player) return c.media_player;
+    if (dom(c.entity) === "media_player") return c.entity;
+    const dev = h?.entities?.[c.entity]?.device_id;
+    return dev && Object.values(h.entities).find((e) => e.device_id === dev && dom(e.entity_id) === "media_player" && h.states[e.entity_id])?.entity_id || null;
+  };
+  var currentApp = (h, c, mp) => {
+    const r = h.states[c.entity]?.attributes || {}, m = mp && h.states[mp]?.attributes || {};
+    return r.current_activity || m.app_id || m.app_name || m.source || null;
+  };
+  var same = (a, b) => !!a && !!b && String(a).toLowerCase() === String(b).toLowerCase();
+  var NovaRemoteCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("remote-card-editor"));
+    }
+    static getStubConfig(h) {
+      const ids = Object.keys(h.states).filter((i) => dom(i) === "remote");
+      const id = ids.find((i) => h.entities?.[i]?.platform === "androidtv_remote" && h.states[i].state === "on") || ids.find((i) => h.entities?.[i]?.platform === "androidtv_remote") || ids[0] || Object.keys(h.states).find((i) => h.entities?.[i]?.platform === "androidtv") || "remote.";
+      return { entity: id, apps: [{ preset: "netflix" }, { preset: "youtube" }, { preset: "prime" }, { preset: "disney" }] };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (!["remote", "media_player"].includes(dom(c.entity))) throw new Error("entity muss eine remote.* oder media_player.* Entität sein");
+      this._c = { ...RDEF, ...c };
+      this._ids = entityIds(this._c);
+      this._built = false;
+      if (this._h) {
+        this._build();
+        this._update();
+      }
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._built || old?.entities !== h.entities && (platformOf(h, this._c) !== this._plat || playerOf(h, this._c) !== this._mp)) this._build();
+      else if (!hassChanged(old, h, [...this._ids, this._mp].filter(Boolean))) return;
+      this._update();
+    }
+    getCardSize() {
+      return 7;
+    }
+    getGridOptions() {
+      return { columns: 6, rows: "auto", min_columns: 4 };
+    }
+    disconnectedCallback() {
+      this._stops?.forEach((f) => f());
+    }
+    _build() {
+      this._built = true;
+      this._stops?.forEach((f) => f());
+      const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      this._plat = platformOf(this._h, c);
+      this._mp = playerOf(this._h, c);
+      this._stops = /* @__PURE__ */ new Set();
+      const k = (id) => this._has(id) ? `<div class="cb" data-k="${id}" title="${KEYLABELS[id]}"><ha-icon icon="${KEYICONS[id]}"></ha-icon></div>` : "";
+      const row = (ids) => {
+        const h = ids.map(k).join("");
+        return h ? `<div class="row3">${h}</div>` : "";
+      };
+      const pad = c.layout === "touchpad" ? '<div class="tp" title="Wischen = Richtung, Tippen = OK"><span class="ok"></span><ha-icon icon="mdi:gesture-swipe"></ha-icon></div>' : `<div class="pad">${["up", "left", "right", "down"].map((x) => `<div class="k ${x}" data-k="${x}" title="${KEYLABELS[x]}"><ha-icon icon="${KEYICONS[x]}"></ha-icon></div>`).join("")}<div class="k ok" data-k="ok" title="OK">OK</div></div>`;
+      this._apps = [].concat(c.apps || []).map(appOf);
+      const btns = [].concat(c.buttons || []);
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${RCSS}</style><div class="g rc">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${c.show_power !== false ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
+${pad}
+${c.show_nav !== false ? row(["back", "home", "menu"]) : ""}
+${c.show_media !== false ? row(["rewind", "play_pause", "forward"]) : ""}
+${c.show_volume !== false ? row(["vol_down", "mute", "vol_up"]) : ""}
+${c.show_channels ? row(["ch_down", "input", "ch_up"]) : ""}
+${btns.length ? '<div class="pills grid btns"></div>' : ""}
+${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = { g: q(".g"), ic: q(".hd .ic"), name: q(".hd b"), sub: q(".hd small"), pw: q(".pw") };
+      press(this._e.ic, { tap: () => runAction(this, { entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => runAction(this, { entity: c.entity, hold_action: c.hold_action }, "hold") });
+      if (this._e.pw) press(this._e.pw, { tap: () => this._key("power") });
+      r.querySelectorAll("[data-k]").forEach((el2) => this._rep(el2, el2.dataset.k));
+      const tp = q(".tp");
+      if (tp) this._touch(tp);
+      const pill = (o, fn) => {
+        const el2 = document.createElement("div");
+        el2.className = "pill";
+        el2.innerHTML = '<span class="i"></span><span class="t"></span>';
+        setIcon(el2.firstChild, o.icon || "mdi:gesture-tap-button");
+        el2.lastChild.textContent = o.name ?? "";
+        press(el2, { tap: fn });
+        return el2;
+      };
+      q(".btns")?.append(...btns.map((b) => pill(b, () => this._button(b))));
+      this._pills = this._apps.map((a) => pill(a, () => this._launch(a)));
+      q(".apps")?.append(...this._pills);
+    }
+    // Befehl einer Taste: eigene Belegung vor Standard der Integration
+    _cmd(k) {
+      return this._c.keys?.[k] || KEYMAPS[this._plat]?.[k];
+    }
+    _has(k) {
+      return !!this._cmd(k) || this._c.volume_entity && ["vol_up", "vol_down", "mute"].includes(k);
+    }
+    // Taste sofort beim Drücken senden, beim Festhalten wiederholen
+    _rep(el2, k) {
+      let t, iv;
+      const stop = () => {
+        clearTimeout(t);
+        clearInterval(iv);
+        t = iv = null;
+        el2.classList.remove("hit");
+      };
+      this._stops.add(stop);
+      el2.tabIndex = 0;
+      el2.setAttribute("role", "button");
+      el2.classList.add("tap");
+      el2.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        stop();
+        el2.classList.add("hit");
+        this._key(k);
+        if (REPEAT.has(k)) t = setTimeout(() => {
+          iv = setInterval(() => this._key(k, true), 160);
+        }, 450);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach((x) => el2.addEventListener(x, stop));
+      el2.addEventListener("contextmenu", (e) => e.preventDefault());
+      el2.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this._key(k);
+        }
+      });
+    }
+    // Touchpad: Wischen = Richtung (alle 40 px ein Schritt), Tippen = OK
+    _touch(tp) {
+      let sx = null, sy, moved, ft;
+      const flash = (cls) => {
+        tp.classList.add(cls);
+        clearTimeout(ft);
+        ft = setTimeout(() => tp.classList.remove("hit", "ok-hit"), 180);
+      };
+      this._stops.add(() => clearTimeout(ft));
+      tp.tabIndex = 0;
+      tp.addEventListener("pointerdown", (e) => {
+        sx = e.clientX;
+        sy = e.clientY;
+        moved = false;
+        tp.setPointerCapture?.(e.pointerId);
+      });
+      tp.addEventListener("pointermove", (e) => {
+        if (sx == null) return;
+        const dx = e.clientX - sx, dy = e.clientY - sy;
+        if (Math.hypot(dx, dy) < 40) return;
+        this._key(Math.abs(dx) > Math.abs(dy) ? dx > 0 ? "right" : "left" : dy > 0 ? "down" : "up");
+        flash("hit");
+        sx = e.clientX;
+        sy = e.clientY;
+        moved = true;
+      });
+      tp.addEventListener("pointerup", () => {
+        if (sx != null && !moved) {
+          this._key("ok");
+          flash("ok-hit");
+        }
+        sx = null;
+      });
+      tp.addEventListener("pointercancel", () => {
+        sx = null;
+      });
+      tp.addEventListener("keydown", (e) => {
+        const k = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Enter: "ok", " ": "ok" }[e.key];
+        if (k) {
+          e.preventDefault();
+          this._key(k);
+        }
+      });
+    }
+    _send(cmd) {
+      const c = this._c, cmds = list(cmd);
+      if (!cmds.length) return;
+      if (this._plat === "androidtv" && dom(c.entity) === "media_player") cmds.forEach((x) => this._h.callService("androidtv", "adb_command", { entity_id: c.entity, command: x }));
+      else this._h.callService("remote", "send_command", { entity_id: c.entity, command: cmds });
+    }
+    _key(k, quiet) {
+      const c = this._c, h = this._h;
+      if (!h) return;
+      if (!quiet) fire(this, "haptic", "light");
+      if (k === "power" && !c.keys?.power) {
+        const s = h.states[c.entity], on = s && !["off", "standby", "unavailable", "unknown"].includes(s.state);
+        return h.callService(dom(c.entity), on ? "turn_off" : "turn_on", { entity_id: c.entity });
+      }
+      const v = c.volume_entity;
+      if (v && !c.keys?.[k] && ["vol_up", "vol_down", "mute"].includes(k)) {
+        return k === "mute" ? h.callService("media_player", "volume_mute", { entity_id: v, is_volume_muted: !h.states[v]?.attributes.is_volume_muted }) : h.callService("media_player", k === "vol_up" ? "volume_up" : "volume_down", { entity_id: v });
+      }
+      this._send(this._cmd(k));
+    }
+    _button(b) {
+      fire(this, "haptic", "light");
+      if (b.tap_action?.action && b.tap_action.action !== "default") return runAction(this, { tap_action: b.tap_action }, "tap");
+      this._send(b.command);
+    }
+    // App öffnen: Android TV Remote über Paketname/Deep-Link, sonst über die Quelle des Players
+    _launch(a) {
+      const c = this._c, h = this._h;
+      fire(this, "haptic", "light");
+      if (a.tap_action?.action && a.tap_action.action !== "default") return runAction(this, { tap_action: a.tap_action }, "tap");
+      const id = a.app || a.name;
+      if (!id) return;
+      if (dom(c.entity) === "remote" && (this._plat === "androidtv_remote" || !this._mp)) return h.callService("remote", "turn_on", { entity_id: c.entity, activity: id });
+      h.callService("media_player", "select_source", { entity_id: this._mp || c.entity, source: id });
+    }
+    _update() {
+      const h = this._h, c = this._c, e = this._e;
+      if (!h || !e) return;
+      const s = h.states[c.entity], m = this._mp && h.states[this._mp];
+      const na = !s || s.state === "unavailable";
+      const off2 = na || ["off", "standby"].includes(s.state) || m && ["off", "standby"].includes(m.state);
+      this.classList.toggle("nv-na", na);
+      e.g.classList.toggle("na", na);
+      e.g.classList.toggle("off", !!off2);
+      const cur2 = currentApp(h, c, this._mp), hit = this._apps.find((a) => same(a.app, cur2) || same(a.name, cur2) || same(a.name, m?.attributes.app_name));
+      e.name.textContent = c.name ?? s?.attributes.friendly_name ?? m?.attributes.friendly_name ?? c.entity;
+      e.sub.textContent = !s ? "nicht gefunden" : off2 ? fmtState(h, m && !na ? m : s) : hit?.name || m?.attributes.app_name || cur2 || fmtState(h, s);
+      setIcon(e.ic, c.icon || !off2 && hit?.icon || (m?.attributes.device_class === "tv" ? "mdi:television" : "mdi:remote-tv"));
+      e.ic.parentElement.classList.toggle("on", !off2);
+      e.pw?.classList.toggle("on", !off2);
+      this._pills.forEach((el2, i) => el2.classList.toggle("on", !off2 && this._apps[i] === hit));
+    }
+  };
+  define("remote-card", NovaRemoteCard, { name: "Nova Fernbedienung", description: "Fernbedienung für Fernseher und Streaming-Boxen (Android TV/Google TV, Fire TV, Philips, Apple TV, Roku, Samsung): Steuerkreuz oder Touchpad, Medien, Lautstärke und Apps.", documentationURL: docUrl("nova-fernbedienung") });
+  var RGEN = [
+    { name: "entity", required: true, selector: { entity: { domain: ["remote", "media_player"] } } },
+    g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
+    g2(sel("platform", [["auto", "Automatisch"], ...PLATFORMS]), { name: "media_player", selector: { entity: { domain: "media_player" } } })
+  ];
+  var RCTRL = [
+    sel("layout", [["dpad", "Steuerkreuz"], ["touchpad", "Touchpad (wischen)"]]),
+    g2({ name: "show_power", selector: { boolean: {} } }, { name: "show_nav", selector: { boolean: {} } }),
+    g2({ name: "show_media", selector: { boolean: {} } }, { name: "show_volume", selector: { boolean: {} } }),
+    { name: "show_channels", selector: { boolean: {} } },
+    { name: "volume_entity", selector: { entity: { domain: "media_player" } } }
+  ];
+  var RACT = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
+  var RAPP = [
+    sel("preset", [["", "Eigene App"], ...Object.entries(APPS).map(([k, [n]]) => [k, n])]),
+    g2({ name: "name", selector: T }, { name: "icon", selector: I }),
+    { name: "app", selector: T },
+    { name: "tap_action", selector: A }
+  ];
+  var RBTN = [g2({ name: "name", selector: T }, { name: "icon", selector: I }), { name: "command", selector: T }, { name: "tap_action", selector: A }];
+  var RKEYS = [g2(...KEYS.map((k) => ({ name: k, selector: T })))];
+  var RLABELS = {
+    ...BASE_LABELS,
+    ...KEYLABELS,
+    entity: "Fernbedienung (remote.* oder ADB-Player)",
+    platform: "Gerätetyp",
+    media_player: "Media-Player (optional)",
+    layout: "Bedienfeld",
+    show_power: "Ein/Aus-Button",
+    show_nav: "Zurück / Home / Menü",
+    show_media: "Medientasten",
+    show_volume: "Lautstärke",
+    show_channels: "Kanäle und Eingang",
+    volume_entity: "Lautstärke über anderen Player (optional)",
+    preset: "Vorlage",
+    app: "App (Paketname, Deep-Link oder Quelle)",
+    command: "Befehl",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken"
+  };
+  var RHELPERS = {
+    platform: "Bestimmt die Tastenbefehle. Automatisch = nach Integration der Entität",
+    media_player: "Leer = automatisch (Player am selben Gerät). Liefert Zustand und laufende App",
+    volume_entity: "z. B. Fernseher oder AV-Receiver, wenn die Box die Lautstärke nicht selbst regelt",
+    app: "Android TV: Paketname (com.netflix.ninja) oder Deep-Link (https://www.youtube.com). Andere Geräte: Name der Quelle. Leer = aus der Vorlage",
+    command: "Befehl für remote.send_command, mehrere mit Komma (z. B. DPAD_DOWN, DPAD_CENTER)",
+    tap_action: "Optional statt App bzw. Befehl, z. B. ein Skript"
+  };
+  var NovaRemoteCardEditor = class extends NovaEditorBase {
+    _ilabel(it, j, m) {
+      return `${j + 1}. ${it.name || APPS[it.preset]?.[0] || it.app || it.command || `Neu: ${m.item}`}`;
+    }
+    _build() {
+      const r = this.shadowRoot, c0 = this._config;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), strip2 = (c) => {
+        Object.entries(RDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
+        if (c.platform === "auto") delete c.platform;
+        return c;
+      };
+      const data = { ...RDEF, platform: "auto", ...c0 };
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip2(merge(this._config, names(schema), v))));
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(RGEN))),
+        this._section("controls", "mdi:remote-tv", "Bedienung", (b) => b.append(form(RCTRL))),
+        this._section("apps", "mdi:apps", "Apps", (b) => this._appList(b)),
+        this._section("buttons", "mdi:gesture-tap-button", "Eigene Tasten", (b) => this._itemList(b, "buttons", RBTN, { item: "Taste", icon: "mdi:gesture-tap-button" }, "Taste hinzufügen")),
+        this._section("keys", "mdi:keyboard-outline", "Tastenbelegung", (b) => this._keys(b)),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(RACT)))
+      );
+    }
+    _appList(b) {
+      const h = this._hass, c = this._config, cur2 = h && c.entity && currentApp(h, c, playerOf(h, c));
+      const apps = this._items("apps").map(appOf);
+      if (cur2 && !apps.some((a) => same(a.app, cur2) || same(a.name, cur2))) {
+        b.append(this._hint(`Gerade läuft: ${cur2}`), this._add("Laufende App übernehmen", () => {
+          const preset = Object.keys(APPS).find((k) => same(APPS[k][2], cur2) || same(APPS[k][0], cur2));
+          const n = [...this._items("apps"), preset ? { preset } : { name: cur2.split(".").pop(), app: cur2 }];
+          this._open = new Set([...this._open].filter((x) => x.startsWith("sec.")).concat(`apps.${n.length - 1}`));
+          this._setItems("apps", n);
+          this._rebuild();
+        }));
+      }
+      this._itemList(b, "apps", RAPP, { item: "App", icon: "mdi:application-outline" }, "App hinzufügen", (it) => ({ preset: "", ...it }));
+    }
+    // Eigene Tastenbelegung: leer = Standard der Integration (steht als Hilfetext darunter)
+    _keys(b) {
+      const plat = platformOf(this._hass, this._config), map = KEYMAPS[plat] || {};
+      b.append(this._hint("Nur ausfüllen, wenn eine Taste anders belegt sein soll. Mehrere Befehle mit Komma."));
+      const f = this._form(RKEYS, { ...this._config.keys }, (v) => {
+        const keys = Object.fromEntries(KEYS.filter((k) => v[k]).map((k) => [k, v[k]])), c = { ...this._config };
+        if (Object.keys(keys).length) c.keys = keys;
+        else delete c.keys;
+        this._emit(c);
+      });
+      f.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
+      b.append(f);
+    }
+  };
+  __publicField(NovaRemoteCardEditor, "labels", RLABELS);
+  __publicField(NovaRemoteCardEditor, "helpers", RHELPERS);
+  __publicField(NovaRemoteCardEditor, "openSections", ["general"]);
+  define("remote-card-editor", NovaRemoteCardEditor);
 
   // src/index.js
   console.info(`%c NOVA-CARDS %c v${"0.10.1b1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");

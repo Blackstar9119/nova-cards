@@ -143,6 +143,15 @@ pro Chip ein.
 
 <!-- Screenshot: Chips Card -->
 
+### Nova Fernbedienung
+Eine Fernbedienung für Fernseher und Streaming-Boxen: Steuerkreuz oder Touchpad, Zurück/Home/Menü, Medientasten,
+Lautstärke und Ein/Aus, dazu App-Kacheln, die die App direkt öffnen und leuchten, solange sie läuft. Erkennt Android TV /
+Google TV (z. B. Xiaomi TV Box, Chromecast), Fire TV per ADB, Philips, Apple TV, Roku und Samsung automatisch.
+
+➜ [Alle Optionen der Fernbedienung](docs/remote-card.md)
+
+<!-- Screenshot: Fernbedienung -->
+
 ---
 
 ## Lizenz
