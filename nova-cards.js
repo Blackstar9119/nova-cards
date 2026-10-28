@@ -1,4 +1,4 @@
-/* Nova Cards v0.10.1b1 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.10.1b3 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
@@ -1919,6 +1919,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       window.addEventListener("location-changed", this._loc);
       window.addEventListener("popstate", this._loc);
       window.addEventListener("hashchange", this._loc);
+      this._update();
     }
     disconnectedCallback() {
       window.removeEventListener("location-changed", this._loc);
@@ -1992,15 +1993,24 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     _path(it) {
       return it.tap_action?.action === "navigate" ? it.tap_action.navigation_path : it.navigation_path;
     }
+    // Exakter Pfadvergleich: ohne Query/Hash, Schrägstrich am Ende egal
+    _norm(p) {
+      p = String(p || "").split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+      try {
+        return decodeURI(p);
+      } catch {
+        return p;
+      }
+    }
     _update() {
       if (!this._btns || !this._h) return;
-      const h = this._h;
+      const h = this._h, here = this._norm(location.pathname);
       this._items.forEach((it, i) => {
         const d = this._btns[i];
         if (!d) return;
         const p = this._path(it);
         d.classList.toggle("act", i === this._cur || !!it.popup_hash && curHash() === cleanHash(it.popup_hash));
-        d.classList.toggle("here", !!p && location.pathname === p);
+        d.classList.toggle("here", !!p && this._norm(p) === here);
         let n = 0, dot = false;
         if (it.badge_count_of) n = countOn(h, it.badge_count_of, it.badge_exclude);
         else if (it.badge) dot = isOn(h.states[it.badge]);
@@ -8230,5 +8240,5 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   define("geraet-card-editor", NovaApplianceCardEditor);
 
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.10.1b1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.10.1b3"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();

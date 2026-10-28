@@ -146,6 +146,8 @@ class NovaDockCard extends HTMLElement {
     window.addEventListener('location-changed', this._loc);
     window.addEventListener('popstate', this._loc);
     window.addEventListener('hashchange', this._loc);
+    // HA hängt zwischengespeicherte Ansichten wieder ein – Markierung dann neu berechnen
+    this._update();
   }
   disconnectedCallback() {
     window.removeEventListener('location-changed', this._loc);
@@ -194,15 +196,20 @@ class NovaDockCard extends HTMLElement {
   }
 
   _path(it) { return it.tap_action?.action === 'navigate' ? it.tap_action.navigation_path : it.navigation_path; }
+  // Exakter Pfadvergleich: ohne Query/Hash, Schrägstrich am Ende egal
+  _norm(p) {
+    p = String(p || '').split(/[?#]/)[0].replace(/\/+$/, '') || '/';
+    try { return decodeURI(p); } catch { return p; }
+  }
 
   _update() {
     if (!this._btns || !this._h) return;
-    const h = this._h;
+    const h = this._h, here = this._norm(location.pathname);
     this._items.forEach((it, i) => {
       const d = this._btns[i]; if (!d) return;
       const p = this._path(it);
       d.classList.toggle('act', i === this._cur || (!!it.popup_hash && curHash() === cleanHash(it.popup_hash)));
-      d.classList.toggle('here', !!p && location.pathname === p);
+      d.classList.toggle('here', !!p && this._norm(p) === here);
       let n = 0, dot = false;
       if (it.badge_count_of) n = countOn(h, it.badge_count_of, it.badge_exclude);
       else if (it.badge) dot = isOn(h.states[it.badge]);
