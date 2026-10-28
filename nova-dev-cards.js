@@ -7340,6 +7340,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 <g clip-path="url(#w-ci)"><path class="s-refl" d="M80 78 h22 l-40 62 v-32 z"/><path class="s-refl" d="M112 78 h6 l-56 86 v-12 z"/>
 <g transform="rotate(22 100 114)"><rect class="s-gls" x="38" y="56" width="16" height="116" fill="url(#w-gs)"/></g></g>
 <path class="sh" d="M71 102 a30 30 0 0 1 17 -18"/><rect class="hdl" x="140.6" y="106" width="3.6" height="16" rx="1.8"/>`;
+  var QTILT = "M31 64 H169 L166 176.4 H34 Z M44 84 H156 L154 166 H46 Z";
   var QDOOR = "M34 40 H166 V176.4 H34 Z M50 64 H150 a4 4 0 0 1 4 4 V160 a4 4 0 0 1 -4 4 H50 a4 4 0 0 1 -4 -4 V68 a4 4 0 0 1 4 -4 Z";
   var qWine = (x) => `<path class="qgl" d="M${x - 5} 104 Q${x - 5.4} 94 ${x - 0.8} 91.5 V85.4 h1.6 V91.5 Q${x + 5.4} 94 ${x + 5} 104 Z"/><rect class="qgl" x="${x - 4.4}" y="84.4" width="8.8" height="1.2" rx=".6"/><path class="qgh" d="M${x - 3.6} 101.6 Q${x - 3.9} 96 ${x - 1.8} 93.6"/>`;
   var qTumb = (x) => `<path class="qgl" d="M${x - 4} 104 L${x - 3.2} 91 h6.4 L${x + 4} 104 Z"/><path class="qgh" d="M${x - 2.6} 102 L${x - 2} 93"/>`;
@@ -7405,31 +7406,19 @@ ${[0, 120, 240].map((a) => `<g class="pdl" transform="rotate(${a} 100 114)"><pat
     dishwasher: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("d")}
 <linearGradient id="d-pn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c212b"/><stop offset="1" stop-color="#0a0d12"/></linearGradient>
 <linearGradient id="d-bb" x1="0" y1="0" x2="1" y2="0"><stop offset=".18" stop-color="#fff" stop-opacity="0"/><stop offset=".34" stop-color="#fff" stop-opacity=".05"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#fff" stop-opacity=".03"/><stop offset=".86" stop-color="#fff" stop-opacity="0"/></linearGradient>
-<linearGradient id="d-od" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d6779"/><stop offset="1" stop-color="#2a303d"/></linearGradient>
 <radialGradient id="d-vg" cx=".5" cy=".45" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
 <radialGradient id="d-lt" cx=".5" cy="0" r="1"><stop offset="0" class="q-lc" stop-opacity=".36"/><stop offset="1" class="q-lc" stop-opacity="0"/></radialGradient>
 <pattern id="d-pf" width="3.4" height="3.4" patternUnits="userSpaceOnUse"><circle cx="1.7" cy="1.7" r=".75" fill="#000" fill-opacity=".45"/></pattern>
-<clipPath id="d-tc"><rect x="40" y="18" width="120" height="158"/></clipPath><clipPath id="d-wc"><rect x="46" y="64" width="108" height="100" rx="4"/></clipPath></defs>
-<ellipse class="s-shd" cx="100" cy="192" rx="72" ry="4.5"/><ellipse class="s-shd qshd" cx="100" cy="199" rx="76" ry="3"/>
+<clipPath id="d-tc"><rect x="40" y="18" width="120" height="158"/></clipPath><clipPath id="d-tw"><path d="M44 84 H156 L154 166 H46 Z"/></clipPath><filter id="d-bl" x="-60%" y="-120%" width="220%" height="340%"><feGaussianBlur stdDeviation="2.4"/></filter><clipPath id="d-wc"><rect x="46" y="64" width="108" height="100" rx="4"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="192" rx="72" ry="4.5"/>
 <rect class="s-body" x="34" y="14" width="132" height="175" rx="9" fill="url(#d-bd)"/><rect class="s-sheen" x="34" y="14" width="132" height="175" rx="9" fill="url(#d-sh)"/>
 <rect class="qplin" x="38" y="177" width="124" height="11" rx="1.5"/>${[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => `<rect class="qvent" x="${70 + i * 7}" y="181" width="4" height="3" rx="1"/>`).join("")}
 <g clip-path="url(#d-tc)"><rect x="40" y="18" width="120" height="158" fill="url(#d-in)"/>
 <path class="qrail" d="M44.5 20 V172 M155.5 20 V172"/><rect class="s-part" x="95" y="19" width="10" height="3.6" rx="1.2" fill="url(#d-pt)"/>
 ${QIN}<rect class="qdlt" x="40" y="18" width="120" height="158" fill="url(#d-lt)"/><rect x="40" y="18" width="120" height="158" fill="url(#d-vg)"/></g>
-<rect class="qgsk" x="40.5" y="18.5" width="119" height="157" rx="2"/>
-<g class="qdop"><path class="qodf" d="M34 176.4 H166 L172 195.4 H28 Z" fill="url(#d-od)"/><path class="qodh" d="M36 177.6 H164"/>
-<rect class="s-part" x="91" y="181" width="18" height="7" rx="1.4" fill="url(#d-pt)"/><rect class="qodd" x="93" y="183" width="9" height="3" rx=".8"/>
-<rect class="qedge" x="28" y="195.4" width="144" height="2.6" rx="1"/></g>
-<g class="qdoor"><path class="s-body" fill-rule="evenodd" fill="url(#d-bd)" d="${QDOOR}"/><path class="s-sheen" fill-rule="evenodd" fill="url(#d-sh)" d="${QDOOR}"/><path fill-rule="evenodd" fill="url(#d-bb)" d="${QDOOR}"/>
-<path class="qpan" d="M43 14 H157 a9 9 0 0 1 9 9 V40 H34 V23 a9 9 0 0 1 9 -9 Z" fill="url(#d-pn)"/><rect class="s-edge" x="40" y="15" width="120" height="1.2" rx=".6"/>
-<rect class="qsep" x="34" y="40" width="132" height=".8"/><rect class="qsh" x="34" y="40.8" width="132" height=".6"/>
-<circle class="qpw" cx="44" cy="25" r="2.2"/><path class="qpwl" d="M44 21.8 v2.4"/>
-${[52, 59, 66, 73].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width="${i % 2 ? 4 : 5}" height="1.2" rx=".6"/><rect class="qsel${i === 0 ? " on" : ""}" x="${x - 0.5}" y="31" width="6" height="1.1" rx=".55"/>`).join("")}
-${[124, 131, 138, 145].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width="${i % 2 ? 5 : 4}" height="1.2" rx=".6"/><rect class="qsel" x="${x - 0.5}" y="31" width="6" height="1.1" rx=".55"/>`).join("")}
-<circle class="led" cx="157" cy="25" r="1.4"/>
-<rect class="s-part" x="80" y="16.5" width="40" height="28" rx="2.5" fill="url(#d-pt)"/><rect class="s-scr" x="83.5" y="19.5" width="33" height="13" rx="1.6"/>
-<text class="wdt" x="102.6" y="29.2"></text><g class="lk"><rect x="86.2" y="25.2" width="4.2" height="3.4" rx=".7"/><path d="M87.2 25.2 v-1 a1.1 1.1 0 0 1 2.2 0 v1"/></g>
-<path class="s-tgl" d="M85 20 h8 l-4 12 h-5 z"/><g class="qtb"><rect x="85" y="36.5" width="6" height="1.6" rx=".8"/><rect x="94" y="36.5" width="6" height="1.6" rx=".8"/><rect x="103" y="36.5" width="6" height="1.6" rx=".8"/><rect x="112" y="36.5" width="4" height="1.6" rx=".8"/></g>
+<g class="qgap"><rect x="40" y="40" width="120" height="24" fill="url(#d-lt)" opacity=".55"/><path class="qwire" d="${Array.from({ length: 19 }, (_, i) => `M${46 + i * 6} 50 V56.6`).join(" ")}"/><rect class="qrl" x="45" y="56" width="110" height="1.4" rx=".7"/>
+<rect class="qgl" x="54" y="51.6" width="8.8" height="1.2" rx=".6"/><rect class="qgl" x="66" y="51.6" width="8.8" height="1.2" rx=".6"/><path class="qcup" d="M92 60 v-6 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v6 Z"/><path class="qcup c2" d="M106 60 v-6 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v6 Z"/><rect class="qgl" x="132" y="51.6" width="8.8" height="1.2" rx=".6"/></g>
+<g class="qfront"><path class="s-body" fill-rule="evenodd" fill="url(#d-bd)" d="${QDOOR}"/><path class="s-sheen" fill-rule="evenodd" fill="url(#d-sh)" d="${QDOOR}"/><path fill-rule="evenodd" fill="url(#d-bb)" d="${QDOOR}"/>
 <rect class="s-part" x="66" y="46" width="4" height="5" rx="1" fill="url(#d-pt)"/><rect class="s-part" x="130" y="46" width="4" height="5" rx="1" fill="url(#d-pt)"/>
 <rect class="qhdl" x="62" y="48" width="76" height="3.4" rx="1.7" fill="url(#d-cr)"/><rect class="qhdh" x="64" y="48.4" width="72" height=".8" rx=".4"/>
 <rect class="qwin" x="44.6" y="62.6" width="110.8" height="102.8" rx="5"/>
@@ -7438,6 +7427,22 @@ ${[124, 131, 138, 145].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width
 <path class="s-refl" d="M60 64 h26 l-40 70 v-38 z"/><path class="s-refl" d="M98 64 h7 l-59 100 v-12 z"/>
 <g transform="rotate(18 100 114)"><rect class="s-gls" x="20" y="40" width="18" height="150" fill="url(#d-gs)"/></g></g>
 <rect class="s-glass" x="46" y="64" width="108" height="100" rx="4" fill="url(#d-gl)"/></g>
+<g class="qtilt"><path class="qtop" d="M32.6 61.2 H167.4 L169 64 H31 Z"/><path class="s-body" fill-rule="evenodd" fill="url(#d-bd)" d="${QTILT}"/><path class="s-sheen" fill-rule="evenodd" fill="url(#d-sh)" d="${QTILT}"/><path fill-rule="evenodd" fill="url(#d-bb)" d="${QTILT}"/>
+<rect class="s-part" x="65.6" y="67" width="4" height="4.2" rx="1" fill="url(#d-pt)"/><rect class="s-part" x="130.4" y="67" width="4" height="4.2" rx="1" fill="url(#d-pt)"/>
+<rect class="qhdl" x="61.4" y="68.6" width="77.2" height="3" rx="1.5" fill="url(#d-cr)"/><rect class="qhdh" x="63.4" y="69" width="73.2" height=".7" rx=".35"/>
+<path class="qwin" d="M42.6 82.6 H157.4 L155.4 167.4 H44.6 Z"/><path class="qtint" d="M44 84 H156 L154 166 H46 Z"/>
+<g clip-path="url(#d-tw)"><path class="s-refl" d="M58 84 h26 l-38 62 v-34 z"/><path class="s-refl" d="M96 84 h7 l-57 82 v-11 z"/></g>
+<path class="s-glass" d="M44 84 H156 L154 166 H46 Z" fill="url(#d-gl)"/></g>
+<g class="qsteam" filter="url(#d-bl)"><ellipse cx="44" cy="60" rx="7" ry="3.6" style="--sx:-18px;--sy:-16px"/><ellipse cx="100" cy="61" rx="9" ry="3.4" style="--sx:4px;--sy:-9px;animation-delay:.9s"/><ellipse cx="156" cy="60" rx="7" ry="3.6" style="--sx:18px;--sy:-16px;animation-delay:1.8s"/></g>
+<g class="qpanel"><path class="qpan" d="M43 14 H157 a9 9 0 0 1 9 9 V40 H34 V23 a9 9 0 0 1 9 -9 Z" fill="url(#d-pn)"/><rect class="s-edge" x="40" y="15" width="120" height="1.2" rx=".6"/>
+<rect class="qsep" x="34" y="40" width="132" height=".8"/><rect class="qsh" x="34" y="40.8" width="132" height=".6"/>
+<circle class="qpw" cx="44" cy="25" r="2.2"/><path class="qpwl" d="M44 21.8 v2.4"/>
+${[52, 59, 66, 73].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width="${i % 2 ? 4 : 5}" height="1.2" rx=".6"/><rect class="qsel${i === 0 ? " on" : ""}" x="${x - 0.5}" y="31" width="6" height="1.1" rx=".55"/>`).join("")}
+${[124, 131, 138, 145].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width="${i % 2 ? 5 : 4}" height="1.2" rx=".6"/><rect class="qsel" x="${x - 0.5}" y="31" width="6" height="1.1" rx=".55"/>`).join("")}
+<circle class="led" cx="157" cy="25" r="1.4"/>
+<rect class="s-part" x="80" y="16.5" width="40" height="28" rx="2.5" fill="url(#d-pt)"/><rect class="s-scr" x="83.5" y="19.5" width="33" height="13" rx="1.6"/>
+<text class="wdt" x="102.6" y="29.2"></text><g class="lk"><rect x="86.2" y="25.2" width="4.2" height="3.4" rx=".7"/><path d="M87.2 25.2 v-1 a1.1 1.1 0 0 1 2.2 0 v1"/></g>
+<path class="s-tgl" d="M85 20 h8 l-4 12 h-5 z"/><g class="qtb"><rect x="85" y="36.5" width="6" height="1.6" rx=".8"/><rect x="94" y="36.5" width="6" height="1.6" rx=".8"/><rect x="103" y="36.5" width="6" height="1.6" rx=".8"/><rect x="112" y="36.5" width="4" height="1.6" rx=".8"/></g></g>
 <g transform="translate(58 57) scale(1.15)">${DONE}</g><g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
     // Airfryer: weiches Gehäuse, rundes Display mit Restzeit und Ring (Eieruhr), Schublade mit Fuge, Griff und Sichtfenster (abschaltbar)
     airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nva"><path d="M39 55 h22 a5 5 0 0 1 5 5 a7 7 0 0 1 -7 7 h-18 a7 7 0 0 1 -7 -7 a5 5 0 0 1 5 -5 Z"/></clipPath></defs>
@@ -7621,7 +7626,6 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .w-dishwasher{--gx:150px}
 .w-dishwasher .qplin{fill:#0d1016}.w-dishwasher .qvent{fill:#000;opacity:.45}
 .w-dishwasher .qrail{fill:none;stroke:#fff;stroke-opacity:.07;stroke-width:1.2}
-.w-dishwasher .qgsk{fill:none;stroke:#07090d;stroke-width:1.2;opacity:0;transition:opacity .4s}
 .w-dishwasher .qgl{fill:${PAL.glass};fill-opacity:.1;stroke:#fff;stroke-opacity:.38;stroke-width:.5}
 .w-dishwasher .qgh{fill:none;stroke:#fff;stroke-opacity:.42;stroke-width:.6;stroke-linecap:round}
 .w-dishwasher .qcup{fill:#8f99ad;fill-opacity:.55;stroke:rgba(0,0,0,.35);stroke-width:.4}
@@ -7653,10 +7657,9 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .dlock .w-dishwasher .lk,.st-run .w-dishwasher .lk,.st-pause .w-dishwasher .lk{display:inline}
 .st-off .w-dishwasher .wdt,.st-off .w-dishwasher .qsel.on{display:none}
 .st-off .w-dishwasher .qtint{opacity:.62}
-.w-dishwasher .qdoor{transform-box:view-box;transform-origin:100px 176.4px;transition:transform .6s ease,opacity .5s}
-.w-dishwasher .qdop,.w-dishwasher .qshd{opacity:0;transition:opacity .5s}
-.w-dishwasher .qodf{stroke:rgba(255,255,255,.18);stroke-width:.5}.w-dishwasher .qodh{fill:none;stroke:#fff;stroke-opacity:.14;stroke-width:.6}
-.w-dishwasher .qodd{fill:#0b0e13}.w-dishwasher .qedge{fill:#0d1016}
+.w-dishwasher .qfront{transition:opacity .4s}.w-dishwasher .qtilt,.w-dishwasher .qgap,.w-dishwasher .qsteam{opacity:0;transition:opacity .4s}
+.w-dishwasher .qtop{fill:#5d6779;opacity:.85}.w-dishwasher .qtilt path{stroke-linejoin:round}
+.w-dishwasher .qsteam ellipse{fill:#c9d4e3;opacity:0;transform-box:fill-box;transform-origin:center}
 /* Läuft: Innenlicht, Sprüharme drehen, Wasserstrahlen und Nebel hinter der Scheibe, Beschlag */
 .st-run .w-dishwasher .qdlt,.st-pause .w-dishwasher .qdlt{opacity:1}
 .st-run .w-dishwasher .qtint,.st-pause .w-dishwasher .qtint{opacity:.28}
@@ -7668,11 +7671,13 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 /* Trocknet: Arme stehen, Dampf steigt langsam auf */
 .st-run.alt .w-dishwasher .qdlt{opacity:.45}
 .anim.st-run.alt .w-dishwasher .qstm path{animation:dv-steam 3.2s ease-out infinite}
-/* Tür offen: Klappe nach unten, Körbe frei, kein Wasser */
-.dopen .w-dishwasher .qdoor{transform:scaleY(0);opacity:0}
-.dopen .w-dishwasher .qdop,.dopen .w-dishwasher .qshd,.dopen .w-dishwasher .qgsk{opacity:1}
-.dopen .w-dishwasher .qdlt,.dopen .w-dishwasher .qjet,.dopen .w-dishwasher .qstm{opacity:0}
+/* Tür offen: nur angekippt, oben ein Spalt mit Korb und leichtem Innenlicht, Dampf steigt aus dem Spalt, Bedienleiste bleibt */
+.dopen .w-dishwasher .qfront{opacity:0}
+.dopen .w-dishwasher .qtilt,.dopen .w-dishwasher .qgap,.dopen .w-dishwasher .qsteam{opacity:1}
+.dopen .w-dishwasher .qdlt{opacity:.35}.dopen .w-dishwasher .qjet,.dopen .w-dishwasher .qstm,.dopen .w-dishwasher .qmist{opacity:0}
 .dopen .w-dishwasher .qarm{animation:none!important}
+.dopen .w-dishwasher .wdt,.dopen .w-dishwasher .lk{display:none}
+.anim.dopen .w-dishwasher .qsteam ellipse{animation:dv-puff 2.8s ease-in-out infinite}
 /* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
 .scene .wn{display:none;transform-box:fill-box;transform-origin:center}
 .scene .wn{--wc:var(--nv-warn)}.st-err .scene .wn{--wc:var(--nv-error)}
@@ -7719,6 +7724,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 @keyframes dv-tumble{0%{transform:rotate(0)}40%{transform:rotate(220deg)}50%{transform:rotate(220deg)}90%,100%{transform:rotate(0)}}
 @keyframes dv-spin{to{transform:rotate(360deg)}}
 @keyframes dv-sarm{0%{transform:scaleX(1)}25%{transform:scaleX(.08)}50%{transform:scaleX(-1)}75%{transform:scaleX(.08)}100%{transform:scaleX(1)}}
+@keyframes dv-puff{0%{opacity:0;transform:translate(0,0) scale(.6) rotate(0)}30%{opacity:.32}70%{opacity:.18}100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(1.5) rotate(14deg)}}
 @keyframes dv-jet{0%{opacity:0;transform:translate(0,0)}20%{opacity:.85}100%{opacity:0;transform:translate(var(--dx,0),-20px)}}
 @keyframes dv-wave{to{transform:translateX(-25px)}}
 @keyframes dv-arm{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
