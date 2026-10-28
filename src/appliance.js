@@ -69,6 +69,12 @@ const IC = {start: 'mdi:play', pause: 'mdi:pause', resume: 'mdi:play-pause', sto
 // Fertig-Haken, in allen Zeichnungen unten rechts
 const WARN = '<g class="wn"><path class="wt3" d="M14 3 l10 17 h-20 Z"/><line class="wx" x1="14" y1="9" x2="14" y2="14"/><circle class="wx2" cx="14" cy="17" r="1.1"/></g>';
 const DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
+// Bullauge der Waschmaschine (geschlossen frontal, offen als nach links aufgeschwenkte, verkürzte Kopie)
+const WDOOR = `<circle class="rng" cx="100" cy="114" r="44" stroke="url(#w-cr)"/><circle class="rgo" cx="100" cy="114" r="46"/><circle class="blk" cx="100" cy="114" r="39"/>
+<circle class="s-glass" cx="100" cy="114" r="36" fill="url(#w-gl)"/>
+<g clip-path="url(#w-ci)"><path class="s-refl" d="M80 78 h22 l-40 62 v-32 z"/><path class="s-refl" d="M112 78 h6 l-56 86 v-12 z"/>
+<g transform="rotate(22 100 114)"><rect class="s-gls" x="38" y="56" width="16" height="116" fill="url(#w-gs)"/></g></g>
+<path class="sh" d="M71 102 a30 30 0 0 1 17 -18"/><rect class="hdl" x="140.6" y="106" width="3.6" height="16" rx="1.8"/>`;
 /* Animationen: reines SVG + CSS, laufen nur bei .st-run (bzw. Fertig-Effekt einmalig), stehen bei .still */
 const SV = {
   washer: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs('w')}
@@ -103,11 +109,9 @@ ${[0, 120, 240].map(a => `<g class="pdl" transform="rotate(${a} 100 114)"><path 
 <g class="wl"><g class="wv2"><path d="M25 121 q6.25 -2.5 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V160 H25 Z" fill="url(#w-wa)" opacity=".5"/></g>
 <g class="wv"><path d="M50 124 q6.25 -3.5 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V160 H50 Z" fill="url(#w-wa)"/></g></g>
 <circle cx="100" cy="114" r="36" fill="url(#w-vg)"/></g>
-<g class="pd"><circle class="rng" cx="100" cy="114" r="44" stroke="url(#w-cr)"/><circle class="rgo" cx="100" cy="114" r="46"/><circle class="blk" cx="100" cy="114" r="39"/>
-<circle class="s-glass" cx="100" cy="114" r="36" fill="url(#w-gl)"/>
-<g clip-path="url(#w-ci)"><path class="s-refl" d="M80 78 h22 l-40 62 v-32 z"/><path class="s-refl" d="M112 78 h6 l-56 86 v-12 z"/>
-<g transform="rotate(22 100 114)"><rect class="s-gls" x="38" y="56" width="16" height="116" fill="url(#w-gs)"/></g></g>
-<path class="sh" d="M71 102 a30 30 0 0 1 17 -18"/><rect class="hdl" x="140.6" y="106" width="3.6" height="16" rx="1.8"/></g>
+<g class="pd">${WDOOR}</g>
+<g class="pdo"><circle class="pde" cx="100" cy="114" r="46" transform="matrix(-.38 0 0 1.03 77.5 -3.42)"/><g transform="matrix(-.38 0 0 1.03 74.52 -3.42)">${WDOOR}</g>
+<rect class="s-part" x="48" y="96.5" width="10" height="5" rx="1.5" fill="url(#w-pt)"/><rect class="s-part" x="48" y="125.5" width="10" height="5" rx="1.5" fill="url(#w-pt)"/></g>
 <g transform="translate(58 57) scale(1.15)">${DONE}</g><g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
   dishwasher: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvd"><rect x="22" y="26" width="56" height="60" rx="5"/></clipPath></defs>
 <rect class="bd" x="14" y="6" width="72" height="88" rx="9"/><line class="sep" x1="14" y1="20" x2="86" y2="20"/>
@@ -298,7 +302,7 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .w-washer .sh{fill:none;stroke:#fff;stroke-opacity:.16;stroke-width:1.6;stroke-linecap:round}
 .w-washer .hdl{fill:#0b0e13;opacity:.7}
 .w-washer .fl{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:.8}.w-washer .flh{fill:none;stroke:#fff;stroke-opacity:.08;stroke-width:.8}
-.w-washer .pd{transform-box:view-box;transform-origin:54px 114px;transition:transform .6s ease}
+.w-washer .pd{transform-box:view-box;transform-origin:54px 114px;transition:transform .45s .3s ease-out}
 .w-washer .scene .lk{stroke:#fff;stroke-opacity:.85;stroke-width:.7}.w-washer .scene .lk rect{fill:#fff}
 .st-off .w-washer .wdt,.st-off .w-washer .pdots .on{display:none}
 /* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
@@ -307,7 +311,13 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .scene .wt3{fill:var(--wc);fill-opacity:.25;stroke:var(--wc);stroke-width:1.8;stroke-linejoin:round}.scene .wx{stroke:var(--wc);stroke-width:2.2;stroke-linecap:round}.scene .wx2{fill:var(--wc)}
 .h-warning .scene .wn,.st-err .scene .wn{display:inline}
 .anim.h-warning .scene .wn,.anim.st-err .scene .wn{animation:dv-pop2 1.6s ease-in-out infinite}
-.dopen .w-washer .pd{transform:scaleX(.16)}
+/* Tür offen: Bullauge klappt zum Scharnier zu und schwenkt links auf, Trommel offen ohne Wasser */
+.w-washer .pdo{transform-box:view-box;transform-origin:54px 114px;transform:scaleX(0);transition:transform .35s ease-in}
+.w-washer .pde{fill:#1a1e27;stroke:rgba(255,255,255,.12);stroke-width:.6}
+.dopen .w-washer .pd{transform:scaleX(0);transition:transform .35s ease-in}
+.dopen .w-washer .pdo{transform:none;transition:transform .45s .35s ease-out}
+.dopen .w-washer .wl,.dopen .w-washer .dlt{opacity:0}
+.w-washer .wl{transition:transform .8s,opacity .5s}
 .scene .lk{display:none;fill:none;stroke:currentColor;stroke-opacity:.8;stroke-width:1.4}.scene .lk rect{fill:currentColor;fill-opacity:.8;stroke:none}
 .dlock .w-washer .lk{display:inline}
 .scene .dd{transform-box:view-box;transition:transform .5s ease}
