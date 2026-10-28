@@ -2,8 +2,8 @@
 
 [← Zurück zur Übersicht](../README.md)
 
-3D-Drucker der [Bambu-Lab-Integration](https://github.com/greghesp/ha-bambulab) mit animierter Druckerzeichnung (flach im Stil der
-Nova Gerät Card, mit AMS oder externer Spule), Kamerabild, Fortschritt, Restzeit, Endzeit, Schicht, Temperaturen, Dateiname, Druckphase,
+3D-Drucker der [Bambu-Lab-Integration](https://github.com/greghesp/ha-bambulab) mit animierter Druckerzeichnung (geschlossener
+CoreXY-Drucker mit Glastür und AMS), Kamerabild, Fortschritt, Restzeit, Endzeit, Schicht, Temperaturen, Dateiname, Druckphase,
 Meldungen, AMS-Slots und den Knöpfen Pause, Fortsetzen, Stopp und Kammerlicht. Alles ist im grafischen Editor einstellbar.
 
 ## Wenn du einfach nur deinen Drucker zeigen willst, dann so
@@ -135,10 +135,15 @@ demo_message: spaghetti
 demo_ams: true
 ```
 
-## Wenn du die Farbe ändern willst, dann so
+## Wenn du die Farben ändern willst, dann so
 
-`color` ist eine Farbrolle aus dem Theme (Fortschritt, Knöpfe, aktiver Slot, Düse beim Aufheizen). Das gedruckte Objekt hat automatisch
-die Farbe des aktiven Filaments, das Gehäuse die Textfarbe wie bei den Gerätekarten.
+`color` ist eine Farbrolle aus dem Theme (Fortschritt, Knöpfe, aktiver Slot). Das gedruckte Objekt hat automatisch die Farbe
+des aktiven Filaments. Das Gehäuse lässt sich im Theme färben:
+
+```yaml
+nova-printer-color: "#191d26"         # Gehäuse unten
+nova-printer-color-light: "#3a4252"   # Gehäuse oben
+```
 
 ## Alle Optionen
 
