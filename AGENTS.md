@@ -26,7 +26,7 @@ src/
   area.js             Nova Bereich Card + Editor (Raumansicht: Kopfzeile, Raster aus beliebigen Karten)
   chips.js            Nova Chips Card + Editor (Reihe aus Wert- und Knopf-Chips)
   appliance.js        Nova Gerät Card + Editor (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Allgemein)
-  printer.js          Nova 3D-Drucker Card + Editor (Bambu Lab: Druckerzeichnung im P2S-Stil, AMS, Meldungen, Demo-Modus)
+  printer.js          Nova 3D-Drucker Card + Editor (Bambu Lab: flache Druckerzeichnung wie Nova Gerät, AMS, Kamera, Meldungen, Demo-Modus)
   printer-messages.js Meldungen der 3D-Drucker Card: Druckphasen (stg_cur), HMS-/Druckfehler-Codes, Textmuster → Animation
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),

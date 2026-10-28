@@ -8435,6 +8435,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     }
     const fans = ents.filter((e) => dom(e.entity_id) === "fan").map((e) => e.entity_id).sort();
     if (fans.length) out.fans = fans;
+    const cam = ents.find((e) => ["image", "camera"].includes(dom(e.entity_id)) && (/(kamera|camera)$/.test(e.entity_id) || /camera/.test(e.translation_key || "")));
+    if (cam) out.camera = cam.entity_id;
     return out;
   }
   function trays(h, c, dev) {
@@ -8484,8 +8486,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     show_ams_list: true,
     show_controls: true,
     show_light: true,
-    show_display: true,
     show_fans: true,
+    camera_mode: "always",
     show_switches: true,
     stop_confirm: "Druck wirklich abbrechen?"
   };
@@ -8499,12 +8501,6 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     const m = Math.max(0, Math.round(sec / 60));
     return m < 1 ? "< 1 min" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h`;
   };
-  var fmtShort = (sec) => {
-    const m = Math.max(0, Math.round(sec / 60));
-    return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
-  };
-  var OBJ_H = 44;
-  var PLATE = 232;
   var DEMO_STATES = [["print", "Druckt"], ["heat", "Heizt auf"], ["prep", "Bereitet vor"], ["pause", "Pausiert"], ["done", "Fertig"], ["error", "Fehler"], ["cool", "Kühlt ab"], ["idle", "Leerlauf"], ["off", "Aus"]];
   var DEMO_AMS = [
     { name: "AMS A", slots: [
@@ -8515,92 +8511,42 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     ] },
     { name: "AMS B", slots: [{ c: "#222428", mat: "PLA", name: "PLA Schwarz", rem: 90 }, { c: "#f5b83d", mat: "PLA", name: "PLA Gelb", rem: 40 }, { c: null, mat: "", name: "", rem: null, empty: true }, { c: "#9b6bd6", mat: "PETG", name: "PETG Lila", rem: 67 }] }
   ];
-  var SLOTX = [72, 108, 144, 180];
-  var SPOOL = SLOTX.map((x, i) => `<g class="sl s${i}"><clipPath id="psc${i}"><rect class="fcl" x="${x - 11.8}" y="59" width="23.6" height="32" rx="3"/></clipPath>
-<rect class="fg" x="${x - 15}" y="57" width="3.2" height="34" rx="1.4"/><rect class="fg" x="${x + 11.8}" y="57" width="3.2" height="34" rx="1.4"/>
-<rect class="fg" x="${x - 12}" y="71" width="24" height="8" rx="2"/><rect class="fl" x="${x - 11.8}" y="59" width="23.6" height="32" rx="3"/>
-<g clip-path="url(#psc${i})"><rect class="cy" x="${x - 12}" y="55" width="24" height="40"/><rect class="wnd" x="${x - 12}" y="55" width="24" height="40"/><rect class="rot" x="${x - 12}" y="50" width="24" height="6"/></g>
-<g class="sw"><path d="M${x} 62 l6 10.5 h-12 z"/><rect x="${x - 0.6}" y="65.5" width="1.2" height="3.6" rx=".6"/><circle cx="${x}" cy="70.4" r=".7"/></g></g>`).join("");
-  var FEED = SLOTX.map((x, i) => `<g class="sl s${i}"><rect class="fd" x="${x - 4}" y="91" width="8" height="2.4" rx="1.2"/><text class="mt" x="${x}" y="100.5"></text>
-<rect class="sled" x="${x - 7}" y="104.5" width="14" height="2" rx="1"/></g>`).join("");
-  var SCENE = `<svg viewBox="0 0 260 300" aria-hidden="true"><defs>
-<linearGradient id="pbd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="sb1"/><stop offset="1" class="sb2"/></linearGradient>
-<linearGradient id="psh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".14"/></linearGradient>
-<linearGradient id="pgl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a9c6ff" stop-opacity=".2"/><stop offset=".55" stop-color="#5d7397" stop-opacity=".1"/><stop offset="1" stop-color="#0c111c" stop-opacity=".38"/></linearGradient>
-<linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3344"/><stop offset="1" stop-color="#10141b"/></linearGradient>
-<radialGradient id="plt" cx=".5" cy="0" r=".9"><stop offset="0" stop-color="#fff6e4" stop-opacity=".5"/><stop offset="1" stop-color="#fff6e4" stop-opacity="0"/></radialGradient>
-<radialGradient id="pgw"><stop offset="0" stop-color="#ffc061" stop-opacity=".95"/><stop offset=".4" stop-color="#ff8a2a" stop-opacity=".5"/><stop offset="1" stop-color="#ff7a1a" stop-opacity="0"/></radialGradient>
-<linearGradient id="pdm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb6d8" stop-opacity=".3"/><stop offset=".6" stop-color="#3a4660" stop-opacity=".35"/><stop offset="1" stop-color="#141821" stop-opacity=".55"/></linearGradient>
-<linearGradient id="pcy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".4"/><stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset=".75" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
-<linearGradient id="prt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-<linearGradient id="pob" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset=".38" stop-color="#fff" stop-opacity=".28"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient>
-<linearGradient id="pgs" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-<linearGradient id="phd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b4252"/><stop offset="1" stop-color="#20252f"/></linearGradient>
-<pattern id="pwn" width="3" height="60" patternUnits="userSpaceOnUse"><rect width=".6" height="60" fill="#000" fill-opacity=".12"/></pattern><pattern id="ply" width="6" height="2" patternUnits="userSpaceOnUse"><rect width="6" height=".9" fill="#000" fill-opacity=".2"/></pattern>
-<clipPath id="pci"><rect x="46" y="136" width="160" height="146" rx="4"/></clipPath>
-<clipPath id="poc"><rect class="ocr" x="90" y="${PLATE - OBJ_H}" width="70" height="${OBJ_H}"/></clipPath>
-<clipPath id="pvs"><path d="M107 232 C 103 218, 116 208, 113 198 L113 188 L133 188 L133 198 C 130 208, 143 218, 139 232 Z"/></clipPath>
-</defs>
-<ellipse class="shd" cx="128" cy="294" rx="104" ry="5"/>
-<g class="xsp"><path class="tube" d="M196 116 C 210 104, 228 128, 228 152"/><path class="fil" d="M196 116 C 210 104, 228 128, 228 152"/>
-<circle class="xf" cx="228" cy="190" r="32"/><circle class="xw" cx="228" cy="190" r="26"/><circle class="xc" cx="228" cy="190" r="26"/><circle class="xh" cx="228" cy="190" r="9"/></g>
-<g class="ams"><path class="tube" d="M204 95 C 230 95, 232 119, 210 129"/><path class="fil" d="M204 95 C 230 95, 232 119, 210 129"/></g>
-<rect class="body" x="36" y="116" width="180" height="176" rx="8"/><rect class="sheen" x="36" y="116" width="180" height="176" rx="8"/>
-<rect class="edge" x="40" y="117" width="172" height="1.2" rx=".6"/>
-<g class="vents"><rect x="182" y="285" width="2.4" height="4" rx="1"/><rect x="187" y="285" width="2.4" height="4" rx="1"/><rect x="192" y="285" width="2.4" height="4" rx="1"/><rect x="197" y="285" width="2.4" height="4" rx="1"/></g>
-<g clip-path="url(#pci)">
-<rect class="inner" x="46" y="136" width="160" height="146"/><rect class="lightc" x="46" y="136" width="160" height="120"/>
-<rect class="zrod" x="56" y="138" width="2.6" height="144"/><rect class="zrod" x="193.4" y="138" width="2.6" height="144"/>
-<rect class="chute" x="48" y="194" width="9" height="20" rx="1.5"/>
-<g class="bed"><rect class="carr" x="66" y="236" width="120" height="7" rx="2"/><rect class="plate" x="60" y="232" width="132" height="4.5" rx="1.2"/>
-<rect class="pheat" x="60" y="232" width="132" height="4.5" rx="1.2"/><rect class="plateh" x="60" y="232" width="132" height=".9"/>
-<g class="obj"><g clip-path="url(#poc)"><path class="ob" d="M107 232 C 103 218, 116 208, 113 198 L113 188 L133 188 L133 198 C 130 208, 143 218, 139 232 Z"/>
-<path class="oly" d="M107 232 C 103 218, 116 208, 113 198 L113 188 L133 188 L133 198 C 130 208, 143 218, 139 232 Z"/>
-<path class="osh" d="M107 232 C 103 218, 116 208, 113 198 L113 188 L133 188 L133 198 C 130 208, 143 218, 139 232 Z"/>
-<g clip-path="url(#pvs)"><rect class="gls" x="88" y="184" width="14" height="52"/></g></g></g>
-<g class="cal"><rect x="70" y="230.4" width="16" height="1.6" rx=".8"/><rect x="90" y="230.4" width="16" height="1.6" rx=".8"/><rect x="110" y="230.4" width="16" height="1.6" rx=".8"/><rect x="130" y="230.4" width="16" height="1.6" rx=".8"/><rect x="150" y="230.4" width="16" height="1.6" rx=".8"/></g>
-<g class="dots"><circle cx="72" cy="231" r="1.7"/><circle cx="96" cy="231" r="1.7"/><circle cx="120" cy="231" r="1.7"/><circle cx="144" cy="231" r="1.7"/><circle cx="168" cy="231" r="1.7"/></g>
-<path class="spag" d="M96 231 c4 -14 10 6 14 -8 s-12 -10 -4 -16 s14 12 18 2 s-6 -18 6 -12 s4 16 12 6 s-2 -14 8 -8 M104 228 c6 -6 2 -16 12 -12 s10 10 16 0 s4 -12 10 -4"/></g>
-<rect class="fresh" x="113" y="187.3" width="20" height="1.4" rx=".7"/>
-<rect class="rail" x="48" y="155" width="156" height="5" rx="2"/><rect class="railh" x="48" y="155" width="156" height="1"/>
-<rect class="blk" x="47" y="151" width="9" height="13" rx="2"/><rect class="blk" x="196" y="151" width="9" height="13" rx="2"/>
-<g class="head"><g class="hz"><path class="tube" d="M131 148 C 131 138, 110 140, 100 128"/><path class="fil" d="M131 148 C 131 138, 110 140, 100 128"/>
-<rect class="hd" x="106" y="147" width="34" height="33" rx="4"/><rect class="hdt" x="108.5" y="148.6" width="29" height="1.3" rx=".65"/>
-<circle class="fan" cx="123" cy="163" r="9.5"/><g class="bl"><ellipse cx="123" cy="158.6" rx="2.1" ry="4"/><ellipse cx="123" cy="158.6" rx="2.1" ry="4" transform="rotate(72 123 163)"/><ellipse cx="123" cy="158.6" rx="2.1" ry="4" transform="rotate(144 123 163)"/><ellipse cx="123" cy="158.6" rx="2.1" ry="4" transform="rotate(216 123 163)"/><ellipse cx="123" cy="158.6" rx="2.1" ry="4" transform="rotate(288 123 163)"/></g>
-<circle class="hub" cx="123" cy="163" r="2.2"/>
-<rect class="heater" x="118" y="180" width="10" height="4.5" rx="1"/><path class="nz" d="M120 184.5 h6 l-2 3.4 h-2 z"/>
-<circle class="glow" cx="123" cy="189" r="7.5"/><rect class="beam" x="122.4" y="189" width="1.2" height="43"/></g></g>
-<g class="wisp"><path d="M78 226 q4 -6 0 -12 q-4 -6 0 -12"/><path d="M123 216 q4 -6 0 -12 q-4 -6 0 -12"/><path d="M168 226 q4 -6 0 -12 q-4 -6 0 -12"/></g>
-<rect class="led" x="64" y="137.6" width="124" height="1.8" rx=".9"/>
-<rect class="tint" x="46" y="136" width="160" height="146"/><rect class="dim" x="46" y="136" width="160" height="146"/></g>
-<g class="door"><rect class="dedge" x="46" y="136" width="4" height="146" rx="1.5"/><rect class="glass" x="46" y="136" width="160" height="146" rx="4"/>
-<g clip-path="url(#pci)"><path class="refl" d="M70 136 h26 l-50 104 v-52 z"/><path class="refl" d="M104 136 h7 l-65 135 v-14 z"/></g>
-<rect class="handle" x="196" y="192" width="3" height="34" rx="1.5"/></g>
-<circle class="stled" cx="203" cy="126" r="1.5"/>
-<g class="top"><rect class="lid" x="38" y="112" width="176" height="5" rx="2.5"/>
-<g class="ams">${SPOOL}<rect class="dome" x="48" y="51" width="156" height="42" rx="16"/><path class="dhl" d="M64 53 h40 l-30 36 h-14 z"/>
-<rect class="abase" x="46" y="87" width="160" height="24" rx="7"/>${FEED}<text class="unit" x="201" y="108"></text></g></g>
-<g class="tab"><ellipse class="dsh" cx="70" cy="146" rx="28" ry="2.4"/>
-<path class="tbz" d="M42 116 h56 a4 4 0 0 1 4 4 l-1.5 20 a4 4 0 0 1 -4 3.6 h-53 a4 4 0 0 1 -4 -3.6 l-1.5 -20 a4 4 0 0 1 4 -4 z"/>
-<rect class="tbh" x="44" y="116.8" width="52" height="1" rx=".5"/><rect class="tsc" x="45" y="119.5" width="50" height="20" rx="2.5"/>
-<text class="tt" x="48.5" y="132.5"></text><rect class="tbar" x="70" y="125" width="22.5" height="2" rx="1"/><rect class="tfill" x="70" y="125" width="0" height="2" rx="1"/>
-<text class="ts" x="70" y="133.5"></text><path class="tgl" d="M47 120 h14 l-6 19 h-8 z"/></g>
-<g class="bdg" transform="translate(74 172)"><circle class="bc" r="9.5"/>
-<path class="b-ok" d="M-4.2 0.2 l2.9 2.9 l5.6 -6"/>
-<g class="b-wn"><path d="M0 -5.6 l5.6 9.7 h-11.2 z"/><rect x="-.65" y="-2.4" width="1.3" height="3.6" rx=".65"/><circle cx="0" cy="2.6" r=".8"/></g>
-<g class="b-tp"><rect x="-1.6" y="-6" width="3.2" height="8" rx="1.6"/><circle cx="0" cy="3.4" r="2.8"/></g>
-<g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g>
+  var SLOTX = [20, 36, 52, 68];
+  var SPOOL = SLOTX.map((x, i) => `<g class="sl s${i}"><rect class="sw0" x="${x}" y="10" width="12" height="10" rx="3"/><rect class="fl" x="${x + 2}" y="11.5" width="8" height="7" rx="1.5"/>
+<rect class="sled" x="${x + 3}" y="22" width="6" height="1.4" rx=".7"/></g>`).join("");
+  var OBJ = "M43 78 V64 a7 7 0 0 1 14 0 V78 Z";
+  var SCENE = `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="poc"><rect class="ocr" x="40" y="56" width="20" height="22"/></clipPath>
+<clipPath id="pwc"><rect x="17" y="35" width="66" height="52" rx="3"/></clipPath></defs>
+<ellipse class="ash" cx="50" cy="96.5" rx="40" ry="2.4"/>
+<g class="xsp"><rect class="ft" x="74" y="24" width="4" height="5" rx="1"/><circle class="bd" cx="76" cy="18" r="9"/><circle class="xw" cx="76" cy="18" r="6.4"/><circle class="xh" cx="76" cy="18" r="2"/></g>
+<g class="ams"><path class="tb" d="M86 17 C 95 17, 95 33, 86 33"/><path class="fil" d="M86 17 C 95 17, 95 33, 86 33"/></g>
+<rect class="bd" x="10" y="28" width="80" height="66" rx="7"/>
+<rect class="ft" x="16" y="94" width="10" height="2" rx="1"/><rect class="ft" x="74" y="94" width="10" height="2" rx="1"/>
+<g class="door"><rect class="gl" x="17" y="35" width="66" height="52" rx="3"/></g>
+<g clip-path="url(#pwc)"><rect class="lgt" x="17" y="35" width="66" height="52"/>
+<rect class="pl" x="24" y="78" width="52" height="2.2" rx="1.1"/><rect class="ph2" x="24" y="78" width="52" height="2.2" rx="1.1"/>
+<g class="obj"><g clip-path="url(#poc)"><path class="ob" d="${OBJ}"/></g></g>
+<g class="cal"><rect x="27" y="76.6" width="8" height="1.2" rx=".6"/><rect x="38" y="76.6" width="8" height="1.2" rx=".6"/><rect x="49" y="76.6" width="8" height="1.2" rx=".6"/><rect x="60" y="76.6" width="8" height="1.2" rx=".6"/></g>
+<g class="dots"><circle cx="30" cy="77.2" r="1.1"/><circle cx="40" cy="77.2" r="1.1"/><circle cx="50" cy="77.2" r="1.1"/><circle cx="60" cy="77.2" r="1.1"/><circle cx="70" cy="77.2" r="1.1"/></g>
+<path class="spag" d="M38 77 c2 -7 5 3 7 -4 s-6 -5 -2 -8 s7 6 9 1 s-3 -9 3 -6 s2 8 6 3 M41 76 c3 -3 1 -8 6 -6 s5 5 8 0"/>
+<rect class="rl" x="18" y="45" width="64" height="2" rx="1"/>
+<g class="head"><rect class="hd2" x="44.5" y="41" width="11" height="10" rx="2"/><path class="nz" d="M48.4 51 h3.2 l-1 2.4 h-1.2 Z"/>
+<circle class="glow" cx="50" cy="54.2" r="2.2"/><rect class="beam" x="49.6" y="54" width=".8" height="23"/></g>
+<g class="wisp"><path d="M32 74 q2 -3 0 -6 q-2 -3 0 -6"/><path d="M50 62 q2 -3 0 -6 q-2 -3 0 -6"/><path d="M68 74 q2 -3 0 -6 q-2 -3 0 -6"/></g></g>
+<rect class="dedge" x="17" y="35" width="2" height="52" rx="1"/>
+<g class="top"><g class="ams"><rect class="bd" x="12" y="6" width="76" height="20" rx="5"/>${SPOOL}</g></g>
+<g class="wn" transform="translate(66 37) scale(.55)"><path class="wt3" d="M14 3 l10 17 h-20 Z"/><line class="wx" x1="14" y1="9" x2="14" y2="14"/><circle class="wx2" cx="14" cy="17" r="1.1"/></g>
 </svg>`;
   var PCSS3 = `
 .g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
---sb1:var(--nova-printer-color-light,#3a4252);--sb2:var(--nova-printer-color,#191d26)}
+}
 .g.pr.glow.on{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
 .pr .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
 .pr .hd small.er{color:var(--nv-error);opacity:1}
 .pr .hb.li.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 50%,transparent)}
 .pr .demo{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--nv-chip);opacity:.75}
 .mid{display:flex;gap:14px;align-items:center;min-width:0}
-.scene{flex:none;width:48%;max-width:300px;min-width:150px;color:var(--nv-fg)}
+.scene{flex:none;width:40%;max-width:210px;min-width:130px;color:var(--nv-fg)}
 .scene svg{display:block;width:100%;height:auto;overflow:visible}
 .inf{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
 .big{display:flex;align-items:baseline;gap:8px;min-width:0}
@@ -8619,6 +8565,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .xtra .row b,.xtra .row small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xtra .row b{font-weight:600;font-size:13px}.xtra .row small{opacity:.65;font-size:11.5px}
 .xtra .na{opacity:.45}
 @container (max-width:340px){.xtra .fans{grid-template-columns:1fr}}
+.cam{position:relative;border-radius:16px;overflow:hidden;background:rgba(0,0,0,.3);aspect-ratio:16/9;cursor:pointer}.cam[hidden]{display:none}
+.cam img{display:block;width:100%;height:100%;object-fit:cover}
 .amsl{display:flex;flex-direction:column;gap:8px}.amsl:empty{display:none}
 .au{display:flex;align-items:center;gap:8px;min-width:0}
 .au .an{font-size:11px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;width:54px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -8637,148 +8585,91 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .ab{flex:1;min-width:0;height:44px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;transition:background-color .2s,opacity .2s,transform .2s}
 .ab ha-icon{--mdc-icon-size:22px}.ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--dc) 40%,transparent)}
 .ab.na{opacity:.4;pointer-events:none}.ab:active{transform:scale(.95)}
-@container (max-width:380px){.mid{flex-direction:column;align-items:stretch}.scene{width:100%;max-width:240px;align-self:center}.au .ss{grid-template-columns:repeat(2,minmax(0,1fr))}}
-/* Zeichnung */
-.scene .sb1{stop-color:var(--sb1)}.scene .sb2{stop-color:var(--sb2)}
-.scene .shd{fill:#000;opacity:.35}
-.scene .body{fill:url(#pbd);stroke:rgba(255,255,255,.18);stroke-width:.6;transition:stroke .4s}.scene .sheen{fill:url(#psh);opacity:.4}.scene .edge{fill:#fff;opacity:.12}
-.scene .vents rect{fill:rgba(0,0,0,.35)}
-.scene .inner{fill:url(#pin)}.scene .lightc{fill:url(#plt);opacity:0;transition:opacity .5s}.scene .led{fill:#fff6e4;opacity:0;transition:opacity .5s}
-.scene .dim{fill:#05070a;opacity:.4;transition:opacity .5s}
-.lit .scene .lightc,.lit .scene .led{opacity:1}.lit .scene .dim{opacity:0}
-.scene .zrod{fill:#4a5265}.scene .chute{fill:#3a4152}
-.scene .carr{fill:#2f3644}.scene .plate{fill:#b38c52}.scene .plateh{fill:#e2c08b}
-.scene .pheat{fill:#ff7a1a;opacity:0}
-.scene .ob{fill:var(--fc)}.scene .oly{fill:url(#ply)}.scene .osh{fill:url(#pob)}.scene .gls{fill:url(#pgs);opacity:0}
-.scene .obj{display:none;transform-box:view-box;transform-origin:123px 232px;transition:transform .6s}.has-obj .scene .obj{display:inline}
-.scene .bed{transition:transform 1.2s ease}
-.scene .fresh{fill:color-mix(in srgb,var(--fc) 50%,#fff);opacity:0}
+@container (max-width:380px){.mid{flex-direction:column;align-items:stretch}.scene{width:60%;max-width:200px;align-self:center}.au .ss{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Zeichnung: Gehäuse in Textfarbe, Filament in Spulenfarbe, Hitze und LEDs in der Gerätefarbe (wie Nova Gerät) */
+.scene .bd{fill:currentColor;fill-opacity:.1;stroke:currentColor;stroke-opacity:.28;stroke-width:1.2}
+.scene .gl,.scene .sw0{fill:rgba(0,0,0,.28);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
+.scene .ash{fill:rgba(0,0,0,.3)}.scene .ft{fill:currentColor;fill-opacity:.22}
+.scene .lgt{fill:#fff;opacity:0;transition:opacity .5s}.lit .scene .lgt{opacity:.06}
+.scene .pl,.scene .rl{fill:currentColor;fill-opacity:.24}.scene .ph2{fill:var(--dc);opacity:0}
+.scene .hd2{fill:currentColor;fill-opacity:.16;stroke:currentColor;stroke-opacity:.32;stroke-width:1}
+.scene .nz{fill:currentColor;fill-opacity:.4;transition:fill .3s}
+.scene .glow{fill:var(--dc);opacity:0;transition:opacity .6s}
+.scene .beam{fill:var(--dc);opacity:0}
+.scene .ob{fill:var(--fc);fill-opacity:.8}
+.scene .obj{display:none;transform-box:fill-box;transform-origin:center bottom;transition:transform .6s}.has-obj .scene .obj{display:inline}
 .scene .cal rect{fill:var(--fc);opacity:0;transform-box:fill-box;transform-origin:left center}
 .scene .dots circle{fill:var(--dc);opacity:0}
-.scene .spag{fill:none;stroke:var(--fc);stroke-width:1.3;stroke-linecap:round;opacity:0;stroke-dasharray:240;stroke-dashoffset:240}
-.scene .rail{fill:#59627a}.scene .railh{fill:rgba(255,255,255,.25)}.scene .blk{fill:#3a4252}
-.scene .tube{fill:none;stroke:rgba(235,240,250,.4);stroke-width:2.6;stroke-linecap:round}
-.scene .fil{fill:none;stroke:var(--fc);stroke-width:1.1;stroke-linecap:round;stroke-dasharray:4 3;opacity:.9}
-.scene .head{transform-box:view-box;transition:transform 1s ease}.scene .hz{transform-box:view-box}
-.scene .hd{fill:url(#phd);stroke:rgba(255,255,255,.15);stroke-width:.5}.scene .hdt{fill:rgba(255,255,255,.14)}
-.scene .fan{fill:#161a22;stroke:rgba(255,255,255,.12);stroke-width:.5}.scene .bl ellipse{fill:#4a5366}.scene .hub{fill:#2b313e}
-.scene .bl{transform-box:view-box;transform-origin:123px 163px}
-.scene .heater{fill:#8e949c}.scene .nz{fill:#d0a24f;transition:fill .3s}
-.scene .glow{fill:url(#pgw);opacity:0;transition:opacity .6s}
-.scene .beam{fill:var(--nv-error);opacity:0}
-.scene .wisp path{fill:none;stroke:#bfe3ff;stroke-width:1.3;stroke-linecap:round;opacity:0}
-.scene .tint{fill:var(--nv-error);opacity:0;transition:opacity .5s}
-.scene .door{transform-box:view-box;transform-origin:46px 209px;transition:transform .8s ease}
-.scene .glass{fill:url(#pgl);stroke:rgba(255,255,255,.22);stroke-width:.7}.scene .refl{fill:#fff;opacity:.07}
-.scene .dedge{fill:#5a5f67;opacity:0}
-.scene .handle{fill:rgba(255,255,255,.3)}
-.scene .stled{fill:#4caf6a;opacity:.3}
-.scene .top{transform-box:view-box;transform-origin:216px 116px;transition:transform .8s ease}
-.scene .lid{fill:url(#pgl);stroke:rgba(255,255,255,.25);stroke-width:.6}
-.scene .dome{fill:url(#pdm);stroke:rgba(255,255,255,.22);stroke-width:.6}.scene .dhl{fill:#fff;opacity:.08}
-
-.scene .abase{fill:url(#pbd);stroke:rgba(255,255,255,.14);stroke-width:.6}
-.scene .fg{fill:#1a1e27;stroke:rgba(255,255,255,.12);stroke-width:.4}
-
-.scene .fl{fill:var(--sc,#777);transition:opacity .4s}.scene .wnd{fill:url(#pwn)}.scene .cy{fill:url(#pcy)}.scene .rot{fill:url(#prt);opacity:0;transform-box:view-box}
-.scene .sl.emp .fl,.scene .sl.emp .cy{opacity:0}
-.scene .sw{display:none}.scene .sw path{fill:var(--nv-warn);stroke:#000;stroke-opacity:.3;stroke-width:.4}.scene .sw rect,.scene .sw circle{fill:#1b1d20}
-.scene .sl.wn .sw{display:inline}
-.scene .mt{font:500 5px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.75);text-anchor:middle}
-.scene .sled{fill:rgba(255,255,255,.18)}.scene .sl.act .sled{fill:var(--dc)}
-.scene .fd{fill:#0d1016}
-.scene .unit{font:600 6px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.55);text-anchor:end}
-.scene .xf{fill:#1d2025}.scene .xw{fill:var(--fc)}.scene .xc{fill:url(#pcy);opacity:.6}.scene .xh{fill:#3a3f47}
-.scene .tbz{fill:url(#phd);stroke:rgba(255,255,255,.18);stroke-width:.6}.scene .tbh{fill:rgba(255,255,255,.18)}.scene .tsc{fill:#0a0e14;stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .dsh{fill:#000;opacity:.35}
-.scene .tt{font:600 8px Roboto,system-ui,sans-serif;fill:#fff}.scene .ts{font:400 4px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.65)}
-.scene .tbar{fill:rgba(255,255,255,.15)}.scene .tfill{fill:var(--dc)}.scene .tgl{fill:#fff;opacity:.05}
-.nodisp .scene .tab{display:none}
-.scene .bdg{opacity:0;transition:opacity .3s}.scene .bdg>*{display:none}
-.scene .bc{fill:var(--bc,var(--dc));stroke:rgba(0,0,0,.25);stroke-width:.5}
-.scene .b-ok{fill:none;stroke:var(--dc-fg);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14}
-.scene .b-wn path{fill:#fff}.scene .b-wn rect,.scene .b-wn circle{fill:var(--bc)}
-.scene .b-tp,.scene .b-fn{fill:#fff}
-.scene .bdg{transform-box:fill-box}
-.b-ok .scene .bdg,.b-wn .scene .bdg,.b-tp .scene .bdg,.b-fn .scene .bdg{opacity:1}
-.b-ok .scene .bc,.b-ok .scene .b-ok,.b-wn .scene .bc,.b-wn .scene .b-wn,.b-tp .scene .bc,.b-tp .scene .b-tp,.b-fn .scene .bc,.b-fn .scene .b-fn{display:inline}
-.b-wn .scene,.b-tp .scene,.b-fn .scene{--bc:var(--nv-warn)}.bad .scene{--bc:var(--nv-error)}
+.scene .spag{fill:none;stroke:var(--fc);stroke-width:.9;stroke-linecap:round;opacity:0;stroke-dasharray:120;stroke-dashoffset:120}
+.scene .tb{fill:none;stroke:currentColor;stroke-opacity:.28;stroke-width:1.6;stroke-linecap:round}
+.scene .fil{fill:none;stroke:var(--fc);stroke-width:.9;stroke-linecap:round;stroke-dasharray:3 2.5;opacity:0}
+.scene .head{transform-box:view-box;transition:transform 1s ease}
+.scene .wisp path{fill:none;stroke:currentColor;stroke-opacity:.5;stroke-width:1;stroke-linecap:round;opacity:0}
+.scene .door{transform-box:view-box;transform-origin:17px 61px;transition:transform .8s ease}.scene .dedge{fill:currentColor;fill-opacity:.4;opacity:0}
+.scene .top{transform-box:view-box;transform-origin:88px 26px;transition:transform .8s ease}
+.scene .fl{fill:var(--sc,#777);fill-opacity:.85;transition:opacity .4s}.scene .sl.emp .fl{opacity:0}
+.scene .sled{fill:currentColor;fill-opacity:.2}.scene .sl.act .sled{fill:var(--dc);fill-opacity:1}
+.scene .sl.wn .sw0{stroke:var(--nv-warn);stroke-opacity:1}.scene .sl{transform-box:fill-box}
+.scene .xw{fill:var(--fc);fill-opacity:.8}.scene .xh{fill:rgba(0,0,0,.35)}
+.scene .wn{display:none;--wc:var(--nv-warn)}.bad .scene .wn{--wc:var(--nv-error)}
+.scene .wt3{fill:var(--wc);fill-opacity:.25;stroke:var(--wc);stroke-width:1.8;stroke-linejoin:round}.scene .wx{stroke:var(--wc);stroke-width:2.2;stroke-linecap:round}.scene .wx2{fill:var(--wc)}
+.warn .scene .wn{display:inline}
 .noams .scene .ams{display:none}.scene .xsp{display:none}.noams.xs .scene .xsp{display:inline}
 /* Grundzustände */
-.st-off .scene>svg{opacity:.55;transition:opacity .4s}.st-off .scene .tab .tsc{fill:#08090b}.st-off .scene .tab text,.st-off .scene .tbar,.st-off .scene .tfill{display:none}
-.st-off .scene .stled{opacity:0}
-.st-print .scene .stled,.st-prep .scene .stled,.st-heat .scene .stled,.st-pause .scene .stled,.st-cool .scene .stled{opacity:1}
-.st-print .scene .glow,.st-prep .scene .glow{opacity:.65}
-.st-heat .scene .glow{opacity:.8}.st-heat .scene .pheat{opacity:.5}
-.st-print .scene .fresh{opacity:.9}
-.st-idle .scene .head,.st-done .scene .head,.st-off .scene .head,.st-error .scene .head,.st-cool .scene .head{transform:translateX(56px)}
-.bad .scene .tint{opacity:.16}.bad .scene .body{stroke:var(--nv-error)}
-/* Bewegung nur mit .anim und sichtbar */
-.anim.st-print .scene .head{animation:pr-x 2.4s ease-in-out infinite alternate}
-.anim.st-print .scene .hz{animation:pr-buzz .32s linear infinite}
-.anim:is(.st-print,.st-prep,.st-heat) .scene .fil{animation:pr-flow .9s linear infinite}
-.anim:is(.st-print,.st-cool,.st-prep) .scene .bl{animation:pr-spin .45s linear infinite}
-.anim:is(.st-print,.st-prep) .scene .sl.act .rot{opacity:1;animation:pr-rot 1.4s linear infinite}
-.anim.st-heat .scene .glow,.anim.st-heat .scene .pheat{animation:pr-pulse 1.8s ease-in-out infinite}
-.anim.st-pause .scene .stled,.anim.st-pause .scene .tt,.anim.st-pause .scene .sl.act .sled{animation:pr-blink 2s ease-in-out infinite}
-.st-pause .scene .glow{opacity:.25}
-.anim.st-cool .scene .wisp path{animation:pr-wisp 2.6s ease-out infinite}
-.anim.st-cool .scene .glow{animation:pr-fade 8s ease-out both}
-.st-done .scene .gls{opacity:1}.anim.st-done .scene .gls{animation:pr-glare 1.6s .3s ease-in-out both}
-.st-done .scene .gls{transform:translateX(70px)}
-.anim.st-done .scene .b-ok{animation:pr-check .5s .2s ease-out both}.anim.st-done .scene .bdg{animation:pr-pop .5s ease-out both}
-.anim.bad .scene .bdg,.anim.b-wn .scene .bdg{animation:pr-throb 1.6s ease-in-out infinite}
+.st-off .scene>svg{opacity:.55;transition:opacity .4s}
+.st-print .scene .fil,.st-prep .scene .fil,.st-heat .scene .fil{opacity:.9}
+.st-print .scene .glow,.st-prep .scene .glow{opacity:.2}
+.st-heat .scene .glow{opacity:.7}.st-heat .scene .ph2{opacity:.4}.st-heat .scene .nz{fill:var(--dc);fill-opacity:1}
+.st-pause .scene .glow{opacity:.15}
+.st-idle .scene .head,.st-done .scene .head,.st-off .scene .head,.st-error .scene .head,.st-cool .scene .head{transform:translateX(20px)}
+/* Bewegung nur mit .anim und sichtbar, dezent wie bei den Gerätekarten */
+.anim.st-print .scene .head{animation:pr-x 3.2s ease-in-out infinite alternate}
+.anim:is(.st-print,.st-prep,.st-heat) .scene .fil{animation:pr-flow 1.2s linear infinite}
+.anim.st-heat .scene .glow,.anim.st-heat .scene .ph2{animation:pr-pulse 2.4s ease-in-out infinite}
+.anim.st-pause .scene .sl.act .sled{animation:pr-blink 2s ease-in-out infinite}
+.anim.st-cool .scene .wisp path{animation:pr-wisp 3s ease-out infinite}
+.scene .wisp path:nth-child(2){animation-delay:.8s}.scene .wisp path:nth-child(3){animation-delay:1.6s}
+.anim.warn .scene .wn{animation:pr-pop 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 /* Meldungen */
 .anim.m-level .scene .head{animation:pr-lvl 6s ease-in-out infinite}
-.anim.m-level .scene .hz{animation:pr-tap 1.2s ease-in-out infinite}
 .m-level .scene .dots circle{opacity:.9}.anim.m-level .scene .dots circle{animation:pr-dot 6s steps(1) infinite}
 .anim.m-level .scene .dots circle:nth-child(2){animation-delay:1.2s}.anim.m-level .scene .dots circle:nth-child(3){animation-delay:2.4s}.anim.m-level .scene .dots circle:nth-child(4){animation-delay:3.6s}.anim.m-level .scene .dots circle:nth-child(5){animation-delay:4.8s}
-.m-wipe .scene .head{transform:translateX(-62px)}.anim.m-wipe .scene .head{animation:pr-wipe .5s ease-in-out infinite alternate}
-.m-calib .scene .cal rect{opacity:.9}.anim.m-calib .scene .cal rect{animation:pr-line 5s ease-out infinite}
-.anim.m-calib .scene .cal rect:nth-child(2){animation-delay:1s}.anim.m-calib .scene .cal rect:nth-child(3){animation-delay:2s}.anim.m-calib .scene .cal rect:nth-child(4){animation-delay:3s}.anim.m-calib .scene .cal rect:nth-child(5){animation-delay:4s}
-.anim.m-calib .scene .head{animation:pr-cal 5s linear infinite}
-.m-scan .scene .beam{opacity:.6}.anim.m-scan .scene .head{animation:pr-scan 3.2s ease-in-out infinite alternate}.anim.m-scan .scene .beam{animation:pr-pulse 1s ease-in-out infinite}
+.m-wipe .scene .head{transform:translateX(-24px)}.anim.m-wipe .scene .head{animation:pr-wipe .6s ease-in-out infinite alternate}
+.m-calib .scene .cal rect{opacity:.9}.anim.m-calib .scene .cal rect{animation:pr-line 4s ease-out infinite}
+.anim.m-calib .scene .cal rect:nth-child(2){animation-delay:1s}.anim.m-calib .scene .cal rect:nth-child(3){animation-delay:2s}.anim.m-calib .scene .cal rect:nth-child(4){animation-delay:3s}
+.anim.m-calib .scene .head{animation:pr-cal 4s linear infinite}
+.m-scan .scene .beam{opacity:.5}.anim.m-scan .scene .head{animation:pr-scan 3.2s ease-in-out infinite alternate}
 .anim.m-home .scene .head{animation:pr-home 3s ease-in-out infinite}
-.m-change .scene .head{transform:translateX(-62px)}
 .anim.m-change .scene .fil{animation:pr-chg 3s ease-in-out infinite}.anim.m-change .scene .sl.act .sled{animation:pr-blink .8s ease-in-out infinite}
-.anim.m-change .scene .sl.act .rot{opacity:1;animation:pr-rot .6s linear infinite reverse}
-.m-empty .scene .sl.act .fl,.m-empty .scene .sl.act .cy{opacity:.12}.m-empty .scene .fil{animation:none!important;opacity:.25}
-.anim:is(.m-empty,.m-tangle,.m-ams) .scene .sl.wn .sw{animation:pr-blink 1s ease-in-out infinite}
-.anim.m-tangle .scene .sl.act{animation:pr-jit .12s linear infinite}.m-tangle .scene .fil{animation:none!important}
-.m-ams .scene .sled{fill:var(--nv-warn)}.anim.m-ams .scene .sled{animation:pr-blink 1s ease-in-out infinite}
+.m-empty .scene .sl.act .fl{opacity:.15}.m-empty .scene .fil{animation:none!important;opacity:.2}
+.anim:is(.m-empty,.m-tangle) .scene .sl.wn .sw0{animation:pr-blinks 1s ease-in-out infinite}
+.anim.m-tangle .scene .sl.act .fl{animation:pr-jit .14s linear infinite}.m-tangle .scene .fil{animation:none!important}
+.m-ams .scene .sled{fill:var(--nv-warn);fill-opacity:1}.anim.m-ams .scene .sled{animation:pr-blink 1s ease-in-out infinite}
 .m-spaghetti .scene .spag{opacity:1;stroke-dashoffset:0}.anim.m-spaghetti .scene .spag{animation:pr-draw 3s ease-out infinite}
-.m-shift .scene .obj{transform:translateX(7px) skewX(-8deg)}
-.m-clog .scene .nz{fill:var(--nv-error)}.anim.m-clog .scene .nz{animation:pr-blink .7s ease-in-out infinite}.m-clog .scene .fil{animation:none!important}
-.m-door .scene .door{transform:scaleX(.1)}.m-door .scene .dedge{opacity:1}
-.m-lid .scene .top{transform:translateY(-9px) rotate(-5deg)}
-.m-fan .scene .bl{animation:none!important}.m-fan .scene .fan{stroke:var(--nv-error);stroke-width:1.2}
-.m-temp .scene .glow{opacity:.9}.m-temp .scene .pheat{fill:var(--nv-error);opacity:.6}.anim.m-temp .scene .pheat,.anim.m-temp .scene .glow{animation:pr-pulse 1s ease-in-out infinite}
+.m-shift .scene .obj{transform:translateX(4px) skewX(-8deg)}
+.m-clog .scene .nz{fill:var(--nv-error);fill-opacity:1}.anim.m-clog .scene .nz{animation:pr-blink .8s ease-in-out infinite}.m-clog .scene .fil{animation:none!important}
+.m-door .scene .door{transform:scaleX(.12)}.m-door .scene .dedge{opacity:1}
+.m-lid .scene .top{transform:translateY(-4px) rotate(-4deg)}
+.m-temp .scene .glow,.m-temp .scene .ph2{fill:var(--nv-error);opacity:.6}.anim.m-temp .scene .glow,.anim.m-temp .scene .ph2{animation:pr-pulse 1.2s ease-in-out infinite}
 .still .scene *{animation-play-state:paused!important}
-.anim:not(.still) .scene>svg{will-change:transform}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important;transition:none!important}}
-@keyframes pr-x{from{transform:translateX(-11px)}to{transform:translateX(11px)}}
-@keyframes pr-buzz{0%,100%{transform:translateY(0)}50%{transform:translateY(-.3px)}}
-@keyframes pr-flow{to{stroke-dashoffset:-7}}
-@keyframes pr-chg{0%,40%{stroke-dashoffset:0}20%{stroke-dashoffset:21}60%,100%{stroke-dashoffset:-21}}
-@keyframes pr-spin{to{transform:rotate(360deg)}}
-@keyframes pr-rot{from{transform:translateY(0)}to{transform:translateY(56px)}}
-@keyframes pr-pulse{0%,100%{opacity:.2}50%{opacity:.85}}
+@keyframes pr-x{from{transform:translateX(-12px)}to{transform:translateX(12px)}}
+@keyframes pr-flow{to{stroke-dashoffset:-5.5}}
+@keyframes pr-chg{0%,40%{stroke-dashoffset:0}20%{stroke-dashoffset:16}60%,100%{stroke-dashoffset:-16}}
+@keyframes pr-pulse{0%,100%{opacity:.2}50%{opacity:.75}}
 @keyframes pr-blink{0%,100%{opacity:1}50%{opacity:.25}}
-@keyframes pr-fade{from{opacity:.8}to{opacity:0}}
-@keyframes pr-wisp{0%{opacity:0;transform:translateY(6px)}40%{opacity:.7}100%{opacity:0;transform:translateY(-14px)}}
-@keyframes pr-glare{from{transform:translateX(0)}to{transform:translateX(70px)}}
-@keyframes pr-check{from{stroke-dashoffset:14}to{stroke-dashoffset:0}}
-@keyframes pr-pop{0%{transform:translate(74px,172px) scale(.3)}70%{transform:translate(74px,172px) scale(1.15)}100%{transform:translate(74px,172px) scale(1)}}
-@keyframes pr-throb{0%,100%{opacity:1}50%{opacity:.45}}
-@keyframes pr-lvl{0%,100%{transform:translateX(-51px)}20%{transform:translateX(-27px)}40%{transform:translateX(-3px)}60%{transform:translateX(21px)}80%{transform:translateX(45px)}}
-@keyframes pr-tap{0%,60%,100%{transform:translateY(0)}75%{transform:translateY(4px)}}
+@keyframes pr-blinks{0%,100%{stroke-opacity:1}50%{stroke-opacity:.2}}
+@keyframes pr-wisp{0%{opacity:0;transform:translateY(3px)}40%{opacity:.6}100%{opacity:0;transform:translateY(-8px)}}
+@keyframes pr-pop{0%,100%{transform:translate(66px,37px) scale(.55)}50%{transform:translate(66px,37px) scale(.63)}}
+@keyframes pr-lvl{0%,100%{transform:translateX(-20px)}20%{transform:translateX(-10px)}40%{transform:translateX(0)}60%{transform:translateX(10px)}80%{transform:translateX(20px)}}
 @keyframes pr-dot{0%{opacity:.15}100%{opacity:.9}}
-@keyframes pr-wipe{from{transform:translateX(-66px)}to{transform:translateX(-58px)}}
+@keyframes pr-wipe{from{transform:translateX(-26px)}to{transform:translateX(-22px)}}
 @keyframes pr-line{0%{opacity:0;transform:scaleX(0)}20%{opacity:.9;transform:scaleX(1)}90%{opacity:.9}100%{opacity:0}}
-@keyframes pr-cal{0%{transform:translateX(-45px)}100%{transform:translateX(43px)}}
-@keyframes pr-scan{from{transform:translateX(-56px)}to{transform:translateX(56px)}}
-@keyframes pr-home{0%,100%{transform:translateX(0)}35%,55%{transform:translateX(-62px)}}
-@keyframes pr-jit{0%,100%{transform:translateX(0)}50%{transform:translateX(.8px)}}
-@keyframes pr-draw{0%{stroke-dashoffset:240}60%,100%{stroke-dashoffset:0}}`;
+@keyframes pr-cal{0%{transform:translateX(-19px)}100%{transform:translateX(14px)}}
+@keyframes pr-scan{from{transform:translateX(-22px)}to{transform:translateX(22px)}}
+@keyframes pr-home{0%,100%{transform:translateX(0)}35%,55%{transform:translateX(-24px)}}
+@keyframes pr-jit{0%,100%{transform:translateX(0)}50%{transform:translateX(.5px)}}
+@keyframes pr-draw{0%{stroke-dashoffset:120}60%,100%{stroke-dashoffset:0}}`;
   var NovaPrinterCard = class extends HTMLElement {
     static getConfigElement() {
       return document.createElement(tag("drucker-card-editor"));
@@ -8853,11 +8744,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._built = true;
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" }), rv = roleVars(c.color);
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${PCSS3}</style>
-<div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}${c.show_display === false ? " nodisp" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
 <div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
 <div class="tm"><span class="rm"></span><span class="en"></span></div><div class="kvs"></div></div></div>
-<div class="amsl"></div><div class="als"></div><div class="acts"></div><div class="xtra"></div></div>`;
+<div class="cam" hidden><img alt=""></div><div class="amsl"></div><div class="als"></div><div class="acts"></div><div class="xtra"></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
         g: q(".g"),
@@ -8878,17 +8769,22 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         als: q(".als"),
         acts: q(".acts"),
         svg: q(".scene svg"),
-        bed: q(".bed"),
         ocr: q(".ocr"),
-        tt: q(".tt"),
-        ts: q(".ts"),
-        tfill: q(".tfill"),
-        unit: q(".unit"),
-        sl: [0, 1, 2, 3].map((i) => ({ g: r.querySelectorAll(`.sl.s${i}`), fl: q(`.s${i} .fl`), fcl: q(`.s${i} .fcl`), mt: q(`.s${i} .mt`) }))
+        cam: q(".cam"),
+        img: q(".cam img"),
+        sl: [0, 1, 2, 3].map((i) => ({ g: q(`.sl.s${i}`), fl: q(`.s${i} .fl`) }))
       };
       const e = this._e;
       press(e.ic, { tap: () => this._act({ entity: this._en?.status, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: this._en?.status, hold_action: c.hold_action }, "hold") });
       press(e.li, { tap: () => this._light(), isolate: true });
+      press(e.cam, { tap: () => this._act({ entity: c.camera }, "tap", true) });
+      e.img.addEventListener("error", () => {
+        e.cam.hidden = true;
+        this._camErr = e.img.getAttribute("src");
+      });
+      e.img.addEventListener("load", () => {
+        if (this._camSrc === e.img.getAttribute("src")) e.cam.hidden = false;
+      });
       e.als.addEventListener("click", (ev) => {
         const el2 = ev.target.closest?.(".al[data-e]");
         if (el2) this._act({ entity: el2.dataset.e }, "tap", true);
@@ -8912,7 +8808,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       if (c.demo) return this._demo();
       const { e: en, dev } = this._ents();
       this._en = en;
-      this._ids = /* @__PURE__ */ new Set([...entityIds(c), ...Object.values(en).filter(Boolean), ...this._fans, ...this._sws]);
+      this._ids = new Set([...entityIds(c), ...Object.values(en).filter(Boolean), ...this._fans, ...this._sws, c.camera].filter(Boolean));
       const S = (k) => this._S(en[k]);
       const st = S("status"), raw = String(st?.state || "").toLowerCase(), stg = S("stage"), sv = ok2(stg) ? stg.state : null;
       const on = S("online"), p0 = num(S("progress"));
@@ -9024,8 +8920,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       g.classList.toggle("on", act && c.glow !== false);
       g.classList.toggle("lit", m.light !== false);
       this.classList.toggle("nv-na", cls === "off" && !m.demo && !this._S(this._en?.status));
-      const badge = m.fx === "temp" ? "tp" : m.fx === "fan" ? "fn" : bad || m.fx && MSG[m.fx].lvl !== "info" ? "wn" : cls === "done" ? "ok" : null;
-      ["ok", "wn", "tp", "fn"].forEach((k) => g.classList.toggle(`b-${k}`, badge === k));
+      g.classList.toggle("warn", bad || !!(m.fx && MSG[m.fx].lvl !== "info"));
       e.name.textContent = c.name ?? m.name ?? "3D-Drucker";
       setIcon(e.ic, c.icon || "mdi:printer-3d");
       e.ic.classList.toggle("on", act);
@@ -9040,37 +8935,24 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       g.classList.toggle("noams", !ams);
       g.classList.toggle("xs", !ams && !!m.ext);
       g.style.setProperty("--fc", actSlot?.c || "var(--dc)");
-      e.svg.setAttribute("viewBox", ams ? "0 44 260 256" : "0 106 260 194");
+      e.svg.setAttribute("viewBox", ams ? "0 3 100 96" : m.ext ? "0 7 100 92" : "0 24 100 75");
       const wnSlot = ["empty", "tangle"].includes(m.fx);
       e.sl.forEach((x, i) => {
-        const s = aU?.slots[i];
-        const f = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f, y = 75 - hh / 2;
-        [x.fl, x.fcl].forEach((r) => {
-          r.setAttribute("y", y.toFixed(1));
-          r.setAttribute("height", hh.toFixed(1));
-        });
-        x.g.forEach((n) => {
-          n.classList.toggle("act", !!s?.act);
-          n.classList.toggle("emp", !s || !!s.empty);
-          n.classList.toggle("wn", !!s?.act && wnSlot);
-          n.style.setProperty("--sc", s?.c || "#777");
-        });
-        x.mt.textContent = s && !s.empty ? s.mat : "–";
+        const s = aU?.slots[i], f = s ? s.empty ? 0 : s.rem == null ? 0.8 : Math.max(0.15, s.rem / 100) : 0, hh = 7 * f;
+        x.fl.setAttribute("y", (18.5 - hh).toFixed(2));
+        x.fl.setAttribute("height", hh.toFixed(2));
+        x.g.classList.toggle("act", !!s?.act);
+        x.g.classList.toggle("emp", !s || !!s.empty);
+        x.g.classList.toggle("wn", !!s?.act && wnSlot);
+        x.g.style.setProperty("--sc", s?.c || "#777");
       });
-      e.unit.textContent = units.length > 1 ? aU.name.replace(/^AMS\s*/i, "") : "";
       const p = m.p != null ? Math.max(0, Math.min(100, m.p)) / 100 : 0;
       const showObj = ["print", "pause", "done", "cool", "error", "prep", "heat"].includes(cls) && (p > 0 || cls === "done");
       const pp = cls === "done" || cls === "cool" ? Math.max(p, showObj ? 1 : 0) : p;
       g.classList.toggle("has-obj", showObj && pp > 0);
-      e.ocr.setAttribute("y", (PLATE - OBJ_H * pp).toFixed(1));
-      e.ocr.setAttribute("height", (OBJ_H * pp).toFixed(1));
-      const bedDown = ["idle", "off"].includes(cls) || ["done", "cool", "error"].includes(cls) && !showObj;
-      e.bed.style.transform = bedDown ? "translateY(0)" : `translateY(${(-(1 - pp) * OBJ_H).toFixed(1)}px)`;
-      const pct = m.p != null && (act || cls === "done") ? `${Math.round(m.p)}%` : "";
-      e.tt.textContent = act ? cls === "heat" && m.noz != null ? `${Math.round(m.noz)}°` : pct || CTXT[cls] : cls === "done" ? "Fertig" : cls === "error" ? "Fehler" : cls === "cool" ? `${Math.round(m.noz ?? 0)}°` : cls === "off" ? "" : "Bereit";
-      e.tt.style.fontSize = /^\d/.test(e.tt.textContent) ? "" : "7px";
-      e.ts.textContent = act && m.rem != null ? `${fmtShort(m.rem)}${m.layer != null ? ` · ${m.layer}/${m.layers ?? "?"}` : ""}` : m.file ? m.file.slice(0, 15) : "";
-      e.tfill.setAttribute("width", (26 * (act || cls === "done" ? p : 0)).toFixed(1));
+      e.ocr.setAttribute("y", (78 - 22 * pp).toFixed(2));
+      e.ocr.setAttribute("height", (22 * pp).toFixed(2));
+      this._cam(cls);
       const sp = c.show_progress !== false && m.p != null && (act || cls === "done");
       e.pc.innerHTML = sp ? `${Math.round(m.p)}<small>%</small>` : "";
       e.pc.hidden = !sp;
@@ -9096,6 +8978,25 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._acts(m);
       this._xtra();
       this._tick();
+    }
+    // Kamerabild unter der Zeichnung: immer oder nur beim Drucken, nicht verfügbar = ausgeblendet
+    _cam(cls) {
+      const c = this._c, e = this._e, s = this._S(c.camera), pic = s?.attributes.entity_picture;
+      const want = !!c.camera && !c.demo && ok2(s) && !!pic && (c.camera_mode !== "printing" || ["print", "prep", "heat", "pause"].includes(cls));
+      const live = want && dom(c.camera) === "camera";
+      if (!want) {
+        e.cam.hidden = true;
+        e.img.removeAttribute("src");
+        this._camSrc = null;
+      } else {
+        const src = `${pic}${pic.includes("?") ? "&" : "?"}_=${live ? this._camT || 0 : encodeURIComponent(s.state)}`;
+        if (src !== this._camSrc) {
+          this._camSrc = src;
+          e.img.src = src;
+        }
+        e.cam.hidden = this._camErr === src;
+      }
+      this._camLive = live;
     }
     _amsList(m, ams) {
       const c = this._c, us = [...ams ? m.units : [], ...m.ext ? [{ name: "Extern", slots: [m.ext], x: true }] : []];
@@ -9252,6 +9153,15 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         clearInterval(this._tm);
         this._tm = null;
       }
+      const cam = vis3 && this._e && this._camLive;
+      if (cam && !this._ct) this._ct = setInterval(() => {
+        this._camT = Date.now();
+        this._cam(this._prev);
+      }, 1e4);
+      if (!cam && this._ct) {
+        clearInterval(this._ct);
+        this._ct = null;
+      }
     }
     _act(o, kind, info) {
       return runAction(this, o, kind, info);
@@ -9280,6 +9190,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     { name: "ams_trays", selector: { entity: { domain: "sensor", multiple: true } } },
     { name: "external_spool", selector: SE("sensor") }
   ];
+  var PCAM = [{ name: "camera", selector: { entity: { domain: ["camera", "image"] } } }, sel("camera_mode", [["always", "Kamera immer"], ["printing", "Kamera nur beim Drucken"]])];
   var PXTRA = [{ name: "fans", selector: { entity: { domain: "fan", multiple: true } } }, { name: "switches", selector: { entity: { multiple: true } } }];
   var PSHOW = [
     g2(...["progress", "remaining"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
@@ -9288,8 +9199,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     g2(...["file", "stage"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
     g2(...["message", "ams_list"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
     g2(...["controls", "light"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
-    g2(...["fans", "switches"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
-    { name: "show_display", selector: { boolean: {} } }
+    g2(...["fans", "switches"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } })))
   ];
   var MKEYS = Object.keys(MSG);
   var PMSG = [];
@@ -9342,9 +9252,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     show_ams_list: "AMS-Slots als Liste",
     show_controls: "Knöpfe",
     show_light: "Licht-Knopf",
-    show_display: "Display am Drucker",
     show_fans: "Lüfter",
     show_switches: "Schalter",
+    camera: "Kamera",
+    camera_mode: "Kamerabild zeigen",
     fans: "Lüfter (Regler)",
     switches: "Weitere Schalter und Werte",
     ...Object.fromEntries(MKEYS.map((k) => [`msg_${k}`, MSG[k].label]))
@@ -9355,6 +9266,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     ams_trays: "Leer = alle AMS-Einheiten am Drucker automatisch. Bis zu 4 Slots pro Einheit",
     ams: "Ohne AMS zeigt die Zeichnung die Spule am Drucker (externe Spule)",
     external_spool: "Leer = automatisch",
+    camera: "Kamera- oder Bild-Entität. Das Bild steht unter der Zeichnung, antippen öffnet es groß. Nicht verfügbar = ausgeblendet",
     fans: "Leer = alle Lüfter des Druckers automatisch",
     switches: "Z. B. Kamera, Zeitraffer oder WLAN-Signal. Schalter lassen sich antippen, andere Werte öffnen die Details",
     stop_confirm: "Leer = ohne Rückfrage",
@@ -9383,7 +9295,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           else delete c.hide_messages;
         }
         if (v.device !== void 0 && v.device !== this._config.device) {
-          [...EKEYS, "fans"].forEach((k) => delete c[k]);
+          [...EKEYS, "fans", "camera"].forEach((k) => delete c[k]);
           Object.assign(c, detect(this._hass, v.device));
           c = strip2(c);
           this._emit(c);
@@ -9412,6 +9324,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           b.append(this._hint("Leer = automatisch vom gewählten Drucker. Nur ändern, wenn etwas falsch erkannt wird."), form(PENT), this._h4("Bedienung"), form(PCTL));
         }),
         this._section("ams", "mdi:tray-full", "AMS und Spulen", (b) => b.append(form(PAMS))),
+        this._section("cam", "mdi:cctv", "Kamera", (b) => b.append(form(PCAM))),
         this._section("xtra", "mdi:fan", "Lüfter und Schalter", (b) => b.append(form(PXTRA))),
         this._section("show", "mdi:eye-outline", "Anzeigen", (b) => b.append(form(PSHOW))),
         this._section("messages", "mdi:alert-circle-outline", "Meldungen", (b) => {

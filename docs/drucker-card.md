@@ -2,8 +2,8 @@
 
 [← Zurück zur Übersicht](../README.md)
 
-3D-Drucker der [Bambu-Lab-Integration](https://github.com/greghesp/ha-bambulab) mit animierter Druckerzeichnung (geschlossener
-CoreXY-Drucker mit Glastür, Touch-Display und AMS), Fortschritt, Restzeit, Endzeit, Schicht, Temperaturen, Dateiname, Druckphase,
+3D-Drucker der [Bambu-Lab-Integration](https://github.com/greghesp/ha-bambulab) mit animierter Druckerzeichnung (flach im Stil der
+Nova Gerät Card, mit AMS oder externer Spule), Kamerabild, Fortschritt, Restzeit, Endzeit, Schicht, Temperaturen, Dateiname, Druckphase,
 Meldungen, AMS-Slots und den Knöpfen Pause, Fortsetzen, Stopp und Kammerlicht. Alles ist im grafischen Editor einstellbar.
 
 ## Wenn du einfach nur deinen Drucker zeigen willst, dann so
@@ -43,6 +43,16 @@ ams_trays:
   - sensor.ams_1_slot_2
 ```
 
+## Wenn du das Kamerabild sehen willst, dann so
+
+Unter **Kamera** eine `camera.*`- oder `image.*`-Entität wählen (beim Wählen des Druckers wird sie vorbelegt). Das Bild steht in voller
+Kartenbreite unter der Zeichnung, antippen öffnet es groß. Ist das Bild nicht verfügbar, verschwindet der Bereich.
+
+```yaml
+camera: image.p1s_kamera
+camera_mode: printing   # always = immer, printing = nur während eines Drucks
+```
+
 ## Wenn du Lüfter regeln und weitere Schalter zeigen willst, dann so
 
 Unter der Zeichnung stehen alle Lüfter des Druckers als Regler. Zusätzliche Schalter oder Werte (Kamera, Zeitraffer, WLAN-Signal …)
@@ -65,7 +75,6 @@ Unter **Anzeigen** jede Anzeige einzeln aus- und einschalten:
 show_file: false        # Dateiname
 show_end_time: false    # „fertig um …“
 show_ams_list: false    # AMS-Slots unter der Zeichnung
-show_display: false     # Touch-Display an der Zeichnung
 show_controls: false    # Pause/Fortsetzen/Stopp
 show_light: false       # Licht-Knopf oben rechts
 show_fans: false        # Lüfter-Regler
@@ -126,15 +135,10 @@ demo_message: spaghetti
 demo_ams: true
 ```
 
-## Wenn du die Farben ändern willst, dann so
+## Wenn du die Farbe ändern willst, dann so
 
-`color` ist eine Farbrolle aus dem Theme (Fortschritt, Knöpfe, aktiver Slot). Das gedruckte Objekt hat automatisch die Farbe
-des aktiven Filaments. Das Gehäuse lässt sich im Theme färben:
-
-```yaml
-nova-printer-color: "#191d26"         # Gehäuse unten
-nova-printer-color-light: "#3a4252"   # Gehäuse oben
-```
+`color` ist eine Farbrolle aus dem Theme (Fortschritt, Knöpfe, aktiver Slot, Düse beim Aufheizen). Das gedruckte Objekt hat automatisch
+die Farbe des aktiven Filaments, das Gehäuse die Textfarbe wie bei den Gerätekarten.
 
 ## Alle Optionen
 
@@ -151,6 +155,7 @@ nova-printer-color-light: "#3a4252"   # Gehäuse oben
 | `stop_confirm` | `Druck wirklich abbrechen?` | Rückfrage vor Stopp, leer = ohne |
 | `ams` | `auto` | `auto`, `show`, `hide` |
 | `ams_trays`, `external_spool` | automatisch | AMS-Slots bzw. externe Spule |
+| `camera`, `camera_mode` | –, `always` | Kamerabild unter der Zeichnung |
 | `fans` | alle Lüfter des Druckers | Lüfter als Regler |
 | `switches` | – | Weitere Schalter oder Werte |
 | `show_*` | `true` | Anzeigen einzeln, siehe oben |
