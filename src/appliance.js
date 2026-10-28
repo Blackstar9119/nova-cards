@@ -7,13 +7,13 @@ import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, roleVars} from './shared/style
 import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, NUM, sel, ROLE, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
-import {sceneDefs, SCENE_CSS, frameGlow, sweep} from './shared/scene.js';
+import {PAL, sceneDefs, SCENE_CSS, frameGlow, sweep} from './shared/scene.js';
 
 /* ---------- Nova Gerät Card ---------- */
 // Gerätetypen: bestimmen nur Symbol, Standardtexte, Standardfarbe und Animation – die Entitäten wählt der Nutzer
 const TYPES = {
   washer: {label: 'Waschmaschine', icon: 'mdi:washing-machine', color: 'accent-1', run: 'Wäscht', alt: 'Schleudert', door: 'Tür offen', phase: ['spin', 'spinning', 'schleudern'], anims: ['detergent', 'softener'], dview: true},
-  dishwasher: {label: 'Spülmaschine', icon: 'mdi:dishwasher', color: 'accent-1', run: 'Spült', door: 'Tür offen', phase: [], dview: true},
+  dishwasher: {label: 'Spülmaschine', icon: 'mdi:dishwasher', color: 'accent-1', run: 'Spült', alt: 'Trocknet', door: 'Tür offen', phase: ['drying', 'dry', 'trocknen', 'ending'], dview: true},
   airfryer: {label: 'Airfryer', icon: 'mdi:toaster-oven', color: 'accent-2', run: 'Gart', heat: 'Heizt vor', door: 'Schublade offen', phase: [], dview: true},
   coffee: {label: 'Kaffeemaschine', icon: 'mdi:coffee-maker-outline', color: 'accent-3', run: 'Läuft', alt: 'Brüht', door: 'Tür offen', phase: ['brew', 'brewing', 'brühen'], anims: ['tank', 'beans', 'descale']},
   generic: {label: 'Gerät', icon: 'mdi:power-plug-outline', color: 'accent-1', run: 'Läuft', door: 'Tür offen', phase: []},
@@ -75,6 +75,29 @@ const WDOOR = `<circle class="rng" cx="100" cy="114" r="44" stroke="url(#w-cr)"/
 <g clip-path="url(#w-ci)"><path class="s-refl" d="M80 78 h22 l-40 62 v-32 z"/><path class="s-refl" d="M112 78 h6 l-56 86 v-12 z"/>
 <g transform="rotate(22 100 114)"><rect class="s-gls" x="38" y="56" width="16" height="116" fill="url(#w-gs)"/></g></g>
 <path class="sh" d="M71 102 a30 30 0 0 1 17 -18"/><rect class="hdl" x="140.6" y="106" width="3.6" height="16" rx="1.8"/>`;
+// Spülmaschine: Tür als Fläche mit Fensterausschnitt, Innenraum (oberer Korb mit Gläsern und Tassen, unterer Korb mit
+// Tellern und Besteckkorb, Sprüharme mit Wasserstrahl, Dampf beim Trocknen) und Beschlag auf dem Glas
+const QDOOR = 'M34 40 H166 V176.4 H34 Z M50 64 H150 a4 4 0 0 1 4 4 V160 a4 4 0 0 1 -4 4 H50 a4 4 0 0 1 -4 -4 V68 a4 4 0 0 1 4 -4 Z';
+const qWine = x => `<path class="qgl" d="M${x - 5} 104 Q${x - 5.4} 94 ${x - .8} 91.5 V85.4 h1.6 V91.5 Q${x + 5.4} 94 ${x + 5} 104 Z"/><rect class="qgl" x="${x - 4.4}" y="84.4" width="8.8" height="1.2" rx=".6"/><path class="qgh" d="M${x - 3.6} 101.6 Q${x - 3.9} 96 ${x - 1.8} 93.6"/>`;
+const qTumb = x => `<path class="qgl" d="M${x - 4} 104 L${x - 3.2} 91 h6.4 L${x + 4} 104 Z"/><path class="qgh" d="M${x - 2.6} 102 L${x - 2} 93"/>`;
+const qCup = (x, c) => `<path class="qcup${c ? ' c2' : ''}" d="M${x - 5} 104 v-9.5 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v9.5 Z"/><path class="qcuh" d="M${x + 5} 95.6 h1.4 a2.5 2.5 0 0 1 0 5 h-1.4"/><path class="qgh" d="M${x - 3.4} 102 v-7"/>`;
+const qWire = (y1, y2) => `<path class="qwire" d="${Array.from({length: 19}, (_, i) => `M${46 + i * 6} ${y1} V${y2}`).join(' ')}"/><rect class="qrl" x="45" y="${y2 - .6}" width="110" height="1.4" rx=".7"/><rect class="qrl t" x="45" y="${y1 - .4}" width="110" height=".9" rx=".45"/><circle class="qrol" cx="47" cy="${y2 + 1.6}" r="1.6"/><circle class="qrol" cx="153" cy="${y2 + 1.6}" r="1.6"/>`;
+const qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-.8, -.45, .45, .8].map(f => `<circle class="qnz" cx="${100 + f * w}" cy="${y + 1.1}" r=".55"/>`).join('')}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
+const qJets = (y, xs) => `<g class="qjet">${xs.map((x, i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1 : 1.3}" style="--dx:${x < 100 ? -4 : 4}px;animation-delay:${(i * .27).toFixed(2)}s"/>`).join('')}</g>`;
+const QIN = `<g class="qtop"><path class="qcut" d="M58 37.4 h18 M82 36.6 h16 M118 37.4 h20"/><ellipse class="qcuts" cx="76.6" cy="37.4" rx="2.2" ry="1.2"/><path class="qcutk" d="M98 36.6 h6 q-1 1.4 -6 1.2 Z"/>${qWire(33, 40.5)}</g>
+<g class="qup">${[58, 70].map(qWine).join('')}${qTumb(82)}${qCup(96)}${qCup(110, 1)}${qTumb(124)}${[136, 146].map(qWine).join('')}${qWire(88, 104.5)}</g>
+${qJets(108, [74, 84, 92, 108, 116, 126])}${qArm(109, 30)}
+<g class="qlo">${[56, 61.5, 67, 72.5, 78, 83.5].map((x, i) => `<ellipse class="qpl${i === 2 ? ' c2' : ''}" cx="${x}" cy="140" rx="2.4" ry="${i % 3 === 1 ? 16 : 15}" transform="rotate(-9 ${x} 140)"/><path class="qph" d="M${x - .9} 128 v9" transform="rotate(-9 ${x} 140)"/>`).join('')}
+${[94, 100.5].map(x => `<ellipse class="qpl" cx="${x}" cy="138" rx="2.8" ry="18" transform="rotate(-6 ${x} 138)"/><path class="qph" d="M${x - 1} 124 v10" transform="rotate(-6 ${x} 138)"/>`).join('')}
+<path class="qcut" d="M127 125 v13 M130.5 124 v14 M134 126 v12 M140 125 v13 M143.5 123.6 v14.4 M147 125 v13"/>
+<ellipse class="qcuts" cx="127" cy="124" rx="1.4" ry="2.2"/><ellipse class="qcuts" cx="140" cy="124" rx="1.4" ry="2.2"/><path class="qcutf" d="M129.6 121 v3 M130.5 120.6 v3.4 M131.4 121 v3 M142.6 120.4 v3.2 M143.5 120 v3.6 M144.4 120.4 v3.2"/>
+<path class="qcutk" d="M134 126 v-6.4 q1.4 1.6 1.2 6.4 Z M147 125 v-6.4 q1.4 1.6 1.2 6.4 Z"/>
+<rect class="s-part" x="122" y="134" width="30" height="21" rx="1.6" fill="url(#d-pt)"/><rect x="123" y="135" width="28" height="19" rx="1.2" fill="url(#d-pf)"/>
+${qWire(138, 156.5)}</g>
+${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" cx="100" cy="171" rx="9" ry="2"/>
+<g class="qstm">${[66, 90, 112, 136].map((x, i) => `<path d="M${x} 150 q3 -6 0 -12 q-3 -6 0 -12 q3 -6 0 -12" style="animation-delay:${(i * .8).toFixed(1)}s"/>`).join('')}</g>`;
+// Beschlag: feine Tropfen auf der Scheibe (laufen/trocknen)
+const QFOG = Array.from({length: 46}, (_, i) => { const x = 49 + ((i * 37) % 103), y = 67 + ((i * 53) % 94); return `<circle cx="${x}" cy="${y}" r="${(.35 + (i % 4) * .18).toFixed(2)}"/>`; }).join('');
 /* Animationen: reines SVG + CSS, laufen nur bei .st-run (bzw. Fertig-Effekt einmalig), stehen bei .still */
 const SV = {
   washer: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs('w')}
@@ -113,16 +136,45 @@ ${[0, 120, 240].map(a => `<g class="pdl" transform="rotate(${a} 100 114)"><path 
 <rect class="hng s-part" x="45" y="101" width="13" height="26" rx="3" fill="url(#w-pt)"/><g class="pd"><circle class="pdt" cx="105" cy="114" r="44"/>${WDOOR}<circle class="pgb" cx="100" cy="114" r="36" fill="url(#w-gb)"/></g>
 
 <g transform="translate(58 57) scale(1.15)">${DONE}</g><g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
-  dishwasher: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvd"><rect x="22" y="26" width="56" height="60" rx="5"/></clipPath></defs>
-<rect class="bd" x="14" y="6" width="72" height="88" rx="9"/><line class="sep" x1="14" y1="20" x2="86" y2="20"/>
-<rect class="hd2" x="38" y="11" width="24" height="3.5" rx="1.75"/><circle class="led" cx="78" cy="13" r="2"/>
-<rect class="gl" x="22" y="26" width="56" height="60" rx="5"/>
-<g class="dd"><g clip-path="url(#nvd)"><rect class="mist" x="22" y="26" width="56" height="60"/>
-<line class="rk" x1="24" y1="50" x2="76" y2="50"/><line class="rk" x1="24" y1="76" x2="76" y2="76"/>
-<rect class="pl" x="30" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="38" y="34" width="5" height="16" rx="2.5"/><rect class="pl" x="46" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="58" y="40" width="12" height="10" rx="3"/>
-<rect class="pl" x="30" y="60" width="5" height="16" rx="2.5"/><rect class="pl" x="38" y="58" width="5" height="18" rx="2.5"/><rect class="pl" x="56" y="62" width="14" height="14" rx="3"/>
-<g class="drops"><circle cx="34" cy="80" r="1.3"/><circle cx="44" cy="80" r="1.1"/><circle cx="50" cy="80" r="1.4"/><circle cx="57" cy="80" r="1.1"/><circle cx="66" cy="80" r="1.3"/><circle cx="40" cy="80" r="1"/></g>
-<g class="arm"><rect x="30" y="81" width="40" height="2.4" rx="1.2"/><circle cx="50" cy="82.2" r="2.4"/></g></g></g>${DONE}${WARN}</svg>`,
+  // Spülmaschine (Vorbild Siemens Unterbau): Bedienleiste mit Display, Edelstahlfront mit Rauchglas-Fenster, Körbe mit
+  // Gläsern, Tassen, Tellern und Besteck, zwei Sprüharme; Tür offen = Klappe nach unten, Körbe frei
+  dishwasher: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs('d')}
+<linearGradient id="d-pn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c212b"/><stop offset="1" stop-color="#0a0d12"/></linearGradient>
+<linearGradient id="d-bb" x1="0" y1="0" x2="1" y2="0"><stop offset=".18" stop-color="#fff" stop-opacity="0"/><stop offset=".34" stop-color="#fff" stop-opacity=".05"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#fff" stop-opacity=".03"/><stop offset=".86" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="d-od" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d6779"/><stop offset="1" stop-color="#2a303d"/></linearGradient>
+<radialGradient id="d-vg" cx=".5" cy=".45" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<radialGradient id="d-lt" cx=".5" cy="0" r="1"><stop offset="0" class="q-lc" stop-opacity=".36"/><stop offset="1" class="q-lc" stop-opacity="0"/></radialGradient>
+<pattern id="d-pf" width="3.4" height="3.4" patternUnits="userSpaceOnUse"><circle cx="1.7" cy="1.7" r=".75" fill="#000" fill-opacity=".45"/></pattern>
+<clipPath id="d-tc"><rect x="40" y="18" width="120" height="158"/></clipPath><clipPath id="d-wc"><rect x="46" y="64" width="108" height="100" rx="4"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="192" rx="72" ry="4.5"/><ellipse class="s-shd qshd" cx="100" cy="199" rx="76" ry="3"/>
+<rect class="s-body" x="34" y="14" width="132" height="175" rx="9" fill="url(#d-bd)"/><rect class="s-sheen" x="34" y="14" width="132" height="175" rx="9" fill="url(#d-sh)"/>
+<rect class="qplin" x="38" y="177" width="124" height="11" rx="1.5"/>${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => `<rect class="qvent" x="${70 + i * 7}" y="181" width="4" height="3" rx="1"/>`).join('')}
+<g clip-path="url(#d-tc)"><rect x="40" y="18" width="120" height="158" fill="url(#d-in)"/>
+<path class="qrail" d="M44.5 20 V172 M155.5 20 V172"/><rect class="s-part" x="95" y="19" width="10" height="3.6" rx="1.2" fill="url(#d-pt)"/>
+${QIN}<rect class="qdlt" x="40" y="18" width="120" height="158" fill="url(#d-lt)"/><rect x="40" y="18" width="120" height="158" fill="url(#d-vg)"/></g>
+<rect class="qgsk" x="40.5" y="18.5" width="119" height="157" rx="2"/>
+<g class="qdop"><path class="qodf" d="M34 176.4 H166 L172 195.4 H28 Z" fill="url(#d-od)"/><path class="qodh" d="M36 177.6 H164"/>
+<rect class="s-part" x="91" y="181" width="18" height="7" rx="1.4" fill="url(#d-pt)"/><rect class="qodd" x="93" y="183" width="9" height="3" rx=".8"/>
+<rect class="qedge" x="28" y="195.4" width="144" height="2.6" rx="1"/></g>
+<g class="qdoor"><path class="s-body" fill-rule="evenodd" fill="url(#d-bd)" d="${QDOOR}"/><path class="s-sheen" fill-rule="evenodd" fill="url(#d-sh)" d="${QDOOR}"/><path fill-rule="evenodd" fill="url(#d-bb)" d="${QDOOR}"/>
+<path class="qpan" d="M43 14 H157 a9 9 0 0 1 9 9 V40 H34 V23 a9 9 0 0 1 9 -9 Z" fill="url(#d-pn)"/><rect class="s-edge" x="40" y="15" width="120" height="1.2" rx=".6"/>
+<rect class="qsep" x="34" y="40" width="132" height=".8"/><rect class="qsh" x="34" y="40.8" width="132" height=".6"/>
+<circle class="qpw" cx="44" cy="25" r="2.2"/><path class="qpwl" d="M44 21.8 v2.4"/>
+${[52, 59, 66, 73].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width="${i % 2 ? 4 : 5}" height="1.2" rx=".6"/><rect class="qsel${i === 0 ? ' on' : ''}" x="${x - .5}" y="31" width="6" height="1.1" rx=".55"/>`).join('')}
+${[124, 131, 138, 145].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width="${i % 2 ? 5 : 4}" height="1.2" rx=".6"/><rect class="qsel" x="${x - .5}" y="31" width="6" height="1.1" rx=".55"/>`).join('')}
+<circle class="led" cx="157" cy="25" r="1.4"/>
+<rect class="s-part" x="80" y="16.5" width="40" height="28" rx="2.5" fill="url(#d-pt)"/><rect class="s-scr" x="83.5" y="19.5" width="33" height="13" rx="1.6"/>
+<text class="wdt" x="102.6" y="29.2"></text><g class="lk"><rect x="86.2" y="25.2" width="4.2" height="3.4" rx=".7"/><path d="M87.2 25.2 v-1 a1.1 1.1 0 0 1 2.2 0 v1"/></g>
+<path class="s-tgl" d="M85 20 h8 l-4 12 h-5 z"/><g class="qtb"><rect x="85" y="36.5" width="6" height="1.6" rx=".8"/><rect x="94" y="36.5" width="6" height="1.6" rx=".8"/><rect x="103" y="36.5" width="6" height="1.6" rx=".8"/><rect x="112" y="36.5" width="4" height="1.6" rx=".8"/></g>
+<rect class="s-part" x="66" y="46" width="4" height="5" rx="1" fill="url(#d-pt)"/><rect class="s-part" x="130" y="46" width="4" height="5" rx="1" fill="url(#d-pt)"/>
+<rect class="qhdl" x="62" y="48" width="76" height="3.4" rx="1.7" fill="url(#d-cr)"/><rect class="qhdh" x="64" y="48.4" width="72" height=".8" rx=".4"/>
+<rect class="qwin" x="44.6" y="62.6" width="110.8" height="102.8" rx="5"/>
+<rect class="qtint" x="46" y="64" width="108" height="100" rx="4"/>
+<g clip-path="url(#d-wc)"><rect class="qmist" x="46" y="64" width="108" height="100"/><g class="qfog">${QFOG}</g>
+<path class="s-refl" d="M60 64 h26 l-40 70 v-38 z"/><path class="s-refl" d="M98 64 h7 l-59 100 v-12 z"/>
+<g transform="rotate(18 100 114)"><rect class="s-gls" x="20" y="40" width="18" height="150" fill="url(#d-gs)"/></g></g>
+<rect class="s-glass" x="46" y="64" width="108" height="100" rx="4" fill="url(#d-gl)"/></g>
+<g transform="translate(58 57) scale(1.15)">${DONE}</g><g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
   // Airfryer: weiches Gehäuse, rundes Display mit Restzeit und Ring (Eieruhr), Schublade mit Fuge, Griff und Sichtfenster (abschaltbar)
   airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nva"><path d="M39 55 h22 a5 5 0 0 1 5 5 a7 7 0 0 1 -7 7 h-18 a7 7 0 0 1 -7 -7 a5 5 0 0 1 5 -5 Z"/></clipPath></defs>
 <g class="heat"><path d="M38 8 q3 -4 0 -7"/><path d="M50 8 q3 -4 0 -7"/><path d="M62 8 q3 -4 0 -7"/></g>
@@ -240,9 +292,6 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .st-run.alt .w-washer .spn{stroke-opacity:.1}.st-run.alt .w-washer .pdl{opacity:.55}
 .st-run .w-washer .dlt,.st-pause .w-washer .dlt{opacity:1}
 .anim.st-pause .w-washer .wdt{animation:dv-blinko 1.4s ease-in-out infinite}
-.anim.st-run .w-dishwasher .arm{animation:dv-arm 1.6s ease-in-out infinite alternate}
-.anim.st-run .w-dishwasher .drops circle{animation:dv-drop 1.4s ease-out infinite}
-.anim.st-run .w-dishwasher .mist{animation:dv-mist 3.2s ease-in-out infinite}
 .scene .fr line{stroke:color-mix(in srgb,var(--dc) var(--pp,0%),currentColor);stroke-opacity:calc(.35 + var(--pf,0) * .5);stroke-width:3.2;stroke-linecap:round}
 .scene .puff path{fill:none;stroke:currentColor;stroke-opacity:.6;stroke-width:1.6;stroke-linecap:round;opacity:0}
 /* Airfryer */
@@ -305,6 +354,62 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .w-washer .pd{transform-box:view-box;transform-origin:54px 114px;transition:transform .6s ease}
 .w-washer .scene .lk{stroke:#fff;stroke-opacity:.85;stroke-width:.7}.w-washer .scene .lk rect{fill:#fff}
 .st-off .w-washer .wdt,.st-off .w-washer .pdots .on{display:none}
+/* Spülmaschine im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
+.w-dishwasher{--gx:150px}
+.w-dishwasher .qplin{fill:#0d1016}.w-dishwasher .qvent{fill:#000;opacity:.45}
+.w-dishwasher .qrail{fill:none;stroke:#fff;stroke-opacity:.07;stroke-width:1.2}
+.w-dishwasher .qgsk{fill:none;stroke:#07090d;stroke-width:1.2;opacity:0;transition:opacity .4s}
+.w-dishwasher .qgl{fill:${PAL.glass};fill-opacity:.1;stroke:#fff;stroke-opacity:.38;stroke-width:.5}
+.w-dishwasher .qgh{fill:none;stroke:#fff;stroke-opacity:.42;stroke-width:.6;stroke-linecap:round}
+.w-dishwasher .qcup{fill:#8f99ad;fill-opacity:.55;stroke:rgba(0,0,0,.35);stroke-width:.4}
+.w-dishwasher .qcup.c2,.w-dishwasher .qpl.c2{fill:color-mix(in srgb,var(--dc) 55%,#c9d1de);fill-opacity:.5}
+.w-dishwasher .qcuh{fill:none;stroke:#8f99ad;stroke-opacity:.55;stroke-width:1}
+.w-dishwasher .qpl{fill:#c9d1de;fill-opacity:.42;stroke:#fff;stroke-opacity:.22;stroke-width:.4}
+.w-dishwasher .qph{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.5;stroke-linecap:round}
+.w-dishwasher .qcut{fill:none;stroke:${PAL.chrome};stroke-width:1;stroke-linecap:round}
+.w-dishwasher .qcuts{fill:${PAL.chrome}}.w-dishwasher .qcutf{fill:none;stroke:${PAL.chrome};stroke-width:.45;stroke-linecap:round}.w-dishwasher .qcutk{fill:${PAL.chromeMid}}
+.w-dishwasher .qwire{fill:none;stroke:#fff;stroke-opacity:.2;stroke-width:.45}
+.w-dishwasher .qrl{fill:${PAL.chromeMid}}.w-dishwasher .qrl.t{opacity:.7}.w-dishwasher .qrol{fill:#0b0e13;stroke:#fff;stroke-opacity:.18;stroke-width:.4}
+.w-dishwasher .qarm{transform-box:view-box}.w-dishwasher .qnz{fill:#0b0e13}.w-dishwasher .qhub{stroke:rgba(0,0,0,.4);stroke-width:.4}
+.w-dishwasher .qsmp{fill:#0b0e13;stroke:#fff;stroke-opacity:.12;stroke-width:.4}
+.w-dishwasher .qjet circle{fill:var(--dc);opacity:0}
+.w-dishwasher .qstm path{fill:none;stroke:#fff;stroke-opacity:.5;stroke-width:1.4;stroke-linecap:round;opacity:0}
+.w-dishwasher .q-lc{stop-color:var(--dc)}.w-dishwasher .qdlt{opacity:0;transition:opacity .6s}
+.w-dishwasher .qmist{fill:var(--dc);opacity:0;transition:opacity .6s}
+.w-dishwasher .qfog circle{fill:#fff;opacity:0;transition:opacity 1.2s}
+.w-dishwasher .qtint{fill:#05070b;opacity:.42;transition:opacity .6s}
+.w-dishwasher .qwin{fill:none;stroke:#07090d;stroke-width:2.4}
+.w-dishwasher .qpan{stroke:rgba(255,255,255,.1);stroke-width:.5}
+.w-dishwasher .qsep{fill:#000;opacity:.3}.w-dishwasher .qsh{fill:#fff;opacity:.06}
+.w-dishwasher .qlbl{fill:#fff;opacity:.2}.w-dishwasher .qsel{fill:#fff;opacity:.12}.w-dishwasher .qsel.on{fill:var(--dc);opacity:.9}
+.w-dishwasher .qpw{fill:none;stroke:#fff;stroke-opacity:.25;stroke-width:.6}.w-dishwasher .qpwl{stroke:#fff;stroke-opacity:.25;stroke-width:.6;stroke-linecap:round}
+.w-dishwasher .qtb rect{fill:#fff;opacity:.14}
+.w-dishwasher .qhdl{stroke:rgba(0,0,0,.4);stroke-width:.4}.w-dishwasher .qhdh{fill:#fff;opacity:.35}
+.w-dishwasher .wdt{font:600 8.4px Roboto,system-ui,sans-serif;fill:#fff;text-anchor:middle}
+.w-dishwasher .scene .lk{stroke:#fff;stroke-opacity:.85;stroke-width:.65}.w-dishwasher .scene .lk rect{fill:#fff}
+.dlock .w-dishwasher .lk,.st-run .w-dishwasher .lk,.st-pause .w-dishwasher .lk{display:inline}
+.st-off .w-dishwasher .wdt,.st-off .w-dishwasher .qsel.on{display:none}
+.st-off .w-dishwasher .qtint{opacity:.62}
+.w-dishwasher .qdoor{transform-box:view-box;transform-origin:100px 176.4px;transition:transform .6s ease,opacity .5s}
+.w-dishwasher .qdop,.w-dishwasher .qshd{opacity:0;transition:opacity .5s}
+.w-dishwasher .qodf{stroke:rgba(255,255,255,.18);stroke-width:.5}.w-dishwasher .qodh{fill:none;stroke:#fff;stroke-opacity:.14;stroke-width:.6}
+.w-dishwasher .qodd{fill:#0b0e13}.w-dishwasher .qedge{fill:#0d1016}
+/* Läuft: Innenlicht, Sprüharme drehen, Wasserstrahlen und Nebel hinter der Scheibe, Beschlag */
+.st-run .w-dishwasher .qdlt,.st-pause .w-dishwasher .qdlt{opacity:1}
+.st-run .w-dishwasher .qtint,.st-pause .w-dishwasher .qtint{opacity:.28}
+.st-run .w-dishwasher .qfog circle{opacity:.22}.st-run.alt .w-dishwasher .qfog circle{opacity:.3}
+.anim.st-run:not(.alt) .w-dishwasher .qarm{animation:dv-sarm 1.4s linear infinite}
+.anim.st-run:not(.alt) .w-dishwasher .qjet circle{animation:dv-jet 1.1s ease-out infinite}
+.anim.st-run:not(.alt) .w-dishwasher .qmist{animation:dv-mist 3.2s ease-in-out infinite}
+.anim.st-pause .w-dishwasher .wdt{animation:dv-blinko 1.4s ease-in-out infinite}
+/* Trocknet: Arme stehen, Dampf steigt langsam auf */
+.st-run.alt .w-dishwasher .qdlt{opacity:.45}
+.anim.st-run.alt .w-dishwasher .qstm path{animation:dv-steam 3.2s ease-out infinite}
+/* Tür offen: Klappe nach unten, Körbe frei, kein Wasser */
+.dopen .w-dishwasher .qdoor{transform:scaleY(0);opacity:0}
+.dopen .w-dishwasher .qdop,.dopen .w-dishwasher .qshd,.dopen .w-dishwasher .qgsk{opacity:1}
+.dopen .w-dishwasher .qdlt,.dopen .w-dishwasher .qjet,.dopen .w-dishwasher .qstm{opacity:0}
+.dopen .w-dishwasher .qarm{animation:none!important}
 /* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
 .scene .wn{display:none;transform-box:fill-box;transform-origin:center}
 .scene .wn{--wc:var(--nv-warn)}.st-err .scene .wn{--wc:var(--nv-error)}
@@ -322,7 +427,6 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .scene .lk{display:none;fill:none;stroke:currentColor;stroke-opacity:.8;stroke-width:1.4}.scene .lk rect{fill:currentColor;fill-opacity:.8;stroke:none}
 .dlock .w-washer .lk{display:inline}
 .scene .dd{transform-box:view-box;transition:transform .5s ease}
-.dopen .w-dishwasher .dd{transform:translateY(8px)}
 .h-detergent .w-washer .dw,.h-softener .w-washer .dw,.h-beans .w-coffee .bn,.h-descale .w-coffee .dp{fill:var(--nv-warn);fill-opacity:.95}
 .h-tank .w-coffee .tw{transform:translateY(40px)}.h-tank .w-coffee .tk{stroke:var(--nv-warn);stroke-opacity:1;stroke-width:1.4}
 .anim.h-detergent .w-washer .dw,.anim.h-softener .w-washer .dw,.anim.h-tank .w-coffee .tk,.anim.h-beans .w-coffee .bn,.anim.h-descale .w-coffee .dp{animation:dv-blinko 1.3s ease-in-out infinite}
@@ -351,6 +455,8 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important}}
 @keyframes dv-tumble{0%{transform:rotate(0)}40%{transform:rotate(220deg)}50%{transform:rotate(220deg)}90%,100%{transform:rotate(0)}}
 @keyframes dv-spin{to{transform:rotate(360deg)}}
+@keyframes dv-sarm{0%{transform:scaleX(1)}25%{transform:scaleX(.08)}50%{transform:scaleX(-1)}75%{transform:scaleX(.08)}100%{transform:scaleX(1)}}
+@keyframes dv-jet{0%{opacity:0;transform:translate(0,0)}20%{opacity:.85}100%{opacity:0;transform:translate(var(--dx,0),-20px)}}
 @keyframes dv-wave{to{transform:translateX(-25px)}}
 @keyframes dv-arm{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
 @keyframes dv-drop{0%{opacity:0;transform:translate(0,0)}20%{opacity:.9}100%{opacity:0;transform:translate(var(--dx,0),-46px)}}
@@ -829,7 +935,7 @@ const GTEXT = [g2({name: 'text_running', selector: T}, {name: 'text_paused', sel
 const GLOOK = t => [sel('layout', [['full', 'Voll'], ['compact', 'Kompakt (läuft gerade)']]), g2({name: 'hide_when_off', selector: {boolean: {}}}, {name: 'animation', selector: {boolean: {}}}),
   g2(ROLE('color'), {name: 'glow', selector: {boolean: {}}}), ...(t === 'airfryer' ? [{name: 'window', selector: {boolean: {}}}] : [])];
 const GACTS = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
-const PHASE_LBL = {washer: 'Zustände „schleudert“ (schnelle Trommel)', coffee: 'Zustände „brüht“ (Kaffee läuft in die Tasse)'};
+const PHASE_LBL = {dishwasher: 'Zustände „trocknet“ (Dampf statt Sprüharm)', washer: 'Zustände „schleudert“ (schnelle Trommel)', coffee: 'Zustände „brüht“ (Kaffee läuft in die Tasse)'};
 const GLABELS = {...BASE_LABELS, device_type: 'Gerätetyp', entity: 'Status', power: 'Ein/Aus-Schalter', program: 'Programm', progress: 'Fortschritt (%)', duration: 'Gesamtdauer',
   remaining: 'Restzeit', end_time: 'Endzeit', phase: 'Phase (optional)', phase_states: 'Sonder-Zustände', display: 'Darstellung', step: 'Schrittweite', show: 'Anzeigen',
   start: 'Start', start_name: 'Text auf dem Start-Knopf', start_option: 'Programm für den Start', pause: 'Pause', resume: 'Fortsetzen', resume_with_start: 'Fortsetzen nutzt Start-Knopf', stop: 'Stopp',
