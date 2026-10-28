@@ -8486,6 +8486,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     show_ams_list: true,
     show_controls: true,
     show_light: true,
+    show_display: true,
     show_fans: true,
     camera_mode: "always",
     show_switches: true,
@@ -8500,6 +8501,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var fmtDur2 = (sec) => {
     const m = Math.max(0, Math.round(sec / 60));
     return m < 1 ? "< 1 min" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h`;
+  };
+  var fmtShort = (sec) => {
+    const m = Math.max(0, Math.round(sec / 60));
+    return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
   };
   var OBJ_H = 44;
   var PLATE = 232;
@@ -8578,7 +8583,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 <g class="top"><rect class="lid" x="38" y="112" width="176" height="5" rx="2.5"/>
 <g class="ams">${SPOOL}<rect class="dome" x="48" y="51" width="156" height="42" rx="16"/><path class="dhl" d="M64 53 h40 l-30 36 h-14 z"/>
 <rect class="abase" x="46" y="87" width="160" height="24" rx="7"/>${FEED}<text class="unit" x="201" y="108"></text></g></g>
+<g class="tab"><ellipse class="dsh" cx="70" cy="146" rx="28" ry="2.4"/>
+<path class="tbz" d="M42 116 h56 a4 4 0 0 1 4 4 l-1.5 20 a4 4 0 0 1 -4 3.6 h-53 a4 4 0 0 1 -4 -3.6 l-1.5 -20 a4 4 0 0 1 4 -4 z"/>
+<rect class="tbh" x="44" y="116.8" width="52" height="1" rx=".5"/><rect class="tsc" x="45" y="119.5" width="50" height="20" rx="2.5"/>
+<text class="tt" x="48.5" y="132.5"></text><rect class="tbar" x="70" y="125" width="22.5" height="2" rx="1"/><rect class="tfill" x="70" y="125" width="0" height="2" rx="1"/>
+<text class="ts" x="70" y="133.5"></text><path class="tgl" d="M47 120 h14 l-6 19 h-8 z"/></g>
 <g class="bdg" transform="translate(74 172)"><circle class="bc" r="9.5"/>
+<path class="b-ok" d="M-4.2 0.2 l2.9 2.9 l5.6 -6"/>
 <g class="b-wn"><path d="M0 -5.6 l5.6 9.7 h-11.2 z"/><rect x="-.65" y="-2.4" width="1.3" height="3.6" rx=".65"/><circle cx="0" cy="2.6" r=".8"/></g>
 <g class="b-tp"><rect x="-1.6" y="-6" width="3.2" height="8" rx="1.6"/><circle cx="0" cy="3.4" r="2.8"/></g>
 <g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g>
@@ -8683,17 +8694,22 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .scene .fd{fill:#0d1016}
 .scene .unit{font:600 6px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.55);text-anchor:end}
 .scene .xf{fill:#1d2025}.scene .xw{fill:var(--fc)}.scene .xc{fill:url(#pcy);opacity:.6}.scene .xh{fill:#3a3f47}
+.scene .tbz{fill:url(#phd);stroke:rgba(255,255,255,.18);stroke-width:.6}.scene .tbh{fill:rgba(255,255,255,.18)}.scene .tsc{fill:#0a0e14;stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .dsh{fill:#000;opacity:.35}
+.scene .tt{font:600 8px Roboto,system-ui,sans-serif;fill:#fff}.scene .ts{font:400 4px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.65)}
+.scene .tbar{fill:rgba(255,255,255,.15)}.scene .tfill{fill:var(--dc)}.scene .tgl{fill:#fff;opacity:.05}
+.nodisp .scene .tab{display:none}
 .scene .bdg{opacity:0;transition:opacity .3s}.scene .bdg>*{display:none}
 .scene .bc{fill:var(--bc,var(--dc));stroke:rgba(0,0,0,.25);stroke-width:.5}
+.scene .b-ok{fill:none;stroke:var(--dc-fg);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14}
 .scene .b-wn path{fill:#fff}.scene .b-wn rect,.scene .b-wn circle{fill:var(--bc)}
 .scene .b-tp,.scene .b-fn{fill:#fff}
 .scene .bdg{transform-box:fill-box}
-.b-wn .scene .bdg,.b-tp .scene .bdg,.b-fn .scene .bdg{opacity:1}
-.b-wn .scene .bc,.b-wn .scene .b-wn,.b-tp .scene .bc,.b-tp .scene .b-tp,.b-fn .scene .bc,.b-fn .scene .b-fn{display:inline}
+.b-ok .scene .bdg,.b-wn .scene .bdg,.b-tp .scene .bdg,.b-fn .scene .bdg{opacity:1}
+.b-ok .scene .bc,.b-ok .scene .b-ok,.b-wn .scene .bc,.b-wn .scene .b-wn,.b-tp .scene .bc,.b-tp .scene .b-tp,.b-fn .scene .bc,.b-fn .scene .b-fn{display:inline}
 .b-wn .scene,.b-tp .scene,.b-fn .scene{--bc:var(--nv-warn)}.bad .scene{--bc:var(--nv-error)}
 .noams .scene .ams{display:none}.scene .xsp{display:none}.noams.xs .scene .xsp{display:inline}
 /* Grundzustände */
-.st-off .scene>svg{opacity:.55;transition:opacity .4s}
+.st-off .scene>svg{opacity:.55;transition:opacity .4s}.st-off .scene .tab .tsc{fill:#08090b}.st-off .scene .tab text,.st-off .scene .tbar,.st-off .scene .tfill{display:none}
 .st-off .scene .stled{opacity:0}
 .st-print .scene .stled,.st-prep .scene .stled,.st-heat .scene .stled,.st-pause .scene .stled,.st-cool .scene .stled{opacity:1}
 .st-print .scene .glow,.st-prep .scene .glow{opacity:.65}
@@ -8708,12 +8724,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .anim:is(.st-print,.st-cool,.st-prep) .scene .bl{animation:pr-spin .45s linear infinite}
 .anim:is(.st-print,.st-prep) .scene .sl.act .rot{opacity:1;animation:pr-rot 1.4s linear infinite}
 .anim.st-heat .scene .glow,.anim.st-heat .scene .pheat{animation:pr-pulse 1.8s ease-in-out infinite}
-.anim.st-pause .scene .stled,.anim.st-pause .scene .sl.act .sled{animation:pr-blink 2s ease-in-out infinite}
+.anim.st-pause .scene .stled,.anim.st-pause .scene .tt,.anim.st-pause .scene .sl.act .sled{animation:pr-blink 2s ease-in-out infinite}
 .st-pause .scene .glow{opacity:.25}
 .anim.st-cool .scene .wisp path{animation:pr-wisp 2.6s ease-out infinite}
 .anim.st-cool .scene .glow{animation:pr-fade 8s ease-out both}
 .st-done .scene .gls{opacity:.7}.anim.st-done .scene .gls{animation:pr-glare .9s .1s ease-in-out both}
 .st-done .scene .gls{transform:translateX(70px)}
+.anim.st-done .scene .b-ok{animation:pr-check .5s .2s ease-out both}.anim.st-done .scene .bdg{animation:pr-pop .5s ease-out both}
 .anim.bad .scene .bdg,.anim.b-wn .scene .bdg{animation:pr-throb 1.6s ease-in-out infinite}
 /* Meldungen */
 .anim.m-level .scene .head{animation:pr-lvl 6s ease-in-out infinite}
@@ -8841,7 +8858,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._built = true;
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" }), rv = roleVars(c.color);
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${PCSS3}</style>
-<div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}${c.show_display === false ? " nodisp" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
 <div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
 <div class="tm"><span class="rm"></span><span class="en"></span></div><div class="kvs"></div></div></div>
@@ -8868,6 +8885,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         svg: q(".scene svg"),
         bed: q(".bed"),
         ocr: q(".ocr"),
+        tt: q(".tt"),
+        ts: q(".ts"),
+        tfill: q(".tfill"),
         unit: q(".unit"),
         cam: q(".cam"),
         img: q(".cam img"),
@@ -9019,8 +9039,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       g.classList.toggle("on", act && c.glow !== false);
       g.classList.toggle("lit", m.light !== false);
       this.classList.toggle("nv-na", cls === "off" && !m.demo && !this._S(this._en?.status));
-      const badge = m.fx === "temp" ? "tp" : m.fx === "fan" ? "fn" : bad || m.fx && MSG[m.fx].lvl !== "info" ? "wn" : null;
-      ["wn", "tp", "fn"].forEach((k) => g.classList.toggle(`b-${k}`, badge === k));
+      const badge = m.fx === "temp" ? "tp" : m.fx === "fan" ? "fn" : bad || m.fx && MSG[m.fx].lvl !== "info" ? "wn" : cls === "done" ? "ok" : null;
+      ["ok", "wn", "tp", "fn"].forEach((k) => g.classList.toggle(`b-${k}`, badge === k));
       e.name.textContent = c.name ?? m.name ?? "3D-Drucker";
       setIcon(e.ic, c.icon || "mdi:printer-3d");
       e.ic.classList.toggle("on", act);
@@ -9061,6 +9081,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.ocr.setAttribute("height", (OBJ_H * pp).toFixed(1));
       const bedDown = ["idle", "off"].includes(cls) || ["done", "cool", "error"].includes(cls) && !showObj;
       e.bed.style.transform = bedDown ? "translateY(0)" : `translateY(${(-(1 - pp) * OBJ_H).toFixed(1)}px)`;
+      const pct = m.p != null && (act || cls === "done") ? `${Math.round(m.p)}%` : "";
+      e.tt.textContent = act ? cls === "heat" && m.noz != null ? `${Math.round(m.noz)}°` : pct || CTXT[cls] : cls === "done" ? "Fertig" : cls === "error" ? "Fehler" : cls === "cool" ? `${Math.round(m.noz ?? 0)}°` : cls === "off" ? "" : "Bereit";
+      e.tt.style.fontSize = /^\d/.test(e.tt.textContent) ? "" : "7px";
+      e.ts.textContent = act && m.rem != null ? `${fmtShort(m.rem)}${m.layer != null ? ` · ${m.layer}/${m.layers ?? "?"}` : ""}` : m.file ? m.file.slice(0, 15) : "";
+      e.tfill.setAttribute("width", (26 * (act || cls === "done" ? p : 0)).toFixed(1));
       this._cam(cls);
       const sp = c.show_progress !== false && m.p != null && (act || cls === "done");
       e.pc.innerHTML = sp ? `${Math.round(m.p)}<small>%</small>` : "";
@@ -9308,7 +9333,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     g2(...["file", "stage"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
     g2(...["message", "ams_list"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
     g2(...["controls", "light"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
-    g2(...["fans", "switches"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } })))
+    g2(...["fans", "switches"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
+    { name: "show_display", selector: { boolean: {} } }
   ];
   var MKEYS = Object.keys(MSG);
   var PMSG = [];
@@ -9361,6 +9387,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     show_ams_list: "AMS-Slots als Liste",
     show_controls: "Knöpfe",
     show_light: "Licht-Knopf",
+    show_display: "Display am Drucker",
     show_fans: "Lüfter",
     show_switches: "Schalter",
     camera: "Kamera",

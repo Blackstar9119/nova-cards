@@ -89,10 +89,10 @@ function slotOf(s, id) {
 }
 
 const PDEF = {ams: 'auto', animation: true, glow: true, color: 'accent-1', show_progress: true, show_remaining: true, show_end_time: true, show_layer: true,
-  show_nozzle: true, show_bed: true, show_file: true, show_stage: true, show_message: true, show_ams_list: true, show_controls: true, show_light: true, show_fans: true, camera_mode: 'always', show_switches: true,
+  show_nozzle: true, show_bed: true, show_file: true, show_stage: true, show_message: true, show_ams_list: true, show_controls: true, show_light: true, show_display: true, show_fans: true, camera_mode: 'always', show_switches: true,
   stop_confirm: 'Druck wirklich abbrechen?'};
 // Anzeigen, die einzeln abschaltbar sind
-const SHOW = ['progress', 'remaining', 'end_time', 'layer', 'nozzle', 'bed', 'file', 'stage', 'message', 'ams_list', 'controls', 'light'];
+const SHOW = ['progress', 'remaining', 'end_time', 'layer', 'nozzle', 'bed', 'file', 'stage', 'message', 'ams_list', 'controls', 'light', 'display'];
 // Grundzustände der Zeichnung
 const CLS = ['off', 'idle', 'heat', 'prep', 'print', 'pause', 'done', 'error', 'cool'];
 const CTXT = {off: 'Aus', idle: 'Bereit', heat: 'Heizt auf', prep: 'Bereitet vor', print: 'Druckt', pause: 'Pausiert', done: 'Fertig', error: 'Fehler', cool: 'Kühlt ab'};
@@ -101,6 +101,7 @@ const ok = s => !!s && !BAD.has(s.state);
 const num = s => ok(s) && NUMRE.test(s.state) ? +s.state : null;
 const SECS = {s: 1, sec: 1, min: 60, m: 60, h: 3600, d: 86400};
 const fmtDur = sec => { const m = Math.max(0, Math.round(sec / 60)); return m < 1 ? '< 1 min' : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} h`; };
+const fmtShort = sec => { const m = Math.max(0, Math.round(sec / 60)); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
 const OBJ_H = 44, PLATE = 232;
 
 // Demo: Zustände und Daten zum Durchklicken im Editor
@@ -109,7 +110,7 @@ const DEMO_AMS = [{name: 'AMS A', slots: [{c: '#3d8bf5', mat: 'PLA', name: 'PLA 
   {c: '#4caf6a', mat: 'PLA', name: 'PLA Matt Grün', rem: 23}, {c: '#e5533d', mat: 'TPU', name: 'TPU Rot', rem: 8}]},
 {name: 'AMS B', slots: [{c: '#222428', mat: 'PLA', name: 'PLA Schwarz', rem: 90}, {c: '#f5b83d', mat: 'PLA', name: 'PLA Gelb', rem: 40}, {c: null, mat: '', name: '', rem: null, empty: true}, {c: '#9b6bd6', mat: 'PETG', name: 'PETG Lila', rem: 67}]}];
 
-/* Zeichnung: geschlossener CoreXY-Drucker von vorne (Vorbild P2S), AMS mit Rauchglas-Haube oben.
+/* Zeichnung: geschlossener CoreXY-Drucker von vorne (Vorbild P2S), AMS mit Rauchglas-Haube oben, Touch-Display links oben.
    viewBox 0 0 260 300; ohne AMS wird oben abgeschnitten. Alles bewegt sich nur per transform/opacity. */
 const SLOTX = [72, 108, 144, 180];
 // Spulen hochkant unter der Haube: Flansche links/rechts, Wicklung (Dicke = Restmenge), darunter Material und Slot-LED
@@ -177,7 +178,13 @@ const SCENE = `<svg viewBox="0 0 260 300" aria-hidden="true"><defs>
 <g class="top"><rect class="lid" x="38" y="112" width="176" height="5" rx="2.5"/>
 <g class="ams">${SPOOL}<rect class="dome" x="48" y="51" width="156" height="42" rx="16"/><path class="dhl" d="M64 53 h40 l-30 36 h-14 z"/>
 <rect class="abase" x="46" y="87" width="160" height="24" rx="7"/>${FEED}<text class="unit" x="201" y="108"></text></g></g>
+<g class="tab"><ellipse class="dsh" cx="70" cy="146" rx="28" ry="2.4"/>
+<path class="tbz" d="M42 116 h56 a4 4 0 0 1 4 4 l-1.5 20 a4 4 0 0 1 -4 3.6 h-53 a4 4 0 0 1 -4 -3.6 l-1.5 -20 a4 4 0 0 1 4 -4 z"/>
+<rect class="tbh" x="44" y="116.8" width="52" height="1" rx=".5"/><rect class="tsc" x="45" y="119.5" width="50" height="20" rx="2.5"/>
+<text class="tt" x="48.5" y="132.5"></text><rect class="tbar" x="70" y="125" width="22.5" height="2" rx="1"/><rect class="tfill" x="70" y="125" width="0" height="2" rx="1"/>
+<text class="ts" x="70" y="133.5"></text><path class="tgl" d="M47 120 h14 l-6 19 h-8 z"/></g>
 <g class="bdg" transform="translate(74 172)"><circle class="bc" r="9.5"/>
+<path class="b-ok" d="M-4.2 0.2 l2.9 2.9 l5.6 -6"/>
 <g class="b-wn"><path d="M0 -5.6 l5.6 9.7 h-11.2 z"/><rect x="-.65" y="-2.4" width="1.3" height="3.6" rx=".65"/><circle cx="0" cy="2.6" r=".8"/></g>
 <g class="b-tp"><rect x="-1.6" y="-6" width="3.2" height="8" rx="1.6"/><circle cx="0" cy="3.4" r="2.8"/></g>
 <g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g>
@@ -283,17 +290,22 @@ const PCSS = `
 .scene .fd{fill:#0d1016}
 .scene .unit{font:600 6px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.55);text-anchor:end}
 .scene .xf{fill:#1d2025}.scene .xw{fill:var(--fc)}.scene .xc{fill:url(#pcy);opacity:.6}.scene .xh{fill:#3a3f47}
+.scene .tbz{fill:url(#phd);stroke:rgba(255,255,255,.18);stroke-width:.6}.scene .tbh{fill:rgba(255,255,255,.18)}.scene .tsc{fill:#0a0e14;stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .dsh{fill:#000;opacity:.35}
+.scene .tt{font:600 8px Roboto,system-ui,sans-serif;fill:#fff}.scene .ts{font:400 4px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.65)}
+.scene .tbar{fill:rgba(255,255,255,.15)}.scene .tfill{fill:var(--dc)}.scene .tgl{fill:#fff;opacity:.05}
+.nodisp .scene .tab{display:none}
 .scene .bdg{opacity:0;transition:opacity .3s}.scene .bdg>*{display:none}
 .scene .bc{fill:var(--bc,var(--dc));stroke:rgba(0,0,0,.25);stroke-width:.5}
+.scene .b-ok{fill:none;stroke:var(--dc-fg);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14}
 .scene .b-wn path{fill:#fff}.scene .b-wn rect,.scene .b-wn circle{fill:var(--bc)}
 .scene .b-tp,.scene .b-fn{fill:#fff}
 .scene .bdg{transform-box:fill-box}
-.b-wn .scene .bdg,.b-tp .scene .bdg,.b-fn .scene .bdg{opacity:1}
-.b-wn .scene .bc,.b-wn .scene .b-wn,.b-tp .scene .bc,.b-tp .scene .b-tp,.b-fn .scene .bc,.b-fn .scene .b-fn{display:inline}
+.b-ok .scene .bdg,.b-wn .scene .bdg,.b-tp .scene .bdg,.b-fn .scene .bdg{opacity:1}
+.b-ok .scene .bc,.b-ok .scene .b-ok,.b-wn .scene .bc,.b-wn .scene .b-wn,.b-tp .scene .bc,.b-tp .scene .b-tp,.b-fn .scene .bc,.b-fn .scene .b-fn{display:inline}
 .b-wn .scene,.b-tp .scene,.b-fn .scene{--bc:var(--nv-warn)}.bad .scene{--bc:var(--nv-error)}
 .noams .scene .ams{display:none}.scene .xsp{display:none}.noams.xs .scene .xsp{display:inline}
 /* Grundzustände */
-.st-off .scene>svg{opacity:.55;transition:opacity .4s}
+.st-off .scene>svg{opacity:.55;transition:opacity .4s}.st-off .scene .tab .tsc{fill:#08090b}.st-off .scene .tab text,.st-off .scene .tbar,.st-off .scene .tfill{display:none}
 .st-off .scene .stled{opacity:0}
 .st-print .scene .stled,.st-prep .scene .stled,.st-heat .scene .stled,.st-pause .scene .stled,.st-cool .scene .stled{opacity:1}
 .st-print .scene .glow,.st-prep .scene .glow{opacity:.65}
@@ -308,12 +320,13 @@ const PCSS = `
 .anim:is(.st-print,.st-cool,.st-prep) .scene .bl{animation:pr-spin .45s linear infinite}
 .anim:is(.st-print,.st-prep) .scene .sl.act .rot{opacity:1;animation:pr-rot 1.4s linear infinite}
 .anim.st-heat .scene .glow,.anim.st-heat .scene .pheat{animation:pr-pulse 1.8s ease-in-out infinite}
-.anim.st-pause .scene .stled,.anim.st-pause .scene .sl.act .sled{animation:pr-blink 2s ease-in-out infinite}
+.anim.st-pause .scene .stled,.anim.st-pause .scene .tt,.anim.st-pause .scene .sl.act .sled{animation:pr-blink 2s ease-in-out infinite}
 .st-pause .scene .glow{opacity:.25}
 .anim.st-cool .scene .wisp path{animation:pr-wisp 2.6s ease-out infinite}
 .anim.st-cool .scene .glow{animation:pr-fade 8s ease-out both}
 .st-done .scene .gls{opacity:.7}.anim.st-done .scene .gls{animation:pr-glare .9s .1s ease-in-out both}
 .st-done .scene .gls{transform:translateX(70px)}
+.anim.st-done .scene .b-ok{animation:pr-check .5s .2s ease-out both}.anim.st-done .scene .bdg{animation:pr-pop .5s ease-out both}
 .anim.bad .scene .bdg,.anim.b-wn .scene .bdg{animation:pr-throb 1.6s ease-in-out infinite}
 /* Meldungen */
 .anim.m-level .scene .head{animation:pr-lvl 6s ease-in-out infinite}
@@ -423,7 +436,7 @@ export class NovaPrinterCard extends HTMLElement {
     this._built = true;
     const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'}), rv = roleVars(c.color);
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${PCSS}</style>
-<div class="g pr${c.animation !== false ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="g pr${c.animation !== false ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}${c.show_display === false ? ' nodisp' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
 <div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
 <div class="tm"><span class="rm"></span><span class="en"></span></div><div class="kvs"></div></div></div>
@@ -431,7 +444,7 @@ export class NovaPrinterCard extends HTMLElement {
     const q = s => r.querySelector(s);
     this._e = {g: q('.g'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), demo: q('.demo'), li: q('.li'), pc: q('.pc'), ph: q('.ph'), bar: q('.bar'), bari: q('.bar i'),
       rm: q('.rm'), en: q('.en'), kvs: q('.kvs'), amsl: q('.amsl'), xtra: q('.xtra'), als: q('.als'), acts: q('.acts'), svg: q('.scene svg'),
-      bed: q('.bed'), ocr: q('.ocr'), unit: q('.unit'), cam: q('.cam'), img: q('.cam img'),
+      bed: q('.bed'), ocr: q('.ocr'), tt: q('.tt'), ts: q('.ts'), tfill: q('.tfill'), unit: q('.unit'), cam: q('.cam'), img: q('.cam img'),
       sl: [0, 1, 2, 3].map(i => ({g: r.querySelectorAll(`.sl.s${i}`), fl: q(`.s${i} .fl`), fcl: q(`.s${i} .fcl`), mt: q(`.s${i} .mt`)}))};
     const e = this._e;
     press(e.ic, {tap: () => this._act({entity: this._en?.status, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: this._en?.status, hold_action: c.hold_action}, 'hold')});
@@ -525,9 +538,9 @@ export class NovaPrinterCard extends HTMLElement {
     g.classList.toggle('on', act && c.glow !== false);
     g.classList.toggle('lit', m.light !== false);
     this.classList.toggle('nv-na', cls === 'off' && !m.demo && !this._S(this._en?.status));
-    // Abzeichen: Warnung, Thermometer, Lüfter
-    const badge = m.fx === 'temp' ? 'tp' : m.fx === 'fan' ? 'fn' : bad || (m.fx && MSG[m.fx].lvl !== 'info') ? 'wn' : null;
-    ['wn', 'tp', 'fn'].forEach(k => g.classList.toggle(`b-${k}`, badge === k));
+    // Abzeichen: Haken, Warnung, Thermometer, Lüfter
+    const badge = m.fx === 'temp' ? 'tp' : m.fx === 'fan' ? 'fn' : bad || (m.fx && MSG[m.fx].lvl !== 'info') ? 'wn' : cls === 'done' ? 'ok' : null;
+    ['ok', 'wn', 'tp', 'fn'].forEach(k => g.classList.toggle(`b-${k}`, badge === k));
     // Kopf
     e.name.textContent = c.name ?? m.name ?? '3D-Drucker';
     setIcon(e.ic, c.icon || 'mdi:printer-3d');
@@ -563,6 +576,12 @@ export class NovaPrinterCard extends HTMLElement {
     e.ocr.setAttribute('height', (OBJ_H * pp).toFixed(1));
     const bedDown = ['idle', 'off'].includes(cls) || (['done', 'cool', 'error'].includes(cls) && !showObj);
     e.bed.style.transform = bedDown ? 'translateY(0)' : `translateY(${(-(1 - pp) * OBJ_H).toFixed(1)}px)`;
+    // Display am Drucker
+    const pct = m.p != null && (act || cls === 'done') ? `${Math.round(m.p)}%` : '';
+    e.tt.textContent = act ? (cls === 'heat' && m.noz != null ? `${Math.round(m.noz)}°` : pct || CTXT[cls]) : cls === 'done' ? 'Fertig' : cls === 'error' ? 'Fehler' : cls === 'cool' ? `${Math.round(m.noz ?? 0)}°` : cls === 'off' ? '' : 'Bereit';
+    e.tt.style.fontSize = /^\d/.test(e.tt.textContent) ? '' : '7px';
+    e.ts.textContent = act && m.rem != null ? `${fmtShort(m.rem)}${m.layer != null ? ` · ${m.layer}/${m.layers ?? '?'}` : ''}` : m.file ? m.file.slice(0, 15) : '';
+    e.tfill.setAttribute('width', (26 * (act || cls === 'done' ? p : 0)).toFixed(1));
     this._cam(cls);
     // Infos
     const sp = c.show_progress !== false && m.p != null && (act || cls === 'done');
@@ -760,7 +779,7 @@ const PXTRA = [{name: 'fans', selector: {entity: {domain: 'fan', multiple: true}
 const PSHOW = [g2(...['progress', 'remaining'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))), g2(...['end_time', 'layer'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))),
   g2(...['nozzle', 'bed'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))), g2(...['file', 'stage'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))),
   g2(...['message', 'ams_list'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))), g2(...['controls', 'light'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))),
-  g2(...['fans', 'switches'].map(k => ({name: `show_${k}`, selector: {boolean: {}}})))];
+  g2(...['fans', 'switches'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))), {name: 'show_display', selector: {boolean: {}}}];
 const MKEYS = Object.keys(MSG);
 const PMSG = [];
 for (let i = 0; i < MKEYS.length; i += 2) PMSG.push(g2(...MKEYS.slice(i, i + 2).map(k => ({name: `msg_${k}`, selector: {boolean: {}}}))));
@@ -773,7 +792,7 @@ const PLABELS = {...BASE_LABELS, device: 'Drucker (Bambu-Lab-Gerät)', status: '
   stop_confirm: 'Rückfrage vor dem Stopp', ams: 'AMS', ams_trays: 'AMS-Slots', external_spool: 'Externe Spule', color: 'Farbe', glow: 'Rahmen leuchtet beim Drucken',
   animation: 'Animation (aus = Standbild)', demo: 'Demo-Zustand', demo_message: 'Demo-Meldung', demo_ams: 'Demo mit AMS',
   show_progress: 'Fortschritt', show_remaining: 'Restzeit', show_end_time: 'Endzeit', show_layer: 'Schicht', show_nozzle: 'Düsentemperatur', show_bed: 'Betttemperatur',
-  show_file: 'Dateiname', show_stage: 'Druckphase', show_message: 'Meldungen', show_ams_list: 'AMS-Slots als Liste', show_controls: 'Knöpfe', show_light: 'Licht-Knopf', show_fans: 'Lüfter', show_switches: 'Schalter',
+  show_file: 'Dateiname', show_stage: 'Druckphase', show_message: 'Meldungen', show_ams_list: 'AMS-Slots als Liste', show_controls: 'Knöpfe', show_light: 'Licht-Knopf', show_display: 'Display am Drucker', show_fans: 'Lüfter', show_switches: 'Schalter',
   camera: 'Kamera', camera_mode: 'Kamerabild zeigen', fans: 'Lüfter (Regler)', switches: 'Weitere Schalter und Werte',
   ...Object.fromEntries(MKEYS.map(k => [`msg_${k}`, MSG[k].label]))};
 const PHELPERS = {

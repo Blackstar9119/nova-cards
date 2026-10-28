@@ -3,7 +3,7 @@
 [← Zurück zur Übersicht](../README.md)
 
 3D-Drucker der [Bambu-Lab-Integration](https://github.com/greghesp/ha-bambulab) mit animierter Druckerzeichnung (geschlossener
-CoreXY-Drucker mit Glastür und AMS), Kamerabild, Fortschritt, Restzeit, Endzeit, Schicht, Temperaturen, Dateiname, Druckphase,
+CoreXY-Drucker mit Glastür, Touch-Display und AMS), Kamerabild, Fortschritt, Restzeit, Endzeit, Schicht, Temperaturen, Dateiname, Druckphase,
 Meldungen, AMS-Slots und den Knöpfen Pause, Fortsetzen, Stopp und Kammerlicht. Alles ist im grafischen Editor einstellbar.
 
 ## Wenn du einfach nur deinen Drucker zeigen willst, dann so
@@ -77,6 +77,7 @@ show_end_time: false    # „fertig um …“
 show_ams_list: false    # AMS-Slots unter der Zeichnung
 show_controls: false    # Pause/Fortsetzen/Stopp
 show_light: false       # Licht-Knopf oben rechts
+show_display: false     # Touch-Display an der Zeichnung
 show_fans: false        # Lüfter-Regler
 show_switches: false    # weitere Schalter
 ```
