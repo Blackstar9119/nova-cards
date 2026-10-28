@@ -43,6 +43,20 @@ ams_trays:
   - sensor.ams_1_slot_2
 ```
 
+## Wenn du Lüfter regeln und weitere Schalter zeigen willst, dann so
+
+Unter der Zeichnung stehen alle Lüfter des Druckers als Regler. Zusätzliche Schalter oder Werte (Kamera, Zeitraffer, WLAN-Signal …)
+trägst du unter **Lüfter und Schalter** ein. Schalter lassen sich antippen, andere Werte öffnen die Details.
+
+```yaml
+fans:                 # leer = alle Lüfter des Druckers
+  - fan.p1s_bauteillufter
+  - fan.p1s_druckraumlufter
+switches:
+  - switch.p1s_kamera_aktivieren
+  - sensor.p1s_wi_fi_signalqualitat
+```
+
 ## Wenn du Anzeigen weglassen willst, dann so
 
 Unter **Anzeigen** jede Anzeige einzeln aus- und einschalten:
@@ -54,6 +68,8 @@ show_ams_list: false    # AMS-Slots unter der Zeichnung
 show_display: false     # Touch-Display an der Zeichnung
 show_controls: false    # Pause/Fortsetzen/Stopp
 show_light: false       # Licht-Knopf oben rechts
+show_fans: false        # Lüfter-Regler
+show_switches: false    # weitere Schalter
 ```
 
 Weitere: `show_progress`, `show_remaining`, `show_layer`, `show_nozzle`, `show_bed`, `show_stage`, `show_message`.
@@ -135,6 +151,8 @@ nova-printer-color-light: "#3a4252"   # Gehäuse oben
 | `stop_confirm` | `Druck wirklich abbrechen?` | Rückfrage vor Stopp, leer = ohne |
 | `ams` | `auto` | `auto`, `show`, `hide` |
 | `ams_trays`, `external_spool` | automatisch | AMS-Slots bzw. externe Spule |
+| `fans` | alle Lüfter des Druckers | Lüfter als Regler |
+| `switches` | – | Weitere Schalter oder Werte |
 | `show_*` | `true` | Anzeigen einzeln, siehe oben |
 | `hide_messages` | – | Meldungen ausblenden, siehe oben |
 | `color` | `accent-1` | Farbrolle |

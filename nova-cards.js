@@ -89,6 +89,21 @@
     if (a.above != null || a.below != null) return NUMRE.test(v) && (a.above == null || n > a.above) && (a.below == null || n < a.below);
     return ["on", "problem"].includes(v);
   }
+  var SLIDE = {
+    number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("number", "set_value", { entity_id: id, value: v }) },
+    input_number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("input_number", "set_value", { entity_id: id, value: v }) },
+    light: {
+      v: (s) => s.state === "on" ? Math.max(1, Math.round((s.attributes.brightness || 0) / 2.55)) : 0,
+      r: () => [0, 100, 1],
+      u: "%",
+      set: (h, id, v) => v > 0 ? h.callService("light", "turn_on", { entity_id: id, brightness_pct: v }) : h.callService("light", "turn_off", { entity_id: id })
+    },
+    fan: { v: (s) => s.state === "on" ? s.attributes.percentage ?? 0 : 0, r: (a) => [0, 100, a.percentage_step || 1], u: "%", set: (h, id, v) => h.callService("fan", "set_percentage", { entity_id: id, percentage: Math.round(v) }) },
+    cover: { v: (s) => s.attributes.current_position ?? 0, r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("cover", "set_cover_position", { entity_id: id, position: v }) },
+    media_player: { v: (s) => Math.round((s.attributes.volume_level ?? 0) * 100), r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("media_player", "volume_set", { entity_id: id, volume_level: v / 100 }) },
+    climate: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 7, a.max_temp ?? 35, a.target_temp_step ?? 0.5], u: "°", set: (h, id, v) => h.callService("climate", "set_temperature", { entity_id: id, temperature: v }) },
+    water_heater: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 30, a.max_temp ?? 70, a.target_temp_step ?? 1], u: "°", set: (h, id, v) => h.callService("water_heater", "set_temperature", { entity_id: id, temperature: v }) }
+  };
 
   // src/shared/actions.js
   var fire = (el2, type, detail) => el2.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
@@ -2241,21 +2256,6 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
   };
 
   // src/modular.js
-  var SLIDE = {
-    number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("number", "set_value", { entity_id: id, value: v }) },
-    input_number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("input_number", "set_value", { entity_id: id, value: v }) },
-    light: {
-      v: (s) => s.state === "on" ? Math.max(1, Math.round((s.attributes.brightness || 0) / 2.55)) : 0,
-      r: () => [0, 100, 1],
-      u: "%",
-      set: (h, id, v) => v > 0 ? h.callService("light", "turn_on", { entity_id: id, brightness_pct: v }) : h.callService("light", "turn_off", { entity_id: id })
-    },
-    fan: { v: (s) => s.state === "on" ? s.attributes.percentage ?? 0 : 0, r: (a) => [0, 100, a.percentage_step || 1], u: "%", set: (h, id, v) => h.callService("fan", "set_percentage", { entity_id: id, percentage: Math.round(v) }) },
-    cover: { v: (s) => s.attributes.current_position ?? 0, r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("cover", "set_cover_position", { entity_id: id, position: v }) },
-    media_player: { v: (s) => Math.round((s.attributes.volume_level ?? 0) * 100), r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("media_player", "volume_set", { entity_id: id, volume_level: v / 100 }) },
-    climate: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 7, a.max_temp ?? 35, a.target_temp_step ?? 0.5], u: "°", set: (h, id, v) => h.callService("climate", "set_temperature", { entity_id: id, temperature: v }) },
-    water_heater: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 30, a.max_temp ?? 70, a.target_temp_step ?? 1], u: "°", set: (h, id, v) => h.callService("water_heater", "set_temperature", { entity_id: id, temperature: v }) }
-  };
   var duration = (m) => m >= 60 ? `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, "0")} h` : `${m} min`;
   var ITEMS = { info: "entities", entities: "entities", sliders: "entities", buttons: "buttons", alerts: "alerts" };
   var normBlock = (b) => {
@@ -8407,8 +8407,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     light: ["light", ["chamber_light", "druckraumbeleuchtung"]],
     pause: ["button", ["pause", "druckvorgang_anhalten"]],
     resume: ["button", ["resume", "druckvorgang_fortsetzen"]],
-    stop: ["button", ["stop", "druckvorgang_beenden"]],
-    fan: ["fan", ["cooling_fan", "druckkopflufter"]]
+    stop: ["button", ["stop", "druckvorgang_beenden"]]
   };
   var EKEYS = Object.keys(ENTS);
   var isTray = (s) => !!s && s.attributes && "color" in s.attributes && "type" in s.attributes && "remain" in s.attributes;
@@ -8434,6 +8433,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         used.add(hit.entity_id);
       }
     }
+    const fans = ents.filter((e) => dom(e.entity_id) === "fan").map((e) => e.entity_id).sort();
+    if (fans.length) out.fans = fans;
     return out;
   }
   function trays(h, c, dev) {
@@ -8484,6 +8485,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     show_controls: true,
     show_light: true,
     show_display: true,
+    show_fans: true,
+    show_switches: true,
     stop_confirm: "Druck wirklich abbrechen?"
   };
   var CLS = ["off", "idle", "heat", "prep", "print", "pause", "done", "error", "cool"];
@@ -8608,6 +8611,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .tm{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;flex-wrap:wrap}.tm .rm{font-weight:600}.tm .en{opacity:.7}.tm:empty{display:none}
 .kvs .kv{padding:6px 0}.kvs .kv:first-child{border-top:none}
 .kvs .v b{font-weight:600;opacity:1}
+.kvs .fi .k{flex:none}.kvs .fi .v{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.xtra{display:flex;flex-direction:column;gap:10px}.xtra:empty{display:none}
+.xtra .fans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}
+.xtra .row{cursor:pointer}.xtra .row .ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);flex:none}
+.xtra .row.on .ic{background:var(--dc);color:var(--dc-fg)}.xtra .row .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.xtra .row b,.xtra .row small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xtra .row b{font-weight:600;font-size:13px}.xtra .row small{opacity:.65;font-size:11.5px}
+.xtra .na{opacity:.45}
+@container (max-width:340px){.xtra .fans{grid-template-columns:1fr}}
 .amsl{display:flex;flex-direction:column;gap:8px}.amsl:empty{display:none}
 .au{display:flex;align-items:center;gap:8px;min-width:0}
 .au .an{font-size:11px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;width:54px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -8834,6 +8845,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       EKEYS.forEach((k) => {
         out[k] = c[k] || this._det[k] || null;
       });
+      this._fans = c.show_fans === false ? [] : [].concat(c.fans?.length ? c.fans : this._det.fans || []);
+      this._sws = c.show_switches === false ? [] : [].concat(c.switches || []);
       return { e: out, dev };
     }
     _build() {
@@ -8844,7 +8857,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
 <div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
 <div class="tm"><span class="rm"></span><span class="en"></span></div><div class="kvs"></div></div></div>
-<div class="amsl"></div><div class="als"></div><div class="acts"></div></div>`;
+<div class="amsl"></div><div class="als"></div><div class="acts"></div><div class="xtra"></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
         g: q(".g"),
@@ -8861,6 +8874,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         en: q(".en"),
         kvs: q(".kvs"),
         amsl: q(".amsl"),
+        xtra: q(".xtra"),
         als: q(".als"),
         acts: q(".acts"),
         svg: q(".scene svg"),
@@ -8898,7 +8912,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       if (c.demo) return this._demo();
       const { e: en, dev } = this._ents();
       this._en = en;
-      this._ids = /* @__PURE__ */ new Set([...entityIds(c), ...Object.values(en).filter(Boolean)]);
+      this._ids = /* @__PURE__ */ new Set([...entityIds(c), ...Object.values(en).filter(Boolean), ...this._fans, ...this._sws]);
       const S = (k) => this._S(en[k]);
       const st = S("status"), raw = String(st?.state || "").toLowerCase(), stg = S("stage"), sv = ok2(stg) ? stg.state : null;
       const on = S("online"), p0 = num(S("progress"));
@@ -9066,12 +9080,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.rm.textContent = c.show_remaining !== false && act && m.rem != null ? `noch ${fmtDur2(m.rem)}` : "";
       e.en.textContent = c.show_end_time !== false && act && m.end != null && cls !== "pause" ? `fertig um ${this._clock(m.end)}` : "";
       const rows = [];
-      const row = (ic, k, v) => rows.push(`<div class="kv"><ha-icon icon="${ic}"></ha-icon><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`);
+      const row = (ic, k, v, x = "") => rows.push(`<div class="kv${x}"><ha-icon icon="${ic}"></ha-icon><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`);
       const tmp = (v, t) => v == null ? "–" : `<b>${Math.round(v)}</b>${t ? ` / ${Math.round(t)}` : ""} °C`;
       if (c.show_layer !== false && m.layer != null && (act || cls === "done")) row("mdi:layers-triple-outline", "Schicht", `<b>${m.layer}</b> / ${m.layers ?? "?"}`);
       if (c.show_nozzle !== false && m.noz != null) row("mdi:printer-3d-nozzle-heat-outline", "Düse", tmp(m.noz, m.nozT));
       if (c.show_bed !== false && m.bed != null) row("mdi:radiator", "Bett", tmp(m.bed, m.bedT));
-      if (c.show_file !== false && m.file) row("mdi:file-outline", "Datei", esc(m.file));
+      if (c.show_file !== false && m.file) row("mdi:file-outline", "Datei", esc(m.file), " fi");
       const kh = rows.join("");
       if (this._kk !== kh) {
         this._kk = kh;
@@ -9080,6 +9094,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._amsList(m, ams);
       this._alerts(m);
       this._acts(m);
+      this._xtra();
       this._tick();
     }
     _amsList(m, ams) {
@@ -9088,13 +9103,90 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const html = c.show_ams_list === false ? "" : us.map((u) => `<div class="au${u.x ? " x" : ""}"><span class="an">${esc(u.name)}</span><div class="ss">${u.slots.map((s) => {
         const r = s.empty ? 0 : s.rem;
         return `<div class="slot${s.act ? " act" : ""}${s.empty ? " emp" : ""}${s.act && wn ? " wn" : ""}" title="${esc(s.name)}" style="--c:${s.c || "#777"};--r:${r == null ? 100 : r}%"${s.id ? ` data-e="${esc(s.id)}"` : ""}>
-<span class="sc"></span><span class="st"><b>${esc(s.empty ? "Leer" : s.mat || "–")}</b><small>${s.empty ? "" : r == null ? "?" : `${Math.round(r)} %`}</small></span></div>`;
+<span class="sc"></span><span class="st"><b>${esc(s.empty ? "Leer" : s.mat || "–")}</b><small>${s.empty ? "" : r == null ? esc(s.name !== s.mat ? s.name : "") : `${Math.round(r)} %`}</small></span></div>`;
       }).join("")}</div></div>`).join("");
       if (this._ak !== html) {
         this._ak = html;
         this._e.amsl.innerHTML = html;
         this._e.amsl.querySelectorAll(".slot[data-e]").forEach((el2) => press(el2, { tap: () => this._act({ entity: el2.dataset.e }, "tap", true) }));
       }
+    }
+    // Lüfter (Regler) und weitere Schalter unter der Zeichnung
+    _xtra() {
+      const short = (h2, id) => {
+        const n = nameOf(h2, { entity: id }), d = h2.devices?.[h2.entities?.[id]?.device_id], dn = d?.name_by_user || d?.name;
+        return dn && n.startsWith(`${dn} `) ? n.slice(dn.length + 1) : n;
+      };
+      const h = this._h, fans = this._c.demo ? [] : this._fans || [], sws = this._c.demo ? [] : this._sws || [], key = `${fans}|${sws}`;
+      if (this._xk !== key) {
+        this._xk = key;
+        const box = this._e.xtra;
+        box.textContent = "";
+        this._xu = [];
+        if (fans.length) {
+          const sec = document.createElement("div");
+          sec.innerHTML = '<div class="bt">Lüfter</div><div class="fans"></div>';
+          fans.forEach((id) => {
+            const el2 = document.createElement("div");
+            el2.className = "sl";
+            el2.innerHTML = '<div class="kv"><ha-icon></ha-icon><span class="k"></span><span class="v"></span></div><input type="range" min="0" max="100">';
+            const inp = el2.lastChild, v = el2.querySelector(".v"), D = SLIDE.fan;
+            press(el2.firstChild, { tap: () => this._act({ entity: id }, "tap", true) });
+            const paint = () => {
+              inp.style.setProperty("--p", `${+inp.value}%`);
+              v.textContent = `${Math.round(+inp.value)} %`;
+            };
+            inp.addEventListener("input", () => {
+              el2._drag = true;
+              paint();
+            });
+            inp.addEventListener("change", () => {
+              D.set(this._h, id, +inp.value);
+              clearTimeout(el2._t);
+              el2._t = setTimeout(() => {
+                el2._drag = false;
+              }, 1500);
+            });
+            sec.lastChild.append(el2);
+            this._xu.push((h2) => {
+              const s = h2.states[id], na = !s || s.state === "unavailable";
+              el2.classList.toggle("na", na);
+              inp.disabled = na;
+              el2.querySelector("ha-icon").icon = iconOf(h2, { entity: id }, "mdi:fan");
+              el2.querySelector(".k").textContent = short(h2, id);
+              if (!s) {
+                v.textContent = "–";
+                return;
+              }
+              inp.step = D.r(s.attributes)[2];
+              if (!el2._drag) inp.value = D.v(s);
+              paint();
+            });
+          });
+          box.append(sec);
+        }
+        if (sws.length) {
+          const sec = document.createElement("div");
+          sec.innerHTML = '<div class="bt">Schalter</div><div class="list" style="--cols:2"></div>';
+          sws.forEach((id) => {
+            const el2 = document.createElement("div");
+            el2.className = "row";
+            el2.innerHTML = `<div class="ic"><ha-icon></ha-icon></div><div class="nm"><b></b><small></small></div>${TOGGLE.includes(dom(id)) ? '<div class="sw"></div>' : ""}`;
+            press(el2, { tap: () => this._act({ entity: id }, "tap"), hold: () => this._act({ entity: id }, "hold") });
+            sec.lastChild.append(el2);
+            this._xu.push((h2) => {
+              const s = h2.states[id];
+              el2.classList.toggle("na", !s || s.state === "unavailable");
+              el2.classList.toggle("on", isOn(s));
+              el2.querySelector("ha-icon").icon = iconOf(h2, { entity: id }, "mdi:toggle-switch-outline");
+              el2.querySelector("b").textContent = short(h2, id);
+              el2.querySelector("small").textContent = s ? valueOf(h2, s, { entity: id }) : "nicht gefunden";
+            });
+          });
+          box.append(sec);
+        }
+      }
+      this._xu.forEach((u) => u(h));
     }
     _alerts(m) {
       const c = this._c;
@@ -9188,6 +9280,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     { name: "ams_trays", selector: { entity: { domain: "sensor", multiple: true } } },
     { name: "external_spool", selector: SE("sensor") }
   ];
+  var PXTRA = [{ name: "fans", selector: { entity: { domain: "fan", multiple: true } } }, { name: "switches", selector: { entity: { multiple: true } } }];
   var PSHOW = [
     g2(...["progress", "remaining"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
     g2(...["end_time", "layer"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
@@ -9195,6 +9288,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     g2(...["file", "stage"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
     g2(...["message", "ams_list"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
     g2(...["controls", "light"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
+    g2(...["fans", "switches"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
     { name: "show_display", selector: { boolean: {} } }
   ];
   var MKEYS = Object.keys(MSG);
@@ -9249,6 +9343,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     show_controls: "Knöpfe",
     show_light: "Licht-Knopf",
     show_display: "Display am Drucker",
+    show_fans: "Lüfter",
+    show_switches: "Schalter",
+    fans: "Lüfter (Regler)",
+    switches: "Weitere Schalter und Werte",
     ...Object.fromEntries(MKEYS.map((k) => [`msg_${k}`, MSG[k].label]))
   };
   var PHELPERS = {
@@ -9257,6 +9355,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     ams_trays: "Leer = alle AMS-Einheiten am Drucker automatisch. Bis zu 4 Slots pro Einheit",
     ams: "Ohne AMS zeigt die Zeichnung die Spule am Drucker (externe Spule)",
     external_spool: "Leer = automatisch",
+    fans: "Leer = alle Lüfter des Druckers automatisch",
+    switches: "Z. B. Kamera, Zeitraffer oder WLAN-Signal. Schalter lassen sich antippen, andere Werte öffnen die Details",
     stop_confirm: "Leer = ohne Rückfrage",
     door: "Nur Drucker mit Türsensor. Offen = Tür klappt in der Zeichnung auf",
     color: "Farbrolle aus dem Theme (Fortschritt, Knöpfe; das Objekt hat die Farbe des aktiven Filaments)",
@@ -9283,7 +9383,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           else delete c.hide_messages;
         }
         if (v.device !== void 0 && v.device !== this._config.device) {
-          EKEYS.forEach((k) => delete c[k]);
+          [...EKEYS, "fans"].forEach((k) => delete c[k]);
           Object.assign(c, detect(this._hass, v.device));
           c = strip2(c);
           this._emit(c);
@@ -9312,6 +9412,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           b.append(this._hint("Leer = automatisch vom gewählten Drucker. Nur ändern, wenn etwas falsch erkannt wird."), form(PENT), this._h4("Bedienung"), form(PCTL));
         }),
         this._section("ams", "mdi:tray-full", "AMS und Spulen", (b) => b.append(form(PAMS))),
+        this._section("xtra", "mdi:fan", "Lüfter und Schalter", (b) => b.append(form(PXTRA))),
         this._section("show", "mdi:eye-outline", "Anzeigen", (b) => b.append(form(PSHOW))),
         this._section("messages", "mdi:alert-circle-outline", "Meldungen", (b) => {
           b.append(this._hint("Ausgeschaltete Meldungen erscheinen weder als Hinweis noch als Animation. HMS-Fehler, Druckfehler und Druckphasen werden über die Liste in printer-messages.js zugeordnet; Unbekanntes landet bei „Unbekannte Meldungen“."), form(PMSG));

@@ -1,6 +1,6 @@
 import {define, docUrl, tag} from './shared/define.js';
 import {esc, dom, setIcon, NUMRE} from './shared/utils.js';
-import {fmtState, langOf, tzOf} from './shared/state.js';
+import {fmtState, langOf, tzOf, isOn, TOGGLE, SLIDE, nameOf, iconOf, valueOf} from './shared/state.js';
 import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, roleVars} from './shared/styles.js';
@@ -33,7 +33,6 @@ const ENTS = {
   pause: ['button', ['pause', 'druckvorgang_anhalten']],
   resume: ['button', ['resume', 'druckvorgang_fortsetzen']],
   stop: ['button', ['stop', 'druckvorgang_beenden']],
-  fan: ['fan', ['cooling_fan', 'druckkopflufter']],
 };
 const EKEYS = Object.keys(ENTS);
 // Spulen-Sensoren (AMS-Slots, externe Spule) erkennt man an ihren Attributen
@@ -57,6 +56,8 @@ export function detect(h, dev) {
     }
     if (hit) { out[k] = hit.entity_id; used.add(hit.entity_id); }
   }
+  const fans = ents.filter(e => dom(e.entity_id) === 'fan').map(e => e.entity_id).sort();
+  if (fans.length) out.fans = fans;
   return out;
 }
 // AMS-Einheiten (Geräte, die über den Drucker angebunden sind) mit ihren Slots, plus externe Spule
@@ -86,7 +87,7 @@ function slotOf(s, id) {
 }
 
 const PDEF = {ams: 'auto', animation: true, glow: true, color: 'accent-1', show_progress: true, show_remaining: true, show_end_time: true, show_layer: true,
-  show_nozzle: true, show_bed: true, show_file: true, show_stage: true, show_message: true, show_ams_list: true, show_controls: true, show_light: true, show_display: true,
+  show_nozzle: true, show_bed: true, show_file: true, show_stage: true, show_message: true, show_ams_list: true, show_controls: true, show_light: true, show_display: true, show_fans: true, show_switches: true,
   stop_confirm: 'Druck wirklich abbrechen?'};
 // Anzeigen, die einzeln abschaltbar sind
 const SHOW = ['progress', 'remaining', 'end_time', 'layer', 'nozzle', 'bed', 'file', 'stage', 'message', 'ams_list', 'controls', 'light', 'display'];
@@ -207,6 +208,14 @@ const PCSS = `
 .tm{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;flex-wrap:wrap}.tm .rm{font-weight:600}.tm .en{opacity:.7}.tm:empty{display:none}
 .kvs .kv{padding:6px 0}.kvs .kv:first-child{border-top:none}
 .kvs .v b{font-weight:600;opacity:1}
+.kvs .fi .k{flex:none}.kvs .fi .v{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.xtra{display:flex;flex-direction:column;gap:10px}.xtra:empty{display:none}
+.xtra .fans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}
+.xtra .row{cursor:pointer}.xtra .row .ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);flex:none}
+.xtra .row.on .ic{background:var(--dc);color:var(--dc-fg)}.xtra .row .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.xtra .row b,.xtra .row small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xtra .row b{font-weight:600;font-size:13px}.xtra .row small{opacity:.65;font-size:11.5px}
+.xtra .na{opacity:.45}
+@container (max-width:340px){.xtra .fans{grid-template-columns:1fr}}
 .amsl{display:flex;flex-direction:column;gap:8px}.amsl:empty{display:none}
 .au{display:flex;align-items:center;gap:8px;min-width:0}
 .au .an{font-size:11px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;width:54px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -415,6 +424,8 @@ export class NovaPrinterCard extends HTMLElement {
     if (this._detKey !== `${dev}|${Object.keys(h.entities || {}).length}`) { this._detKey = `${dev}|${Object.keys(h.entities || {}).length}`; this._det = detect(h, dev); }
     const out = {};
     EKEYS.forEach(k => { out[k] = c[k] || this._det[k] || null; });
+    this._fans = c.show_fans === false ? [] : [].concat(c.fans?.length ? c.fans : this._det.fans || []);
+    this._sws = c.show_switches === false ? [] : [].concat(c.switches || []);
     return {e: out, dev};
   }
   _build() {
@@ -425,10 +436,10 @@ export class NovaPrinterCard extends HTMLElement {
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
 <div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
 <div class="tm"><span class="rm"></span><span class="en"></span></div><div class="kvs"></div></div></div>
-<div class="amsl"></div><div class="als"></div><div class="acts"></div></div>`;
+<div class="amsl"></div><div class="als"></div><div class="acts"></div><div class="xtra"></div></div>`;
     const q = s => r.querySelector(s);
     this._e = {g: q('.g'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), demo: q('.demo'), li: q('.li'), pc: q('.pc'), ph: q('.ph'), bar: q('.bar'), bari: q('.bar i'),
-      rm: q('.rm'), en: q('.en'), kvs: q('.kvs'), amsl: q('.amsl'), als: q('.als'), acts: q('.acts'), svg: q('.scene svg'),
+      rm: q('.rm'), en: q('.en'), kvs: q('.kvs'), amsl: q('.amsl'), xtra: q('.xtra'), als: q('.als'), acts: q('.acts'), svg: q('.scene svg'),
       bed: q('.bed'), ocr: q('.ocr'), tt: q('.tt'), ts: q('.ts'), tfill: q('.tfill'), unit: q('.unit'),
       sl: [0, 1, 2, 3].map(i => ({g: r.querySelectorAll(`.sl.s${i}`), fl: q(`.s${i} .fl`), fcl: q(`.s${i} .fcl`), mt: q(`.s${i} .mt`)}))};
     const e = this._e;
@@ -454,7 +465,7 @@ export class NovaPrinterCard extends HTMLElement {
     if (c.demo) return this._demo();
     const {e: en, dev} = this._ents();
     this._en = en;
-    this._ids = new Set([...entityIds(c), ...Object.values(en).filter(Boolean)]);
+    this._ids = new Set([...entityIds(c), ...Object.values(en).filter(Boolean), ...this._fans, ...this._sws]);
     const S = k => this._S(en[k]);
     const st = S('status'), raw = String(st?.state || '').toLowerCase(), stg = S('stage'), sv = ok(stg) ? stg.state : null;
     const on = S('online'), p0 = num(S('progress'));
@@ -574,17 +585,18 @@ export class NovaPrinterCard extends HTMLElement {
     e.rm.textContent = c.show_remaining !== false && act && m.rem != null ? `noch ${fmtDur(m.rem)}` : '';
     e.en.textContent = c.show_end_time !== false && act && m.end != null && cls !== 'pause' ? `fertig um ${this._clock(m.end)}` : '';
     const rows = [];
-    const row = (ic, k, v) => rows.push(`<div class="kv"><ha-icon icon="${ic}"></ha-icon><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`);
+    const row = (ic, k, v, x = '') => rows.push(`<div class="kv${x}"><ha-icon icon="${ic}"></ha-icon><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`);
     const tmp = (v, t) => v == null ? '–' : `<b>${Math.round(v)}</b>${t ? ` / ${Math.round(t)}` : ''} °C`;
     if (c.show_layer !== false && m.layer != null && (act || cls === 'done')) row('mdi:layers-triple-outline', 'Schicht', `<b>${m.layer}</b> / ${m.layers ?? '?'}`);
     if (c.show_nozzle !== false && m.noz != null) row('mdi:printer-3d-nozzle-heat-outline', 'Düse', tmp(m.noz, m.nozT));
     if (c.show_bed !== false && m.bed != null) row('mdi:radiator', 'Bett', tmp(m.bed, m.bedT));
-    if (c.show_file !== false && m.file) row('mdi:file-outline', 'Datei', esc(m.file));
+    if (c.show_file !== false && m.file) row('mdi:file-outline', 'Datei', esc(m.file), ' fi');
     const kh = rows.join('');
     if (this._kk !== kh) { this._kk = kh; e.kvs.innerHTML = kh; }
     this._amsList(m, ams);
     this._alerts(m);
     this._acts(m);
+    this._xtra();
     this._tick();
   }
   _amsList(m, ams) {
@@ -593,13 +605,75 @@ export class NovaPrinterCard extends HTMLElement {
     const html = c.show_ams_list === false ? '' : us.map(u => `<div class="au${u.x ? ' x' : ''}"><span class="an">${esc(u.name)}</span><div class="ss">${u.slots.map(s => {
       const r = s.empty ? 0 : s.rem;
       return `<div class="slot${s.act ? ' act' : ''}${s.empty ? ' emp' : ''}${s.act && wn ? ' wn' : ''}" title="${esc(s.name)}" style="--c:${s.c || '#777'};--r:${r == null ? 100 : r}%"${s.id ? ` data-e="${esc(s.id)}"` : ''}>
-<span class="sc"></span><span class="st"><b>${esc(s.empty ? 'Leer' : s.mat || '–')}</b><small>${s.empty ? '' : r == null ? '?' : `${Math.round(r)} %`}</small></span></div>`;
+<span class="sc"></span><span class="st"><b>${esc(s.empty ? 'Leer' : s.mat || '–')}</b><small>${s.empty ? '' : r == null ? esc(s.name !== s.mat ? s.name : '') : `${Math.round(r)} %`}</small></span></div>`;
     }).join('')}</div></div>`).join('');
     if (this._ak !== html) {
       this._ak = html;
       this._e.amsl.innerHTML = html;
       this._e.amsl.querySelectorAll('.slot[data-e]').forEach(el => press(el, {tap: () => this._act({entity: el.dataset.e}, 'tap', true)}));
     }
+  }
+  // Lüfter (Regler) und weitere Schalter unter der Zeichnung
+  _xtra() {
+    // Name ohne Gerätenamen davor („Büro 3D-Drucker Bauteillüfter“ → „Bauteillüfter“)
+    const short = (h, id) => {
+      const n = nameOf(h, {entity: id}), d = h.devices?.[h.entities?.[id]?.device_id], dn = d?.name_by_user || d?.name;
+      return dn && n.startsWith(`${dn} `) ? n.slice(dn.length + 1) : n;
+    };
+    const h = this._h, fans = this._c.demo ? [] : this._fans || [], sws = this._c.demo ? [] : this._sws || [], key = `${fans}|${sws}`;
+    if (this._xk !== key) {
+      this._xk = key;
+      const box = this._e.xtra;
+      box.textContent = '';
+      this._xu = [];
+      if (fans.length) {
+        const sec = document.createElement('div');
+        sec.innerHTML = '<div class="bt">Lüfter</div><div class="fans"></div>';
+        fans.forEach(id => {
+          const el = document.createElement('div');
+          el.className = 'sl';
+          el.innerHTML = '<div class="kv"><ha-icon></ha-icon><span class="k"></span><span class="v"></span></div><input type="range" min="0" max="100">';
+          const inp = el.lastChild, v = el.querySelector('.v'), D = SLIDE.fan;
+          press(el.firstChild, {tap: () => this._act({entity: id}, 'tap', true)});
+          const paint = () => { inp.style.setProperty('--p', `${+inp.value}%`); v.textContent = `${Math.round(+inp.value)} %`; };
+          inp.addEventListener('input', () => { el._drag = true; paint(); });
+          inp.addEventListener('change', () => { D.set(this._h, id, +inp.value); clearTimeout(el._t); el._t = setTimeout(() => { el._drag = false; }, 1500); });
+          sec.lastChild.append(el);
+          this._xu.push(h => {
+            const s = h.states[id], na = !s || s.state === 'unavailable';
+            el.classList.toggle('na', na); inp.disabled = na;
+            el.querySelector('ha-icon').icon = iconOf(h, {entity: id}, 'mdi:fan');
+            el.querySelector('.k').textContent = short(h, id);
+            if (!s) { v.textContent = '–'; return; }
+            inp.step = D.r(s.attributes)[2];
+            if (!el._drag) inp.value = D.v(s);
+            paint();
+          });
+        });
+        box.append(sec);
+      }
+      if (sws.length) {
+        const sec = document.createElement('div');
+        sec.innerHTML = '<div class="bt">Schalter</div><div class="list" style="--cols:2"></div>';
+        sws.forEach(id => {
+          const el = document.createElement('div');
+          el.className = 'row';
+          el.innerHTML = `<div class="ic"><ha-icon></ha-icon></div><div class="nm"><b></b><small></small></div>${TOGGLE.includes(dom(id)) ? '<div class="sw"></div>' : ''}`;
+          press(el, {tap: () => this._act({entity: id}, 'tap'), hold: () => this._act({entity: id}, 'hold')});
+          sec.lastChild.append(el);
+          this._xu.push(h => {
+            const s = h.states[id];
+            el.classList.toggle('na', !s || s.state === 'unavailable');
+            el.classList.toggle('on', isOn(s));
+            el.querySelector('ha-icon').icon = iconOf(h, {entity: id}, 'mdi:toggle-switch-outline');
+            el.querySelector('b').textContent = short(h, id);
+            el.querySelector('small').textContent = s ? valueOf(h, s, {entity: id}) : 'nicht gefunden';
+          });
+        });
+        box.append(sec);
+      }
+    }
+    this._xu.forEach(u => u(h));
   }
   _alerts(m) {
     const c = this._c;
@@ -675,10 +749,11 @@ const PCTL = [
 ];
 const PAMS = [sel('ams', [['auto', 'Automatisch (nur wenn ein AMS gefunden wird)'], ['show', 'Mit AMS'], ['hide', 'Ohne AMS']]),
   {name: 'ams_trays', selector: {entity: {domain: 'sensor', multiple: true}}}, {name: 'external_spool', selector: SE('sensor')}];
+const PXTRA = [{name: 'fans', selector: {entity: {domain: 'fan', multiple: true}}}, {name: 'switches', selector: {entity: {multiple: true}}}];
 const PSHOW = [g2(...['progress', 'remaining'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))), g2(...['end_time', 'layer'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))),
   g2(...['nozzle', 'bed'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))), g2(...['file', 'stage'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))),
   g2(...['message', 'ams_list'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))), g2(...['controls', 'light'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))),
-  {name: 'show_display', selector: {boolean: {}}}];
+  g2(...['fans', 'switches'].map(k => ({name: `show_${k}`, selector: {boolean: {}}}))), {name: 'show_display', selector: {boolean: {}}}];
 const MKEYS = Object.keys(MSG);
 const PMSG = [];
 for (let i = 0; i < MKEYS.length; i += 2) PMSG.push(g2(...MKEYS.slice(i, i + 2).map(k => ({name: `msg_${k}`, selector: {boolean: {}}}))));
@@ -691,7 +766,8 @@ const PLABELS = {...BASE_LABELS, device: 'Drucker (Bambu-Lab-Gerät)', status: '
   stop_confirm: 'Rückfrage vor dem Stopp', ams: 'AMS', ams_trays: 'AMS-Slots', external_spool: 'Externe Spule', color: 'Farbe', glow: 'Rahmen leuchtet beim Drucken',
   animation: 'Animation (aus = Standbild)', demo: 'Demo-Zustand', demo_message: 'Demo-Meldung', demo_ams: 'Demo mit AMS',
   show_progress: 'Fortschritt', show_remaining: 'Restzeit', show_end_time: 'Endzeit', show_layer: 'Schicht', show_nozzle: 'Düsentemperatur', show_bed: 'Betttemperatur',
-  show_file: 'Dateiname', show_stage: 'Druckphase', show_message: 'Meldungen', show_ams_list: 'AMS-Slots als Liste', show_controls: 'Knöpfe', show_light: 'Licht-Knopf', show_display: 'Display am Drucker',
+  show_file: 'Dateiname', show_stage: 'Druckphase', show_message: 'Meldungen', show_ams_list: 'AMS-Slots als Liste', show_controls: 'Knöpfe', show_light: 'Licht-Knopf', show_display: 'Display am Drucker', show_fans: 'Lüfter', show_switches: 'Schalter',
+  fans: 'Lüfter (Regler)', switches: 'Weitere Schalter und Werte',
   ...Object.fromEntries(MKEYS.map(k => [`msg_${k}`, MSG[k].label]))};
 const PHELPERS = {
   device: 'Füllt alle Entitäten unten automatisch aus. Leere Felder sucht die Karte selbst am Gerät',
@@ -699,6 +775,8 @@ const PHELPERS = {
   ams_trays: 'Leer = alle AMS-Einheiten am Drucker automatisch. Bis zu 4 Slots pro Einheit',
   ams: 'Ohne AMS zeigt die Zeichnung die Spule am Drucker (externe Spule)',
   external_spool: 'Leer = automatisch',
+  fans: 'Leer = alle Lüfter des Druckers automatisch',
+  switches: 'Z. B. Kamera, Zeitraffer oder WLAN-Signal. Schalter lassen sich antippen, andere Werte öffnen die Details',
   stop_confirm: 'Leer = ohne Rückfrage',
   door: 'Nur Drucker mit Türsensor. Offen = Tür klappt in der Zeichnung auf',
   color: 'Farbrolle aus dem Theme (Fortschritt, Knöpfe; das Objekt hat die Farbe des aktiven Filaments)',
@@ -724,7 +802,7 @@ class NovaPrinterCardEditor extends NovaEditorBase {
       }
       // Neues Gerät → Entitäten vom Gerät vorbelegen
       if (v.device !== undefined && v.device !== this._config.device) {
-        EKEYS.forEach(k => delete c[k]);
+        [...EKEYS, 'fans'].forEach(k => delete c[k]);
         Object.assign(c, detect(this._hass, v.device));
         c = strip(c); this._emit(c); this._rebuild(); return;
       }
@@ -743,6 +821,7 @@ class NovaPrinterCardEditor extends NovaEditorBase {
         b.append(this._hint('Leer = automatisch vom gewählten Drucker. Nur ändern, wenn etwas falsch erkannt wird.'), form(PENT), this._h4('Bedienung'), form(PCTL));
       }),
       this._section('ams', 'mdi:tray-full', 'AMS und Spulen', b => b.append(form(PAMS))),
+      this._section('xtra', 'mdi:fan', 'Lüfter und Schalter', b => b.append(form(PXTRA))),
       this._section('show', 'mdi:eye-outline', 'Anzeigen', b => b.append(form(PSHOW))),
       this._section('messages', 'mdi:alert-circle-outline', 'Meldungen', b => {
         b.append(this._hint('Ausgeschaltete Meldungen erscheinen weder als Hinweis noch als Animation. HMS-Fehler, Druckfehler und Druckphasen werden über die Liste in printer-messages.js zugeordnet; Unbekanntes landet bei „Unbekannte Meldungen“.'), form(PMSG));
