@@ -76,13 +76,16 @@ in der Farbe ihrer Lampe. Farbknöpfe für Lieblingsfarben und ein „Alle aus�
 
 <!-- Screenshot/GIF: Licht Card -->
 
-### Nova Dock Card
-Eine schwebende Leiste mit Buttons am unteren oder oberen Rand. Ein Button kann navigieren, eine Aktion auslösen oder ein
-Pop-up öffnen. Punkte oder Zahlen zeigen an, ob zum Beispiel noch Lampen an sind.
+### Nova Navi
+Eine schwebende Navigationsleiste am unteren oder oberen Rand, auf breiten Bildschirmen auf Wunsch als Seitenleiste.
+Ein Button kann navigieren, eine Aktion auslösen (Antippen, lange drücken, Doppeltippen), ein Untermenü oder ein
+Pop-up öffnen. Badges zeigen Punkte oder Zahlen in wählbarer Farbe, Einträge lassen sich je Benutzer oder Zustand
+ausblenden, und eine kleine Media-Leiste zeigt den laufenden Player. Früher hieß sie Nova Dock Card – der alte Typ
+`custom:nova-dock-card` läuft weiter.
 
-➜ [Alle Optionen der Dock Card](docs/dock-card.md)
+➜ [Alle Optionen von Nova Navi](docs/navi-card.md)
 
-<!-- Screenshot/GIF: Dock Card -->
+<!-- Screenshot/GIF: Nova Navi -->
 
 ### Nova Modular Card
 Eine Gerätekarte zum Selbst-Zusammenbauen aus Bausteinen: Kopfzeile mit Fortschritt, Infos, Schalter, Schieberegler,
@@ -118,7 +121,7 @@ darunter Raumreinigung, Schalter der Station und Verbrauchsteile mit Restlaufzei
 <!-- Screenshot/GIF: Saugroboter Card -->
 
 ### Nova Pop-up Card
-Ein Pop-up mit beliebigen Karten in Zeilen und Spalten, geöffnet über eine Adresse wie `#wohnzimmer`, zum Beispiel vom Dock
+Ein Pop-up mit beliebigen Karten in Zeilen und Spalten, geöffnet über eine Adresse wie `#wohnzimmer`, zum Beispiel von Nova Navi
 oder von der Raum Card. Kopfzeile mit Badges und Info-Leiste, auf dem Handy per Wischen schließbar.
 
 ➜ [Alle Optionen der Pop-up Card](docs/popup-card.md)

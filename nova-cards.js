@@ -1,5 +1,5 @@
-/* Nova Cards v0.10.1b3 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips – alle als custom:nova-*.
+/* Nova Cards v0.11.0b1 | MIT | https://github.com/Blackstar9119/nova-cards
+   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
   var __defProp = Object.defineProperty;
@@ -143,14 +143,20 @@
   }
 
   // src/shared/styles.js
-  var DOCK_VARS = `:host{
+  var NAVI_VARS = `:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.16));
 --nv-fg:var(--nova-text-color,#fff);
 --nv-accent:var(--nova-accent-color,#f5b83d);
 --nv-active:var(--nova-active-color,#3d8bf5);
 --nv-chip:var(--nova-chip-color,rgba(255,255,255,.1));
---nv-blur:var(--nova-blur,22px)}`;
+--nv-blur:var(--nova-blur,22px);
+--nv-active-fg:var(--nova-active-text-color,#fff);
+--nv-a1:var(--nova-accent-1,#3d8bf5);--nv-a1-fg:var(--nova-accent-1-text,#fff);
+--nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
+--nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
+--nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff)}`;
   var NOVA_VARS = `:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
@@ -409,12 +415,12 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       return f;
     }
     // Runder Icon-Button (Verschieben, Löschen …)
-    _btn(icon, title, fn, dis) {
+    _btn(icon2, title, fn, dis) {
       const b = document.createElement("button");
       b.className = "ib";
       b.title = title;
       b.disabled = !!dis;
-      b.innerHTML = `<ha-icon icon="${icon}"></ha-icon>`;
+      b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon>`;
       b.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -446,7 +452,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     // Aufklapp-Eintrag; key merkt sich, ob er offen ist. Liefert [details, summary, body].
     // Mit fill(body, summary) wird der Inhalt erst beim ersten Aufklappen gebaut – zugeklappte Einträge kosten dann nichts
-    _details(key, icon, label, btns, fill) {
+    _details(key, icon2, label, btns, fill) {
       const d = document.createElement("details");
       d.className = "item";
       d.open = this._open.has(key);
@@ -455,7 +461,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
         d.open ? this._open.add(key) : this._open.delete(key);
       });
       const s = document.createElement("summary");
-      s.innerHTML = `<ha-icon icon="${esc(icon)}"></ha-icon><span class="lbl"></span>`;
+      s.innerHTML = `<ha-icon icon="${esc(icon2)}"></ha-icon><span class="lbl"></span>`;
       s.querySelector(".lbl").textContent = label;
       s.append(...btns);
       const body = document.createElement("div");
@@ -476,11 +482,11 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     // Aufklappbarer Bereich im Stil des Pop-up-Editors (Icon + Überschrift, Inhalt erst beim Aufklappen).
     // Welche Bereiche offen sind, bleibt beim Neuaufbau erhalten; anfangs offen: static openSections der Unterklasse.
-    _section(key, icon, label, fill) {
+    _section(key, icon2, label, fill) {
       const open = this._openSecs ||= new Set(this.constructor.openSections || []), k = `sec.${key}`;
       if (open.has(key)) this._open.add(k);
       else this._open.delete(k);
-      const [d] = this._details(k, icon, label, [], fill);
+      const [d] = this._details(k, icon2, label, [], fill);
       d.classList.add("sec");
       d.addEventListener("toggle", () => {
         if (d.open) open.add(key);
@@ -1767,447 +1773,6 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   };
   define(TAG3, NovaLightCard, { name: "Nova Licht Card", description: "Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.", documentationURL: docUrl("nova-licht-card") });
 
-  // src/dock.js
-  var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
-  var PCSS = `
-:host{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
-.root{width:min(var(--nova-popup-width,1180px),96vw);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
-background:linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9));border:1px solid var(--nv-border);box-shadow:0 20px 60px rgba(0,0,0,.45);color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:up .28s cubic-bezier(.2,.8,.2,1)}
-.hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(60,72,100,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.x{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);cursor:pointer;flex:none}
-ha-icon{--mdc-icon-size:20px;display:flex}
-.body{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-popup-min-col,300px),1fr));gap:12px;align-items:start}
-.body.one{grid-template-columns:1fr}
-.empty{opacity:.6;font-size:13px;padding:8px}
-@media(max-width:600px){:host{align-items:flex-end}.root{width:100vw;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
-@keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fi{from{opacity:0}}`;
-  var NovaDockPopup = class extends HTMLElement {
-    constructor() {
-      super();
-      const r = this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${DOCK_VARS}${PCSS}</style><div class="root"><div class="hd"><ha-icon class="hi"></ha-icon><span class="tt"></span><div class="x" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></div></div><div class="body"></div></div>`;
-      this._body = r.querySelector(".body");
-      this._cards = [];
-      r.querySelector(".x").addEventListener("click", () => this.onclose?.());
-      this.addEventListener("click", (e) => {
-        if (e.composedPath()[0] === this) this.onclose?.();
-      });
-    }
-    set cfg(c) {
-      this._cfg = c;
-      const r = this.shadowRoot;
-      r.querySelector(".tt").textContent = c.title || "";
-      r.querySelector(".hi").setAttribute("icon", c.icon || "mdi:dots-horizontal");
-      this._body.classList.toggle("one", (c.cards || []).length === 1);
-      this._load();
-    }
-    async _load() {
-      const helpers2 = await window.loadCardHelpers();
-      this._body.innerHTML = "";
-      this._cards = (this._cfg.cards || []).map((cc) => {
-        const el2 = helpers2.createCardElement(cc);
-        if (this._h) el2.hass = this._h;
-        this._body.appendChild(el2);
-        return el2;
-      });
-      if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Pop-up – im Dock-Editor unter „Einfaches Pop-up: Karten“ eintragen.</div>';
-    }
-    set hass(h) {
-      this._h = h;
-      this._cards.forEach((c) => {
-        c.hass = h;
-      });
-    }
-  };
-  define("dock-popup", NovaDockPopup);
-  var DCSS = `
-:host{display:block;height:var(--nova-dock-space,64px)}
-.dock.inline{max-width:100%}
-ha-icon{--mdc-icon-size:22px;display:flex}
-.dock{position:fixed;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:8px;border-radius:999px;background:var(--nv-bg);
-backdrop-filter:blur(var(--nv-blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(160%);border:1px solid var(--nv-border);
-box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none;box-sizing:border-box}
-.dock.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.dock.top{top:14px}
-.dock::-webkit-scrollbar{display:none}
-.dock.inline{position:static;transform:none;margin:0 auto;width:max-content}
-.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none}
-.d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
-.d:active{transform:scale(.9)}
-.d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
-.d.here{outline:2px solid rgba(255,255,255,.5)}
-.d img{width:60%;height:60%;object-fit:contain}
-.dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--nv-accent);box-shadow:0 0 6px var(--nv-accent);display:none}
-.d.bd .dot{display:block}
-.num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--nv-accent);color:#3a2a00;font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
-.d.bn .num{display:block}.d.bn .dot{display:none}
-.empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
-@media(max-width:600px){.d{width:calc(var(--sz) * .875);height:calc(var(--sz) * .875)}.dock{gap:5px;padding:6px}}`;
-  var SRC2 = {};
-  var findDock = (o) => {
-    if (!o || typeof o !== "object") return null;
-    if ((o.type === `custom:${tag("dock-card")}` || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
-    for (const v of Object.values(o)) {
-      const r = findDock(v);
-      if (r) return r;
-    }
-    return null;
-  };
-  var NovaDockCard = class extends HTMLElement {
-    static getConfigElement() {
-      return document.createElement(tag("dock-card-editor"));
-    }
-    static getStubConfig() {
-      return { items: [
-        { icon: "mdi:home", label: "Start", tap_action: { action: "navigate", navigation_path: location.pathname } },
-        { icon: "mdi:lightbulb-group", label: "Licht", popup_title: "Licht", cards: [{ type: "markdown", content: "Hier deine Licht-Karten eintragen" }] }
-      ] };
-    }
-    setConfig(c) {
-      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      if (!c.items && !c.source) throw new Error("items oder source angeben");
-      this._cfg = { position: "bottom", button_size: 48, ...c };
-      this._ids = entityIds(c);
-      this._close();
-      this._items = null;
-      this._btns = null;
-      this._built = false;
-      this._cur = -1;
-      if (this._h) this.hass = this._h;
-    }
-    set hass(h) {
-      const old = this._h;
-      this._h = h;
-      if (!this._cfg) return;
-      if (this._pop) this._pop.hass = h;
-      if (this._hp) this._hp.hass = h;
-      if (!this._items) {
-        if (this._cfg.items) this._items = this._cfg.items;
-        else {
-          this._loadSource();
-          return;
-        }
-      }
-      if (!this._built) this._build();
-      else if (!hassChanged(old, h, this._watch(old))) return;
-      this._update();
-    }
-    // Entitäten der Einträge, bei Zählern auch die Mitglieder der Gruppe
-    _watch(h) {
-      if (this._srcIds?.items !== this._items) this._srcIds = { items: this._items, ids: entityIds(this._items) };
-      const ids = [...this._ids, ...this._srcIds.ids];
-      (this._items || []).forEach((it) => {
-        if (it.badge_count_of) ids.push(...h?.states[it.badge_count_of]?.attributes.entity_id || []);
-      });
-      return ids;
-    }
-    async _loadSource() {
-      if (this._loading) return;
-      this._loading = true;
-      const k = this._cfg.source;
-      SRC2[k] = SRC2[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findDock).catch(() => null);
-      const d = await SRC2[k];
-      this._loading = false;
-      this._items = d ? d.items : [];
-      this._srcCfg = d || {};
-      this.hass = this._h;
-    }
-    connectedCallback() {
-      this._applyInline();
-      requestAnimationFrame(() => this._applyInline());
-      this._loc = () => this._update();
-      window.addEventListener("location-changed", this._loc);
-      window.addEventListener("popstate", this._loc);
-      window.addEventListener("hashchange", this._loc);
-      this._update();
-    }
-    disconnectedCallback() {
-      window.removeEventListener("location-changed", this._loc);
-      window.removeEventListener("popstate", this._loc);
-      window.removeEventListener("hashchange", this._loc);
-      this._close();
-      if (this._hp) {
-        this._hp.remove();
-        this._hp = null;
-      }
-    }
-    getCardSize() {
-      return 1;
-    }
-    getGridOptions() {
-      return { columns: "full", rows: 1 };
-    }
-    get _inline() {
-      if (this.preview || this.editMode || this.hasAttribute("preview") || this._cfg?.inline) return true;
-      const PREV2 = /* @__PURE__ */ new Set(["HUI-CARD-PICKER", "HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR"]);
-      let n = this;
-      for (let i = 0; i < 40 && n; i++) {
-        if (PREV2.has(n.tagName)) return true;
-        n = n.parentElement || n.getRootNode?.().host;
-      }
-      return false;
-    }
-    _applyInline() {
-      this.shadowRoot?.querySelector(".dock")?.classList.toggle("inline", this._inline);
-    }
-    _build() {
-      this._built = true;
-      const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${DOCK_VARS}${DCSS}</style><div class="dock ${esc(c.position)} ${this._inline ? "inline" : ""}" style="--sz:${+c.button_size || 48}px"></div>`;
-      const dock = r.querySelector(".dock");
-      if (this._hp) r.appendChild(this._hp);
-      if (!this._items.length) {
-        dock.innerHTML = `<span class="empty">${c.source ? `Kein Dock in „${esc(c.source)}“ gefunden` : "Noch keine Einträge"}</span>`;
-        this._btns = [];
-        return;
-      }
-      this._btns = this._items.map((it, i) => {
-        const d = document.createElement("div");
-        d.className = "d";
-        d.tabIndex = 0;
-        d.setAttribute("role", "button");
-        d.title = it.label || it.popup_title || "";
-        const ic = it.icon || "mdi:circle-outline";
-        d.innerHTML = `${isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`}<span class="dot"></span><span class="num"></span>`;
-        d.addEventListener("click", () => this._tap(i));
-        d.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            this._tap(i);
-          }
-        });
-        if (it.hold_action) {
-          let t;
-          d.addEventListener("pointerdown", () => {
-            t = setTimeout(() => {
-              d._held = true;
-              hassAction(this, { entity: it.entity, hold_action: it.hold_action }, "hold");
-            }, 500);
-          });
-          ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => d.addEventListener(ev, () => clearTimeout(t)));
-        }
-        dock.appendChild(d);
-        return d;
-      });
-    }
-    _path(it) {
-      return it.tap_action?.action === "navigate" ? it.tap_action.navigation_path : it.navigation_path;
-    }
-    // Exakter Pfadvergleich: ohne Query/Hash, Schrägstrich am Ende egal
-    _norm(p) {
-      p = String(p || "").split(/[?#]/)[0].replace(/\/+$/, "") || "/";
-      try {
-        return decodeURI(p);
-      } catch {
-        return p;
-      }
-    }
-    _update() {
-      if (!this._btns || !this._h) return;
-      const h = this._h, here = this._norm(location.pathname);
-      this._items.forEach((it, i) => {
-        const d = this._btns[i];
-        if (!d) return;
-        const p = this._path(it);
-        d.classList.toggle("act", i === this._cur || !!it.popup_hash && curHash() === cleanHash(it.popup_hash));
-        d.classList.toggle("here", !!p && this._norm(p) === here);
-        let n = 0, dot = false;
-        if (it.badge_count_of) n = countOn(h, it.badge_count_of, it.badge_exclude);
-        else if (it.badge) dot = isOn(h.states[it.badge]);
-        const showNum = n > 0 && it.badge_show_number;
-        d.classList.toggle("bd", dot || n > 0 && !showNum);
-        d.classList.toggle("bn", showNum);
-        if (showNum) d.querySelector(".num").textContent = n > 99 ? "99+" : n;
-      });
-    }
-    _tap(i) {
-      const it = this._items[i];
-      if (this._btns[i]?._held) {
-        this._btns[i]._held = false;
-        return;
-      }
-      if (it.popup_hash) {
-        this._close();
-        return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
-      }
-      if (this._cur === i) return this._close();
-      this._close();
-      if (Array.isArray(it.cards)) return this._openCards(i, it);
-      if (typeof it.popup === "string" && customElements.get("nz-popup")) return this._openLegacy(i, it);
-      if (it.tap_action && it.tap_action.action !== "none") return hassAction(this, { entity: it.entity, tap_action: it.tap_action }, "tap");
-      if (it.navigation_path) return navigate(it.navigation_path);
-      if (it.entity) moreInfo(this, it.entity);
-    }
-    _openCards(i, it) {
-      const p = document.createElement(tag("dock-popup"));
-      p.onclose = () => this._close();
-      p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
-      p.hass = this._h;
-      this.shadowRoot.appendChild(p);
-      this._opened(i, p);
-    }
-    _openLegacy(i, it) {
-      const p = document.createElement("nz-popup");
-      p.host = this;
-      p.onclose = () => this._close();
-      p.cfg = { weather: this._srcCfg?.weather || this._cfg.weather, ...it, title: it.title || it.label };
-      document.body.appendChild(p);
-      p.hass = this._h;
-      this._opened(i, p);
-    }
-    _opened(i, p) {
-      this._pop = p;
-      this._cur = i;
-      this._update();
-      this._esc = (e) => {
-        if (e.key === "Escape") this._close();
-      };
-      window.addEventListener("keydown", this._esc);
-    }
-    _close() {
-      if (this._pop) {
-        this._pop.remove();
-        this._pop = null;
-      }
-      this._cur = -1;
-      if (this._esc) window.removeEventListener("keydown", this._esc);
-      this._update();
-    }
-  };
-  define("dock-card", NovaDockCard, { name: "Nova Dock Card", description: "Schwebende Leiste unten mit Buttons: navigieren, Aktion auslösen oder Popup mit beliebigen Karten öffnen.", documentationURL: docUrl("nova-dock-card") });
-  var GEN3 = [{ name: "source", selector: { text: {} } }];
-  var LOOK3 = [{ type: "grid", name: "", schema: [
-    { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
-    { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
-  ] }];
-  var I_MAIN = [{ type: "grid", name: "", schema: [
-    { name: "icon", required: true, selector: { icon: {} } },
-    { name: "label", selector: { text: {} } }
-  ] }];
-  var I_TAP = (opts) => [
-    { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
-    { name: "tap_action", selector: { ui_action: {} } }
-  ];
-  var I_POP = [{ name: "popup_title", selector: { text: {} } }, { name: "cards", selector: { object: {} } }];
-  var I_BADGE = (it) => [
-    { name: "badge", selector: { entity: {} } },
-    { name: "badge_count_of", selector: { entity: {} } },
-    ...it.badge_count_of ? [{ name: "badge_show_number", selector: { boolean: {} } }, { name: "badge_exclude", selector: { entity: { multiple: true } } }] : []
-  ];
-  var LABELS = {
-    position: "Position",
-    button_size: "Button-Größe",
-    source: "Einträge aus anderem Dashboard übernehmen",
-    icon: "Icon",
-    label: "Name",
-    tap_action: "Aktion beim Antippen",
-    popup_title: "Titel",
-    popup_hash: "Nova Pop-up öffnen",
-    cards: "Karten (YAML-Liste)",
-    badge: "Punkt, wenn diese Entität an ist",
-    badge_count_of: "Zähler: Gruppe",
-    badge_show_number: "Zahl statt Punkt",
-    badge_exclude: "Beim Zählen ignorieren"
-  };
-  var HELPERS = {
-    source: "Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Dock – praktisch für mehrere Dashboards mit gleicher Leiste.",
-    popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion und dem einfachen Pop-up.",
-    cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
-    badge_count_of: "Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)"
-  };
-  var NovaDockCardEditor = class extends NovaEditorBase {
-    // Pop-ups des Dashboards für die Auswahlliste einmal laden
-    set hass(h) {
-      super.hass = h;
-      if (h && !this._hashes) {
-        this._hashes = [];
-        popupOptions(h).then((o) => {
-          this._hashes = o;
-          this._rebuild();
-        });
-      }
-    }
-    _build() {
-      const r = this.shadowRoot;
-      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap");
-      const data = { position: "bottom", button_size: 48, ...this._config };
-      const form = (schema) => this._form(schema, data, (v) => {
-        const c = merge(this._config, names(schema), v);
-        if (c.position === "bottom") delete c.position;
-        if (c.button_size === 48) delete c.button_size;
-        const hadSrc = !!this._config.source;
-        this._emit(c);
-        if (hadSrc !== !!c.source) this._rebuild();
-      });
-      const items = this._config.items || [];
-      w.append(
-        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
-          b.append(form(GEN3));
-          if (this._config.source && !items.length) b.append(this._hint("Einträge kommen aus dem anderen Dashboard. Eigene Buttons überschreiben das."));
-        }),
-        this._section("buttons", "mdi:dock-bottom", "Buttons", (b) => {
-          items.forEach((it, i) => b.append(this._item(it, i, items.length)));
-          b.append(this._add("Button hinzufügen", () => {
-            const n = [...items, { icon: "mdi:circle-outline" }];
-            this._open = /* @__PURE__ */ new Set([n.length - 1]);
-            this._emit({ ...this._config, items: n });
-            this._rebuild();
-          }));
-        }),
-        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK3)))
-      );
-    }
-    _popName(h) {
-      h = cleanHash(h);
-      return this._hashes?.find((o) => o.value === h)?.label || `#${h}`;
-    }
-    _label(it, i) {
-      return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : it.tap_action?.navigation_path) || "Neuer Button"}`;
-    }
-    _item(it, i, n) {
-      const opts = this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
-      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => {
-        const form = (schema) => this._form(schema, it, (v) => {
-          const list2 = [...this._config.items], old = list2[i];
-          const nx = merge(old, names(schema), v);
-          if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
-          if (!nx.popup_hash) delete nx.popup_hash;
-          if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
-          if (!nx.badge_show_number) delete nx.badge_show_number;
-          list2[i] = nx;
-          this._emit({ ...this._config, items: list2 });
-          s.querySelector(".lbl").textContent = this._label(nx, i);
-          s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
-          if (!!old.badge_count_of !== !!nx.badge_count_of) this._rebuild();
-        });
-        b.append(form(I_MAIN), this._h4("Beim Antippen"), form(I_TAP(opts)), this._h4("Einfaches Pop-up"), form(I_POP), this._h4("Punkt und Zähler"), form(I_BADGE(it)));
-      });
-      return d;
-    }
-    _move(i, dir) {
-      const j = i + dir, list2 = [...this._config.items];
-      [list2[i], list2[j]] = [list2[j], list2[i]];
-      this._open = /* @__PURE__ */ new Set([j]);
-      this._emit({ ...this._config, items: list2 });
-      this._rebuild();
-    }
-    _remove(i) {
-      this._open = /* @__PURE__ */ new Set();
-      const list2 = this._config.items.filter((_, k) => k !== i);
-      const c = { ...this._config };
-      if (list2.length) c.items = list2;
-      else delete c.items;
-      if (!c.items && !c.source) c.items = [];
-      this._emit(c);
-      this._rebuild();
-    }
-  };
-  __publicField(NovaDockCardEditor, "labels", LABELS);
-  __publicField(NovaDockCardEditor, "helpers", HELPERS);
-  __publicField(NovaDockCardEditor, "openSections", ["buttons"]);
-  define("dock-card-editor", NovaDockCardEditor);
-
   // src/shared/editor-schema.js
   var g2 = (...schema) => ({ type: "grid", name: "", schema });
   var T = { text: {} };
@@ -2249,6 +1814,795 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     level: "Stufe",
     glow: "Kartenrahmen einfärben"
   };
+
+  // src/navi.js
+  var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
+  var PCSS = `
+:host{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
+.root{width:min(var(--nova-popup-width,1180px),96vw);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
+background:linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9));border:1px solid var(--nv-border);box-shadow:0 20px 60px rgba(0,0,0,.45);color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:up .28s cubic-bezier(.2,.8,.2,1)}
+.hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(60,72,100,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);cursor:pointer;flex:none}
+ha-icon{--mdc-icon-size:20px;display:flex}
+.body{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-popup-min-col,300px),1fr));gap:12px;align-items:start}
+.body.one{grid-template-columns:1fr}
+.empty{opacity:.6;font-size:13px;padding:8px}
+@media(max-width:600px){:host{align-items:flex-end}.root{width:100vw;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
+@keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fi{from{opacity:0}}`;
+  var NovaNaviPopup = class extends HTMLElement {
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NAVI_VARS}${PCSS}</style><div class="root"><div class="hd"><ha-icon class="hi"></ha-icon><span class="tt"></span><div class="x" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></div></div><div class="body"></div></div>`;
+      this._body = r.querySelector(".body");
+      this._cards = [];
+      r.querySelector(".x").addEventListener("click", () => this.onclose?.());
+      this.addEventListener("click", (e) => {
+        if (e.composedPath()[0] === this) this.onclose?.();
+      });
+    }
+    set cfg(c) {
+      this._cfg = c;
+      const r = this.shadowRoot;
+      r.querySelector(".tt").textContent = c.title || "";
+      r.querySelector(".hi").setAttribute("icon", c.icon || "mdi:dots-horizontal");
+      this._body.classList.toggle("one", (c.cards || []).length === 1);
+      this._load();
+    }
+    async _load() {
+      const helpers2 = await window.loadCardHelpers();
+      this._body.innerHTML = "";
+      this._cards = (this._cfg.cards || []).map((cc) => {
+        const el2 = helpers2.createCardElement(cc);
+        if (this._h) el2.hass = this._h;
+        this._body.appendChild(el2);
+        return el2;
+      });
+      if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Pop-up – im Navi-Editor unter „Einfaches Pop-up: Karten“ eintragen.</div>';
+    }
+    set hass(h) {
+      this._h = h;
+      this._cards.forEach((c) => {
+        c.hass = h;
+      });
+    }
+  };
+  define("navi-popup", NovaNaviPopup);
+  var DCSS = `
+:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px))}
+:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
+:host([side]){height:0}
+ha-icon{--mdc-icon-size:22px;display:flex}
+.wrap{position:fixed;left:50%;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:stretch;gap:8px;max-width:calc(100vw - 24px)}
+.wrap.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.wrap.top{top:14px;flex-direction:column-reverse}
+.wrap.side{top:50%;bottom:auto;left:14px;right:auto;transform:translateY(-50%);max-width:none;max-height:calc(100vh - 28px);flex-direction:column}
+.wrap.side.right{left:auto;right:14px}
+.wrap.inline{position:static;transform:none;margin:0 auto;width:max-content;max-width:100%}
+.glass{background:var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(160%);border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(0,0,0,.4)}
+.dock{display:flex;gap:8px;padding:8px;border-radius:999px;overflow-x:auto;scrollbar-width:none;box-sizing:border-box;max-width:100%}
+.side .dock{flex-direction:column;overflow-x:hidden;overflow-y:auto}
+.dock::-webkit-scrollbar{display:none}
+.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none;user-select:none;-webkit-user-select:none}
+.d[hidden]{display:none}
+.d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.d:active{transform:scale(.9)}
+.d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
+.d.here{outline:2px solid rgba(255,255,255,.5)}
+.d img{width:60%;height:60%;object-fit:contain}
+.dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--bc,var(--nv-accent));box-shadow:0 0 6px var(--bc,var(--nv-accent));display:none}
+.d.bd .dot{display:block}
+.num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bc,var(--nv-accent));color:var(--bfg,#3a2a00);font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
+.d.bn .num{display:block}.d.bn .dot{display:none}
+.empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
+.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;min-width:260px;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.mb[hidden]{display:none}
+.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.mb .art.pic ha-icon{display:none}
+.mb .tx{flex:1;min-width:0;cursor:pointer}
+.mb .tx b,.mb .tx span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb .tx b{font-size:13px;font-weight:600}.mb .tx span{font-size:11px;opacity:.7}
+.mb .pp{width:40px;height:40px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-active);color:var(--nv-active-fg);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mb .pp:active{transform:scale(.9)}
+.side .mb{min-width:0;flex-direction:column;padding:6px;border-radius:28px}
+.side .mb .tx{display:none}
+.menu{position:fixed;z-index:8;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:22px;min-width:180px;max-width:calc(100vw - 16px);max-height:60vh;overflow-y:auto;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:mi .16s ease-out}
+.mi{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:999px;cursor:pointer;font-size:14px;white-space:nowrap;-webkit-tap-highlight-color:transparent;outline:none}
+.mi[hidden]{display:none}
+.mi:hover,.mi:focus-visible{background:var(--nv-chip)}
+.mi.here{background:var(--nv-chip);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+.mi .ic{width:32px;height:32px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
+.mi .ic img{width:60%;height:60%;object-fit:contain}
+.mi ha-icon{--mdc-icon-size:18px}
+@keyframes mi{from{opacity:0;transform:scale(.96)}}
+@media(max-width:600px){.d{width:calc(var(--sz) * .875);height:calc(var(--sz) * .875)}.dock{gap:5px;padding:6px}}`;
+  var SRC2 = {};
+  var TYPES = ["navi-card", "dock-card"];
+  var findNavi = (o) => {
+    if (!o || typeof o !== "object") return null;
+    if ((TYPES.some((t) => o.type === `custom:${tag(t)}`) || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
+    for (const v of Object.values(o)) {
+      const r = findNavi(v);
+      if (r) return r;
+    }
+    return null;
+  };
+  var normPath = (p) => {
+    p = String(p || "").split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+    try {
+      return decodeURI(p);
+    } catch {
+      return p;
+    }
+  };
+  var pathOf = (it) => it.tap_action?.action === "navigate" ? it.tap_action.navigation_path : it.navigation_path;
+  var icon = (ic) => isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`;
+  var haptic = () => {
+    window.dispatchEvent(new CustomEvent("haptic", { detail: "light" }));
+    if (!window.externalApp && !window.webkit?.messageHandlers?.externalBus) try {
+      navigator.vibrate?.(12);
+    } catch {
+    }
+  };
+  var visible = (h, it) => {
+    if (list(it.visible_users).length && !list(it.visible_users).includes(h.user?.id)) return false;
+    if (!it.visible_entity) return true;
+    const s = h.states[it.visible_entity];
+    const cond = { state: it.visible_state, state_not: it.visible_state_not, above: it.visible_above, below: it.visible_below };
+    return Object.values(cond).some((v) => v != null) ? alertHit(cond, s) : isOn(s);
+  };
+  var MEDIA_ON = ["playing", "paused"];
+  var NovaNaviCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("navi-card-editor"));
+    }
+    static getStubConfig() {
+      return { items: [
+        { icon: "mdi:home", label: "Start", tap_action: { action: "navigate", navigation_path: location.pathname } },
+        { icon: "mdi:lightbulb-group", label: "Licht", popup_title: "Licht", cards: [{ type: "markdown", content: "Hier deine Licht-Karten eintragen" }] }
+      ] };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (!c.items && !c.source) throw new Error("items oder source angeben");
+      this._cfg = { position: "bottom", button_size: 48, ...c };
+      this._ids = entityIds(c);
+      this._close();
+      this._items = null;
+      this._btns = null;
+      this._built = false;
+      this._cur = -1;
+      this._watchSide();
+      if (this._h) this.hass = this._h;
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._cfg) return;
+      if (this._pop) this._pop.hass = h;
+      if (this._hp) this._hp.hass = h;
+      if (!this._items) {
+        if (this._cfg.items) this._items = this._cfg.items;
+        else {
+          this._loadSource();
+          return;
+        }
+      }
+      if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._watch(old))) return;
+      this._update();
+    }
+    // Entitäten der Einträge (auch im Untermenü) und Media-Player, bei Zählern auch die Mitglieder der Gruppe
+    _watch(h) {
+      if (this._srcIds?.items !== this._items) this._srcIds = { items: this._items, ids: entityIds([this._items, this._srcCfg?.media_players]) };
+      const ids = [...this._ids, ...this._srcIds.ids];
+      (this._items || []).forEach((it) => {
+        if (it.badge_count_of) ids.push(...h?.states[it.badge_count_of]?.attributes.entity_id || []);
+      });
+      return ids;
+    }
+    async _loadSource() {
+      if (this._loading) return;
+      this._loading = true;
+      const k = this._cfg.source;
+      SRC2[k] = SRC2[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findNavi).catch(() => null);
+      const d = await SRC2[k];
+      this._loading = false;
+      this._items = d ? d.items : [];
+      this._srcCfg = d || {};
+      this.hass = this._h;
+    }
+    connectedCallback() {
+      this._applyInline();
+      requestAnimationFrame(() => this._applyInline());
+      this._loc = () => {
+        if (this._menu) this._close();
+        this._update();
+      };
+      window.addEventListener("location-changed", this._loc);
+      window.addEventListener("popstate", this._loc);
+      window.addEventListener("hashchange", this._loc);
+      this._watchSide();
+      this._update();
+    }
+    disconnectedCallback() {
+      window.removeEventListener("location-changed", this._loc);
+      window.removeEventListener("popstate", this._loc);
+      window.removeEventListener("hashchange", this._loc);
+      this._mq?.removeEventListener("change", this._mqf);
+      this._mq = null;
+      this._close();
+      if (this._hp) {
+        this._hp.remove();
+        this._hp = null;
+      }
+    }
+    getCardSize() {
+      return 1;
+    }
+    getGridOptions() {
+      return { columns: "full", rows: 1 };
+    }
+    get _inline() {
+      if (this.preview || this.editMode || this.hasAttribute("preview") || this._cfg?.inline) return true;
+      const PREV2 = /* @__PURE__ */ new Set(["HUI-CARD-PICKER", "HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR"]);
+      let n = this;
+      for (let i = 0; i < 40 && n; i++) {
+        if (PREV2.has(n.tagName)) return true;
+        n = n.parentElement || n.getRootNode?.().host;
+      }
+      return false;
+    }
+    _applyInline() {
+      this.shadowRoot?.querySelector(".wrap")?.classList.toggle("inline", this._inline);
+    }
+    // Seitenleiste ab einer Mindestbreite (z. B. Tablet quer, PC), darunter Leiste unten bzw. oben
+    _watchSide() {
+      this._mq?.removeEventListener("change", this._mqf);
+      this._mq = null;
+      const c = this._cfg;
+      if (!c || !this.isConnected || !["left", "right"].includes(c.sidebar)) return this._applySide();
+      this._mq = window.matchMedia(`(min-width: ${+c.sidebar_min_width || 1024}px)`);
+      this._mqf = () => this._applySide();
+      this._mq.addEventListener("change", this._mqf);
+      this._applySide();
+    }
+    get _side() {
+      return this._mq?.matches ? this._cfg.sidebar : null;
+    }
+    _applySide() {
+      const w = this.shadowRoot?.querySelector(".wrap"), s = this._side;
+      this.toggleAttribute("side", !!s && !this._inline);
+      if (!w) return;
+      w.classList.toggle("side", !!s);
+      w.classList.toggle("right", s === "right");
+      w.classList.toggle(this._cfg.position === "top" ? "top" : "bottom", !s);
+      if (this._menu) this._close();
+    }
+    _build() {
+      this._built = true;
+      const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""}" style="--sz:${+c.button_size || 48}px"><div class="mb glass" hidden><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="pp" role="button" tabindex="0"><ha-icon></ha-icon></div></div><div class="dock glass"></div></div>`;
+      const dock = r.querySelector(".dock");
+      this._mb = r.querySelector(".mb");
+      this._mb.querySelector(".tx").addEventListener("click", () => this._mp && moreInfo(this, this._mp));
+      const pp = this._mb.querySelector(".pp");
+      const play = () => {
+        if (!this._mp) return;
+        if (this._haptic) haptic();
+        this._h.callService("media_player", "media_play_pause", { entity_id: this._mp });
+      };
+      pp.addEventListener("click", play);
+      pp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          play();
+        }
+      });
+      this._applySide();
+      if (this._hp) r.appendChild(this._hp);
+      if (!this._items.length) {
+        dock.innerHTML = `<span class="empty">${c.source ? `Kein Navi in „${esc(c.source)}“ gefunden` : "Noch keine Einträge"}</span>`;
+        this._btns = [];
+        return;
+      }
+      this._btns = this._items.map((it, i) => {
+        const d = document.createElement("div");
+        d.className = "d";
+        d.tabIndex = 0;
+        d.setAttribute("role", "button");
+        d.title = it.label || it.popup_title || "";
+        d.innerHTML = `${icon(it.icon || "mdi:circle-outline")}<span class="dot"></span><span class="num"></span>`;
+        this._bind(d, it, (kind) => this._run(i, kind));
+        dock.appendChild(d);
+        return d;
+      });
+    }
+    get _haptic() {
+      return !!(this._cfg.haptic ?? this._srcCfg?.haptic);
+    }
+    // Antippen, doppelt antippen (wartet kurz auf den zweiten Tipp) und lange drücken
+    _bind(el2, it, run) {
+      let t, wait2;
+      const hold = it.hold_action && it.hold_action.action !== "none", dbl = it.double_tap_action && it.double_tap_action.action !== "none";
+      if (hold) {
+        el2.addEventListener("pointerdown", () => {
+          el2._held = false;
+          clearTimeout(t);
+          t = setTimeout(() => {
+            el2._held = true;
+            run("hold");
+          }, 500);
+        });
+        ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => el2.addEventListener(ev, () => clearTimeout(t)));
+        el2.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
+      el2.addEventListener("click", () => {
+        if (el2._held) {
+          el2._held = false;
+          return;
+        }
+        if (!dbl) return run("tap");
+        if (wait2) {
+          clearTimeout(wait2);
+          wait2 = null;
+          return run("double_tap");
+        }
+        wait2 = setTimeout(() => {
+          wait2 = null;
+          run("tap");
+        }, 250);
+      });
+      el2.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          run("tap");
+        }
+      });
+    }
+    _update() {
+      if (!this._btns || !this._h) return;
+      const h = this._h, here = normPath(location.pathname);
+      const isHere = (it) => {
+        const p = pathOf(it);
+        return !!p && normPath(p) === here;
+      };
+      this._items.forEach((it, i) => {
+        const d = this._btns[i];
+        if (!d) return;
+        d.hidden = !visible(h, it);
+        d.classList.toggle("act", i === this._cur || !!it.popup_hash && curHash() === cleanHash(it.popup_hash));
+        d.classList.toggle("here", isHere(it) || Array.isArray(it.menu) && it.menu.some(isHere));
+        this._badge(d, it);
+      });
+      this._menu?.querySelectorAll(".mi").forEach((m) => {
+        m.hidden = !visible(h, m._it);
+        m.classList.toggle("here", isHere(m._it));
+      });
+      this._media();
+    }
+    // Punkt oder Zahl; Farbe als Farbrolle, bei erfüllter Bedingung eine zweite Farbrolle
+    _badge(d, it) {
+      const h = this._h, s = it.badge && h.states[it.badge];
+      let n = 0, dot = false;
+      if (it.badge_count_of) n = countOn(h, it.badge_count_of, it.badge_exclude);
+      else if (s && it.badge_show_number && NUMRE.test(s.state)) n = Math.round(+s.state);
+      else if (s) dot = isOn(s);
+      const showNum = n > 0 && it.badge_show_number;
+      d.classList.toggle("bd", dot || n > 0 && !showNum);
+      d.classList.toggle("bn", showNum);
+      if (showNum) d.querySelector(".num").textContent = n > 99 ? "99+" : n;
+      const cond = { state: it.badge_alert_state, state_not: it.badge_alert_state_not, above: it.badge_alert_above, below: it.badge_alert_below };
+      const alert = it.badge_alert_color && Object.values(cond).some((v) => v != null) && alertHit(cond, h.states[it.badge || it.badge_count_of]);
+      const role = alert ? it.badge_alert_color : it.badge_color;
+      if (role) {
+        const v = roleVars(role);
+        d.style.setProperty("--bc", v.c);
+        d.style.setProperty("--bfg", v.fg);
+      } else {
+        d.style.removeProperty("--bc");
+        d.style.removeProperty("--bfg");
+      }
+    }
+    // Media-Leiste: spielt ein Player, wird er gezeigt, sonst ein pausierter (oder auf Wunsch immer der erste)
+    _media() {
+      const mb = this._mb, ids = list(this._cfg.media_players ?? this._srcCfg?.media_players);
+      if (!mb) return;
+      const ss = ids.map((id) => this._h.states[id]).filter(Boolean);
+      const s = ss.find((x) => x.state === "playing") || ss.find((x) => MEDIA_ON.includes(x.state)) || (this._cfg.media_always ?? this._srcCfg?.media_always ? ss[0] : null);
+      mb.hidden = !s;
+      this.toggleAttribute("media", !!s && !this._side && !this._inline);
+      this._mp = s?.entity_id || null;
+      if (!s) return;
+      const a = s.attributes, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
+      if (art._pic !== pic) {
+        art._pic = pic;
+        art.style.backgroundImage = pic ? `url(${JSON.stringify(pic)})` : "";
+        art.classList.toggle("pic", !!pic);
+      }
+      mb.querySelector("b").textContent = a.media_title || a.friendly_name || s.entity_id;
+      mb.querySelector(".tx span").textContent = a.media_artist || a.app_name || (MEDIA_ON.includes(s.state) ? a.friendly_name || "" : fmtState(this._h, s));
+      mb.querySelector(".pp ha-icon").setAttribute("icon", s.state === "playing" ? "mdi:pause" : "mdi:play");
+    }
+    _run(i, kind) {
+      const it = this._items[i];
+      if (this._haptic) haptic();
+      if (kind !== "tap") return hassAction(this, { entity: it.entity, [`${kind}_action`]: it[`${kind}_action`] }, kind);
+      if (it.popup_hash) {
+        this._close();
+        return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
+      }
+      if (this._cur === i) return this._close();
+      this._close();
+      if (Array.isArray(it.menu) && it.menu.length) return this._openMenu(i, it);
+      if (Array.isArray(it.cards)) return this._openCards(i, it);
+      if (typeof it.popup === "string" && customElements.get("nz-popup")) return this._openLegacy(i, it);
+      this._act(it);
+    }
+    // Aktion eines Eintrags ohne eigenes Pop-up (auch für Einträge im Untermenü)
+    _act(it) {
+      if (it.popup_hash) return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
+      if (it.tap_action && it.tap_action.action !== "none") return hassAction(this, { entity: it.entity, tap_action: it.tap_action }, "tap");
+      if (it.navigation_path) return navigate(it.navigation_path);
+      if (it.entity) moreInfo(this, it.entity);
+    }
+    // Kleines Menü am Button mit weiteren Einträgen
+    _openMenu(i, it) {
+      const m = document.createElement("div");
+      m.className = "menu glass";
+      m.setAttribute("role", "menu");
+      it.menu.forEach((sub) => {
+        const e = document.createElement("div");
+        e.className = "mi";
+        e.tabIndex = 0;
+        e.setAttribute("role", "menuitem");
+        e._it = sub;
+        e.innerHTML = `<span class="ic">${icon(sub.icon || "mdi:circle-outline")}</span><span class="lb"></span>`;
+        e.querySelector(".lb").textContent = sub.label || pathOf(sub) || sub.popup_hash || sub.entity || "";
+        this._bind(e, sub, (kind) => {
+          if (this._haptic) haptic();
+          this._close();
+          if (kind === "tap") this._act(sub);
+          else hassAction(this, { entity: sub.entity, [`${kind}_action`]: sub[`${kind}_action`] }, kind);
+        });
+        m.appendChild(e);
+      });
+      this.shadowRoot.appendChild(m);
+      this._menu = m;
+      this._place(m, this._btns[i]);
+      this._opened(i, m);
+      this._out = (e) => {
+        const p = e.composedPath();
+        if (!p.includes(m) && !p.includes(this._btns[i])) this._close();
+      };
+      window.addEventListener("pointerdown", this._out, true);
+      m.querySelector(".mi:not([hidden])")?.focus({ preventScroll: true });
+    }
+    // Menü neben dem Button: über der Leiste unten, darunter oben, daneben als Seitenleiste
+    _place(m, b) {
+      const r = b.getBoundingClientRect(), W = innerWidth, H = innerHeight, g = 10, side = this._side;
+      const w = m.offsetWidth, ht = m.offsetHeight, clamp2 = (v, max) => Math.max(8, Math.min(v, max - 8));
+      if (side) {
+        m.style.left = `${side === "right" ? r.left - g - w : r.right + g}px`;
+        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H - ht)}px`;
+      } else {
+        m.style.left = `${clamp2(r.left + r.width / 2 - w / 2, W - w)}px`;
+        m.style.top = `${this._cfg.position === "top" ? r.bottom + g : r.top - g - ht}px`;
+      }
+    }
+    _openCards(i, it) {
+      const p = document.createElement(tag("navi-popup"));
+      p.onclose = () => this._close();
+      p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
+      p.hass = this._h;
+      this.shadowRoot.appendChild(p);
+      this._opened(i, p);
+    }
+    _openLegacy(i, it) {
+      const p = document.createElement("nz-popup");
+      p.host = this;
+      p.onclose = () => this._close();
+      p.cfg = { weather: this._srcCfg?.weather || this._cfg.weather, ...it, title: it.title || it.label };
+      document.body.appendChild(p);
+      p.hass = this._h;
+      this._opened(i, p);
+    }
+    _opened(i, p) {
+      this._pop = p;
+      this._cur = i;
+      this._update();
+      this._esc = (e) => {
+        if (e.key === "Escape") this._close();
+      };
+      window.addEventListener("keydown", this._esc);
+    }
+    _close() {
+      if (this._pop) {
+        this._pop.remove();
+        this._pop = null;
+      }
+      this._menu = null;
+      this._cur = -1;
+      if (this._esc) window.removeEventListener("keydown", this._esc);
+      if (this._out) {
+        window.removeEventListener("pointerdown", this._out, true);
+        this._out = null;
+      }
+      this._update();
+    }
+  };
+  define("navi-card", NovaNaviCard, { name: "Nova Navi", description: "Navigationsleiste unten, oben oder als Seitenleiste: navigieren, Aktionen, Untermenüs, Pop-ups, Badges und eine kleine Media-Leiste.", documentationURL: docUrl("nova-navi") });
+  define("dock-card", class NovaDockCard extends NovaNaviCard {
+  });
+  var GEN3 = [{ name: "source", selector: { text: {} } }];
+  var LOOK3 = (c) => [
+    g2(
+      { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
+      { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
+    ),
+    g2(
+      sel("sidebar", [["", "Nie"], ["left", "Links"], ["right", "Rechts"]]),
+      ...c.sidebar ? [{ name: "sidebar_min_width", selector: { number: { min: 480, max: 2560, step: 10, mode: "box", unit_of_measurement: "px" } } }] : []
+    ),
+    { name: "haptic", selector: { boolean: {} } }
+  ];
+  var MEDIA = [{ name: "media_players", selector: { entity: { multiple: true, filter: { domain: "media_player" } } } }, { name: "media_always", selector: { boolean: {} } }];
+  var I_MAIN = [g2({ name: "icon", required: true, selector: { icon: {} } }, { name: "label", selector: { text: {} } })];
+  var I_TAP = (opts) => [
+    { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
+    { name: "tap_action", selector: { ui_action: {} } }
+  ];
+  var I_MORE = [{ name: "hold_action", selector: { ui_action: {} } }, { name: "double_tap_action", selector: { ui_action: {} } }];
+  var I_POP = [{ name: "popup_title", selector: { text: {} } }, { name: "cards", selector: { object: {} } }];
+  var COND = (p) => [
+    g2({ name: `${p}_state`, selector: { text: {} } }, { name: `${p}_state_not`, selector: { text: {} } }),
+    g2({ name: `${p}_above`, selector: { number: { mode: "box", step: "any" } } }, { name: `${p}_below`, selector: { number: { mode: "box", step: "any" } } })
+  ];
+  var I_VIS = (it, users) => [
+    { name: "visible_users", selector: { select: { multiple: true, mode: "list", options: users } } },
+    { name: "visible_entity", selector: { entity: {} } },
+    ...it.visible_entity ? COND("visible") : []
+  ];
+  var I_BADGE = (it) => [
+    g2({ name: "badge", selector: { entity: {} } }, { name: "badge_count_of", selector: { entity: {} } }),
+    ...it.badge || it.badge_count_of ? [{ name: "badge_show_number", selector: { boolean: {} } }] : [],
+    ...it.badge_count_of ? [{ name: "badge_exclude", selector: { entity: { multiple: true } } }] : [],
+    g2(ROLE("badge_color"), ROLE("badge_alert_color")),
+    ...it.badge_alert_color && (it.badge || it.badge_count_of) ? COND("badge_alert") : []
+  ];
+  var S_MAIN = (opts) => [...I_MAIN, ...I_TAP(opts)];
+  var LABELS = {
+    position: "Position (Handy, schmale Bildschirme)",
+    button_size: "Button-Größe",
+    source: "Einträge aus anderem Dashboard übernehmen",
+    sidebar: "Seitenleiste auf breiten Bildschirmen",
+    sidebar_min_width: "Seitenleiste ab Breite",
+    haptic: "Haptisches Feedback",
+    media_players: "Media-Player",
+    media_always: "Auch zeigen, wenn nichts läuft",
+    icon: "Icon",
+    label: "Name",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken",
+    double_tap_action: "Aktion bei Doppeltippen",
+    popup_title: "Titel",
+    popup_hash: "Nova Pop-up öffnen",
+    cards: "Karten (YAML-Liste)",
+    visible_users: "Nur für diese Benutzer",
+    visible_entity: "Nur zeigen abhängig von Entität",
+    visible_state: "Zustand ist",
+    visible_state_not: "Zustand ist nicht",
+    visible_above: "Wert über",
+    visible_below: "Wert unter",
+    badge: "Badge-Entität",
+    badge_count_of: "Zähler: Gruppe",
+    badge_show_number: "Zahl statt Punkt",
+    badge_exclude: "Beim Zählen ignorieren",
+    badge_color: "Badge-Farbe",
+    badge_alert_color: "Farbe bei Bedingung",
+    badge_alert_state: "Zustand ist",
+    badge_alert_state_not: "Zustand ist nicht",
+    badge_alert_above: "Wert über",
+    badge_alert_below: "Wert unter"
+  };
+  var HELPERS = {
+    source: "Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Navi – praktisch für mehrere Ansichten oder Dashboards mit gleicher Leiste.",
+    sidebar: "Ab der eingestellten Breite steht die Leiste senkrecht am Rand, darunter unten bzw. oben.",
+    haptic: "Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk).",
+    media_players: "Zeigt über der Leiste den laufenden Player mit Play/Pause. Leer = keine Media-Leiste.",
+    popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion, dem Untermenü und dem einfachen Pop-up.",
+    cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
+    visible_users: "Leer = für alle sichtbar.",
+    visible_entity: "Ohne Bedingung: sichtbar, wenn die Entität an ist.",
+    badge: "Punkt, wenn die Entität an ist; mit „Zahl statt Punkt“ ihr Zahlenwert (z. B. Anzahl offener Fenster).",
+    badge_count_of: "Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)",
+    badge_color: "Leer = Akzentfarbe des Themes.",
+    badge_alert_color: "Gilt, wenn die Bedingung darunter auf die Badge-Entität zutrifft."
+  };
+  var NovaNaviCardEditor = class extends NovaEditorBase {
+    // Pop-ups des Dashboards und Benutzer für die Auswahllisten einmal laden
+    set hass(h) {
+      super.hass = h;
+      if (h && !this._hashes) {
+        this._hashes = [];
+        popupOptions(h).then((o) => {
+          this._hashes = o;
+          this._rebuild();
+        });
+      }
+      if (h && !this._users) {
+        const me = h.user ? [{ value: h.user.id, label: h.user.name }] : [];
+        this._users = me;
+        h.callWS({ type: "config/auth/list" }).then((us) => {
+          const l = us.filter((u) => !u.system_generated).map((u) => ({ value: u.id, label: u.name || u.username || u.id }));
+          if (l.length) {
+            this._users = l;
+            this._rebuild();
+          }
+        }).catch(() => {
+        });
+      }
+    }
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap");
+      const data = { position: "bottom", button_size: 48, sidebar: "", ...this._config };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
+        if (c.position === "bottom") delete c.position;
+        if (c.button_size === 48) delete c.button_size;
+        if (!c.sidebar) {
+          delete c.sidebar;
+          delete c.sidebar_min_width;
+        }
+        if (!c.haptic) delete c.haptic;
+        if (!c.media_always) delete c.media_always;
+        const re = !!this._config.source !== !!c.source || !!this._config.sidebar !== !!c.sidebar;
+        this._emit(c);
+        if (re) this._rebuild();
+      });
+      const items = this._config.items || [];
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
+          b.append(form(GEN3));
+          if (this._config.source && !items.length) b.append(this._hint("Einträge kommen aus dem anderen Dashboard. Eigene Buttons überschreiben das."));
+        }),
+        this._section("buttons", "mdi:dock-bottom", "Buttons", (b) => {
+          items.forEach((it, i) => b.append(this._item(it, i, items.length)));
+          b.append(this._add("Button hinzufügen", () => {
+            const n = [...items, { icon: "mdi:circle-outline" }];
+            this._open = /* @__PURE__ */ new Set([n.length - 1]);
+            this._emit({ ...this._config, items: n });
+            this._rebuild();
+          }));
+        }),
+        this._section("look", "mdi:palette-outline", "Layout und Aussehen", (b) => b.append(form(LOOK3(data)))),
+        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => b.append(form(MEDIA)))
+      );
+    }
+    get _opts() {
+      return this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
+    }
+    _popName(h) {
+      h = cleanHash(h);
+      return this._hashes?.find((o) => o.value === h)?.label || `#${h}`;
+    }
+    _label(it, i) {
+      return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (it.menu?.length ? "Untermenü" : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : pathOf(it)) || "Neuer Button"}`;
+    }
+    // Formular für einen Teil eines Eintrags; ändert sich dadurch das Schema (Felder ein-/ausblenden), wird neu aufgebaut
+    _part(get, set, schema, onChange) {
+      const cur2 = get();
+      return this._form(schema(cur2), cur2, (v) => {
+        const old = get(), was = JSON.stringify(schema(old));
+        const nx = merge(old, names(schema(old)), v);
+        if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
+        if (!nx.popup_hash) delete nx.popup_hash;
+        if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
+        if (!nx.badge_show_number) delete nx.badge_show_number;
+        set(nx);
+        onChange?.(nx);
+        if (JSON.stringify(schema(nx)) !== was) this._rebuild();
+      });
+    }
+    _setItem(i, nx) {
+      const list2 = [...this._config.items];
+      list2[i] = nx;
+      this._emit({ ...this._config, items: list2 });
+    }
+    _item(it, i, n) {
+      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => {
+        const get = () => this._config.items[i], set = (nx) => this._setItem(i, nx);
+        const part = (sch) => this._part(get, set, typeof sch === "function" ? sch : () => sch, (nx) => {
+          s.querySelector(".lbl").textContent = this._label(nx, i);
+          s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
+        });
+        b.append(
+          part(I_MAIN),
+          this._h4("Beim Antippen"),
+          part(I_TAP(this._opts)),
+          this._h4("Lange drücken und Doppeltippen"),
+          part(I_MORE),
+          this._h4("Untermenü"),
+          ...this._menuList(i),
+          this._h4("Einfaches Pop-up"),
+          part(I_POP),
+          this._h4("Sichtbarkeit"),
+          part((cur2) => I_VIS(cur2, this._users || [])),
+          this._h4("Badge"),
+          part(I_BADGE)
+        );
+      });
+      return d;
+    }
+    // Einträge des Untermenüs: Antippen des Buttons öffnet dann das Menü statt der Aktion
+    _menuList(i) {
+      const subs = this._config.items[i].menu || [], out = [];
+      const setSubs = (arr) => {
+        const it = { ...this._config.items[i] };
+        if (arr.length) it.menu = arr;
+        else delete it.menu;
+        this._setItem(i, it);
+      };
+      if (!subs.length) out.push(this._hint("Mit Einträgen öffnet der Button beim Antippen ein kleines Menü."));
+      subs.forEach((sub, j) => {
+        const key = `m${i}.${j}`, lbl = (x) => `${j + 1}. ${x.label || pathOf(x) || x.popup_hash || "Neuer Eintrag"}`;
+        const [d] = this._details(key, sub.icon || "mdi:circle-outline", lbl(sub), this._itemBtns(j, subs.length, (dir) => {
+          const arr = [...this._config.items[i].menu], t = j + dir;
+          [arr[j], arr[t]] = [arr[t], arr[j]];
+          this._open = /* @__PURE__ */ new Set([i, `m${i}.${t}`]);
+          setSubs(arr);
+          this._rebuild();
+        }, () => {
+          this._open = /* @__PURE__ */ new Set([i]);
+          setSubs(this._config.items[i].menu.filter((_, x) => x !== j));
+          this._rebuild();
+        }), (b, s) => {
+          const get = () => this._config.items[i].menu[j];
+          const set = (nx) => {
+            const arr = [...this._config.items[i].menu];
+            arr[j] = nx;
+            setSubs(arr);
+          };
+          const part = (sch) => this._part(get, set, sch, (nx) => {
+            s.querySelector(".lbl").textContent = lbl(nx);
+            s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
+          });
+          b.append(part(() => S_MAIN(this._opts)), part(() => I_MORE), part((cur2) => I_VIS(cur2, this._users || [])));
+        });
+        out.push(d);
+      });
+      out.push(this._add("Menü-Eintrag hinzufügen", () => {
+        const arr = [...this._config.items[i].menu || [], { icon: "mdi:circle-outline" }];
+        this._open = /* @__PURE__ */ new Set([i, `m${i}.${arr.length - 1}`]);
+        setSubs(arr);
+        this._rebuild();
+      }));
+      return out;
+    }
+    _move(i, dir) {
+      const j = i + dir, list2 = [...this._config.items];
+      [list2[i], list2[j]] = [list2[j], list2[i]];
+      this._open = /* @__PURE__ */ new Set([j]);
+      this._emit({ ...this._config, items: list2 });
+      this._rebuild();
+    }
+    _remove(i) {
+      this._open = /* @__PURE__ */ new Set();
+      const list2 = this._config.items.filter((_, k) => k !== i);
+      const c = { ...this._config };
+      if (list2.length) c.items = list2;
+      else delete c.items;
+      if (!c.items && !c.source) c.items = [];
+      this._emit(c);
+      this._rebuild();
+    }
+  };
+  __publicField(NovaNaviCardEditor, "labels", LABELS);
+  __publicField(NovaNaviCardEditor, "helpers", HELPERS);
+  __publicField(NovaNaviCardEditor, "openSections", ["buttons"]);
+  define("navi-card-editor", NovaNaviCardEditor);
 
   // src/modular.js
   var SLIDE = {
@@ -5447,8 +5801,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     _fmsg(m) {
       return `<div class="fmsg${m.err ? " err" : ""}"><ha-icon icon="${esc(m.msg[0])}"></ha-icon><span>${esc(m.msg[1])}</span></div>`;
     }
-    _wi(icon, role) {
-      return `<ha-icon class="wi" icon="${esc(icon)}" style="--c:${roleVars(role).c}"></ha-icon>`;
+    _wi(icon2, role) {
+      return `<ha-icon class="wi" icon="${esc(icon2)}" style="--c:${roleVars(role).c}"></ha-icon>`;
     }
     _dailyHtml(v) {
       const c = this._c;
@@ -6715,7 +7069,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     }
   };
   __publicField(NovaPopupCard, "gridKind", "popup");
-  define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – vom Dock oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
+  define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – von Nova Navi oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
   var GENERAL = [
     { name: "hash", required: true, selector: T },
     g2({ name: "title", selector: T }, { name: "icon", selector: I }),
@@ -6756,7 +7110,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
   var HELPERS2 = {
     ...GRID_HELPERS,
     hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
-    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.",
+    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Nova Navi und Raum-Karte.",
     stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
     state: "Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.",
     color: "Leer = neutral.",
@@ -6775,8 +7129,8 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       this._secs.forEach((k) => this._open.add(k));
       w.append(this._secGeneral(), this._secHead(), this._secLayout(), this._secContent());
     }
-    _sec(key, icon, label) {
-      const [d, , b] = this._details(key, icon, label, []);
+    _sec(key, icon2, label) {
+      const [d, , b] = this._details(key, icon2, label, []);
       d.addEventListener("toggle", () => {
         if (d.open) this._secs.add(key);
         else this._secs.delete(key);
@@ -7062,9 +7416,9 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   };
   __publicField(NovaAreaCard, "gridKind", "area");
   define("area-card", NovaAreaCard, { name: "Nova Bereich Card", description: "Raumansicht als Glasrahmen: Kopfzeile mit Zurück, Icon, Raumname und Chips, darunter beliebige Karten in Zeilen und Spalten.", documentationURL: docUrl("nova-bereich-card") });
-  var S_GEN3 = (icon) => [
+  var S_GEN3 = (icon2) => [
     { name: "area", selector: { area: {} } },
-    g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon ? { placeholder: icon } : {} } }),
+    g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon2 ? { placeholder: icon2 } : {} } }),
     { name: "back_action", selector: A },
     g2(ROLE("tint"), { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } })
   ];
@@ -7211,14 +7565,14 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   define("chips-card-editor", NovaChipsCardEditor);
 
   // src/appliance.js
-  var TYPES = {
+  var TYPES2 = {
     washer: { label: "Waschmaschine", icon: "mdi:washing-machine", color: "accent-1", run: "Wäscht", alt: "Schleudert", door: "Tür offen", phase: ["spin", "spinning", "schleudern"], anims: ["detergent", "softener"], dview: true },
     dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", door: "Tür offen", phase: [], dview: true },
     airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-2", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
     coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-3", run: "Läuft", alt: "Brüht", door: "Tür offen", phase: ["brew", "brewing", "brühen"], anims: ["tank", "beans", "descale"] },
     generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
   };
-  var typeOf = (c) => TYPES[c.device_type] ? c.device_type : "generic";
+  var typeOf = (c) => TYPES2[c.device_type] ? c.device_type : "generic";
   var HANIM = {
     tank: ["Wassertank", "Wassertank leer", "mdi:cup-water"],
     beans: ["Bohnen", "Bohnen nachfüllen", "mdi:coffee-outline"],
@@ -7227,7 +7581,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     softener: ["Weichspüler", "Weichspüler leer", "mdi:bottle-tonic-plus-outline"],
     warning: ["Allgemeine Warnung", "", "mdi:alert-outline"]
   };
-  var animsOf = (t) => [...TYPES[t].anims || [], "warning"];
+  var animsOf = (t) => [...TYPES2[t].anims || [], "warning"];
   var STATES = {
     run: ["run", "running", "on", "cooking", "brewing", "starting", "ending", "anti_wrinkle", "washing", "rinsing", "spinning", "drying", "aborting", "in_use", "programmed_running"],
     pause: ["pause", "paused", "user_paused"],
@@ -7526,7 +7880,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      if (c.device_type && !TYPES[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee oder generic sein");
+      if (c.device_type && !TYPES2[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee oder generic sein");
       this._c = { ...GDEF, ...c, controls: [].concat(c.controls || []).map(toObj).filter((o) => o.entity), hints: [].concat(c.hints || []).map(toObj).filter((o) => o.entity) };
       this._ids = entityIds(this._c);
       this._built = false;
@@ -7604,7 +7958,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     _build() {
       this._built = true;
       const c = this._c, t = typeOf(c), r = this.shadowRoot || this.attachShadow({ mode: "open" }), cmp = c.layout === "compact";
-      const rv = roleVars(c.color || TYPES[t].color);
+      const rv = roleVars(c.color || TYPES2[t].color);
       const anim = c.animation !== false && !cmp;
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${DCSS2}:host([hidden]){display:none}</style>
 <div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
@@ -7823,7 +8177,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _update() {
       const h = this._h, c = this._c, e = this._e;
       if (!h || !e) return;
-      const t = typeOf(c), TY = TYPES[t], s = this._S(c.entity), cls = this._cls(), act = isAct(cls);
+      const t = typeOf(c), TY = TYPES2[t], s = this._S(c.entity), cls = this._cls(), act = isAct(cls);
       const na = !!c.entity && (!s || s.state === "unavailable");
       if (this._prev && this._prev !== cls) this._fx = cls === "done";
       if (cls !== "done") this._fx = false;
@@ -7973,7 +8327,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._e.acts.hidden = Object.values(b).every((x) => x.hidden);
     }
     _alerts(cls, stx) {
-      const c = this._c, h = this._h, t = typeOf(c), TY = TYPES[t], g = this._e.g, out = [], on = /* @__PURE__ */ new Set();
+      const c = this._c, h = this._h, t = typeOf(c), TY = TYPES2[t], g = this._e.g, out = [], on = /* @__PURE__ */ new Set();
       const add = (lvl, ic, msg, e, hit) => out.push(`<div class="al ${lvl}${hit ? " hit" : ""}"${e ? ` data-e="${esc(e)}"` : ""}><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span></div>`);
       if (this._msg) add("error", "mdi:alert-circle-outline", this._msg);
       if (cls === "err") add("error", "mdi:alert-circle-outline", stx, c.entity, true);
@@ -8027,7 +8381,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var ST = { entity: {} };
   var BTN = { entity: { domain: ["button", "input_button", "script", "scene", "switch", "input_boolean"] } };
   var GGEN = [
-    sel("device_type", Object.entries(TYPES).map(([k, v]) => [k, k === "generic" ? "Allgemein" : v.label])),
+    sel("device_type", Object.entries(TYPES2).map(([k, v]) => [k, k === "generic" ? "Allgemein" : v.label])),
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
     { name: "entity", selector: ST },
     { name: "power", selector: { entity: { domain: ["switch", "input_boolean"] } } }
@@ -8037,7 +8391,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     g2({ name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "duration", selector: ST }),
     g2({ name: "remaining", selector: ST }, { name: "end_time", selector: ST }),
     { name: "phase", selector: ST },
-    ...TYPES[t].alt ? [{ name: "phase_states", selector: { text: { multiple: true } }, context: { t } }] : []
+    ...TYPES2[t].alt ? [{ name: "phase_states", selector: { text: { multiple: true } }, context: { t } }] : []
   ];
   var GCTL = (it) => {
     const d = dom(it.entity);
@@ -8061,7 +8415,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var GINFO = (t) => [
     g2({ name: "remote_start", selector: ST }, { name: "remote_start_text", selector: T }),
     g2({ name: "door", selector: ST }, { name: "door_text", selector: T }),
-    ...TYPES[t].dview ? [{ name: "door_anim", selector: { boolean: {} } }] : [],
+    ...TYPES2[t].dview ? [{ name: "door_anim", selector: { boolean: {} } }] : [],
     g2({ name: "connection", selector: ST }, { name: "connection_text", selector: T })
   ];
   var GHINT = (t) => [
@@ -8201,10 +8555,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const w = r.querySelector(".wrap");
       const strip2 = (c) => {
         Object.entries(GDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
-        if (c.color === TYPES[typeOf(c)].color) delete c.color;
+        if (c.color === TYPES2[typeOf(c)].color) delete c.color;
         return c;
       };
-      const data = { ...GDEF, color: TYPES[t].color, ...c0 };
+      const data = { ...GDEF, color: TYPES2[t].color, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
         const c = strip2(merge(this._config, names(schema), v));
         this._emit(c);
@@ -8240,5 +8594,5 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   define("geraet-card-editor", NovaApplianceCardEditor);
 
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.10.1b3"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.11.0b1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();

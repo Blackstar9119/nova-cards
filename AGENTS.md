@@ -2,7 +2,7 @@
 
 ## Projekt
 
-Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Dock,
+Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Navi,
 Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich und Chips – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
@@ -15,7 +15,7 @@ src/
   room.js             Nova Raum Card + Editor
   thermostat.js       Nova Thermostat Card + Editor
   light.js            Nova Licht Card + Editor (+ Farbscheibe nova-color-input)
-  dock.js             Nova Dock Card + Popup + Editor
+  navi.js             Nova Navi + Popup + Editor (früher Dock; custom:nova-dock-card bleibt als Alias registriert)
   modular.js          Nova Modular Card + Editor (Bausteine, auch vom Saugroboter genutzt)
   camera.js           Nova Kamera Card + Editor
   media.js            Nova Media Card + Editor
@@ -44,7 +44,7 @@ src/
     chips.js          Nova Chips: Wert- und Knopf-Chips (Darstellung, Schnellauswahl wie „Alle Lichter im Raum aus“,
                       Editor-Schema) – für die Chips Card, später auch Pop-up
     popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
-                      Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Dock und Raum-Karte
+                      Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Nova Navi und Raum-Karte
 docs/
   <karte>.md          Alle Optionen je Karte (z. B. room-card.md, popup-card.md)
 dev/
@@ -101,23 +101,24 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | `hui-card-element-editor` (Karteneditor) | `card-grid-editor.js` | YAML-Feld |
 | `ha-yaml-editor` | `card-grid-editor.js` | Textfeld im JSON-Format |
 | `getStubConfig()` der Kartenklassen (`hui-<typ>-card`) | `popup.js` | nur `{type}` |
-| Elementnamen `hui-card-preview`, `hui-dialog-edit-card`, `hui-card-options`, `hui-card-edit-mode` … | `card-grid.js` (Pop-up, Bereich), `dock.js` | Karte gilt als normal eingebunden |
-| WebSocket `lovelace/config` | `popup-hub.js` (Pop-ups für Dock und Raum-Karte), `dock.js` | keine Pop-ups/Einträge aus dem Dashboard |
+| Elementnamen `hui-card-preview`, `hui-dialog-edit-card`, `hui-card-options`, `hui-card-edit-mode` … | `card-grid.js` (Pop-up, Bereich), `navi.js` | Karte gilt als normal eingebunden |
+| WebSocket `lovelace/config` | `popup-hub.js` (Pop-ups für Nova Navi und Raum-Karte), `navi.js` | keine Pop-ups/Einträge aus dem Dashboard |
 | Event `ll-rebuild` | `card-grid.js` | Zelle wird neu aufgebaut, sonst nichts |
 | Elementname `hui-card-picker` (Vorschau in der Kartenauswahl erkennen) | `lifecycle.js` (`inPicker`) | Karte läuft wie normal eingebunden |
+| WebSocket `config/auth/list` (Benutzerliste, nur Admins) | `navi.js` (Editor, Sichtbarkeit) | nur der eigene Benutzer in der Auswahl |
 | Event `card-visibility-changed` + `element.hidden` (Karte ausblenden) | `appliance.js` | Karte ist leer (`:host([hidden])`), Platz im Raster bleibt |
 
 ## Dev-Workflow
 
 - **Dev-Build „dev“:** alle Karten mit Präfix `nova-dev-` statt `nova-`, damit sie sich nicht mit der HACS-Version
-  beißen. `npm run dev` baut alle Karten nach `dev/nova-dev-cards.js`, `npm run dev -- <karte>` bzw. mehrere mit Komma wie `popup,dock` (Dateiname in `src/`
+  beißen. `npm run dev` baut alle Karten nach `dev/nova-dev-cards.js`, `npm run dev -- <karte>` bzw. mehrere mit Komma wie `popup,navi` (Dateiname in `src/`
   ohne `.js`, z. B. `waste`) nur diese eine. In der Kartenauswahl tragen die Karten „ (Dev)“ im Namen.
 - **Nach jeder Änderung, die der Nutzer testen soll:** Dev-Build erstellen, als `nova-dev-cards.js` in den Repo-Root
   des Feature-Branches kopieren, committen und pushen. Dann die Dev-Ressource über den HA-MCP mit
   `ha_config_set_dashboard_resource` (`url` = `https://cdn.jsdelivr.net/gh/Blackstar9119/nova-cards@<commit>/nova-dev-cards.js`,
   `resource_type` = `module`) auf den neuen Commit-Hash umstellen. **Immer dieselbe Ressource aktualisieren**
   (`resource_id`), nie eine neue anlegen. Laufen mehrere Feature-Branches parallel, alle getesteten Karten in einen
-  Build packen (z. B. `npm run dev -- weather,popup,dock,info,room`), damit kein Test verloren geht.
+  Build packen (z. B. `npm run dev -- weather,popup,navi,info,room`), damit kein Test verloren geht.
 - **resource_id der Dev-Ressource:** `4cc06e00074c416590e298ace68fe3a7`
   Fehlt sie oder ist sie ungültig, zuerst per `ha_config_list_dashboard_resources` nach einer bestehenden
   Ressource suchen, die auf `nova-dev-cards.js` zeigt (oder inline mit `/* Nova Cards v… DEV` beginnt), und deren ID

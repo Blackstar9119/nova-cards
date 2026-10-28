@@ -2,7 +2,7 @@
 import './room.js';
 import './thermostat.js';
 import './light.js';
-import './dock.js';
+import './navi.js';
 import './modular.js';
 import './camera.js';
 import './media.js';

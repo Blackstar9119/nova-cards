@@ -1,7 +1,7 @@
 import {tag} from './define.js';
 import {navigate} from './actions.js';
 
-// Gemeinsamer Stand aller Nova Pop-ups (genutzt von Pop-up Card und Dock):
+// Gemeinsamer Stand aller Nova Pop-ups (genutzt von Pop-up Card und Nova Navi):
 // welche Karte zu welchem Hash gehört, Hash lesen/setzen/entfernen, Scroll-Sperre, Pop-ups im Dashboard finden.
 // Dev- und HACS-Build bleiben über tag() getrennt.
 
@@ -10,7 +10,7 @@ const KEY = `__${tag('popups')}`;
 export const popups = () => (window[KEY] ||= new Map());
 export const register = (h, card) => { const m = popups(); (m.get(h) || m.set(h, new Set()).get(h)).add(card); };
 export const unregister = (h, card) => { const s = popups().get(h); if (s) { s.delete(card); if (!s.size) popups().delete(h); } };
-// Gibt es für den Hash eine echte Karte in der aktuellen Ansicht (nicht die Ersatzkarte des Docks)?
+// Gibt es für den Hash eine echte Karte in der aktuellen Ansicht (nicht die Ersatzkarte von Nova Navi)?
 export const hasPopup = h => [...(popups().get(h) || [])].some(p => !p._fallback && p.isConnected);
 
 // „#Wohn zimmer“ → „Wohn-zimmer“
@@ -30,7 +30,7 @@ export const clearHash = back => {
   history.replaceState(history.state, '', location.pathname + location.search);
   window.dispatchEvent(new CustomEvent('location-changed', {detail: {replace: true}}));
 };
-// Offenes Pop-up zum Hash schließen (vom Dock beim zweiten Antippen)
+// Offenes Pop-up zum Hash schließen (von Nova Navi beim zweiten Antippen)
 export const closePopup = h => { const p = [...(popups().get(h) || [])].find(x => x._isOpen); if (p) p.close(); else if (curHash() === h) clearHash(false); };
 
 // Seite hinter dem Pop-up nicht mitscrollen lassen (Zähler, falls mehrere offen sind)
@@ -41,7 +41,7 @@ export const lockScroll = on => {
   if (!on && locks > 0 && --locks === 0) els.forEach((e, i) => { e.style.overflow = saved?.[i] || ''; });
 };
 
-// Pop-up-Konfigurationen im Dashboard suchen (für Dock und Dock-Editor)
+// Pop-up-Konfigurationen im Dashboard suchen (für Nova Navi und ihren Editor)
 export const findPopups = (o, out = []) => {
   if (!o || typeof o !== 'object') return out;
   if (o.type === `custom:${tag('popup-card')}` && o.hash) out.push(o);
@@ -51,7 +51,7 @@ export const findPopups = (o, out = []) => {
 // URL-Pfad des aktuellen Dashboards (null = Standard-Dashboard)
 export const dashPath = () => { const p = location.pathname.split('/')[1]; return !p || p === 'lovelace' ? null : p; };
 const CACHE = {};
-// HA-INTERN: WebSocket „lovelace/config“ liefert die Dashboard-Konfiguration (wie beim Dock mit „source“)
+// HA-INTERN: WebSocket „lovelace/config“ liefert die Dashboard-Konfiguration (wie bei Nova Navi mit „source“)
 export const dashPopups = (hass, path = dashPath(), fresh) => {
   const k = path ?? '', c = CACHE[k];
   if (c && !fresh && Date.now() - c.t < 15000) return c.p;
@@ -71,13 +71,13 @@ export const findPopup = async (hass, h, alt) => {
 
 // Anzeige in Auswahllisten und Platzhaltern: eingestellter Titel, sonst #hash
 export const popupLabel = c => c.title || `#${cleanHash(c.hash)}`;
-// Optionen für eine Auswahlliste „Nova Pop-up öffnen“ (Dock, Raum-Karte)
+// Optionen für eine Auswahlliste „Nova Pop-up öffnen“ (Nova Navi, Raum-Karte)
 export const popupOptions = async hass => [{value: '', label: '– keins –'},
   ...(await dashPopups(hass, undefined, true)).map(c => ({value: cleanHash(c.hash), label: popupLabel(c)}))];
 
 // Nova Pop-up per Hash öffnen (zweites Antippen schließt). Liegt die Pop-up Card nicht in der aktuellen Ansicht,
 // holt die aufrufende Karte (host) ihre Konfiguration aus dem Dashboard und zeigt sie in ihrem eigenen Shadow-DOM an,
-// damit Aktionen der Karten bei HA ankommen. alt = weiteres Dashboard zum Suchen (z. B. „source“ des Docks).
+// damit Aktionen der Karten bei HA ankommen. alt = weiteres Dashboard zum Suchen (z. B. „source“ von Nova Navi).
 export async function togglePopup(host, hass, h, alt) {
   if (curHash() === h) return closePopup(h);
   openPopup(h);

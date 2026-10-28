@@ -1,7 +1,7 @@
 // Baut src/ zu nova-cards.js im Repo-Root (diese Datei lädt HACS). Version kommt aus package.json.
 // Dev-Build: „npm run dev [-- karte]“ → dev/nova-dev-cards.js, alle Elemente heißen nova-dev-* statt nova-*.
 // Mit Karte (Dateiname in src/ ohne .js, z. B. waste) wird nur diese Karte gebaut – nötig, wenn der Build über 128 KB liegt.
-// Mehrere Karten mit Komma, z. B. „npm run dev -- popup,dock“.
+// Mehrere Karten mit Komma, z. B. „npm run dev -- popup,navi“.
 import {build} from 'esbuild';
 import {readFileSync, statSync, existsSync} from 'node:fs';
 
@@ -32,7 +32,7 @@ await build({
   banner: {js: dev
     ? `/* Nova Cards v${version} DEV${card ? ` (nur ${cards.join(', ')})` : ''} – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */`
     : `/* Nova Cards v${version} | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */`},
   logLevel: 'info',
 });
