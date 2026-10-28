@@ -7,6 +7,7 @@ import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, roleVars} from './shared/style
 import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, A, NUM, sel, ROLE, NAMEICON, BASE_LABELS} from './shared/editor-schema.js';
+import {sceneDefs, SCENE_CSS, frameGlow, sweep} from './shared/scene.js';
 
 /* ---------- Nova Gerät Card ---------- */
 // Gerätetypen: bestimmen nur Symbol, Standardtexte, Standardfarbe und Animation – die Entitäten wählt der Nutzer
@@ -70,15 +71,44 @@ const WARN = '<g class="wn"><path class="wt3" d="M14 3 l10 17 h-20 Z"/><line cla
 const DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
 /* Animationen: reines SVG + CSS, laufen nur bei .st-run (bzw. Fertig-Effekt einmalig), stehen bei .still */
 const SV = {
-  washer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvw"><circle cx="50" cy="58" r="21"/></clipPath></defs>
-<rect class="bd" x="12" y="6" width="76" height="88" rx="10"/><line class="sep" x1="12" y1="22" x2="88" y2="22"/>
-<rect class="dw" x="19" y="11" width="18" height="6" rx="2"/><circle class="kn" cx="64" cy="14" r="3.6"/><circle class="led" cx="78" cy="14" r="2"/>
-<circle class="door" cx="50" cy="58" r="27"/><circle class="gl" cx="50" cy="58" r="21"/>
-<g clip-path="url(#nvw)"><g class="wl"><g class="wv"><path class="wt" d="M0 64 q6.25 -3 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V100 H0 Z"/></g></g>
-<g class="drum"><circle class="dm" cx="50" cy="58" r="17"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(120 50 58)"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(240 50 58)"/>
-<path class="cl" d="M40 64 q5 -6 10 -1 q4 4 9 -1 q2 6 -5 8 q-8 2 -14 -6 Z"/><path class="cl c2" d="M44 48 q6 -3 10 1 q-2 5 -7 4 q-4 -1 -3 -5 Z"/></g></g>
-<g class="pd"><circle class="pdr" cx="50" cy="58" r="23"/><path class="sh" d="M35 47 a19 19 0 0 1 11 -8"/></g>
-<g class="lk"><rect x="67" y="35" width="8" height="6.5" rx="1.4"/><path d="M68.8 35 v-2 a2.2 2.2 0 0 1 4.4 0 v2"/></g>${DONE}${WARN}</svg>`,
+  washer: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs('w')}
+<radialGradient id="w-dr" cx=".42" cy=".35" r=".75"><stop offset="0" stop-color="#5a6479"/><stop offset=".6" stop-color="#2c3342"/><stop offset="1" stop-color="#141821"/></radialGradient>
+<linearGradient id="w-pd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8d98ac"/><stop offset="1" stop-color="#3a4252"/></linearGradient>
+<radialGradient id="w-vg"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></radialGradient>
+<radialGradient id="w-lt" cx=".5" cy="0" r=".9"><stop offset="0" class="w-lc" stop-opacity=".5"/><stop offset="1" class="w-lc" stop-opacity="0"/></radialGradient>
+<linearGradient id="w-wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="w-lc" stop-opacity=".6"/><stop offset="1" class="w-lc" stop-opacity=".25"/></linearGradient>
+<pattern id="w-pf" width="4.5" height="4.5" patternUnits="userSpaceOnUse"><circle cx="2.25" cy="2.25" r=".7" fill="#000" fill-opacity=".35"/></pattern>
+<clipPath id="w-ci"><circle cx="100" cy="114" r="36"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="193" rx="74" ry="4.5"/><rect class="ft" x="40" y="186" width="14" height="5" rx="1.5"/><rect class="ft" x="146" y="186" width="14" height="5" rx="1.5"/>
+<rect class="s-body" x="30" y="12" width="140" height="177" rx="9" fill="url(#w-bd)"/><rect class="s-sheen" x="30" y="12" width="140" height="177" rx="9" fill="url(#w-sh)"/>
+<rect class="s-edge" x="35" y="13" width="130" height="1.2" rx=".6"/>
+<rect class="psep" x="30" y="47.5" width="140" height=".8"/><rect class="psh" x="30" y="48.3" width="140" height=".6"/><rect class="psep" x="30" y="181" width="140" height=".8"/>
+<rect class="dw s-part" x="37" y="19" width="40" height="22" rx="3" fill="url(#w-pt)"/><rect class="dwh" x="39" y="19.8" width="36" height=".9" rx=".45"/>
+<rect class="lbl" x="42" y="23.5" width="8" height="1.3" rx=".65"/><rect class="lbl" x="53" y="23.5" width="8" height="1.3" rx=".65"/><rect class="lbl" x="64" y="23.5" width="6" height="1.3" rx=".65"/><rect class="dwg" x="43" y="34.5" width="28" height="2.6" rx="1.3"/>
+<g class="pdots">${[-135, -108, -81, -54, -27, 0, 27, 54, 81, 108, 135].map(a => `<circle${a === -54 ? ' class="on"' : ''} cx="${(99 + 13 * Math.sin(a * Math.PI / 180)).toFixed(2)}" cy="${(30 - 13 * Math.cos(a * Math.PI / 180)).toFixed(2)}" r=".95"/>`).join('')}</g>
+<circle class="kr" cx="99" cy="30" r="9" fill="url(#w-cr)"/><circle class="s-part" cx="99" cy="30" r="7.2" fill="url(#w-pt)"/><rect class="ki" x="98.4" y="23.6" width="1.2" height="4.2" rx=".6" transform="rotate(-54 99 30)"/>
+<rect class="s-part" x="121" y="19" width="41" height="22" rx="3" fill="url(#w-pt)"/><rect class="s-scr" x="123.5" y="21.5" width="36" height="13" rx="1.8"/>
+<text class="wdt" x="144" y="31.4"></text><g class="lk"><rect x="126.6" y="26.6" width="4.6" height="3.8" rx=".8"/><path d="M127.7 26.6 v-1.1 a1.2 1.2 0 0 1 2.4 0 v1.1"/></g>
+<path class="s-tgl" d="M125 22 h9 l-4 12 h-6 z"/><g class="tb"><rect x="124" y="37" width="6" height="1.8" rx=".9"/><rect x="133" y="37" width="6" height="1.8" rx=".9"/><rect x="142" y="37" width="6" height="1.8" rx=".9"/><rect x="151" y="37" width="8" height="1.8" rx=".9"/></g>
+<circle class="led" cx="166" cy="30" r="1.3"/>
+<rect class="s-part" x="49" y="96" width="7" height="9" rx="1.5" fill="url(#w-pt)"/><rect class="s-part" x="49" y="123" width="7" height="9" rx="1.5" fill="url(#w-pt)"/>
+<circle class="fl" cx="148" cy="168" r="9.5"/><path class="flh" d="M139.6 163.5 a9.5 9.5 0 0 1 8.4 -5"/><rect class="dwg" x="145" y="160.5" width="6" height="1.4" rx=".7"/>
+<circle class="gsk" cx="100" cy="114" r="41"/>
+<g clip-path="url(#w-ci)"><circle cx="100" cy="114" r="36" fill="url(#w-dr)"/>
+<g class="drum"><circle cx="100" cy="114" r="34" fill="url(#w-pf)"/><circle class="drm" cx="100" cy="114" r="22"/>
+${[0, 120, 240].map(a => `<g class="pdl" transform="rotate(${a} 100 114)"><path d="M93 78.6 Q100 77.6 107 78.6 L103.2 93 Q100 94.6 96.8 93 Z" fill="url(#w-pd)"/><path class="pdh" d="M94.6 79.4 L97.6 92 h-.9 L93.6 79.6 Z"/></g>`).join('')}
+<path class="cl" d="M76 128 q8 -10 18 -3 q8 5 16 -2 q5 10 -8 14 q-14 4 -26 -9 Z"/><path class="cl c2" d="M90 100 q8 -5 15 1 q-3 7 -10 6 q-6 -1 -5 -7 Z"/>
+<circle class="hub" cx="100" cy="114" r="6" fill="url(#w-cr)"/><circle class="hbc" cx="100" cy="114" r="2.4"/><circle class="spn" cx="100" cy="114" r="27"/></g>
+<rect class="dlt" x="64" y="78" width="72" height="50" fill="url(#w-lt)"/>
+<g class="wl"><g class="wv2"><path d="M25 121 q6.25 -2.5 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V160 H25 Z" fill="url(#w-wa)" opacity=".5"/></g>
+<g class="wv"><path d="M50 124 q6.25 -3.5 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V160 H50 Z" fill="url(#w-wa)"/></g></g>
+<circle cx="100" cy="114" r="36" fill="url(#w-vg)"/></g>
+<g class="pd"><circle class="rng" cx="100" cy="114" r="44" stroke="url(#w-cr)"/><circle class="rgo" cx="100" cy="114" r="46"/><circle class="blk" cx="100" cy="114" r="39"/>
+<circle class="s-glass" cx="100" cy="114" r="36" fill="url(#w-gl)"/>
+<g clip-path="url(#w-ci)"><path class="s-refl" d="M80 78 h22 l-40 62 v-32 z"/><path class="s-refl" d="M112 78 h6 l-56 86 v-12 z"/>
+<g transform="rotate(22 100 114)"><rect class="s-gls" x="38" y="56" width="16" height="116" fill="url(#w-gs)"/></g></g>
+<path class="sh" d="M71 102 a30 30 0 0 1 17 -18"/><rect class="hdl" x="140.6" y="106" width="3.6" height="16" rx="1.8"/></g>
+<g transform="translate(58 57) scale(1.15)">${DONE}</g><g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
   dishwasher: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvd"><rect x="22" y="26" width="56" height="60" rx="5"/></clipPath></defs>
 <rect class="bd" x="14" y="6" width="72" height="88" rx="9"/><line class="sep" x1="14" y1="20" x2="86" y2="20"/>
 <rect class="hd2" x="38" y="11" width="24" height="3.5" rx="1.75"/><circle class="led" cx="78" cy="13" r="2"/>
@@ -123,7 +153,7 @@ const scene = t => `<div class="scene">${SV[t]}</div>`;
 
 const DCSS = `
 .g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg)}
-.g.dv.glow.st-run,.g.dv.glow.st-heat{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
 .dv .hd small.er{color:var(--nv-error);opacity:1}
 .dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
@@ -174,7 +204,6 @@ const DCSS = `
 .st-off .scene>svg{opacity:.55;transition:opacity .4s}
 .scene .door{fill:currentColor;fill-opacity:.08;stroke:currentColor;stroke-opacity:.35;stroke-width:2}
 .scene .gl{fill:rgba(0,0,0,.28);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
-.scene .sh{fill:none;stroke:#fff;stroke-opacity:.25;stroke-width:1.6;stroke-linecap:round}
 .scene .wt{fill:var(--dc);fill-opacity:.45}
 .scene .wl{transition:transform .8s}
 .scene .dm{fill:none;stroke:currentColor;stroke-opacity:.3;stroke-width:1.2;stroke-dasharray:3 3}
@@ -201,8 +230,12 @@ const DCSS = `
 /* Laufen */
 .anim.st-run .w-washer .drum{animation:dv-tumble 4s ease-in-out infinite}
 .anim.st-run .w-washer .wv{animation:dv-wave 2.4s linear infinite}
+.anim.st-run .w-washer .wv2{animation:dv-wave 3.4s linear infinite reverse}
 .anim.st-run.alt .w-washer .drum{animation:dv-spin .55s linear infinite}
-.st-run.alt .w-washer .wl{transform:translateY(12px)}
+.st-run.alt .w-washer .wl{transform:translateY(22px)}
+.st-run.alt .w-washer .spn{stroke-opacity:.1}.st-run.alt .w-washer .pdl{opacity:.55}
+.st-run .w-washer .dlt,.st-pause .w-washer .dlt{opacity:1}
+.anim.st-pause .w-washer .wdt{animation:dv-blinko 1.4s ease-in-out infinite}
 .anim.st-run .w-dishwasher .arm{animation:dv-arm 1.6s ease-in-out infinite alternate}
 .anim.st-run .w-dishwasher .drops circle{animation:dv-drop 1.4s ease-out infinite}
 .anim.st-run .w-dishwasher .mist{animation:dv-mist 3.2s ease-in-out infinite}
@@ -243,15 +276,38 @@ const DCSS = `
 .anim.st-prep .scene .kx,.anim.st-prep .w-airfryer .kt,.anim.st-pause .w-airfryer .kp,.anim.st-pause .w-airfryer .kt{animation:dv-blinko 1.4s ease-in-out infinite}
 .anim.st-done.fx .w-airfryer .puff path{animation:dv-steam 1.8s ease-out 2 both}
 .anim.st-done.fx .w-airfryer .drw{animation:dv-jolt .6s .1s ease-out}
+/* Waschmaschine im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
+.w-washer{--gx:100px}
+.w-washer .ft,.w-washer .dwg{fill:#0d1016}
+.w-washer .psep{fill:#000;opacity:.3}.w-washer .psh{fill:#fff;opacity:.06}
+.w-washer .dwh{fill:#fff;opacity:.14}.w-washer .lbl{fill:#fff;opacity:.18}
+.w-washer .pdots circle{fill:#fff;opacity:.25}.w-washer .pdots .on{fill:var(--dc);opacity:1}
+.w-washer .kr{stroke:rgba(0,0,0,.4);stroke-width:.5}.w-washer .ki{fill:#fff;opacity:.85}
+.w-washer .wdt{font:600 9px Roboto,system-ui,sans-serif;fill:#fff;text-anchor:middle}
+.w-washer .tb rect{fill:#fff;opacity:.14}
+.w-washer .gsk{fill:#07090d;stroke:rgba(255,255,255,.08);stroke-width:.6}
+.w-washer .drum{transform-origin:100px 114px}
+.w-washer .drm{fill:none;stroke:#000;stroke-opacity:.25;stroke-width:1}
+.w-washer .pdl path{stroke:rgba(0,0,0,.35);stroke-width:.4}.w-washer .pdl .pdh{fill:#fff;opacity:.2;stroke:none}
+.w-washer .cl{fill:#8f99ad;fill-opacity:.55}.w-washer .cl.c2{fill:color-mix(in srgb,var(--dc) 55%,#c9d1de);fill-opacity:.5}
+.w-washer .hub{stroke:rgba(0,0,0,.4);stroke-width:.4}.w-washer .hbc{fill:#141821}
+.w-washer .spn{fill:none;stroke:#cfd8e8;stroke-opacity:0;stroke-width:12;transition:stroke-opacity .4s}
+.w-washer .w-lc{stop-color:var(--dc)}.w-washer .dlt{opacity:0;transition:opacity .6s}
+.w-washer .rng{fill:none;stroke-width:4}.w-washer .rgo{fill:none;stroke:rgba(255,255,255,.25);stroke-width:.6}
+.w-washer .blk{fill:none;stroke:#0b0e13;stroke-width:6}
+.w-washer .sh{fill:none;stroke:#fff;stroke-opacity:.16;stroke-width:1.6;stroke-linecap:round}
+.w-washer .hdl{fill:#0b0e13;opacity:.7}
+.w-washer .fl{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:.8}.w-washer .flh{fill:none;stroke:#fff;stroke-opacity:.08;stroke-width:.8}
+.w-washer .pd{transform-box:view-box;transform-origin:54px 114px;transition:transform .6s ease}
+.w-washer .scene .lk{stroke:#fff;stroke-opacity:.85;stroke-width:.7}.w-washer .scene .lk rect{fill:#fff}
+.st-off .w-washer .wdt,.st-off .w-washer .pdots .on{display:none}
 /* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
 .scene .wn{display:none;transform-box:fill-box;transform-origin:center}
 .scene .wn{--wc:var(--nv-warn)}.st-err .scene .wn{--wc:var(--nv-error)}
 .scene .wt3{fill:var(--wc);fill-opacity:.25;stroke:var(--wc);stroke-width:1.8;stroke-linejoin:round}.scene .wx{stroke:var(--wc);stroke-width:2.2;stroke-linecap:round}.scene .wx2{fill:var(--wc)}
 .h-warning .scene .wn,.st-err .scene .wn{display:inline}
 .anim.h-warning .scene .wn,.anim.st-err .scene .wn{animation:dv-pop2 1.6s ease-in-out infinite}
-.scene .pd{transform-box:view-box;transform-origin:27px 58px;transition:transform .6s ease}
-.scene .pdr{fill:currentColor;fill-opacity:.05;stroke:currentColor;stroke-opacity:.45;stroke-width:1.6}
-.dopen .w-washer .pd{transform:scaleX(.28)}
+.dopen .w-washer .pd{transform:scaleX(.16)}
 .scene .lk{display:none;fill:none;stroke:currentColor;stroke-opacity:.8;stroke-width:1.4}.scene .lk rect{fill:currentColor;fill-opacity:.8;stroke:none}
 .dlock .w-washer .lk{display:inline}
 .scene .dd{transform-box:view-box;transition:transform .5s ease}
@@ -370,14 +426,14 @@ class NovaApplianceCard extends HTMLElement {
     const c = this._c, t = typeOf(c), r = this.shadowRoot || this.attachShadow({mode: 'open'}), cmp = c.layout === 'compact';
     const rv = roleVars(c.color || TYPES[t].color);
     const anim = c.animation !== false && !cmp;
-    r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${DCSS}:host([hidden]){display:none}</style>
+    r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${SCENE_CSS}${DCSS}:host([hidden]){display:none}</style>
 <div class="g dv t-${t}${c.window === false ? ' nowin' : ''}${cmp ? ' cmp' : ''}${anim ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ''}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ''}</div>
 ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
 <div class="ctls"></div>${c.start_at === 'home_connect' && c.start ? SA : ''}<div class="acts"></div>`}<div class="als"></div></div>`;
     const q = s => r.querySelector(s);
     this._e = {g: q('.g'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), pw: q('.pw'), pg: q('.pg'), ph: q('.ph'), bar: q('.bar'), bari: q('.bar i'),
-      rm: q('.rm') || q('.rmc'), kp: q('.kp'), kt: q('.kt'), en: q('.en'), ctls: q('.ctls'), acts: q('.acts'), als: q('.als'), sa: q('.sa'), sat: q('.sa input'), san: q('.sa .now'), sah: q('.sa .sah')};
+      rm: q('.rm') || q('.rmc'), kp: q('.kp'), kt: q('.kt'), wd: q('.wdt'), en: q('.en'), ctls: q('.ctls'), acts: q('.acts'), als: q('.als'), sa: q('.sa'), sat: q('.sa input'), san: q('.sa .now'), sah: q('.sa .sah')};
     const e = this._e;
     press(e.ic, {tap: () => this._act({entity: c.entity, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: c.entity, hold_action: c.hold_action}, 'hold')});
     if (cmp) press(e.name.parentElement, {tap: () => this._act({entity: c.entity, tap_action: c.tap_action}, 'tap', true), hold: () => this._act({entity: c.entity, hold_action: c.hold_action}, 'hold')});
@@ -581,6 +637,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.kp.style.strokeDashoffset = String(100 - (f ?? 0) * 100);
       if (e.kt) e.kt.textContent = r > 0 ? fmtDisp(r) : '';
     }
+    // Waschmaschinen-Display: Restzeit, „End“ wenn fertig, sonst Striche
+    if (e.wd) e.wd.textContent = cls === 'done' ? 'End' : cls === 'off' ? '' : rem != null ? fmtDisp(rem) : '– –';
+    if (this._fx && !this._sw) { this._sw = true; sweep(e.g); }
+    if (!this._fx) this._sw = false;
     if (p != null) e.bari.style.width = `${p}%`;
     if (c.layout === 'compact') {
       e.ic.style.setProperty('--p', `${p ?? 0}%`);
@@ -692,6 +752,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   _tick() {
     const vis = !!this._inView && !document.hidden && !this._quiet && this.isConnected;
     this._e?.g.classList.toggle('still', !vis);
+    // Lichtstreifen übers Glas, sobald die Karte ins Bild kommt
+    if (vis && !this._vis && this._c.animation !== false) sweep(this._e?.g);
+    this._vis = vis;
     const run = vis && this._e && ['run', 'wait'].includes(this._prev) && (this._c.end_time || this._c.remaining);
     if (run && !this._tm) this._tm = setInterval(() => this._update(), 30000);
     if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
