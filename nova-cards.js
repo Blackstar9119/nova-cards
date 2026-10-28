@@ -8512,28 +8512,27 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     ] },
     { name: "AMS B", slots: [{ c: "#222428", mat: "PLA", name: "PLA Schwarz", rem: 90 }, { c: "#f5b83d", mat: "PLA", name: "PLA Gelb", rem: 40 }, { c: null, mat: "", name: "", rem: null, empty: true }, { c: "#9b6bd6", mat: "PETG", name: "PETG Lila", rem: 67 }] }
   ];
-  var SLOTX = [64, 104, 144, 184];
-  var SPOOL = SLOTX.map((x, i) => `<g class="sl s${i}"><clipPath id="psc${i}"><rect class="fcl" x="${x - 13.5}" y="22" width="27" height="48" rx="7"/></clipPath>
-<rect class="hubc" x="${x - 13.5}" y="38" width="27" height="16" rx="3"/><rect class="fl" x="${x - 13.5}" y="22" width="27" height="48" rx="7"/>
-<g clip-path="url(#psc${i})"><rect class="cy" x="${x - 14}" y="14" width="28" height="60"/><rect class="wnd" x="${x - 14}" y="14" width="28" height="60"/><rect class="rot" x="${x - 14}" y="14" width="28" height="7"/></g>
-<rect class="fg" x="${x - 17.5}" y="18" width="4" height="56" rx="2"/><rect class="fg" x="${x + 13.5}" y="18" width="4" height="56" rx="2"/>
-<g class="sw"><path d="M${x} 31 l6 10.5 h-12 z"/><rect x="${x - 0.6}" y="34.5" width="1.2" height="3.6" rx=".6"/><circle cx="${x}" cy="39.4" r=".7"/></g></g>`).join("");
-  var FEED = SLOTX.map((x, i) => `<g class="sl s${i}"><text class="mt" x="${x}" y="81.5"></text><rect class="sled" x="${x - 6}" y="84" width="12" height="1.8" rx=".9"/>
-<rect class="fd" x="${x - 11}" y="88" width="22" height="24" rx="6"/><ellipse class="fgl" cx="${x}" cy="91" rx="6.5" ry="1.8"/></g>`).join("");
+  var SLOTX = [72, 108, 144, 180];
+  var SPOOL = SLOTX.map((x, i) => `<g class="sl s${i}"><clipPath id="psc${i}"><rect class="fcl" x="${x - 11.8}" y="59" width="23.6" height="32" rx="3"/></clipPath>
+<rect class="fg" x="${x - 15}" y="57" width="3.2" height="34" rx="1.4"/><rect class="fg" x="${x + 11.8}" y="57" width="3.2" height="34" rx="1.4"/>
+<rect class="fg" x="${x - 12}" y="71" width="24" height="8" rx="2"/><rect class="fl" x="${x - 11.8}" y="59" width="23.6" height="32" rx="3"/>
+<g clip-path="url(#psc${i})"><rect class="cy" x="${x - 12}" y="55" width="24" height="40"/><rect class="wnd" x="${x - 12}" y="55" width="24" height="40"/><rect class="rot" x="${x - 12}" y="50" width="24" height="6"/></g>
+<g class="sw"><path d="M${x} 62 l6 10.5 h-12 z"/><rect x="${x - 0.6}" y="65.5" width="1.2" height="3.6" rx=".6"/><circle cx="${x}" cy="70.4" r=".7"/></g></g>`).join("");
+  var FEED = SLOTX.map((x, i) => `<g class="sl s${i}"><rect class="fd" x="${x - 4}" y="91" width="8" height="2.4" rx="1.2"/><text class="mt" x="${x}" y="100.5"></text>
+<rect class="sled" x="${x - 7}" y="104.5" width="14" height="2" rx="1"/></g>`).join("");
   var SCENE = `<svg viewBox="0 0 260 300" aria-hidden="true"><defs>
 <linearGradient id="pbd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="sb1"/><stop offset="1" class="sb2"/></linearGradient>
 <linearGradient id="psh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".14"/></linearGradient>
-<linearGradient id="pgl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2e333b" stop-opacity=".9"/><stop offset=".6" stop-color="#1a1d23" stop-opacity=".93"/><stop offset="1" stop-color="#101216" stop-opacity=".96"/></linearGradient>
-<linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2e36"/><stop offset="1" stop-color="#0e1013"/></linearGradient>
+<linearGradient id="pgl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a9c6ff" stop-opacity=".2"/><stop offset=".55" stop-color="#5d7397" stop-opacity=".1"/><stop offset="1" stop-color="#0c111c" stop-opacity=".38"/></linearGradient>
+<linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3344"/><stop offset="1" stop-color="#10141b"/></linearGradient>
 <radialGradient id="plt" cx=".5" cy="0" r=".9"><stop offset="0" stop-color="#fff6e4" stop-opacity=".5"/><stop offset="1" stop-color="#fff6e4" stop-opacity="0"/></radialGradient>
 <radialGradient id="pgw"><stop offset="0" stop-color="#ffc061" stop-opacity=".95"/><stop offset=".4" stop-color="#ff8a2a" stop-opacity=".5"/><stop offset="1" stop-color="#ff7a1a" stop-opacity="0"/></radialGradient>
-<linearGradient id="pdm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a616d" stop-opacity=".5"/><stop offset=".7" stop-color="#2a2e35" stop-opacity=".55"/><stop offset="1" stop-color="#16181c" stop-opacity=".7"/></linearGradient>
-<linearGradient id="pab" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3036" stop-opacity=".92"/><stop offset="1" stop-color="#14161a" stop-opacity=".96"/></linearGradient>
+<linearGradient id="pdm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb6d8" stop-opacity=".3"/><stop offset=".6" stop-color="#3a4660" stop-opacity=".35"/><stop offset="1" stop-color="#141821" stop-opacity=".55"/></linearGradient>
 <linearGradient id="pcy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".4"/><stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset=".75" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
 <linearGradient id="prt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <linearGradient id="pob" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset=".38" stop-color="#fff" stop-opacity=".28"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient>
 <linearGradient id="pgs" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-<linearGradient id="phd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4d7dc"/><stop offset="1" stop-color="#9da2a9"/></linearGradient>
+<linearGradient id="phd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b4252"/><stop offset="1" stop-color="#20252f"/></linearGradient>
 <pattern id="pwn" width="3" height="60" patternUnits="userSpaceOnUse"><rect width=".6" height="60" fill="#000" fill-opacity=".12"/></pattern><pattern id="ply" width="6" height="2" patternUnits="userSpaceOnUse"><rect width="6" height=".9" fill="#000" fill-opacity=".2"/></pattern>
 <clipPath id="pci"><rect x="46" y="136" width="160" height="146" rx="4"/></clipPath>
 <clipPath id="poc"><rect class="ocr" x="90" y="${PLATE - OBJ_H}" width="70" height="${OBJ_H}"/></clipPath>
@@ -8542,6 +8541,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 <ellipse class="shd" cx="128" cy="294" rx="104" ry="5"/>
 <g class="xsp"><path class="tube" d="M196 116 C 210 104, 228 128, 228 152"/><path class="fil" d="M196 116 C 210 104, 228 128, 228 152"/>
 <circle class="xf" cx="228" cy="190" r="32"/><circle class="xw" cx="228" cy="190" r="26"/><circle class="xc" cx="228" cy="190" r="26"/><circle class="xh" cx="228" cy="190" r="9"/></g>
+<g class="ams"><path class="tube" d="M204 95 C 230 95, 232 119, 210 129"/><path class="fil" d="M204 95 C 230 95, 232 119, 210 129"/></g>
 <rect class="body" x="36" y="116" width="180" height="176" rx="8"/><rect class="sheen" x="36" y="116" width="180" height="176" rx="8"/>
 <rect class="edge" x="40" y="117" width="172" height="1.2" rx=".6"/>
 <g class="vents"><rect x="182" y="285" width="2.4" height="4" rx="1"/><rect x="187" y="285" width="2.4" height="4" rx="1"/><rect x="192" y="285" width="2.4" height="4" rx="1"/><rect x="197" y="285" width="2.4" height="4" rx="1"/></g>
@@ -8572,20 +8572,17 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 <rect class="tint" x="46" y="136" width="160" height="146"/><rect class="dim" x="46" y="136" width="160" height="146"/></g>
 <g class="door"><rect class="dedge" x="46" y="136" width="4" height="146" rx="1.5"/><rect class="glass" x="46" y="136" width="160" height="146" rx="4"/>
 <g clip-path="url(#pci)"><path class="refl" d="M70 136 h26 l-50 104 v-52 z"/><path class="refl" d="M104 136 h7 l-65 135 v-14 z"/></g>
-<rect class="handle" x="201" y="201" width="6" height="17" rx="3"/></g>
+<rect class="handle" x="196" y="192" width="3" height="34" rx="1.5"/></g>
 <circle class="stled" cx="203" cy="126" r="1.5"/>
-<g class="top"><rect class="lid" x="38" y="113" width="176" height="4" rx="2"/><rect class="fit" x="94" y="111" width="10" height="5" rx="1.5"/>
-<g class="ams"><path class="tube" d="M100 112 C 100 104, 110 104, 118 102"/>
-<path class="dome0" d="M30 76 V46 A30 30 0 0 1 60 16 H192 A30 30 0 0 1 222 46 V76 Z"/>${SPOOL}
-<path class="dome" d="M30 76 V46 A30 30 0 0 1 60 16 H192 A30 30 0 0 1 222 46 V76 Z"/><path class="dhl" d="M44 30 Q60 18 92 18 H170 Q120 22 52 40 Z"/>
-<g class="grill"><circle cx="212" cy="34" r=".8"/><circle cx="216" cy="38" r=".8"/><circle cx="212" cy="42" r=".8"/><circle cx="216" cy="46" r=".8"/><circle cx="212" cy="50" r=".8"/><circle cx="216" cy="54" r=".8"/><circle cx="212" cy="58" r=".8"/><circle cx="216" cy="62" r=".8"/></g>
-<rect class="abase" x="26" y="72" width="200" height="42" rx="5"/><rect class="alip" x="28" y="72.5" width="196" height="1.6" rx=".8"/>${FEED}
-<text class="unit" x="218" y="110"></text></g></g>
-<g class="tab"><rect class="tst" x="44" y="126" width="9" height="10" rx="2"/><rect class="tbz" x="16" y="94" width="66" height="40" rx="5"/><rect class="tsc" x="19.5" y="97.5" width="59" height="33" rx="3"/>
-<rect class="tside" x="22" y="101" width="5" height="25" rx="1.5"/><text class="tt" x="31" y="113"></text><text class="ts" x="31" y="122"></text>
-<rect class="tbar" x="31" y="125.5" width="26" height="1.8" rx=".9"/><rect class="tfill" x="31" y="125.5" width="0" height="1.8" rx=".9"/>
-<path class="tgl" d="M21 99 h16 l-8 30 h-8 z"/></g>
-<g class="bdg" transform="translate(70 154)"><circle class="bc" r="9.5"/>
+<g class="top"><rect class="lid" x="38" y="112" width="176" height="5" rx="2.5"/>
+<g class="ams">${SPOOL}<rect class="dome" x="48" y="51" width="156" height="42" rx="16"/><path class="dhl" d="M64 53 h40 l-30 36 h-14 z"/>
+<rect class="abase" x="46" y="87" width="160" height="24" rx="7"/>${FEED}<text class="unit" x="201" y="108"></text></g></g>
+<g class="tab"><ellipse class="dsh" cx="70" cy="146" rx="28" ry="2.4"/>
+<path class="tbz" d="M42 116 h56 a4 4 0 0 1 4 4 l-1.5 20 a4 4 0 0 1 -4 3.6 h-53 a4 4 0 0 1 -4 -3.6 l-1.5 -20 a4 4 0 0 1 4 -4 z"/>
+<rect class="tbh" x="44" y="116.8" width="52" height="1" rx=".5"/><rect class="tsc" x="45" y="119.5" width="50" height="20" rx="2.5"/>
+<text class="tt" x="48.5" y="132.5"></text><rect class="tbar" x="70" y="125" width="22.5" height="2" rx="1"/><rect class="tfill" x="70" y="125" width="0" height="2" rx="1"/>
+<text class="ts" x="70" y="133.5"></text><path class="tgl" d="M47 120 h14 l-6 19 h-8 z"/></g>
+<g class="bdg" transform="translate(74 172)"><circle class="bc" r="9.5"/>
 <path class="b-ok" d="M-4.2 0.2 l2.9 2.9 l5.6 -6"/>
 <g class="b-wn"><path d="M0 -5.6 l5.6 9.7 h-11.2 z"/><rect x="-.65" y="-2.4" width="1.3" height="3.6" rx=".65"/><circle cx="0" cy="2.6" r=".8"/></g>
 <g class="b-tp"><rect x="-1.6" y="-6" width="3.2" height="8" rx="1.6"/><circle cx="0" cy="3.4" r="2.8"/></g>
@@ -8593,7 +8590,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 </svg>`;
   var PCSS3 = `
 .g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
---sb1:var(--nova-printer-color-light,#b6bac0);--sb2:var(--nova-printer-color,#868b92)}
+--sb1:var(--nova-printer-color-light,#3a4252);--sb2:var(--nova-printer-color,#191d26)}
 .g.pr.glow.on{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
 .pr .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
 .pr .hd small.er{color:var(--nv-error);opacity:1}
@@ -8633,13 +8630,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 /* Zeichnung */
 .scene .sb1{stop-color:var(--sb1)}.scene .sb2{stop-color:var(--sb2)}
 .scene .shd{fill:#000;opacity:.35}
-.scene .body{fill:url(#pbd);stroke:rgba(255,255,255,.18);stroke-width:.6;transition:stroke .4s}.scene .sheen{fill:url(#psh)}.scene .edge{fill:#fff;opacity:.35}
+.scene .body{fill:url(#pbd);stroke:rgba(255,255,255,.18);stroke-width:.6;transition:stroke .4s}.scene .sheen{fill:url(#psh);opacity:.4}.scene .edge{fill:#fff;opacity:.12}
 .scene .vents rect{fill:rgba(0,0,0,.35)}
 .scene .inner{fill:url(#pin)}.scene .lightc{fill:url(#plt);opacity:0;transition:opacity .5s}.scene .led{fill:#fff6e4;opacity:0;transition:opacity .5s}
 .scene .dim{fill:#05070a;opacity:.4;transition:opacity .5s}
 .lit .scene .lightc,.lit .scene .led{opacity:1}.lit .scene .dim{opacity:0}
-.scene .zrod{fill:#3d424b}.scene .chute{fill:#2c3037}
-.scene .carr{fill:#23262c}.scene .plate{fill:#3b3f46}.scene .plateh{fill:#8d929a}
+.scene .zrod{fill:#4a5265}.scene .chute{fill:#3a4152}
+.scene .carr{fill:#2f3644}.scene .plate{fill:#b38c52}.scene .plateh{fill:#e2c08b}
 .scene .pheat{fill:#ff7a1a;opacity:0}
 .scene .ob{fill:var(--fc)}.scene .oly{fill:url(#ply)}.scene .osh{fill:url(#pob)}.scene .gls{fill:url(#pgs);opacity:0}
 .scene .obj{display:none;transform-box:view-box;transform-origin:123px 232px;transition:transform .6s}.has-obj .scene .obj{display:inline}
@@ -8648,12 +8645,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .scene .cal rect{fill:var(--fc);opacity:0;transform-box:fill-box;transform-origin:left center}
 .scene .dots circle{fill:var(--dc);opacity:0}
 .scene .spag{fill:none;stroke:var(--fc);stroke-width:1.3;stroke-linecap:round;opacity:0;stroke-dasharray:240;stroke-dashoffset:240}
-.scene .rail{fill:#4f555f}.scene .railh{fill:rgba(255,255,255,.22)}.scene .blk{fill:#2f333a}
+.scene .rail{fill:#59627a}.scene .railh{fill:rgba(255,255,255,.25)}.scene .blk{fill:#3a4252}
 .scene .tube{fill:none;stroke:rgba(235,240,250,.4);stroke-width:2.6;stroke-linecap:round}
 .scene .fil{fill:none;stroke:var(--fc);stroke-width:1.1;stroke-linecap:round;stroke-dasharray:4 3;opacity:.9}
 .scene .head{transform-box:view-box;transition:transform 1s ease}.scene .hz{transform-box:view-box}
-.scene .hd{fill:url(#phd);stroke:rgba(0,0,0,.3);stroke-width:.5}.scene .hdt{fill:rgba(255,255,255,.6)}
-.scene .fan{fill:#1a1d22;stroke:rgba(0,0,0,.4);stroke-width:.5}.scene .bl ellipse{fill:#4a505a}.scene .hub{fill:#6b717b}
+.scene .hd{fill:url(#phd);stroke:rgba(255,255,255,.15);stroke-width:.5}.scene .hdt{fill:rgba(255,255,255,.14)}
+.scene .fan{fill:#161a22;stroke:rgba(255,255,255,.12);stroke-width:.5}.scene .bl ellipse{fill:#4a5366}.scene .hub{fill:#2b313e}
 .scene .bl{transform-box:view-box;transform-origin:123px 163px}
 .scene .heater{fill:#8e949c}.scene .nz{fill:#d0a24f;transition:fill .3s}
 .scene .glow{fill:url(#pgw);opacity:0;transition:opacity .6s}
@@ -8661,29 +8658,28 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .scene .wisp path{fill:none;stroke:#bfe3ff;stroke-width:1.3;stroke-linecap:round;opacity:0}
 .scene .tint{fill:var(--nv-error);opacity:0;transition:opacity .5s}
 .scene .door{transform-box:view-box;transform-origin:46px 209px;transition:transform .8s ease}
-.scene .glass{fill:url(#pgl);fill-opacity:.62;stroke:rgba(255,255,255,.22);stroke-width:.7}.scene .refl{fill:#fff;opacity:.06}
+.scene .glass{fill:url(#pgl);stroke:rgba(255,255,255,.22);stroke-width:.7}.scene .refl{fill:#fff;opacity:.07}
 .scene .dedge{fill:#5a5f67;opacity:0}
-.scene .handle{fill:#f2f3f5;stroke:rgba(0,0,0,.2);stroke-width:.4}
+.scene .handle{fill:rgba(255,255,255,.3)}
 .scene .stled{fill:#4caf6a;opacity:.3}
 .scene .top{transform-box:view-box;transform-origin:216px 116px;transition:transform .8s ease}
-.scene .lid{fill:#2d3137;stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .fit{fill:#c9ccd1}
-.scene .dome0{fill:#1c1f24;fill-opacity:.55}.scene .dome{fill:url(#pdm);stroke:rgba(255,255,255,.2);stroke-width:.6}.scene .dhl{fill:#fff;opacity:.08}
-.scene .grill circle{fill:rgba(255,255,255,.25)}
-.scene .abase{fill:url(#pab);stroke:rgba(255,255,255,.14);stroke-width:.6}.scene .alip{fill:rgba(255,255,255,.18)}
-.scene .fg{fill:#454a52;fill-opacity:.9;stroke:rgba(255,255,255,.28);stroke-width:.5}
-.scene .hubc{fill:#5b5248}
+.scene .lid{fill:url(#pgl);stroke:rgba(255,255,255,.25);stroke-width:.6}
+.scene .dome{fill:url(#pdm);stroke:rgba(255,255,255,.22);stroke-width:.6}.scene .dhl{fill:#fff;opacity:.08}
+
+.scene .abase{fill:url(#pbd);stroke:rgba(255,255,255,.14);stroke-width:.6}
+.scene .fg{fill:#1a1e27;stroke:rgba(255,255,255,.12);stroke-width:.4}
+
 .scene .fl{fill:var(--sc,#777);transition:opacity .4s}.scene .wnd{fill:url(#pwn)}.scene .cy{fill:url(#pcy)}.scene .rot{fill:url(#prt);opacity:0;transform-box:view-box}
 .scene .sl.emp .fl,.scene .sl.emp .cy{opacity:0}
 .scene .sw{display:none}.scene .sw path{fill:var(--nv-warn);stroke:#000;stroke-opacity:.3;stroke-width:.4}.scene .sw rect,.scene .sw circle{fill:#1b1d20}
 .scene .sl.wn .sw{display:inline}
-.scene .mt{font:600 5.6px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.75);text-anchor:middle}
+.scene .mt{font:500 5px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.75);text-anchor:middle}
 .scene .sled{fill:rgba(255,255,255,.18)}.scene .sl.act .sled{fill:var(--dc)}
-.scene .fd{fill:#0d0f12;stroke:rgba(255,255,255,.08);stroke-width:.4}.scene .fgl{fill:#ff8a3a;opacity:.45}
+.scene .fd{fill:#0d1016}
 .scene .unit{font:600 6px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.55);text-anchor:end}
 .scene .xf{fill:#1d2025}.scene .xw{fill:var(--fc)}.scene .xc{fill:url(#pcy);opacity:.6}.scene .xh{fill:#3a3f47}
-.scene .tbz{fill:#0c0d10;stroke:rgba(255,255,255,.2);stroke-width:.6}.scene .tsc{fill:#14171c}.scene .tst{fill:#6d7279}
-.scene .tside{fill:rgba(255,255,255,.08)}
-.scene .tt{font:700 11px Roboto,system-ui,sans-serif;fill:#fff}.scene .ts{font:500 5.4px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.65)}
+.scene .tbz{fill:url(#phd);stroke:rgba(255,255,255,.18);stroke-width:.6}.scene .tbh{fill:rgba(255,255,255,.18)}.scene .tsc{fill:#0a0e14;stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .dsh{fill:#000;opacity:.35}
+.scene .tt{font:600 8px Roboto,system-ui,sans-serif;fill:#fff}.scene .ts{font:400 4px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.65)}
 .scene .tbar{fill:rgba(255,255,255,.15)}.scene .tfill{fill:var(--dc)}.scene .tgl{fill:#fff;opacity:.05}
 .nodisp .scene .tab{display:none}
 .scene .bdg{opacity:0;transition:opacity .3s}.scene .bdg>*{display:none}
@@ -8697,7 +8693,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .b-wn .scene,.b-tp .scene,.b-fn .scene{--bc:var(--nv-warn)}.bad .scene{--bc:var(--nv-error)}
 .noams .scene .ams{display:none}.scene .xsp{display:none}.noams.xs .scene .xsp{display:inline}
 /* Grundzustände */
-.st-off .scene>svg{opacity:.55;transition:opacity .4s}.st-off .scene .tab .tsc{fill:#08090b}.st-off .scene .tab text,.st-off .scene .tbar,.st-off .scene .tfill,.st-off .scene .tside{display:none}
+.st-off .scene>svg{opacity:.55;transition:opacity .4s}.st-off .scene .tab .tsc{fill:#08090b}.st-off .scene .tab text,.st-off .scene .tbar,.st-off .scene .tfill{display:none}
 .st-off .scene .stled{opacity:0}
 .st-print .scene .stled,.st-prep .scene .stled,.st-heat .scene .stled,.st-pause .scene .stled,.st-cool .scene .stled{opacity:1}
 .st-print .scene .glow,.st-prep .scene .glow{opacity:.65}
@@ -8760,7 +8756,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 @keyframes pr-wisp{0%{opacity:0;transform:translateY(6px)}40%{opacity:.7}100%{opacity:0;transform:translateY(-14px)}}
 @keyframes pr-glare{from{transform:translateX(0)}to{transform:translateX(70px)}}
 @keyframes pr-check{from{stroke-dashoffset:14}to{stroke-dashoffset:0}}
-@keyframes pr-pop{0%{transform:translate(70px,154px) scale(.3)}70%{transform:translate(70px,154px) scale(1.15)}100%{transform:translate(70px,154px) scale(1)}}
+@keyframes pr-pop{0%{transform:translate(74px,172px) scale(.3)}70%{transform:translate(74px,172px) scale(1.15)}100%{transform:translate(74px,172px) scale(1)}}
 @keyframes pr-throb{0%,100%{opacity:1}50%{opacity:.45}}
 @keyframes pr-lvl{0%,100%{transform:translateX(-51px)}20%{transform:translateX(-27px)}40%{transform:translateX(-3px)}60%{transform:translateX(21px)}80%{transform:translateX(45px)}}
 @keyframes pr-tap{0%,60%,100%{transform:translateY(0)}75%{transform:translateY(4px)}}
@@ -9030,11 +9026,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       g.classList.toggle("noams", !ams);
       g.classList.toggle("xs", !ams && !!m.ext);
       g.style.setProperty("--fc", actSlot?.c || "var(--dc)");
-      e.svg.setAttribute("viewBox", ams ? "0 0 260 300" : "0 88 260 212");
+      e.svg.setAttribute("viewBox", ams ? "0 44 260 256" : "0 106 260 194");
       const wnSlot = ["empty", "tangle"].includes(m.fx);
       e.sl.forEach((x, i) => {
         const s = aU?.slots[i];
-        const f = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 16 + 32 * f, y = 46 - hh / 2;
+        const f = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f, y = 75 - hh / 2;
         [x.fl, x.fcl].forEach((r) => {
           r.setAttribute("y", y.toFixed(1));
           r.setAttribute("height", hh.toFixed(1));

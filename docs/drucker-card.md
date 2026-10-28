@@ -116,8 +116,8 @@ demo_ams: true
 des aktiven Filaments. Das Gehäuse lässt sich im Theme färben:
 
 ```yaml
-nova-printer-color: "#868b92"         # Gehäuse unten
-nova-printer-color-light: "#b6bac0"   # Gehäuse oben
+nova-printer-color: "#191d26"         # Gehäuse unten
+nova-printer-color-light: "#3a4252"   # Gehäuse oben
 ```
 
 ## Alle Optionen
