@@ -7333,6 +7333,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 <radialGradient id="w-lt" cx=".5" cy="0" r=".9"><stop offset="0" class="w-lc" stop-opacity=".5"/><stop offset="1" class="w-lc" stop-opacity="0"/></radialGradient>
 <linearGradient id="w-wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="w-lc" stop-opacity=".6"/><stop offset="1" class="w-lc" stop-opacity=".25"/></linearGradient>
 <pattern id="w-pf" width="4.5" height="4.5" patternUnits="userSpaceOnUse"><circle cx="2.25" cy="2.25" r=".7" fill="#000" fill-opacity=".35"/></pattern>
+<radialGradient id="w-gb" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#fff" stop-opacity=".03"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></radialGradient>
 <clipPath id="w-ci"><circle cx="100" cy="114" r="36"/></clipPath></defs>
 <ellipse class="s-shd" cx="100" cy="193" rx="74" ry="4.5"/><rect class="ft" x="40" y="186" width="14" height="5" rx="1.5"/><rect class="ft" x="146" y="186" width="14" height="5" rx="1.5"/>
 <rect class="s-body" x="30" y="12" width="140" height="177" rx="9" fill="url(#w-bd)"/><rect class="s-sheen" x="30" y="12" width="140" height="177" rx="9" fill="url(#w-sh)"/>
@@ -7348,7 +7349,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 <circle class="led" cx="166" cy="30" r="1.3"/>
 <rect class="s-part" x="49" y="96" width="7" height="9" rx="1.5" fill="url(#w-pt)"/><rect class="s-part" x="49" y="123" width="7" height="9" rx="1.5" fill="url(#w-pt)"/>
 <circle class="fl" cx="148" cy="168" r="9.5"/><path class="flh" d="M139.6 163.5 a9.5 9.5 0 0 1 8.4 -5"/><rect class="dwg" x="145" y="160.5" width="6" height="1.4" rx=".7"/>
-<circle class="gsk" cx="100" cy="114" r="41"/>
+<circle class="gsk" cx="100" cy="114" r="41"/><circle class="gsm" cx="100" cy="114" r="38.6"/><circle class="gsf" cx="100" cy="114" r="37.4"/><circle class="gsh" cx="100" cy="114" r="40.2"/>
 <g clip-path="url(#w-ci)"><circle cx="100" cy="114" r="36" fill="url(#w-dr)"/>
 <g class="drum"><circle cx="100" cy="114" r="34" fill="url(#w-pf)"/><circle class="drm" cx="100" cy="114" r="22"/>
 ${[0, 120, 240].map((a) => `<g class="pdl" transform="rotate(${a} 100 114)"><path d="M93 78.6 Q100 77.6 107 78.6 L103.2 93 Q100 94.6 96.8 93 Z" fill="url(#w-pd)"/><path class="pdh" d="M94.6 79.4 L97.6 92 h-.9 L93.6 79.6 Z"/></g>`).join("")}
@@ -7358,9 +7359,8 @@ ${[0, 120, 240].map((a) => `<g class="pdl" transform="rotate(${a} 100 114)"><pat
 <g class="wl"><g class="wv2"><path d="M25 121 q6.25 -2.5 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V160 H25 Z" fill="url(#w-wa)" opacity=".5"/></g>
 <g class="wv"><path d="M50 124 q6.25 -3.5 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V160 H50 Z" fill="url(#w-wa)"/></g></g>
 <circle cx="100" cy="114" r="36" fill="url(#w-vg)"/></g>
-<g class="pd">${WDOOR}</g>
-<g class="pdo"><circle class="pde" cx="100" cy="114" r="46" transform="matrix(-.38 0 0 1.03 77.5 -3.42)"/><g transform="matrix(-.38 0 0 1.03 74.52 -3.42)">${WDOOR}</g>
-<rect class="s-part" x="48" y="96.5" width="10" height="5" rx="1.5" fill="url(#w-pt)"/><rect class="s-part" x="48" y="125.5" width="10" height="5" rx="1.5" fill="url(#w-pt)"/></g>
+<rect class="hng s-part" x="45" y="101" width="13" height="26" rx="3" fill="url(#w-pt)"/><g class="pd"><circle class="pdt" cx="105" cy="114" r="44"/>${WDOOR}<circle class="pgb" cx="100" cy="114" r="36" fill="url(#w-gb)"/></g>
+
 <g transform="translate(58 57) scale(1.15)">${DONE}</g><g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
     dishwasher: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvd"><rect x="22" y="26" width="56" height="60" rx="5"/></clipPath></defs>
 <rect class="bd" x="14" y="6" width="72" height="88" rx="9"/><line class="sep" x1="14" y1="20" x2="86" y2="20"/>
@@ -7550,7 +7550,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .w-washer .sh{fill:none;stroke:#fff;stroke-opacity:.16;stroke-width:1.6;stroke-linecap:round}
 .w-washer .hdl{fill:#0b0e13;opacity:.7}
 .w-washer .fl{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:.8}.w-washer .flh{fill:none;stroke:#fff;stroke-opacity:.08;stroke-width:.8}
-.w-washer .pd{transform-box:view-box;transform-origin:54px 114px;transition:transform .45s .3s ease-out}
+.w-washer .pd{transform-box:view-box;transform-origin:54px 114px;transition:transform .6s ease}
 .w-washer .scene .lk{stroke:#fff;stroke-opacity:.85;stroke-width:.7}.w-washer .scene .lk rect{fill:#fff}
 .st-off .w-washer .wdt,.st-off .w-washer .pdots .on{display:none}
 /* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
@@ -7559,11 +7559,12 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .scene .wt3{fill:var(--wc);fill-opacity:.25;stroke:var(--wc);stroke-width:1.8;stroke-linejoin:round}.scene .wx{stroke:var(--wc);stroke-width:2.2;stroke-linecap:round}.scene .wx2{fill:var(--wc)}
 .h-warning .scene .wn,.st-err .scene .wn{display:inline}
 .anim.h-warning .scene .wn,.anim.st-err .scene .wn{animation:dv-pop2 1.6s ease-in-out infinite}
-/* Tür offen: Bullauge klappt zum Scharnier zu und schwenkt links auf, Trommel offen ohne Wasser */
-.w-washer .pdo{transform-box:view-box;transform-origin:54px 114px;transform:scaleX(0);transition:transform .35s ease-in}
-.w-washer .pde{fill:#1a1e27;stroke:rgba(255,255,255,.12);stroke-width:.6}
-.dopen .w-washer .pd{transform:scaleX(0);transition:transform .35s ease-in}
-.dopen .w-washer .pdo{transform:none;transition:transform .45s .35s ease-out}
+/* Tür offen: Bullauge ca. 30° angelehnt (verkürzt, Seitenkante, gewölbtes Glas), Scharnierblock, Manschette, Trommel ohne Wasser */
+.w-washer .pdt{fill:none;stroke:#1a1e27;stroke-width:4.4;opacity:0;transition:opacity .3s}
+.w-washer .pgb{opacity:0;transition:opacity .4s}.w-washer .hng{opacity:0;transition:opacity .3s}
+.w-washer .gsm{fill:none;stroke:#5d6573;stroke-width:4.6}.w-washer .gsf{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:.6}.w-washer .gsh{fill:none;stroke:#fff;stroke-opacity:.12;stroke-width:.6}
+.dopen .w-washer .pd{transform:scale(.8,1.03)}
+.dopen .w-washer .pdt,.dopen .w-washer .pgb,.dopen .w-washer .hng{opacity:1}
 .dopen .w-washer .wl,.dopen .w-washer .dlt{opacity:0}
 .w-washer .wl{transition:transform .8s,opacity .5s}
 .scene .lk{display:none;fill:none;stroke:currentColor;stroke-opacity:.8;stroke-width:1.4}.scene .lk rect{fill:currentColor;fill-opacity:.8;stroke:none}
