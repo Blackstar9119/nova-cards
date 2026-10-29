@@ -1,4 +1,4 @@
-/* Nova Cards v0.10.1b1 DEV – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
+/* Nova Cards v0.11.0b5 DEV – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -156,14 +156,20 @@
   }
 
   // src/shared/styles.js
-  var DOCK_VARS = `:host{
+  var NAVI_VARS = `:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.16));
 --nv-fg:var(--nova-text-color,#fff);
 --nv-accent:var(--nova-accent-color,#f5b83d);
 --nv-active:var(--nova-active-color,#3d8bf5);
 --nv-chip:var(--nova-chip-color,rgba(255,255,255,.1));
---nv-blur:var(--nova-blur,22px)}`;
+--nv-blur:var(--nova-blur,22px);
+--nv-active-fg:var(--nova-active-text-color,#fff);
+--nv-a1:var(--nova-accent-1,#3d8bf5);--nv-a1-fg:var(--nova-accent-1-text,#fff);
+--nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
+--nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
+--nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff)}`;
   var NOVA_VARS = `:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
@@ -422,12 +428,12 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       return f;
     }
     // Runder Icon-Button (Verschieben, Löschen …)
-    _btn(icon, title, fn, dis) {
+    _btn(icon2, title, fn, dis) {
       const b = document.createElement("button");
       b.className = "ib";
       b.title = title;
       b.disabled = !!dis;
-      b.innerHTML = `<ha-icon icon="${icon}"></ha-icon>`;
+      b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon>`;
       b.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -459,7 +465,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     // Aufklapp-Eintrag; key merkt sich, ob er offen ist. Liefert [details, summary, body].
     // Mit fill(body, summary) wird der Inhalt erst beim ersten Aufklappen gebaut – zugeklappte Einträge kosten dann nichts
-    _details(key, icon, label, btns, fill) {
+    _details(key, icon2, label, btns, fill) {
       const d = document.createElement("details");
       d.className = "item";
       d.open = this._open.has(key);
@@ -468,7 +474,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
         d.open ? this._open.add(key) : this._open.delete(key);
       });
       const s = document.createElement("summary");
-      s.innerHTML = `<ha-icon icon="${esc(icon)}"></ha-icon><span class="lbl"></span>`;
+      s.innerHTML = `<ha-icon icon="${esc(icon2)}"></ha-icon><span class="lbl"></span>`;
       s.querySelector(".lbl").textContent = label;
       s.append(...btns);
       const body = document.createElement("div");
@@ -489,11 +495,11 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     // Aufklappbarer Bereich im Stil des Pop-up-Editors (Icon + Überschrift, Inhalt erst beim Aufklappen).
     // Welche Bereiche offen sind, bleibt beim Neuaufbau erhalten; anfangs offen: static openSections der Unterklasse.
-    _section(key, icon, label, fill) {
+    _section(key, icon2, label, fill) {
       const open = this._openSecs ||= new Set(this.constructor.openSections || []), k = `sec.${key}`;
       if (open.has(key)) this._open.add(k);
       else this._open.delete(k);
-      const [d] = this._details(k, icon, label, [], fill);
+      const [d] = this._details(k, icon2, label, [], fill);
       d.classList.add("sec");
       d.addEventListener("toggle", () => {
         if (d.open) open.add(key);
@@ -1780,437 +1786,6 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   };
   define(TAG3, NovaLightCard, { name: "Nova Licht Card", description: "Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.", documentationURL: docUrl("nova-licht-card") });
 
-  // src/dock.js
-  var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
-  var PCSS = `
-:host{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
-.root{width:min(var(--nova-popup-width,1180px),96vw);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
-background:linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9));border:1px solid var(--nv-border);box-shadow:0 20px 60px rgba(0,0,0,.45);color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:up .28s cubic-bezier(.2,.8,.2,1)}
-.hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(60,72,100,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.x{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);cursor:pointer;flex:none}
-ha-icon{--mdc-icon-size:20px;display:flex}
-.body{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-popup-min-col,300px),1fr));gap:12px;align-items:start}
-.body.one{grid-template-columns:1fr}
-.empty{opacity:.6;font-size:13px;padding:8px}
-@media(max-width:600px){:host{align-items:flex-end}.root{width:100vw;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
-@keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fi{from{opacity:0}}`;
-  var NovaDockPopup = class extends HTMLElement {
-    constructor() {
-      super();
-      const r = this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${DOCK_VARS}${PCSS}</style><div class="root"><div class="hd"><ha-icon class="hi"></ha-icon><span class="tt"></span><div class="x" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></div></div><div class="body"></div></div>`;
-      this._body = r.querySelector(".body");
-      this._cards = [];
-      r.querySelector(".x").addEventListener("click", () => this.onclose?.());
-      this.addEventListener("click", (e) => {
-        if (e.composedPath()[0] === this) this.onclose?.();
-      });
-    }
-    set cfg(c) {
-      this._cfg = c;
-      const r = this.shadowRoot;
-      r.querySelector(".tt").textContent = c.title || "";
-      r.querySelector(".hi").setAttribute("icon", c.icon || "mdi:dots-horizontal");
-      this._body.classList.toggle("one", (c.cards || []).length === 1);
-      this._load();
-    }
-    async _load() {
-      const helpers2 = await window.loadCardHelpers();
-      this._body.innerHTML = "";
-      this._cards = (this._cfg.cards || []).map((cc) => {
-        const el2 = helpers2.createCardElement(cc);
-        if (this._h) el2.hass = this._h;
-        this._body.appendChild(el2);
-        return el2;
-      });
-      if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Pop-up – im Dock-Editor unter „Einfaches Pop-up: Karten“ eintragen.</div>';
-    }
-    set hass(h) {
-      this._h = h;
-      this._cards.forEach((c) => {
-        c.hass = h;
-      });
-    }
-  };
-  define("dock-popup", NovaDockPopup);
-  var DCSS = `
-:host{display:block;height:var(--nova-dock-space,64px)}
-.dock.inline{max-width:100%}
-ha-icon{--mdc-icon-size:22px;display:flex}
-.dock{position:fixed;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:8px;border-radius:999px;background:var(--nv-bg);
-backdrop-filter:blur(var(--nv-blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(160%);border:1px solid var(--nv-border);
-box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none;box-sizing:border-box}
-.dock.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.dock.top{top:14px}
-.dock::-webkit-scrollbar{display:none}
-.dock.inline{position:static;transform:none;margin:0 auto;width:max-content}
-.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none}
-.d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
-.d:active{transform:scale(.9)}
-.d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
-.d.here{outline:2px solid rgba(255,255,255,.5)}
-.d img{width:60%;height:60%;object-fit:contain}
-.dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--nv-accent);box-shadow:0 0 6px var(--nv-accent);display:none}
-.d.bd .dot{display:block}
-.num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--nv-accent);color:#3a2a00;font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
-.d.bn .num{display:block}.d.bn .dot{display:none}
-.empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
-@media(max-width:600px){.d{width:calc(var(--sz) * .875);height:calc(var(--sz) * .875)}.dock{gap:5px;padding:6px}}`;
-  var SRC2 = {};
-  var findDock = (o) => {
-    if (!o || typeof o !== "object") return null;
-    if ((o.type === `custom:${tag("dock-card")}` || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
-    for (const v of Object.values(o)) {
-      const r = findDock(v);
-      if (r) return r;
-    }
-    return null;
-  };
-  var NovaDockCard = class extends HTMLElement {
-    static getConfigElement() {
-      return document.createElement(tag("dock-card-editor"));
-    }
-    static getStubConfig() {
-      return { items: [
-        { icon: "mdi:home", label: "Start", tap_action: { action: "navigate", navigation_path: location.pathname } },
-        { icon: "mdi:lightbulb-group", label: "Licht", popup_title: "Licht", cards: [{ type: "markdown", content: "Hier deine Licht-Karten eintragen" }] }
-      ] };
-    }
-    setConfig(c) {
-      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      if (!c.items && !c.source) throw new Error("items oder source angeben");
-      this._cfg = { position: "bottom", button_size: 48, ...c };
-      this._ids = entityIds(c);
-      this._close();
-      this._items = null;
-      this._btns = null;
-      this._built = false;
-      this._cur = -1;
-      if (this._h) this.hass = this._h;
-    }
-    set hass(h) {
-      const old = this._h;
-      this._h = h;
-      if (!this._cfg) return;
-      if (this._pop) this._pop.hass = h;
-      if (this._hp) this._hp.hass = h;
-      if (!this._items) {
-        if (this._cfg.items) this._items = this._cfg.items;
-        else {
-          this._loadSource();
-          return;
-        }
-      }
-      if (!this._built) this._build();
-      else if (!hassChanged(old, h, this._watch(old))) return;
-      this._update();
-    }
-    // Entitäten der Einträge, bei Zählern auch die Mitglieder der Gruppe
-    _watch(h) {
-      if (this._srcIds?.items !== this._items) this._srcIds = { items: this._items, ids: entityIds(this._items) };
-      const ids = [...this._ids, ...this._srcIds.ids];
-      (this._items || []).forEach((it) => {
-        if (it.badge_count_of) ids.push(...h?.states[it.badge_count_of]?.attributes.entity_id || []);
-      });
-      return ids;
-    }
-    async _loadSource() {
-      if (this._loading) return;
-      this._loading = true;
-      const k = this._cfg.source;
-      SRC2[k] = SRC2[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findDock).catch(() => null);
-      const d = await SRC2[k];
-      this._loading = false;
-      this._items = d ? d.items : [];
-      this._srcCfg = d || {};
-      this.hass = this._h;
-    }
-    connectedCallback() {
-      this._applyInline();
-      requestAnimationFrame(() => this._applyInline());
-      this._loc = () => this._update();
-      window.addEventListener("location-changed", this._loc);
-      window.addEventListener("popstate", this._loc);
-      window.addEventListener("hashchange", this._loc);
-    }
-    disconnectedCallback() {
-      window.removeEventListener("location-changed", this._loc);
-      window.removeEventListener("popstate", this._loc);
-      window.removeEventListener("hashchange", this._loc);
-      this._close();
-      if (this._hp) {
-        this._hp.remove();
-        this._hp = null;
-      }
-    }
-    getCardSize() {
-      return 1;
-    }
-    getGridOptions() {
-      return { columns: "full", rows: 1 };
-    }
-    get _inline() {
-      if (this.preview || this.editMode || this.hasAttribute("preview") || this._cfg?.inline) return true;
-      const PREV2 = /* @__PURE__ */ new Set(["HUI-CARD-PICKER", "HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR"]);
-      let n = this;
-      for (let i = 0; i < 40 && n; i++) {
-        if (PREV2.has(n.tagName)) return true;
-        n = n.parentElement || n.getRootNode?.().host;
-      }
-      return false;
-    }
-    _applyInline() {
-      this.shadowRoot?.querySelector(".dock")?.classList.toggle("inline", this._inline);
-    }
-    _build() {
-      this._built = true;
-      const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${DOCK_VARS}${DCSS}</style><div class="dock ${esc(c.position)} ${this._inline ? "inline" : ""}" style="--sz:${+c.button_size || 48}px"></div>`;
-      const dock = r.querySelector(".dock");
-      if (this._hp) r.appendChild(this._hp);
-      if (!this._items.length) {
-        dock.innerHTML = `<span class="empty">${c.source ? `Kein Dock in „${esc(c.source)}“ gefunden` : "Noch keine Einträge"}</span>`;
-        this._btns = [];
-        return;
-      }
-      this._btns = this._items.map((it, i) => {
-        const d = document.createElement("div");
-        d.className = "d";
-        d.tabIndex = 0;
-        d.setAttribute("role", "button");
-        d.title = it.label || it.popup_title || "";
-        const ic = it.icon || "mdi:circle-outline";
-        d.innerHTML = `${isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`}<span class="dot"></span><span class="num"></span>`;
-        d.addEventListener("click", () => this._tap(i));
-        d.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            this._tap(i);
-          }
-        });
-        if (it.hold_action) {
-          let t;
-          d.addEventListener("pointerdown", () => {
-            t = setTimeout(() => {
-              d._held = true;
-              hassAction(this, { entity: it.entity, hold_action: it.hold_action }, "hold");
-            }, 500);
-          });
-          ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => d.addEventListener(ev, () => clearTimeout(t)));
-        }
-        dock.appendChild(d);
-        return d;
-      });
-    }
-    _path(it) {
-      return it.tap_action?.action === "navigate" ? it.tap_action.navigation_path : it.navigation_path;
-    }
-    _update() {
-      if (!this._btns || !this._h) return;
-      const h = this._h;
-      this._items.forEach((it, i) => {
-        const d = this._btns[i];
-        if (!d) return;
-        const p = this._path(it);
-        d.classList.toggle("act", i === this._cur || !!it.popup_hash && curHash() === cleanHash(it.popup_hash));
-        d.classList.toggle("here", !!p && location.pathname === p);
-        let n = 0, dot = false;
-        if (it.badge_count_of) n = countOn(h, it.badge_count_of, it.badge_exclude);
-        else if (it.badge) dot = isOn(h.states[it.badge]);
-        const showNum = n > 0 && it.badge_show_number;
-        d.classList.toggle("bd", dot || n > 0 && !showNum);
-        d.classList.toggle("bn", showNum);
-        if (showNum) d.querySelector(".num").textContent = n > 99 ? "99+" : n;
-      });
-    }
-    _tap(i) {
-      const it = this._items[i];
-      if (this._btns[i]?._held) {
-        this._btns[i]._held = false;
-        return;
-      }
-      if (it.popup_hash) {
-        this._close();
-        return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
-      }
-      if (this._cur === i) return this._close();
-      this._close();
-      if (Array.isArray(it.cards)) return this._openCards(i, it);
-      if (typeof it.popup === "string" && customElements.get("nz-popup")) return this._openLegacy(i, it);
-      if (it.tap_action && it.tap_action.action !== "none") return hassAction(this, { entity: it.entity, tap_action: it.tap_action }, "tap");
-      if (it.navigation_path) return navigate(it.navigation_path);
-      if (it.entity) moreInfo(this, it.entity);
-    }
-    _openCards(i, it) {
-      const p = document.createElement(tag("dock-popup"));
-      p.onclose = () => this._close();
-      p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
-      p.hass = this._h;
-      this.shadowRoot.appendChild(p);
-      this._opened(i, p);
-    }
-    _openLegacy(i, it) {
-      const p = document.createElement("nz-popup");
-      p.host = this;
-      p.onclose = () => this._close();
-      p.cfg = { weather: this._srcCfg?.weather || this._cfg.weather, ...it, title: it.title || it.label };
-      document.body.appendChild(p);
-      p.hass = this._h;
-      this._opened(i, p);
-    }
-    _opened(i, p) {
-      this._pop = p;
-      this._cur = i;
-      this._update();
-      this._esc = (e) => {
-        if (e.key === "Escape") this._close();
-      };
-      window.addEventListener("keydown", this._esc);
-    }
-    _close() {
-      if (this._pop) {
-        this._pop.remove();
-        this._pop = null;
-      }
-      this._cur = -1;
-      if (this._esc) window.removeEventListener("keydown", this._esc);
-      this._update();
-    }
-  };
-  define("dock-card", NovaDockCard, { name: "Nova Dock Card", description: "Schwebende Leiste unten mit Buttons: navigieren, Aktion auslösen oder Popup mit beliebigen Karten öffnen.", documentationURL: docUrl("nova-dock-card") });
-  var GEN3 = [{ name: "source", selector: { text: {} } }];
-  var LOOK3 = [{ type: "grid", name: "", schema: [
-    { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
-    { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
-  ] }];
-  var I_MAIN = [{ type: "grid", name: "", schema: [
-    { name: "icon", required: true, selector: { icon: {} } },
-    { name: "label", selector: { text: {} } }
-  ] }];
-  var I_TAP = (opts) => [
-    { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
-    { name: "tap_action", selector: { ui_action: {} } }
-  ];
-  var I_POP = [{ name: "popup_title", selector: { text: {} } }, { name: "cards", selector: { object: {} } }];
-  var I_BADGE = (it) => [
-    { name: "badge", selector: { entity: {} } },
-    { name: "badge_count_of", selector: { entity: {} } },
-    ...it.badge_count_of ? [{ name: "badge_show_number", selector: { boolean: {} } }, { name: "badge_exclude", selector: { entity: { multiple: true } } }] : []
-  ];
-  var LABELS = {
-    position: "Position",
-    button_size: "Button-Größe",
-    source: "Einträge aus anderem Dashboard übernehmen",
-    icon: "Icon",
-    label: "Name",
-    tap_action: "Aktion beim Antippen",
-    popup_title: "Titel",
-    popup_hash: "Nova Pop-up öffnen",
-    cards: "Karten (YAML-Liste)",
-    badge: "Punkt, wenn diese Entität an ist",
-    badge_count_of: "Zähler: Gruppe",
-    badge_show_number: "Zahl statt Punkt",
-    badge_exclude: "Beim Zählen ignorieren"
-  };
-  var HELPERS = {
-    source: "Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Dock – praktisch für mehrere Dashboards mit gleicher Leiste.",
-    popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion und dem einfachen Pop-up.",
-    cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
-    badge_count_of: "Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)"
-  };
-  var NovaDockCardEditor = class extends NovaEditorBase {
-    // Pop-ups des Dashboards für die Auswahlliste einmal laden
-    set hass(h) {
-      super.hass = h;
-      if (h && !this._hashes) {
-        this._hashes = [];
-        popupOptions(h).then((o) => {
-          this._hashes = o;
-          this._rebuild();
-        });
-      }
-    }
-    _build() {
-      const r = this.shadowRoot;
-      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap");
-      const data = { position: "bottom", button_size: 48, ...this._config };
-      const form = (schema) => this._form(schema, data, (v) => {
-        const c = merge(this._config, names(schema), v);
-        if (c.position === "bottom") delete c.position;
-        if (c.button_size === 48) delete c.button_size;
-        const hadSrc = !!this._config.source;
-        this._emit(c);
-        if (hadSrc !== !!c.source) this._rebuild();
-      });
-      const items = this._config.items || [];
-      w.append(
-        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
-          b.append(form(GEN3));
-          if (this._config.source && !items.length) b.append(this._hint("Einträge kommen aus dem anderen Dashboard. Eigene Buttons überschreiben das."));
-        }),
-        this._section("buttons", "mdi:dock-bottom", "Buttons", (b) => {
-          items.forEach((it, i) => b.append(this._item(it, i, items.length)));
-          b.append(this._add("Button hinzufügen", () => {
-            const n = [...items, { icon: "mdi:circle-outline" }];
-            this._open = /* @__PURE__ */ new Set([n.length - 1]);
-            this._emit({ ...this._config, items: n });
-            this._rebuild();
-          }));
-        }),
-        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK3)))
-      );
-    }
-    _popName(h) {
-      h = cleanHash(h);
-      return this._hashes?.find((o) => o.value === h)?.label || `#${h}`;
-    }
-    _label(it, i) {
-      return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : it.tap_action?.navigation_path) || "Neuer Button"}`;
-    }
-    _item(it, i, n) {
-      const opts = this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
-      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => {
-        const form = (schema) => this._form(schema, it, (v) => {
-          const list2 = [...this._config.items], old = list2[i];
-          const nx = merge(old, names(schema), v);
-          if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
-          if (!nx.popup_hash) delete nx.popup_hash;
-          if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
-          if (!nx.badge_show_number) delete nx.badge_show_number;
-          list2[i] = nx;
-          this._emit({ ...this._config, items: list2 });
-          s.querySelector(".lbl").textContent = this._label(nx, i);
-          s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
-          if (!!old.badge_count_of !== !!nx.badge_count_of) this._rebuild();
-        });
-        b.append(form(I_MAIN), this._h4("Beim Antippen"), form(I_TAP(opts)), this._h4("Einfaches Pop-up"), form(I_POP), this._h4("Punkt und Zähler"), form(I_BADGE(it)));
-      });
-      return d;
-    }
-    _move(i, dir) {
-      const j = i + dir, list2 = [...this._config.items];
-      [list2[i], list2[j]] = [list2[j], list2[i]];
-      this._open = /* @__PURE__ */ new Set([j]);
-      this._emit({ ...this._config, items: list2 });
-      this._rebuild();
-    }
-    _remove(i) {
-      this._open = /* @__PURE__ */ new Set();
-      const list2 = this._config.items.filter((_, k) => k !== i);
-      const c = { ...this._config };
-      if (list2.length) c.items = list2;
-      else delete c.items;
-      if (!c.items && !c.source) c.items = [];
-      this._emit(c);
-      this._rebuild();
-    }
-  };
-  __publicField(NovaDockCardEditor, "labels", LABELS);
-  __publicField(NovaDockCardEditor, "helpers", HELPERS);
-  __publicField(NovaDockCardEditor, "openSections", ["buttons"]);
-  define("dock-card-editor", NovaDockCardEditor);
-
   // src/shared/editor-schema.js
   var g2 = (...schema) => ({ type: "grid", name: "", schema });
   var T = { text: {} };
@@ -2253,22 +1828,1029 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     glow: "Kartenrahmen einfärben"
   };
 
-  // src/modular.js
-  var SLIDE2 = {
-    number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("number", "set_value", { entity_id: id, value: v }) },
-    input_number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("input_number", "set_value", { entity_id: id, value: v }) },
-    light: {
-      v: (s) => s.state === "on" ? Math.max(1, Math.round((s.attributes.brightness || 0) / 2.55)) : 0,
-      r: () => [0, 100, 1],
-      u: "%",
-      set: (h, id, v) => v > 0 ? h.callService("light", "turn_on", { entity_id: id, brightness_pct: v }) : h.callService("light", "turn_off", { entity_id: id })
-    },
-    fan: { v: (s) => s.state === "on" ? s.attributes.percentage ?? 0 : 0, r: (a) => [0, 100, a.percentage_step || 1], u: "%", set: (h, id, v) => h.callService("fan", "set_percentage", { entity_id: id, percentage: Math.round(v) }) },
-    cover: { v: (s) => s.attributes.current_position ?? 0, r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("cover", "set_cover_position", { entity_id: id, position: v }) },
-    media_player: { v: (s) => Math.round((s.attributes.volume_level ?? 0) * 100), r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("media_player", "volume_set", { entity_id: id, volume_level: v / 100 }) },
-    climate: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 7, a.max_temp ?? 35, a.target_temp_step ?? 0.5], u: "°", set: (h, id, v) => h.callService("climate", "set_temperature", { entity_id: id, temperature: v }) },
-    water_heater: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 30, a.max_temp ?? 70, a.target_temp_step ?? 1], u: "°", set: (h, id, v) => h.callService("water_heater", "set_temperature", { entity_id: id, temperature: v }) }
+  // src/navi.js
+  var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
+  var PCSS = `
+:host{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
+.root{width:min(var(--nova-popup-width,1180px),96vw);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
+background:linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9));border:1px solid var(--nv-border);box-shadow:0 20px 60px rgba(0,0,0,.45);color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:up .28s cubic-bezier(.2,.8,.2,1)}
+.hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(60,72,100,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);cursor:pointer;flex:none}
+ha-icon{--mdc-icon-size:20px;display:flex}
+.body{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-popup-min-col,300px),1fr));gap:12px;align-items:start}
+.body.one{grid-template-columns:1fr}
+.empty{opacity:.6;font-size:13px;padding:8px}
+@media(max-width:600px){:host{align-items:flex-end}.root{width:100vw;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
+@keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fi{from{opacity:0}}`;
+  var NovaNaviPopup = class extends HTMLElement {
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NAVI_VARS}${PCSS}</style><div class="root"><div class="hd"><ha-icon class="hi"></ha-icon><span class="tt"></span><div class="x" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></div></div><div class="body"></div></div>`;
+      this._body = r.querySelector(".body");
+      this._cards = [];
+      r.querySelector(".x").addEventListener("click", () => this.onclose?.());
+      this.addEventListener("click", (e) => {
+        if (e.composedPath()[0] === this) this.onclose?.();
+      });
+    }
+    set cfg(c) {
+      this._cfg = c;
+      const r = this.shadowRoot;
+      r.querySelector(".tt").textContent = c.title || "";
+      r.querySelector(".hi").setAttribute("icon", c.icon || "mdi:dots-horizontal");
+      this._body.classList.toggle("one", (c.cards || []).length === 1);
+      this._load();
+    }
+    async _load() {
+      const helpers2 = await window.loadCardHelpers();
+      this._body.innerHTML = "";
+      this._cards = (this._cfg.cards || []).map((cc) => {
+        const el2 = helpers2.createCardElement(cc);
+        if (this._h) el2.hass = this._h;
+        this._body.appendChild(el2);
+        return el2;
+      });
+      if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Pop-up – im Navi-Editor unter „Einfaches Pop-up: Karten“ eintragen.</div>';
+    }
+    set hass(h) {
+      this._h = h;
+      this._cards.forEach((c) => {
+        c.hass = h;
+      });
+    }
   };
+  define("navi-popup", NovaNaviPopup);
+  var DCSS = `
+:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px))}
+:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
+:host([side]){height:0}
+ha-icon{--mdc-icon-size:22px;display:flex}
+.wrap{position:fixed;left:50%;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:stretch;gap:8px;max-width:calc(100vw - 24px)}
+.wrap.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.wrap.top{top:14px;flex-direction:column-reverse}
+.wrap.side{top:50%;bottom:auto;left:14px;right:auto;transform:translateY(-50%);max-width:none;max-height:calc(100vh - 28px);flex-direction:column}
+.wrap.side.right{left:auto;right:14px}
+.wrap.inline{position:static;transform:none;margin:0 auto;width:max-content;max-width:100%}
+.glass{background:var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(160%);border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(0,0,0,.4)}
+.dk{position:relative;display:flex;border-radius:999px;max-width:100%;min-width:0;min-height:0}
+.side .dk{flex-direction:column}
+.dock{--g:8px;--o:6px;position:relative;z-index:1;flex:1 1 auto;min-width:0;min-height:0;margin:calc(-1 * var(--o));display:flex;align-items:center;gap:var(--g);padding:calc(8px + var(--o));border-radius:999px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-sizing:border-box;--a1:1;--a2:1;--md:to right}
+.side .dock{flex-direction:column;overflow-x:hidden;overflow-y:auto;--md:to bottom}
+.dock.fs{--a1:0}.dock.fe{--a2:0}
+.dock.fs,.dock.fe{-webkit-mask-image:linear-gradient(var(--md),rgba(0,0,0,var(--a1)) var(--o),#000 calc(var(--o) + 22px),#000 calc(100% - var(--o) - 22px),rgba(0,0,0,var(--a2)) calc(100% - var(--o)));mask-image:linear-gradient(var(--md),rgba(0,0,0,var(--a1)) var(--o),#000 calc(var(--o) + 22px),#000 calc(100% - var(--o) - 22px),rgba(0,0,0,var(--a2)) calc(100% - var(--o)))}
+.dock::-webkit-scrollbar{display:none}
+.d{--s:var(--sz);z-index:1;width:var(--s);height:var(--s);box-sizing:border-box;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none;user-select:none;-webkit-user-select:none}
+.d[hidden]{display:none}
+.d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.d:active{transform:scale(.9)}
+.d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
+/* Aktiver Eintrag: runde Markierung .hl gleitet unter die Buttons; Farbe nur übers Theme (--nova-navi-active-color), Standard Akzent 2.
+   Animiert werden nur transform, opacity und max-width – schont schwache Tablets. */
+.dk{--hc:var(--nova-navi-active-color,var(--nv-a2));--ease:cubic-bezier(.25,.8,.25,1)}
+/* Glas der Leiste als eigene Ebene: gleitet beim Wechsel per transform auf die neue Breite (Blur bleibt unverändert) */
+.dk>.bg{position:absolute;inset:0;border-radius:inherit;z-index:0;pointer-events:none;transform-origin:0 50%}
+.hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:var(--hc);box-shadow:0 0 14px color-mix(in srgb,var(--hc) 50%,transparent);pointer-events:none;opacity:0;will-change:transform}
+.hl.on{opacity:1}
+.d.here{color:var(--nova-navi-active-text-color,var(--nv-a2-fg))}
+/* Inaktiv-Farbe bleibt immer die Grundfarbe des Buttons; Gelb liegt als eigene Ebene darüber (unter dem Icon).
+   So geht der alte Button direkt von Gelb zu Blau über, nie über transparent */
+.d::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:50%;background:var(--hc);opacity:0;pointer-events:none}
+.d.lit::before{opacity:1}
+/* Während einer Animation: nur transform und opacity, gleiche Dauer und Kurve für alle Teile */
+.run .d,.run .d::before,.run .nm,.run+.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
+/* Messen und Startlage setzen: ohne Übergang */
+.hold .d,.hold .d::before,.hold .nm,.hold+.bg,.hold .hl{transition:none!important}
+.ghost{position:absolute;left:0;top:0;z-index:1;pointer-events:none;white-space:nowrap;color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
+.d img{width:calc(var(--s) * .6);height:calc(var(--s) * .6);object-fit:contain}
+.nm{flex:none;z-index:1;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
+.nm.on{max-width:180px;opacity:1;margin-left:0;padding-right:6px}
+.nm[hidden],.side .nm{display:none}
+@media(prefers-reduced-motion:reduce){.dock,.dock *{transition:none!important}}
+.dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--bc,var(--nv-accent));box-shadow:0 0 6px var(--bc,var(--nv-accent));display:none}
+.d.bd .dot{display:block}
+.num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bc,var(--nv-accent));color:var(--bfg,#3a2a00);font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
+.d.bn .num{display:block}.d.bn .dot{display:none}
+.empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
+.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;align-self:center;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.mb[hidden]{display:none}
+.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.mb .art.pic ha-icon{display:none}
+.mb .tx{flex:1;min-width:0;cursor:pointer}
+.mb .tx b,.mb .tx span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb .tx b{font-size:13px;font-weight:600}.mb .tx span{font-size:11px;opacity:.7}
+.mb .pp{width:40px;height:40px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-active);color:var(--nv-active-fg);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mb .pp:active{transform:scale(.9)}
+.side .mb{width:auto;flex-direction:column;padding:6px;border-radius:28px}
+.side .mb .tx{display:none}
+.menu{position:fixed;z-index:8;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:22px;min-width:180px;max-width:calc(100vw - 16px);max-height:60vh;overflow-y:auto;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:mi .16s ease-out}
+.mi{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:999px;cursor:pointer;font-size:14px;white-space:nowrap;-webkit-tap-highlight-color:transparent;outline:none}
+.mi[hidden]{display:none}
+.mi:hover,.mi:focus-visible{background:var(--nv-chip)}
+.mi.here{background:var(--nv-chip);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+.mi .ic{width:32px;height:32px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
+.mi .ic img{width:60%;height:60%;object-fit:contain}
+.mi ha-icon{--mdc-icon-size:18px}
+@keyframes mi{from{opacity:0;transform:scale(.96)}}
+/* Kompakt (schmale Bildschirme automatisch, oder per compact: true): kleinere Buttons und Abstände, Name nur am aktiven Eintrag */
+@media(max-width:600px){.wrap:not(.nocmp) .d,.wrap:not(.nocmp) .hl{--s:calc(var(--sz) * .875)}.wrap:not(.nocmp) .hl{width:var(--s);height:var(--s)}.wrap:not(.nocmp) .dock{--g:5px;padding:calc(6px + var(--o))}.wrap:not(.nocmp) .nm,.wrap:not(.nocmp) .ghost{font-size:13px}}
+.cmp .d,.cmp .hl{--s:calc(var(--sz) * .875)}.cmp .hl{width:var(--s);height:var(--s)}.cmp .dock{--g:5px;padding:calc(6px + var(--o))}.cmp .nm,.cmp .ghost{font-size:13px}`;
+  var SRC2 = {};
+  var TYPES = ["navi-card", "dock-card"];
+  var findNavi = (o) => {
+    if (!o || typeof o !== "object") return null;
+    if ((TYPES.some((t) => o.type === `custom:${tag(t)}`) || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
+    for (const v of Object.values(o)) {
+      const r = findNavi(v);
+      if (r) return r;
+    }
+    return null;
+  };
+  var normPath = (p) => {
+    p = String(p || "").split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+    try {
+      return decodeURI(p);
+    } catch {
+      return p;
+    }
+  };
+  var pathOf = (it) => it.tap_action?.action === "navigate" ? it.tap_action.navigation_path : it.navigation_path;
+  var icon = (ic) => isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`;
+  var haptic = () => {
+    window.dispatchEvent(new CustomEvent("haptic", { detail: "light" }));
+    if (!window.externalApp && !window.webkit?.messageHandlers?.externalBus) try {
+      navigator.vibrate?.(12);
+    } catch {
+    }
+  };
+  var visible = (h, it) => {
+    if (list(it.visible_users).length && !list(it.visible_users).includes(h.user?.id)) return false;
+    if (!it.visible_entity) return true;
+    const s = h.states[it.visible_entity];
+    const cond = { state: it.visible_state, state_not: it.visible_state_not, above: it.visible_above, below: it.visible_below };
+    return Object.values(cond).some((v) => v != null) ? alertHit(cond, s) : isOn(s);
+  };
+  var MEDIA_ON = ["playing", "paused"];
+  var LAST = /* @__PURE__ */ new Map();
+  var REDUCED = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+  var NovaNaviCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("navi-card-editor"));
+    }
+    static getStubConfig() {
+      return { items: [
+        { icon: "mdi:home", label: "Start", tap_action: { action: "navigate", navigation_path: location.pathname } },
+        { icon: "mdi:lightbulb-group", label: "Licht", popup_title: "Licht", cards: [{ type: "markdown", content: "Hier deine Licht-Karten eintragen" }] }
+      ] };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (!c.items && !c.source) throw new Error("items oder source angeben");
+      this._cfg = { position: "bottom", button_size: 48, ...c };
+      this._ids = entityIds(c);
+      this._close();
+      this._items = null;
+      this._btns = null;
+      this._built = false;
+      this._cur = -1;
+      this._watchSide();
+      if (this._h) this.hass = this._h;
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._cfg) return;
+      if (this._pop) this._pop.hass = h;
+      if (this._hp) this._hp.hass = h;
+      if (!this._items) {
+        if (this._cfg.items) this._items = this._cfg.items;
+        else {
+          this._loadSource();
+          return;
+        }
+      }
+      if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._watch(old))) return;
+      this._update();
+    }
+    // Entitäten der Einträge (auch im Untermenü) und Media-Player, bei Zählern auch die Mitglieder der Gruppe
+    _watch(h) {
+      if (this._srcIds?.items !== this._items) this._srcIds = { items: this._items, ids: entityIds([this._items, this._srcCfg?.media_players]) };
+      const ids = [...this._ids, ...this._srcIds.ids];
+      (this._items || []).forEach((it) => {
+        if (it.badge_count_of) ids.push(...h?.states[it.badge_count_of]?.attributes.entity_id || []);
+      });
+      return ids;
+    }
+    async _loadSource() {
+      if (this._loading) return;
+      this._loading = true;
+      const k = this._cfg.source;
+      SRC2[k] = SRC2[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findNavi).catch(() => null);
+      const d = await SRC2[k];
+      this._loading = false;
+      this._items = d ? d.items : [];
+      this._srcCfg = d || {};
+      this.hass = this._h;
+    }
+    connectedCallback() {
+      this._applyInline();
+      requestAnimationFrame(() => this._applyInline());
+      this._loc = () => {
+        if (this._menu) this._close();
+        this._update();
+      };
+      window.addEventListener("location-changed", this._loc);
+      window.addEventListener("popstate", this._loc);
+      window.addEventListener("hashchange", this._loc);
+      this._watchSide();
+      this._shown = null;
+      this._update();
+    }
+    disconnectedCallback() {
+      window.removeEventListener("location-changed", this._loc);
+      window.removeEventListener("popstate", this._loc);
+      window.removeEventListener("hashchange", this._loc);
+      this._mq?.removeEventListener("change", this._mqf);
+      this._mq = null;
+      this._close();
+      if (this._hp) {
+        this._hp.remove();
+        this._hp = null;
+      }
+    }
+    getCardSize() {
+      return 1;
+    }
+    getGridOptions() {
+      return { columns: "full", rows: 1 };
+    }
+    get _inline() {
+      if (this.preview || this.editMode || this.hasAttribute("preview") || this._cfg?.inline) return true;
+      const PREV2 = /* @__PURE__ */ new Set(["HUI-CARD-PICKER", "HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR"]);
+      let n = this;
+      for (let i = 0; i < 40 && n; i++) {
+        if (PREV2.has(n.tagName)) return true;
+        n = n.parentElement || n.getRootNode?.().host;
+      }
+      return false;
+    }
+    _applyInline() {
+      this.shadowRoot?.querySelector(".wrap")?.classList.toggle("inline", this._inline);
+    }
+    // Seitenleiste ab einer Mindestbreite (z. B. Tablet quer, PC), darunter Leiste unten bzw. oben
+    _watchSide() {
+      this._mq?.removeEventListener("change", this._mqf);
+      this._mq = null;
+      const c = this._cfg;
+      if (!c || !this.isConnected || !["left", "right"].includes(c.sidebar)) return this._applySide();
+      this._mq = window.matchMedia(`(min-width: ${+c.sidebar_min_width || 1024}px)`);
+      this._mqf = () => this._applySide();
+      this._mq.addEventListener("change", this._mqf);
+      this._applySide();
+    }
+    get _side() {
+      return this._mq?.matches ? this._cfg.sidebar : null;
+    }
+    _applySide() {
+      const w = this.shadowRoot?.querySelector(".wrap"), s = this._side;
+      this.toggleAttribute("side", !!s && !this._inline);
+      if (!w) return;
+      w.classList.toggle("side", !!s);
+      w.classList.toggle("right", s === "right");
+      w.classList.toggle(this._cfg.position === "top" ? "top" : "bottom", !s);
+      if (this._menu) this._close();
+      if (this._shown) this._shown = `${this._shown.split("|")[0]}|neu`;
+      this._update();
+    }
+    _build() {
+      this._built = true;
+      const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""} ${{ true: "cmp", false: "nocmp" }[this._opt("compact")] || ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms"><div class="mb glass" hidden><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="pp" role="button" tabindex="0"><ha-icon></ha-icon></div></div><div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
+      const dock = r.querySelector(".dock");
+      this._dock = dock;
+      this._bg = r.querySelector(".dk>.bg");
+      this._hl = dock.firstChild;
+      this._shown = null;
+      dock.addEventListener("scroll", () => {
+        const rec = LAST.get(this._key);
+        if (rec) rec.sl = [dock.scrollLeft, dock.scrollTop];
+        this._edges();
+      }, { passive: true });
+      this._mb = r.querySelector(".mb");
+      this._mb.querySelector(".tx").addEventListener("click", () => this._mp && moreInfo(this, this._mp));
+      const pp = this._mb.querySelector(".pp");
+      const play = () => {
+        if (!this._mp) return;
+        if (this._haptic) haptic();
+        this._h.callService("media_player", "media_play_pause", { entity_id: this._mp });
+      };
+      pp.addEventListener("click", play);
+      pp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          play();
+        }
+      });
+      this._applySide();
+      if (this._hp) r.appendChild(this._hp);
+      if (!this._items.length) {
+        this._dock = null;
+        dock.innerHTML = `<span class="empty">${c.source ? `Kein Navi in „${esc(c.source)}“ gefunden` : "Noch keine Einträge"}</span>`;
+        this._btns = [];
+        return;
+      }
+      this._btns = this._items.map((it, i) => {
+        const d = document.createElement("div");
+        d.className = "d";
+        d.tabIndex = 0;
+        d.setAttribute("role", "button");
+        d.title = it.label || it.popup_title || "";
+        d.innerHTML = `${icon(it.icon || "mdi:circle-outline")}<span class="dot"></span><span class="num"></span>`;
+        this._bind(d, it, (kind) => this._run(i, kind));
+        d._nm = document.createElement("span");
+        d._nm.className = "nm";
+        dock.append(d, d._nm);
+        return d;
+      });
+    }
+    get _haptic() {
+      return !!(this._cfg.haptic ?? this._srcCfg?.haptic);
+    }
+    // Antippen, doppelt antippen (wartet kurz auf den zweiten Tipp) und lange drücken
+    _bind(el2, it, run) {
+      let t, wait2;
+      const hold = it.hold_action && it.hold_action.action !== "none", dbl = it.double_tap_action && it.double_tap_action.action !== "none";
+      if (hold) {
+        el2.addEventListener("pointerdown", () => {
+          el2._held = false;
+          clearTimeout(t);
+          t = setTimeout(() => {
+            el2._held = true;
+            run("hold");
+          }, 500);
+        });
+        ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => el2.addEventListener(ev, () => clearTimeout(t)));
+        el2.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
+      el2.addEventListener("click", () => {
+        if (el2._held) {
+          el2._held = false;
+          return;
+        }
+        if (!dbl) return run("tap");
+        if (wait2) {
+          clearTimeout(wait2);
+          wait2 = null;
+          return run("double_tap");
+        }
+        wait2 = setTimeout(() => {
+          wait2 = null;
+          run("tap");
+        }, 250);
+      });
+      el2.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          run("tap");
+        }
+      });
+    }
+    _update() {
+      if (!this._btns || !this._h) return;
+      const h = this._h, here = normPath(location.pathname);
+      const isHere = (it) => {
+        const p = pathOf(it);
+        return !!p && normPath(p) === here;
+      };
+      let cur2 = -1;
+      this._items.forEach((it, i) => {
+        const d = this._btns[i];
+        if (!d) return;
+        d.hidden = d._nm.hidden = !visible(h, it);
+        d.classList.toggle("act", i === this._cur || !!it.popup_hash && curHash() === cleanHash(it.popup_hash));
+        const hit = isHere(it) ? it : Array.isArray(it.menu) && it.menu.find(isHere) || null;
+        if (hit && cur2 < 0 && !d.hidden) cur2 = i;
+        d._nm.textContent = hit && hit.label || it.label || "";
+        this._badge(d, it);
+      });
+      this._setActive(cur2);
+      this._menu?.querySelectorAll(".mi").forEach((m) => {
+        m.hidden = !visible(h, m._it);
+        m.classList.toggle("here", isHere(m._it));
+      });
+      this._media();
+    }
+    _opt(k) {
+      return this._cfg[k] ?? this._srcCfg?.[k];
+    }
+    get _dur() {
+      const v = +this._opt("animation_duration");
+      return v > 0 ? v : 280;
+    }
+    get _key() {
+      return (this._items || []).map(pathOf).join("|");
+    }
+    // Aktiven Eintrag zeigen: Markierung und Name. Wechselt er, gleitet alles vom alten Zustand (auch aus der
+    // vorherigen Karte, siehe LAST) zum neuen – erst Endlage messen, dann im Ausgangszustand starten (FLIP)
+    _setActive(cur2) {
+      const dock = this._dock;
+      if (!dock) return;
+      const lbl = this._opt("active_label") !== false && !this._side, lay = this._btns.map((d) => (d.hidden ? 0 : 1) + d._nm.textContent).join(",");
+      const sig = `${cur2}|${lbl}|${this._side}|${this._dur}|${lay}`;
+      if (this._shown === sig) return;
+      const rec = LAST.get(this._key), fresh = rec && Date.now() - rec.t < 1500;
+      const from = this._shown != null ? +this._shown.split("|")[0] : !rec ? -1 : rec.i !== cur2 ? rec.i : fresh && !rec.played ? rec.from : cur2;
+      const first = this._shown == null;
+      this._shown = sig;
+      if (!rec || rec.i !== cur2) LAST.set(this._key, { i: cur2, from, t: Date.now(), sl: rec?.sl });
+      const anim = this._opt("animation") !== false && !REDUCED?.matches && this.isConnected && !inPicker(this) && from !== cur2;
+      if (first && rec?.sl) [dock.scrollLeft, dock.scrollTop] = rec.sl;
+      if (anim && first) {
+        this._apply(from, lbl);
+        this._pillTo(from, from >= 0);
+      }
+      if (!anim) {
+        this._jump(cur2, lbl);
+        return this._reveal(cur2, false);
+      }
+      const go = () => {
+        if (this._shown === sig) this._flip(cur2, lbl, sig);
+      };
+      requestAnimationFrame(() => document.fonts?.status === "loaded" ? go() : document.fonts.ready.then(go));
+    }
+    // Klassen für aktiven Eintrag i setzen (ohne Animation)
+    _apply(i, lbl, lit = true) {
+      this._btns.forEach((d, k) => {
+        d.classList.toggle("here", k === i);
+        d._nm.classList.toggle("on", k === i && lbl && !!d._nm.textContent);
+      });
+      if (lit) this._lit(i);
+    }
+    // Gelbe Ebene auf Button i (beim Wechsel gleichzeitig mit der Markierung übergeblendet)
+    _lit(i) {
+      this._btns.forEach((d, k) => d.classList.toggle("lit", k === i));
+    }
+    // Aktiven Eintrag (samt Name) in die Mitte des Scroll-Bereichs holen, wenn die Leiste nicht ganz passt.
+    // Mit den Maßen aus dem Layout (ohne transforms); Pille und Buttons scrollen als Inhalt einfach mit
+    // Weicher Rand nur dort, wo noch mehr zum Scrollen ist
+    _edges() {
+      const d = this._dock;
+      if (!d) return;
+      const v = !!this._side, x = v ? d.scrollTop : d.scrollLeft, max = v ? d.scrollHeight - d.clientHeight : d.scrollWidth - d.clientWidth;
+      d.classList.toggle("fs", x > 1);
+      d.classList.toggle("fe", x < max - 1);
+    }
+    _reveal(i, smooth, l) {
+      this._edges();
+      const dock = this._dock, d = this._btns[i];
+      if (!dock || !d || dock.scrollWidth <= dock.clientWidth && dock.scrollHeight <= dock.clientHeight) return;
+      const o = this._origin(), b = l || d.getBoundingClientRect(), nm = d._nm.classList.contains("on") ? d._nm.offsetWidth : 0;
+      const left = b.left - o.x + (b.width + nm) / 2 - dock.clientWidth / 2, top = b.top - o.y + b.height / 2 - dock.clientHeight / 2;
+      const x = this._side ? dock.scrollLeft : Math.max(0, left), y = this._side ? Math.max(0, top) : dock.scrollTop;
+      if (Math.abs(x - dock.scrollLeft) < 1 && Math.abs(y - dock.scrollTop) < 1) return;
+      dock.scrollTo({ left: x, top: y, behavior: smooth ? "smooth" : "auto" });
+      const rec = LAST.get(this._key);
+      if (rec) rec.sl = [x, y];
+    }
+    // Ursprung der absolut positionierten Ebenen (Innenkante der Leiste)
+    _origin() {
+      const r = this._dock.getBoundingClientRect();
+      return { x: r.left + this._dock.clientLeft - this._dock.scrollLeft, y: r.top + this._dock.clientTop - this._dock.scrollTop };
+    }
+    _pillTo(i, show) {
+      const d = this._btns[i], o = this._origin();
+      if (d) {
+        const b = d.getBoundingClientRect();
+        this._hl.style.transform = `translate(${b.left - o.x}px,${b.top - o.y}px)`;
+      }
+      this._hl.classList.toggle("on", !!show && i >= 0);
+    }
+    _stop() {
+      clearTimeout(this._ft);
+      this._ghost?.remove();
+      this._ghost = null;
+      this._dock.classList.remove("run");
+      this._dock.classList.add("hold");
+      [this._bg, ...this._btns, ...this._btns.map((d) => d._nm)].forEach((e) => {
+        e.style.transform = "";
+        e.style.opacity = "";
+      });
+    }
+    // Ohne Animation direkt in den Endzustand
+    _jump(cur2, lbl) {
+      this._stop();
+      this._apply(cur2, lbl);
+      this._pillTo(cur2, true);
+      this._release();
+    }
+    // Nach dem Zeichnen wieder normale Übergänge (z. B. Drücken)
+    _release() {
+      const dock = this._dock;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (dock === this._dock && !dock.classList.contains("run")) dock.classList.remove("hold");
+      }));
+    }
+    // FLIP: aktuelle (sichtbare) Lage merken, Endlage einmal messen, dann per transform/opacity vom Alten zum Neuen gleiten.
+    // Pro Frame wird nichts neu berechnet; bei schnellem Mehrfachwechsel startet die nächste Animation von der aktuellen Zwischenlage
+    _flip(cur2, lbl, sig) {
+      const dock = this._dock, btns = this._btns;
+      const rect = (e) => e.getBoundingClientRect();
+      const f = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
+      const oldNm = btns.map((d) => d._nm).find((n) => n.classList.contains("on") && !n.hidden);
+      const fn = oldNm && { r: rect(oldNm), t: oldNm.textContent, o: +getComputedStyle(oldNm).opacity };
+      this._stop();
+      this._apply(cur2, lbl, false);
+      const o = this._origin(), l = { bg: rect(this._bg), b: btns.map(rect) }, newNm = btns[cur2]?._nm.classList.contains("on") ? btns[cur2]._nm : null;
+      btns.forEach((d, k) => {
+        if (!d.hidden && f.b[k].width) d.style.transform = `translate(${f.b[k].left - l.b[k].left}px,${f.b[k].top - l.b[k].top}px)`;
+      });
+      if (l.bg.width) this._bg.style.transform = `translate(${f.bg.left - l.bg.left}px,${f.bg.top - l.bg.top}px) scale(${f.bg.width / l.bg.width},${f.bg.height / l.bg.height})`;
+      if (f.hlOn) this._hl.style.transform = `translate(${f.hl.left - o.x}px,${f.hl.top - o.y}px)`;
+      else this._pillTo(cur2, false);
+      if (newNm) {
+        newNm.style.opacity = "0";
+        newNm.style.transform = `translate(${f.b[cur2].left - l.b[cur2].left - 12}px,0)`;
+      }
+      if (fn) {
+        const g = this._ghost = document.createElement("span");
+        g.className = "ghost";
+        g.textContent = fn.t;
+        g.style.opacity = fn.o;
+        g.style.transform = `translate(${fn.r.left - o.x}px,${fn.r.top - o.y}px)`;
+        dock.appendChild(g);
+        g._dx = fn.r.left - o.x;
+        g._dy = fn.r.top - o.y;
+      }
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (this._shown !== sig) return;
+        const rec = LAST.get(this._key);
+        if (rec && rec.i === cur2 && this.isConnected) rec.played = true;
+        dock.classList.remove("hold");
+        dock.classList.add("run");
+        this._lit(cur2);
+        this._reveal(cur2, true, l.b[cur2]);
+        btns.forEach((d) => {
+          d.style.transform = "";
+        });
+        this._bg.style.transform = "";
+        if (l.b[cur2]) this._hl.style.transform = `translate(${l.b[cur2].left - o.x}px,${l.b[cur2].top - o.y}px)`;
+        this._hl.classList.toggle("on", cur2 >= 0);
+        if (newNm) {
+          newNm.style.opacity = "";
+          newNm.style.transform = "";
+        }
+        const g = this._ghost, ob = fn && btns.findIndex((d) => d._nm === oldNm);
+        if (g) {
+          g.style.opacity = "0";
+          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f.b[ob].left : 0) - 8}px,${g._dy}px)`;
+        }
+        this._ft = setTimeout(() => {
+          if (this._shown === sig) {
+            this._stop();
+            this._release();
+          }
+        }, this._dur + 60);
+      }));
+    }
+    // Punkt oder Zahl; Farbe als Farbrolle, bei erfüllter Bedingung eine zweite Farbrolle
+    _badge(d, it) {
+      const h = this._h, s = it.badge && h.states[it.badge];
+      let n = 0, dot = false;
+      if (it.badge_count_of) n = countOn(h, it.badge_count_of, it.badge_exclude);
+      else if (s && it.badge_show_number && NUMRE.test(s.state)) n = Math.round(+s.state);
+      else if (s) dot = isOn(s);
+      const showNum = n > 0 && it.badge_show_number;
+      d.classList.toggle("bd", dot || n > 0 && !showNum);
+      d.classList.toggle("bn", showNum);
+      if (showNum) d.querySelector(".num").textContent = n > 99 ? "99+" : n;
+      const cond = { state: it.badge_alert_state, state_not: it.badge_alert_state_not, above: it.badge_alert_above, below: it.badge_alert_below };
+      const alert = it.badge_alert_color && Object.values(cond).some((v) => v != null) && alertHit(cond, h.states[it.badge || it.badge_count_of]);
+      const role = alert ? it.badge_alert_color : it.badge_color;
+      if (role) {
+        const v = roleVars(role);
+        d.style.setProperty("--bc", v.c);
+        d.style.setProperty("--bfg", v.fg);
+      } else {
+        d.style.removeProperty("--bc");
+        d.style.removeProperty("--bfg");
+      }
+    }
+    // Media-Leiste: spielt ein Player, wird er gezeigt, sonst ein pausierter (oder auf Wunsch immer der erste)
+    _media() {
+      const mb = this._mb, ids = list(this._cfg.media_players ?? this._srcCfg?.media_players);
+      if (!mb) return;
+      const ss = ids.map((id) => this._h.states[id]).filter(Boolean);
+      const s = ss.find((x) => x.state === "playing") || ss.find((x) => MEDIA_ON.includes(x.state)) || (this._cfg.media_always ?? this._srcCfg?.media_always ? ss[0] : null);
+      mb.hidden = !s;
+      this.toggleAttribute("media", !!s && !this._side && !this._inline);
+      this._mp = s?.entity_id || null;
+      if (!s) return;
+      const a = s.attributes, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
+      if (art._pic !== pic) {
+        art._pic = pic;
+        art.style.backgroundImage = pic ? `url(${JSON.stringify(pic)})` : "";
+        art.classList.toggle("pic", !!pic);
+      }
+      mb.querySelector("b").textContent = a.media_title || a.friendly_name || s.entity_id;
+      mb.querySelector(".tx span").textContent = a.media_artist || a.app_name || (MEDIA_ON.includes(s.state) ? a.friendly_name || "" : fmtState(this._h, s));
+      mb.querySelector(".pp ha-icon").setAttribute("icon", s.state === "playing" ? "mdi:pause" : "mdi:play");
+    }
+    _run(i, kind) {
+      const it = this._items[i];
+      if (this._haptic) haptic();
+      if (kind !== "tap") return hassAction(this, { entity: it.entity, [`${kind}_action`]: it[`${kind}_action`] }, kind);
+      if (it.popup_hash) {
+        this._close();
+        return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
+      }
+      if (this._cur === i) return this._close();
+      this._close();
+      if (Array.isArray(it.menu) && it.menu.length) return this._openMenu(i, it);
+      if (Array.isArray(it.cards)) return this._openCards(i, it);
+      if (typeof it.popup === "string" && customElements.get("nz-popup")) return this._openLegacy(i, it);
+      this._act(it);
+    }
+    // Aktion eines Eintrags ohne eigenes Pop-up (auch für Einträge im Untermenü)
+    _act(it) {
+      if (it.popup_hash) return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
+      if (it.tap_action && it.tap_action.action !== "none") return hassAction(this, { entity: it.entity, tap_action: it.tap_action }, "tap");
+      if (it.navigation_path) return navigate(it.navigation_path);
+      if (it.entity) moreInfo(this, it.entity);
+    }
+    // Kleines Menü am Button mit weiteren Einträgen
+    _openMenu(i, it) {
+      const m = document.createElement("div");
+      m.className = "menu glass";
+      m.setAttribute("role", "menu");
+      it.menu.forEach((sub) => {
+        const e = document.createElement("div");
+        e.className = "mi";
+        e.tabIndex = 0;
+        e.setAttribute("role", "menuitem");
+        e._it = sub;
+        e.innerHTML = `<span class="ic">${icon(sub.icon || "mdi:circle-outline")}</span><span class="lb"></span>`;
+        e.querySelector(".lb").textContent = sub.label || pathOf(sub) || sub.popup_hash || sub.entity || "";
+        this._bind(e, sub, (kind) => {
+          if (this._haptic) haptic();
+          this._close();
+          if (kind === "tap") this._act(sub);
+          else hassAction(this, { entity: sub.entity, [`${kind}_action`]: sub[`${kind}_action`] }, kind);
+        });
+        m.appendChild(e);
+      });
+      this.shadowRoot.appendChild(m);
+      this._menu = m;
+      this._place(m, this._btns[i]);
+      this._opened(i, m);
+      this._out = (e) => {
+        const p = e.composedPath();
+        if (!p.includes(m) && !p.includes(this._btns[i])) this._close();
+      };
+      window.addEventListener("pointerdown", this._out, true);
+      m.querySelector(".mi:not([hidden])")?.focus({ preventScroll: true });
+    }
+    // Menü neben dem Button: über der Leiste unten, darunter oben, daneben als Seitenleiste
+    _place(m, b) {
+      const r = b.getBoundingClientRect(), W = innerWidth, H = innerHeight, g = 10, side = this._side;
+      const w = m.offsetWidth, ht = m.offsetHeight, clamp2 = (v, max) => Math.max(8, Math.min(v, max - 8));
+      if (side) {
+        m.style.left = `${side === "right" ? r.left - g - w : r.right + g}px`;
+        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H - ht)}px`;
+      } else {
+        m.style.left = `${clamp2(r.left + r.width / 2 - w / 2, W - w)}px`;
+        m.style.top = `${this._cfg.position === "top" ? r.bottom + g : r.top - g - ht}px`;
+      }
+    }
+    _openCards(i, it) {
+      const p = document.createElement(tag("navi-popup"));
+      p.onclose = () => this._close();
+      p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
+      p.hass = this._h;
+      this.shadowRoot.appendChild(p);
+      this._opened(i, p);
+    }
+    _openLegacy(i, it) {
+      const p = document.createElement("nz-popup");
+      p.host = this;
+      p.onclose = () => this._close();
+      p.cfg = { weather: this._srcCfg?.weather || this._cfg.weather, ...it, title: it.title || it.label };
+      document.body.appendChild(p);
+      p.hass = this._h;
+      this._opened(i, p);
+    }
+    _opened(i, p) {
+      this._pop = p;
+      this._cur = i;
+      this._update();
+      this._esc = (e) => {
+        if (e.key === "Escape") this._close();
+      };
+      window.addEventListener("keydown", this._esc);
+    }
+    _close() {
+      if (this._pop) {
+        this._pop.remove();
+        this._pop = null;
+      }
+      this._menu = null;
+      this._cur = -1;
+      if (this._esc) window.removeEventListener("keydown", this._esc);
+      if (this._out) {
+        window.removeEventListener("pointerdown", this._out, true);
+        this._out = null;
+      }
+      this._update();
+    }
+  };
+  define("navi-card", NovaNaviCard, { name: "Nova Navi", description: "Navigationsleiste unten, oben oder als Seitenleiste: navigieren, Aktionen, Untermenüs, Pop-ups, Badges und eine kleine Media-Leiste.", documentationURL: docUrl("nova-navi") });
+  define("dock-card", class NovaDockCard extends NovaNaviCard {
+  });
+  var GEN3 = [{ name: "source", selector: { text: {} } }];
+  var LOOK3 = (c) => [
+    g2(
+      { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
+      { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
+    ),
+    g2(
+      sel("sidebar", [["", "Nie"], ["left", "Links"], ["right", "Rechts"]]),
+      ...c.sidebar ? [{ name: "sidebar_min_width", selector: { number: { min: 480, max: 2560, step: 10, mode: "box", unit_of_measurement: "px" } } }] : []
+    ),
+    g2({ name: "active_label", selector: { boolean: {} } }, sel("compact", [["", "Automatisch (schmale Bildschirme)"], ["on", "Immer"], ["off", "Nie"]])),
+    g2({ name: "animation", selector: { boolean: {} } }, ...c.animation !== false ? [{ name: "animation_duration", selector: { number: { min: 100, max: 1500, step: 10, mode: "box", unit_of_measurement: "ms" } } }] : []),
+    { name: "haptic", selector: { boolean: {} } }
+  ];
+  var MEDIA = [{ name: "media_players", selector: { entity: { multiple: true, filter: { domain: "media_player" } } } }, { name: "media_always", selector: { boolean: {} } }];
+  var I_MAIN = [g2({ name: "icon", required: true, selector: { icon: {} } }, { name: "label", selector: { text: {} } })];
+  var I_TAP = (opts) => [
+    { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
+    { name: "tap_action", selector: { ui_action: {} } }
+  ];
+  var I_MORE = [{ name: "hold_action", selector: { ui_action: {} } }, { name: "double_tap_action", selector: { ui_action: {} } }];
+  var I_POP = [{ name: "popup_title", selector: { text: {} } }, { name: "cards", selector: { object: {} } }];
+  var COND = (p) => [
+    g2({ name: `${p}_state`, selector: { text: {} } }, { name: `${p}_state_not`, selector: { text: {} } }),
+    g2({ name: `${p}_above`, selector: { number: { mode: "box", step: "any" } } }, { name: `${p}_below`, selector: { number: { mode: "box", step: "any" } } })
+  ];
+  var I_VIS = (it, users) => [
+    { name: "visible_users", selector: { select: { multiple: true, mode: "list", options: users } } },
+    { name: "visible_entity", selector: { entity: {} } },
+    ...it.visible_entity ? COND("visible") : []
+  ];
+  var I_BADGE = (it) => [
+    g2({ name: "badge", selector: { entity: {} } }, { name: "badge_count_of", selector: { entity: {} } }),
+    ...it.badge || it.badge_count_of ? [{ name: "badge_show_number", selector: { boolean: {} } }] : [],
+    ...it.badge_count_of ? [{ name: "badge_exclude", selector: { entity: { multiple: true } } }] : [],
+    g2(ROLE("badge_color"), ROLE("badge_alert_color")),
+    ...it.badge_alert_color && (it.badge || it.badge_count_of) ? COND("badge_alert") : []
+  ];
+  var S_MAIN = (opts) => [...I_MAIN, ...I_TAP(opts)];
+  var LABELS = {
+    position: "Position (Handy, schmale Bildschirme)",
+    button_size: "Button-Größe",
+    source: "Einträge aus anderem Dashboard übernehmen",
+    sidebar: "Seitenleiste auf breiten Bildschirmen",
+    sidebar_min_width: "Seitenleiste ab Breite",
+    haptic: "Haptisches Feedback",
+    active_label: "Namen neben dem aktiven Icon zeigen",
+    compact: "Kompakte Leiste",
+    animation: "Wechsel animieren",
+    animation_duration: "Dauer der Animation",
+    media_players: "Media-Player",
+    media_always: "Auch zeigen, wenn nichts läuft",
+    icon: "Icon",
+    label: "Name",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken",
+    double_tap_action: "Aktion bei Doppeltippen",
+    popup_title: "Titel",
+    popup_hash: "Nova Pop-up öffnen",
+    cards: "Karten (YAML-Liste)",
+    visible_users: "Nur für diese Benutzer",
+    visible_entity: "Nur zeigen abhängig von Entität",
+    visible_state: "Zustand ist",
+    visible_state_not: "Zustand ist nicht",
+    visible_above: "Wert über",
+    visible_below: "Wert unter",
+    badge: "Badge-Entität",
+    badge_count_of: "Zähler: Gruppe",
+    badge_show_number: "Zahl statt Punkt",
+    badge_exclude: "Beim Zählen ignorieren",
+    badge_color: "Badge-Farbe",
+    badge_alert_color: "Farbe bei Bedingung",
+    badge_alert_state: "Zustand ist",
+    badge_alert_state_not: "Zustand ist nicht",
+    badge_alert_above: "Wert über",
+    badge_alert_below: "Wert unter"
+  };
+  var HELPERS = {
+    source: "Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Navi – praktisch für mehrere Ansichten oder Dashboards mit gleicher Leiste.",
+    sidebar: "Ab der eingestellten Breite steht die Leiste senkrecht am Rand, darunter unten bzw. oben.",
+    animation: "Markierung und Name gleiten beim Viewwechsel vom alten zum neuen Eintrag. Bei „Bewegung reduzieren“ im System immer aus.",
+    active_label: "Rechts neben dem runden Button der aktuellen Ansicht steht sein Name (nicht in der Seitenleiste).",
+    compact: "Kleinere Buttons und Abstände. Automatisch: auf Bildschirmen bis 600 px Breite.",
+    haptic: "Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk).",
+    media_players: "Zeigt über der Leiste den laufenden Player mit Play/Pause. Leer = keine Media-Leiste.",
+    popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion, dem Untermenü und dem einfachen Pop-up.",
+    cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
+    visible_users: "Leer = für alle sichtbar.",
+    visible_entity: "Ohne Bedingung: sichtbar, wenn die Entität an ist.",
+    badge: "Punkt, wenn die Entität an ist; mit „Zahl statt Punkt“ ihr Zahlenwert (z. B. Anzahl offener Fenster).",
+    badge_count_of: "Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)",
+    badge_color: "Leer = Akzentfarbe des Themes.",
+    badge_alert_color: "Gilt, wenn die Bedingung darunter auf die Badge-Entität zutrifft."
+  };
+  var NovaNaviCardEditor = class extends NovaEditorBase {
+    // Pop-ups des Dashboards und Benutzer für die Auswahllisten einmal laden
+    set hass(h) {
+      super.hass = h;
+      if (h && !this._hashes) {
+        this._hashes = [];
+        popupOptions(h).then((o) => {
+          this._hashes = o;
+          this._rebuild();
+        });
+      }
+      if (h && !this._users) {
+        const me = h.user ? [{ value: h.user.id, label: h.user.name }] : [];
+        this._users = me;
+        h.callWS({ type: "config/auth/list" }).then((us) => {
+          const l = us.filter((u) => !u.system_generated).map((u) => ({ value: u.id, label: u.name || u.username || u.id }));
+          if (l.length) {
+            this._users = l;
+            this._rebuild();
+          }
+        }).catch(() => {
+        });
+      }
+    }
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap");
+      const data = { position: "bottom", button_size: 48, sidebar: "", active_label: true, animation: true, animation_duration: 280, ...this._config, compact: { true: "on", false: "off" }[this._config.compact] || "" };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
+        if (c.position === "bottom") delete c.position;
+        if (c.button_size === 48) delete c.button_size;
+        if (!c.sidebar) {
+          delete c.sidebar;
+          delete c.sidebar_min_width;
+        }
+        if (!c.haptic) delete c.haptic;
+        if (c.active_label !== false) delete c.active_label;
+        if (c.compact === "on" || c.compact === "off") c.compact = c.compact === "on";
+        else delete c.compact;
+        if (c.animation !== false) delete c.animation;
+        if (c.animation === false || c.animation_duration === 280) delete c.animation_duration;
+        if (!c.media_always) delete c.media_always;
+        const re = !!this._config.source !== !!c.source || !!this._config.sidebar !== !!c.sidebar || this._config.animation !== false !== (c.animation !== false);
+        this._emit(c);
+        if (re) this._rebuild();
+      });
+      const items = this._config.items || [];
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
+          b.append(form(GEN3));
+          if (this._config.source && !items.length) b.append(this._hint("Einträge kommen aus dem anderen Dashboard. Eigene Buttons überschreiben das."));
+        }),
+        this._section("buttons", "mdi:dock-bottom", "Buttons", (b) => {
+          items.forEach((it, i) => b.append(this._item(it, i, items.length)));
+          b.append(this._add("Button hinzufügen", () => {
+            const n = [...items, { icon: "mdi:circle-outline" }];
+            this._open = /* @__PURE__ */ new Set([n.length - 1]);
+            this._emit({ ...this._config, items: n });
+            this._rebuild();
+          }));
+        }),
+        this._section("look", "mdi:palette-outline", "Layout und Aussehen", (b) => b.append(form(LOOK3(data)))),
+        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => b.append(form(MEDIA)))
+      );
+    }
+    get _opts() {
+      return this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
+    }
+    _popName(h) {
+      h = cleanHash(h);
+      return this._hashes?.find((o) => o.value === h)?.label || `#${h}`;
+    }
+    _label(it, i) {
+      return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (it.menu?.length ? "Untermenü" : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : pathOf(it)) || "Neuer Button"}`;
+    }
+    // Formular für einen Teil eines Eintrags; ändert sich dadurch das Schema (Felder ein-/ausblenden), wird neu aufgebaut
+    _part(get, set, schema, onChange) {
+      const cur2 = get();
+      return this._form(schema(cur2), cur2, (v) => {
+        const old = get(), was = JSON.stringify(schema(old));
+        const nx = merge(old, names(schema(old)), v);
+        if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
+        if (!nx.popup_hash) delete nx.popup_hash;
+        if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
+        if (!nx.badge_show_number) delete nx.badge_show_number;
+        set(nx);
+        onChange?.(nx);
+        if (JSON.stringify(schema(nx)) !== was) this._rebuild();
+      });
+    }
+    _setItem(i, nx) {
+      const list2 = [...this._config.items];
+      list2[i] = nx;
+      this._emit({ ...this._config, items: list2 });
+    }
+    _item(it, i, n) {
+      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => {
+        const get = () => this._config.items[i], set = (nx) => this._setItem(i, nx);
+        const part = (sch) => this._part(get, set, typeof sch === "function" ? sch : () => sch, (nx) => {
+          s.querySelector(".lbl").textContent = this._label(nx, i);
+          s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
+        });
+        b.append(
+          part(I_MAIN),
+          this._h4("Beim Antippen"),
+          part(I_TAP(this._opts)),
+          this._h4("Lange drücken und Doppeltippen"),
+          part(I_MORE),
+          this._h4("Untermenü"),
+          ...this._menuList(i),
+          this._h4("Einfaches Pop-up"),
+          part(I_POP),
+          this._h4("Sichtbarkeit"),
+          part((cur2) => I_VIS(cur2, this._users || [])),
+          this._h4("Badge"),
+          part(I_BADGE)
+        );
+      });
+      return d;
+    }
+    // Einträge des Untermenüs: Antippen des Buttons öffnet dann das Menü statt der Aktion
+    _menuList(i) {
+      const subs = this._config.items[i].menu || [], out = [];
+      const setSubs = (arr) => {
+        const it = { ...this._config.items[i] };
+        if (arr.length) it.menu = arr;
+        else delete it.menu;
+        this._setItem(i, it);
+      };
+      if (!subs.length) out.push(this._hint("Mit Einträgen öffnet der Button beim Antippen ein kleines Menü."));
+      subs.forEach((sub, j) => {
+        const key = `m${i}.${j}`, lbl = (x) => `${j + 1}. ${x.label || pathOf(x) || x.popup_hash || "Neuer Eintrag"}`;
+        const [d] = this._details(key, sub.icon || "mdi:circle-outline", lbl(sub), this._itemBtns(j, subs.length, (dir) => {
+          const arr = [...this._config.items[i].menu], t = j + dir;
+          [arr[j], arr[t]] = [arr[t], arr[j]];
+          this._open = /* @__PURE__ */ new Set([i, `m${i}.${t}`]);
+          setSubs(arr);
+          this._rebuild();
+        }, () => {
+          this._open = /* @__PURE__ */ new Set([i]);
+          setSubs(this._config.items[i].menu.filter((_, x) => x !== j));
+          this._rebuild();
+        }), (b, s) => {
+          const get = () => this._config.items[i].menu[j];
+          const set = (nx) => {
+            const arr = [...this._config.items[i].menu];
+            arr[j] = nx;
+            setSubs(arr);
+          };
+          const part = (sch) => this._part(get, set, sch, (nx) => {
+            s.querySelector(".lbl").textContent = lbl(nx);
+            s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
+          });
+          b.append(part(() => S_MAIN(this._opts)), part(() => I_MORE), part((cur2) => I_VIS(cur2, this._users || [])));
+        });
+        out.push(d);
+      });
+      out.push(this._add("Menü-Eintrag hinzufügen", () => {
+        const arr = [...this._config.items[i].menu || [], { icon: "mdi:circle-outline" }];
+        this._open = /* @__PURE__ */ new Set([i, `m${i}.${arr.length - 1}`]);
+        setSubs(arr);
+        this._rebuild();
+      }));
+      return out;
+    }
+    _move(i, dir) {
+      const j = i + dir, list2 = [...this._config.items];
+      [list2[i], list2[j]] = [list2[j], list2[i]];
+      this._open = /* @__PURE__ */ new Set([j]);
+      this._emit({ ...this._config, items: list2 });
+      this._rebuild();
+    }
+    _remove(i) {
+      this._open = /* @__PURE__ */ new Set();
+      const list2 = this._config.items.filter((_, k) => k !== i);
+      const c = { ...this._config };
+      if (list2.length) c.items = list2;
+      else delete c.items;
+      if (!c.items && !c.source) c.items = [];
+      this._emit(c);
+      this._rebuild();
+    }
+  };
+  __publicField(NovaNaviCardEditor, "labels", LABELS);
+  __publicField(NovaNaviCardEditor, "helpers", HELPERS);
+  __publicField(NovaNaviCardEditor, "openSections", ["buttons"]);
+  define("navi-card-editor", NovaNaviCardEditor);
+
+  // src/modular.js
   var duration = (m) => m >= 60 ? `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, "0")} h` : `${m} min`;
   var ITEMS = { info: "entities", entities: "entities", sliders: "entities", buttons: "buttons", alerts: "alerts" };
   var normBlock = (b) => {
@@ -2371,7 +2953,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
           paint();
         });
         inp.addEventListener("change", () => {
-          SLIDE2[dom(o.entity)]?.set(this._h, o.entity, +inp.value);
+          SLIDE[dom(o.entity)]?.set(this._h, o.entity, +inp.value);
           clearTimeout(el2._t);
           el2._t = setTimeout(() => {
             el2._drag = false;
@@ -2381,7 +2963,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
         return { el: el2, o, inp, paint };
       });
       return (h) => els.forEach(({ el: el2, o, inp, paint }) => {
-        const s = h.states[o.entity], D = SLIDE2[dom(o.entity)];
+        const s = h.states[o.entity], D = SLIDE[dom(o.entity)];
         el2.classList.toggle("na", !s || !D || s.state === "unavailable");
         setIcon(el2.querySelector(".i"), iconOf(h, o, "mdi:tune-variant"));
         el2.querySelector(".k").textContent = nameOf(h, o);
@@ -2547,7 +3129,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       plural: "Regler",
       schema: [TITLE],
       items: [
-        { ...ENT, selector: { entity: { domain: Object.keys(SLIDE2) } } },
+        { ...ENT, selector: { entity: { domain: Object.keys(SLIDE) } } },
         NAMEICON,
         g2(NUM("min"), NUM("max"), NUM("step")),
         g2({ name: "unit", selector: T }, sel("format", [["value", "Zahl"], ["duration", "Minuten → Std:Min"]]))
@@ -5450,8 +6032,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     _fmsg(m) {
       return `<div class="fmsg${m.err ? " err" : ""}"><ha-icon icon="${esc(m.msg[0])}"></ha-icon><span>${esc(m.msg[1])}</span></div>`;
     }
-    _wi(icon, role) {
-      return `<ha-icon class="wi" icon="${esc(icon)}" style="--c:${roleVars(role).c}"></ha-icon>`;
+    _wi(icon2, role) {
+      return `<ha-icon class="wi" icon="${esc(icon2)}" style="--c:${roleVars(role).c}"></ha-icon>`;
     }
     _dailyHtml(v) {
       const c = this._c;
@@ -6718,7 +7300,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     }
   };
   __publicField(NovaPopupCard, "gridKind", "popup");
-  define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – vom Dock oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
+  define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – von Nova Navi oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
   var GENERAL = [
     { name: "hash", required: true, selector: T },
     g2({ name: "title", selector: T }, { name: "icon", selector: I }),
@@ -6759,7 +7341,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
   var HELPERS2 = {
     ...GRID_HELPERS,
     hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
-    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.",
+    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Nova Navi und Raum-Karte.",
     stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
     state: "Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.",
     color: "Leer = neutral.",
@@ -6778,8 +7360,8 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       this._secs.forEach((k) => this._open.add(k));
       w.append(this._secGeneral(), this._secHead(), this._secLayout(), this._secContent());
     }
-    _sec(key, icon, label) {
-      const [d, , b] = this._details(key, icon, label, []);
+    _sec(key, icon2, label) {
+      const [d, , b] = this._details(key, icon2, label, []);
       d.addEventListener("toggle", () => {
         if (d.open) this._secs.add(key);
         else this._secs.delete(key);
@@ -7065,9 +7647,9 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   };
   __publicField(NovaAreaCard, "gridKind", "area");
   define("area-card", NovaAreaCard, { name: "Nova Bereich Card", description: "Raumansicht als Glasrahmen: Kopfzeile mit Zurück, Icon, Raumname und Chips, darunter beliebige Karten in Zeilen und Spalten.", documentationURL: docUrl("nova-bereich-card") });
-  var S_GEN3 = (icon) => [
+  var S_GEN3 = (icon2) => [
     { name: "area", selector: { area: {} } },
-    g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon ? { placeholder: icon } : {} } }),
+    g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon2 ? { placeholder: icon2 } : {} } }),
     { name: "back_action", selector: A },
     g2(ROLE("tint"), { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } })
   ];
@@ -7262,16 +7844,17 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     void el2.getBoundingClientRect();
     el2.classList.add("sweep");
   }
+  var badgeAt = (right, bottom, u = 1) => ({ x: right - 20 * u, y: bottom - 38 * u, r: 11.5 * u });
 
   // src/appliance.js
-  var TYPES = {
+  var TYPES2 = {
     washer: { label: "Waschmaschine", icon: "mdi:washing-machine", color: "accent-1", run: "Wäscht", alt: "Schleudert", door: "Tür offen", phase: ["spin", "spinning", "schleudern"], anims: ["detergent", "softener"], dview: true },
     dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", alt: "Trocknet", door: "Tür offen", phase: ["drying", "dry", "trocknen", "ending"], dview: true },
-    airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-2", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
+    airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-1", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
     coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-3", run: "Läuft", alt: "Brüht", door: "Tür offen", phase: ["brew", "brewing", "brühen"], anims: ["tank", "beans", "descale"] },
     generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
   };
-  var typeOf = (c) => TYPES[c.device_type] ? c.device_type : "generic";
+  var typeOf = (c) => TYPES2[c.device_type] ? c.device_type : "generic";
   var HANIM = {
     tank: ["Wassertank", "Wassertank leer", "mdi:cup-water"],
     beans: ["Bohnen", "Bohnen nachfüllen", "mdi:coffee-outline"],
@@ -7280,7 +7863,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     softener: ["Weichspüler", "Weichspüler leer", "mdi:bottle-tonic-plus-outline"],
     warning: ["Allgemeine Warnung", "", "mdi:alert-outline"]
   };
-  var animsOf = (t) => [...TYPES[t].anims || [], "warning"];
+  var animsOf = (t) => [...TYPES2[t].anims || [], "warning"];
   var STATES = {
     run: ["run", "running", "on", "cooking", "brewing", "starting", "ending", "anti_wrinkle", "washing", "rinsing", "spinning", "drying", "aborting", "in_use", "programmed_running"],
     pause: ["pause", "paused", "user_paused"],
@@ -7335,6 +7918,14 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var IC = { start: "mdi:play", pause: "mdi:pause", resume: "mdi:play-pause", stop: "mdi:stop" };
   var WARN = '<g class="wn"><path class="wt3" d="M14 3 l10 17 h-20 Z"/><line class="wx" x1="14" y1="9" x2="14" y2="14"/><circle class="wx2" cx="14" cy="17" r="1.1"/></g>';
   var DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
+  var doneAt = (right, bottom) => {
+    const b = badgeAt(right, bottom), s = b.r / 10;
+    return `<g transform="translate(${+(b.x - 80 * s).toFixed(2)} ${+(b.y - 82 * s).toFixed(2)}) scale(${s})">${DONE}</g>`;
+  };
+  var AX = (y) => 47.5 - (y - 27) / 127 * 9;
+  var ABODY = "M55 20 H145 Q152 20 152.5 27 L161.5 154 Q163 172 143 172 H57 Q37 172 38.5 154 L47.5 27 Q48 20 55 20 Z";
+  var ADRW = `M${AX(93).toFixed(2)} 93 H${(200 - AX(93)).toFixed(2)} L${(200 - AX(158)).toFixed(2)} 158 Q${(200 - AX(158)).toFixed(2)} 162 157 162 H43 Q${AX(158).toFixed(2)} 162 ${AX(158).toFixed(2)} 158 Z`;
+  var ACOIL = `M66 104.5 ${Array.from({ length: 11 }, () => "q1.6 -2.6 3.2 0 t3.2 0").join(" ")}`;
   var WDOOR = `<circle class="rng" cx="100" cy="114" r="44" stroke="url(#w-cr)"/><circle class="rgo" cx="100" cy="114" r="46"/><circle class="blk" cx="100" cy="114" r="39"/>
 <circle class="s-glass" cx="100" cy="114" r="36" fill="url(#w-gl)"/>
 <g clip-path="url(#w-ci)"><path class="s-refl" d="M80 78 h22 l-40 62 v-32 z"/><path class="s-refl" d="M112 78 h6 l-56 86 v-12 z"/>
@@ -7400,7 +7991,7 @@ ${[0, 120, 240].map((a) => `<g class="pdl" transform="rotate(${a} 100 114)"><pat
 <circle cx="100" cy="114" r="36" fill="url(#w-vg)"/></g>
 <rect class="hng s-part" x="45" y="101" width="13" height="26" rx="3" fill="url(#w-pt)"/><g class="pd"><circle class="pdt" cx="105" cy="114" r="44"/>${WDOOR}<circle class="pgb" cx="100" cy="114" r="36" fill="url(#w-gb)"/></g>
 
-<g transform="translate(58 57) scale(1.15)">${DONE}</g><g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
+${doneAt(170, 189)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
     // Spülmaschine (Vorbild Siemens Unterbau): Bedienleiste mit Display, Edelstahlfront mit Rauchglas-Fenster, Körbe mit
     // Gläsern, Tassen, Tellern und Besteck, zwei Sprüharme; Tür offen = Klappe nach unten, Körbe frei
     dishwasher: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("d")}
@@ -7443,21 +8034,46 @@ ${[124, 131, 138, 145].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width
 <rect class="s-part" x="80" y="16.5" width="40" height="28" rx="2.5" fill="url(#d-pt)"/><rect class="s-scr" x="83.5" y="19.5" width="33" height="13" rx="1.6"/>
 <text class="wdt" x="102.6" y="29.2"></text><g class="lk"><rect x="86.2" y="25.2" width="4.2" height="3.4" rx=".7"/><path d="M87.2 25.2 v-1 a1.1 1.1 0 0 1 2.2 0 v1"/></g>
 <path class="s-tgl" d="M85 20 h8 l-4 12 h-5 z"/><g class="qtb"><rect x="85" y="36.5" width="6" height="1.6" rx=".8"/><rect x="94" y="36.5" width="6" height="1.6" rx=".8"/><rect x="103" y="36.5" width="6" height="1.6" rx=".8"/><rect x="112" y="36.5" width="4" height="1.6" rx=".8"/></g></g>
-<g transform="translate(58 57) scale(1.15)">${DONE}</g><g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
-    // Airfryer: weiches Gehäuse, rundes Display mit Restzeit und Ring (Eieruhr), Schublade mit Fuge, Griff und Sichtfenster (abschaltbar)
-    airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nva"><path d="M39 55 h22 a5 5 0 0 1 5 5 a7 7 0 0 1 -7 7 h-18 a7 7 0 0 1 -7 -7 a5 5 0 0 1 5 -5 Z"/></clipPath></defs>
-<g class="heat"><path d="M38 8 q3 -4 0 -7"/><path d="M50 8 q3 -4 0 -7"/><path d="M62 8 q3 -4 0 -7"/></g>
-<g class="puff"><path d="M38 9 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 9 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M62 9 q3 -4 0 -8 q-3 -4 0 -8"/></g>
-<g class="afb"><ellipse class="ash" cx="50" cy="96.5" rx="32" ry="2.6"/><rect class="bd" x="17" y="10" width="66" height="85" rx="24"/>
-<rect class="pnl" x="25" y="16" width="50" height="26" rx="13"/><circle class="kbn" cx="33" cy="29" r="2.6"/><circle class="kbn" cx="67" cy="29" r="2.6"/>
-<circle class="kr" cx="50" cy="29" r="10"/><circle class="kp" cx="50" cy="29" r="10" pathLength="100" transform="rotate(-90 50 29)"/>
-<circle class="kd" cx="50" cy="29" r="7.5"/><text class="kt" x="50" y="31.2"></text>
-<rect class="opn" x="23" y="49" width="54" height="42" rx="17"/></g>
-<g class="drw"><ellipse class="ash dsh" cx="50" cy="94" rx="30" ry="3.5"/><rect class="gap" x="22" y="48" width="56" height="44" rx="18"/>
-<rect class="dw" x="23.5" y="49" width="53" height="41" rx="16.5"/><path class="dhl" d="M34 50.5 h32"/>
-<g class="win"><path class="wg" d="M39 55 h22 a5 5 0 0 1 5 5 a7 7 0 0 1 -7 7 h-18 a7 7 0 0 1 -7 -7 a5 5 0 0 1 5 -5 Z"/><g clip-path="url(#nva)"><rect class="glo" x="34" y="55" width="32" height="12"/>
-<g class="fr"><line x1="39" y1="64.5" x2="45" y2="60"/><line x1="48.5" y1="65" x2="56" y2="61.5"/><line x1="59.5" y1="64.5" x2="62" y2="60.5"/></g></g></g>
-<path class="ahs" d="M36 84 q14 6 28 0 v-2 h-28 Z"/><path class="ahd" d="M36 74 h28 a4 4 0 0 1 4 4 a5 5 0 0 1 -5 5 h-26 a5 5 0 0 1 -5 -5 a4 4 0 0 1 4 -4 Z"/></g>${DONE}${WARN}</svg>`,
+${doneAt(170, 189)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
+    // Airfryer im Nova-Zeichenstil (Vorbild Philips Essential): nach unten breiter werdendes Gehäuse, oben Touchfeld mit rundem
+    // Display (Restzeit-Ring wie eine Eieruhr, Haken bei fertig), Fuge, Schublade mit Rauchglas-Fenster (Heizspirale, Korb,
+    // Pommes) und senkrechtem Griff
+    airfryer: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("a")}
+<radialGradient id="a-vg" cx=".5" cy=".4" r=".8"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></radialGradient>
+<radialGradient id="a-lt" cx=".5" cy="0" r="1"><stop offset="0" class="a-lc" stop-opacity=".7"/><stop offset="1" class="a-lc" stop-opacity="0"/></radialGradient>
+<filter id="a-bl" x="-60%" y="-120%" width="220%" height="340%"><feGaussianBlur stdDeviation="2.4"/></filter>
+<filter id="a-hb" x="-100%" y="-40%" width="300%" height="180%"><feGaussianBlur stdDeviation="1.3"/></filter>
+<filter id="a-cb" x="-20%" y="-300%" width="140%" height="700%"><feGaussianBlur stdDeviation="1.6"/></filter>
+<clipPath id="a-wc"><rect x="64" y="99" width="72" height="32" rx="6"/></clipPath><clipPath id="a-pc"><rect x="68" y="32" width="64" height="44" rx="5"/></clipPath><clipPath id="a-bc"><path d="${ABODY}"/></clipPath>
+<linearGradient id="a-gb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+<g class="ahz" filter="url(#a-hb)"><path d="M84 19 c-3 -4 3 -7 0 -11 c-2 -3 1 -5 0 -8"/><path d="M100 19 c3 -4 -3 -7 0 -11 c2 -3 -1 -5 0 -8"/><path d="M116 19 c-3 -4 3 -7 0 -11 c-2 -3 1 -5 0 -8"/></g>
+<g class="afb"><ellipse class="s-shd" cx="100" cy="177" rx="66" ry="4.5"/><rect class="aft" x="52" y="171" width="14" height="5" rx="1.5"/><rect class="aft" x="134" y="171" width="14" height="5" rx="1.5"/>
+<path class="s-body" d="${ABODY}" fill="url(#a-bd)"/><path class="s-sheen" d="${ABODY}" fill="url(#a-sh)"/>
+<g clip-path="url(#a-bc)"><rect class="agb" x="52" y="20" width="14" height="152" fill="url(#a-gb)" transform="skewX(-4)"/><path class="s-refl" d="M118 20 h12 l-34 72 h-12 z"/><path class="s-refl" d="M136 20 h5 l-34 72 h-5 z"/></g>
+<rect class="s-edge" x="58" y="21" width="84" height="1.2" rx=".6"/><rect class="abase" x="40" y="162" width="120" height=".8"/><rect class="ahl" x="41" y="162.8" width="118" height=".6"/>
+<rect class="apn" x="68" y="32" width="64" height="44" rx="5"/><rect x="68" y="32" width="64" height="44" rx="5" fill="url(#a-gl)"/>
+<g class="atc"><path d="M76.6 42.2 a3.2 3.2 0 1 0 2.8 0 M78 40.6 v3"/><path d="M75 64 h6"/><path d="M119 64 h6 M122 61 v6"/><path d="M122 40.4 v4.6 M120.7 45.6 a1.8 1.8 0 1 0 2.6 0"/></g>
+<circle class="adr" cx="100" cy="54" r="15"/><circle class="kr" cx="100" cy="54" r="11.5"/><circle class="kp" cx="100" cy="54" r="11.5" pathLength="100" transform="rotate(-90 100 54)"/>
+<text class="kt" x="100" y="57.4"></text><path class="akc" d="M94.6 54.4 l3.6 3.6 l7 -7.4"/>
+<g clip-path="url(#a-pc)"><path class="s-tgl" d="M70 32 h30 l-14 44 h-16 z"/><path class="s-refl" d="M106 32 h6 l-14 44 h-6 z"/><rect class="apnh" x="70" y="32.6" width="60" height=".7" rx=".35"/></g>
+<rect class="psep" x="${AX(92) + 0.5}" y="91.6" width="${200 - 2 * AX(92) - 1}" height=".8"/>
+<path class="aop" d="${ADRW}"/><path class="aol" d="${ADRW}" fill="url(#a-lt)"/>
+<rect class="asg" x="${AX(92) + 4}" y="91" width="${200 - 2 * AX(92) - 8}" height="2" rx="1"/></g>
+<g class="drw"><ellipse class="adsh" cx="100" cy="167" rx="58" ry="3.4"/>
+<path class="s-body" d="${ADRW}" fill="url(#a-bd)"/><path class="s-sheen" d="${ADRW}" fill="url(#a-sh)"/>
+<rect class="ade" x="${AX(93) + 3}" y="93.6" width="${200 - 2 * AX(93) - 6}" height=".8" rx=".4"/>
+<g class="awin"><rect class="awf" x="61.6" y="96.6" width="76.8" height="36.8" rx="8"/>
+<g clip-path="url(#a-wc)"><rect x="64" y="99" width="72" height="32" fill="url(#a-in)"/><rect class="aglo" x="64" y="99" width="72" height="32" fill="url(#a-lt)"/>
+<path class="acl" d="${ACOIL}"/><path class="acg" filter="url(#a-cb)" d="${ACOIL}"/>
+<rect class="abr" x="65" y="114" width="70" height="1.6" rx=".8"/><path class="amsh" d="${Array.from({ length: 17 }, (_, i) => `M${68 + i * 4} 116 V131`).join(" ")}"/>
+<g class="fr"><line x1="70" y1="129" x2="79" y2="122"/><line x1="81" y1="130" x2="92" y2="124"/><line x1="96" y1="128.5" x2="103" y2="120.5"/><line x1="107" y1="130" x2="119" y2="125"/><line x1="121" y1="129" x2="129" y2="122.5"/><line x1="86" y1="123" x2="95" y2="118.5"/></g>
+<rect x="64" y="99" width="72" height="32" fill="url(#a-vg)"/>
+<path class="s-refl" d="M74 99 h16 l-22 32 h-5 v-12 z"/><path class="s-refl" d="M98 99 h5 l-22 32 h-5 z"/></g>
+<rect class="s-glass" x="64" y="99" width="72" height="32" rx="6" fill="url(#a-gl)"/></g>
+<rect class="ahr" x="92.5" y="140" width="17" height="22" rx="6"/><rect class="s-part" x="91" y="138" width="18" height="22" rx="6" fill="url(#a-pt)"/><rect class="ahh" x="92.6" y="140" width="1.2" height="18" rx=".6"/></g>
+<g clip-path="url(#a-bc)"><g transform="rotate(18 100 96)"><rect class="s-gls" x="0" y="-20" width="22" height="240" fill="url(#a-gs)"/></g></g>
+<g class="apuff" filter="url(#a-bl)"><ellipse cx="72" cy="94" rx="8" ry="3.6" style="--sx:-10px;--sy:-22px"/><ellipse cx="100" cy="92" rx="10" ry="3.8" style="--sx:2px;--sy:-26px;animation-delay:.25s"/><ellipse cx="128" cy="94" rx="8" ry="3.6" style="--sx:10px;--sy:-22px;animation-delay:.5s"/></g>
+${doneAt(162, 172)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
     // Kaffeevollautomat (Vorbild Siemens EQ): Bohnenfach oben, Bedienfeld, mittiger Auslauf mit Tasse, Wassertank seitlich
     coffee: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvc"><path d="M41 66 h18 v10 a6 6 0 0 1 -6 6 h-6 a6 6 0 0 1 -6 -6 Z"/></clipPath><clipPath id="nvt"><rect x="80" y="26" width="7" height="50" rx="2.5"/></clipPath></defs>
 <path class="bn" d="M28 12.5 q11 -9 22 0 Z"/>
@@ -7583,20 +8199,61 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .scene .wg{fill:rgba(0,0,0,.28);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
 .scene .glo{fill:var(--dc);opacity:0;transition:opacity .6s}
 .scene .drw{transform-box:view-box;transform-origin:0 0;transition:transform .6s ease}
-/* Schublade offen: herausgenommen und verkleinert neben dem Gerät, im Gehäuse bleibt die leere Öffnung */
-.dopen .w-airfryer .afb{transform:translate(-5px,8px) scale(.82)}
-.dopen .w-airfryer .drw{transform:translate(50px,34px) scale(.66)}
-.nowin .w-airfryer .win{display:none}
+/* Airfryer im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
+.w-airfryer{--gx:170px}
+.w-airfryer .aft{fill:#0d1016}
+.w-airfryer .ahl,.w-airfryer .ade{fill:#fff;opacity:.12}.w-airfryer .abase{fill:#000;opacity:.35}
+.w-airfryer .apn{fill:#05070a;stroke:rgba(255,255,255,.14);stroke-width:.5}.w-airfryer .albl{fill:#fff;opacity:.16}
+.w-airfryer .adr{fill:${PAL.screen};stroke:rgba(255,255,255,.18);stroke-width:.6}
+.w-airfryer .kr{stroke:#fff;stroke-opacity:.1;stroke-width:1.8}.w-airfryer .kp{stroke-width:1.8}
+.w-airfryer .kt{fill:#fff;font:600 8px Roboto,system-ui,sans-serif}
+.w-airfryer .akc{fill:none;stroke:var(--dc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:16;opacity:0}
+.w-airfryer .atc path{fill:none;stroke:#fff;stroke-opacity:.12;stroke-width:1;stroke-linecap:round;transition:stroke .6s,stroke-opacity .6s}
+.w-airfryer .apnh{fill:#fff;opacity:.14}.w-airfryer .agb{opacity:1}
+.st-run .w-airfryer .atc path,.st-heat .w-airfryer .atc path,.st-warm .w-airfryer .atc path,.st-pause .w-airfryer .atc path,.st-prep .w-airfryer .atc path{stroke:var(--dc);stroke-opacity:.75;filter:drop-shadow(0 0 1.5px var(--dc))}
+.st-ready .w-airfryer .atc path,.st-done .w-airfryer .atc path{stroke-opacity:.3}
+.st-off .w-airfryer .atc path{stroke-opacity:.06}
+.w-airfryer .psep{fill:#000;opacity:.3}.w-airfryer .psh{fill:#fff;opacity:.06}
+.w-airfryer .aop{fill:#07090d}.w-airfryer .aol{opacity:0;transition:opacity .6s}.w-airfryer .a-lc{stop-color:var(--hc)}
+.w-airfryer .asg{fill:var(--hc);opacity:0;filter:blur(1px);transition:opacity .6s}
+.w-airfryer .drw,.w-airfryer .afb{transform-box:view-box;transform-origin:0 0;transition:transform .8s cubic-bezier(.3,.7,.3,1)}
+.w-airfryer .adsh{fill:#000;opacity:0;transition:opacity .6s}
+.w-airfryer .awf{fill:#0b0e13;stroke:rgba(255,255,255,.08);stroke-width:.5}
+.w-airfryer .aglo{opacity:0;transition:opacity .6s}
+.w-airfryer .acl{fill:none;stroke:#3a404c;stroke-width:1.4;stroke-linecap:round}
+.w-airfryer .acg{fill:none;stroke:var(--hc);stroke-width:2.4;stroke-linecap:round;opacity:0;transition:opacity .8s}
+.w-airfryer .abr{fill:#fff;opacity:.14}.w-airfryer .amsh{fill:none;stroke:#000;stroke-opacity:.3;stroke-width:.5}
+.w-airfryer .fr line{stroke:color-mix(in srgb,var(--hc) var(--pp,0%),currentColor);stroke-width:3.4;stroke-opacity:calc(.55 + var(--pf,0) * .4)}
+.w-airfryer .ahr{fill:#000;opacity:.35}.w-airfryer .ahh{fill:#fff;opacity:.16}
+.w-airfryer .ahz path{fill:none;stroke:#d7dfec;stroke-width:2.2;stroke-linecap:round;opacity:0;transform-box:fill-box;transform-origin:center bottom}
+.w-airfryer .apuff ellipse{fill:#c9d4e3;opacity:0;transform-box:fill-box;transform-origin:center}
+/* Gart/heizt/hält warm: Heizspirale glüht in der Kartenfarbe, Fenster leicht beleuchtet, Hitzefahnen aus dem Luftauslass */
+.st-run .w-airfryer .acg{opacity:.9}.st-run .w-airfryer .acl{stroke:color-mix(in srgb,var(--hc) 70%,#3a404c)}
+.st-heat .w-airfryer .acg{opacity:.6}.st-warm .w-airfryer .acg{opacity:.3}.st-pause .w-airfryer .acg{opacity:.15}
+.st-run .w-airfryer .aglo{opacity:.4}.st-heat .w-airfryer .aglo{opacity:.22}.st-warm .w-airfryer .aglo{opacity:.16}.st-pause .w-airfryer .aglo{opacity:.12}
+.st-run .w-airfryer .asg{opacity:.65}.nowin.st-heat .w-airfryer .asg,.nowin.st-warm .w-airfryer .asg{opacity:.3}
+.anim.st-run .w-airfryer .acg{animation:dv-coil 3.2s ease-in-out infinite}
+.anim.st-run .w-airfryer .aglo{animation:dv-wglo 3.2s ease-in-out infinite}
+.anim.st-heat .w-airfryer .acg{animation:dv-coil 2.6s ease-in-out infinite}
+.anim.st-run .w-airfryer .ahz path{animation:dv-hz 3.6s ease-out infinite}
+.anim.st-run .w-airfryer .ahz path:nth-child(2){animation-delay:1.2s}.anim.st-run .w-airfryer .ahz path:nth-child(3){animation-delay:2.4s}
+.anim.st-run.last .w-airfryer .acg,.anim.st-run.last .w-airfryer .kp{animation:dv-glo .8s ease-in-out infinite}
+.nowin .w-airfryer .awin{display:none}
 .st-heat .w-airfryer .kr{stroke:var(--dc);stroke-opacity:.8}
 .anim.st-heat .w-airfryer .kr{animation:dv-stk 2.6s ease-in-out infinite}
-.st-run .w-airfryer .glo{opacity:.32}.st-warm .w-airfryer .glo{opacity:.13}
-.anim.st-run .w-airfryer .glo{animation:dv-glo 3s ease-in-out infinite}
-.anim.st-run.last .w-airfryer .glo,.anim.st-run.last .w-airfryer .kp{animation:dv-glo .8s ease-in-out infinite}
-.anim.st-run.nowin .w-airfryer .heat path{animation:dv-heat 2.2s ease-out infinite}
-.st-warm.nowin .w-airfryer .kr{stroke:var(--dc);stroke-opacity:.35}
 .anim.st-prep .scene .kx,.anim.st-prep .w-airfryer .kt,.anim.st-pause .w-airfryer .kp,.anim.st-pause .w-airfryer .kt{animation:dv-blinko 1.4s ease-in-out infinite}
-.anim.st-done.fx .w-airfryer .puff path{animation:dv-steam 1.8s ease-out 2 both}
-.anim.st-done.fx .w-airfryer .drw{animation:dv-jolt .6s .1s ease-out}
+/* Fertig: Schublade gleitet ein Stück nach vorne und bleibt dort, Haken im Display, beim Wechsel ein Dampfstoß aus dem Korb */
+.st-done .w-airfryer .drw{transform:translate(-6px,-1px) scale(1.06)}
+.st-done .w-airfryer .adsh{opacity:.35}.st-done .w-airfryer .aol{opacity:.25}
+.st-off .w-airfryer .kt,.st-off .w-airfryer .kp{display:none}
+.st-done .w-airfryer .kt{display:none}.st-done .w-airfryer .akc{opacity:1}
+.anim.st-done.fx .w-airfryer .akc{animation:dv-check .5s .3s ease-out both}
+.anim.st-done.fx .w-airfryer .apuff ellipse{animation:dv-apuff 2.4s .5s ease-out 1 both}
+/* Schublade offen (Sensor): herausgenommen und verkleinert neben dem Gerät, im Gehäuse bleibt die leere Öffnung */
+.dopen .w-airfryer .afb{transform:translate(-8px,32px) scale(.8)}
+.dopen .w-airfryer .drw{transform:translate(92px,74px) scale(.62)}
+.dopen .w-airfryer .adsh{opacity:.4}.dopen .w-airfryer .apuff,.dopen .w-airfryer .ahz{display:none}
+@media (prefers-reduced-motion:reduce){.w-airfryer .drw,.w-airfryer .afb{transition:none}}
 /* Waschmaschine im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
 .w-washer{--gx:100px}
 .w-washer .ft,.w-washer .dwg{fill:#0d1016}
@@ -7733,6 +8390,10 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 @keyframes dv-heat{0%{opacity:0;transform:translateY(4px)}40%{opacity:.85}100%{opacity:0;transform:translateY(-8px)}}
 @keyframes dv-glow{0%,100%{opacity:.25}50%{opacity:.8}}
 @keyframes dv-stk{0%,100%{stroke-opacity:.25}50%{stroke-opacity:.95}}
+@keyframes dv-coil{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes dv-wglo{0%,100%{opacity:.3}50%{opacity:.5}}
+@keyframes dv-hz{0%{opacity:0;transform:translateY(4px) scaleY(.6)}30%{opacity:.45}100%{opacity:0;transform:translateY(-10px) scaleY(1.2)}}
+@keyframes dv-apuff{0%{opacity:0;transform:translate(0,0) scale(.6)}25%{opacity:.6}100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(1.8)}}
 @keyframes dv-glo{0%,100%{opacity:.18}50%{opacity:.5}}
 @keyframes dv-blinko{0%,100%{opacity:1}50%{opacity:.2}}
 @keyframes dv-pop2{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
@@ -7756,7 +8417,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      if (c.device_type && !TYPES[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee oder generic sein");
+      if (c.device_type && !TYPES2[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee oder generic sein");
       this._c = { ...GDEF, ...c, controls: [].concat(c.controls || []).map(toObj).filter((o) => o.entity), hints: [].concat(c.hints || []).map(toObj).filter((o) => o.entity) };
       this._ids = entityIds(this._c);
       this._built = false;
@@ -7834,10 +8495,10 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
     _build() {
       this._built = true;
       const c = this._c, t = typeOf(c), r = this.shadowRoot || this.attachShadow({ mode: "open" }), cmp = c.layout === "compact";
-      const rv = roleVars(c.color || TYPES[t].color);
+      const rv = roleVars(c.color || TYPES2[t].color);
       const anim = c.animation !== false && !cmp;
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${SCENE_CSS}${DCSS2}:host([hidden]){display:none}</style>
-<div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--hc:${roleVars(c.heat_color || "accent-2").c}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ""}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
 ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
 <div class="ctls"></div>${c.start_at === "home_connect" && c.start ? SA : ""}<div class="acts"></div>`}<div class="als"></div></div>`;
@@ -8054,7 +8715,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _update() {
       const h = this._h, c = this._c, e = this._e;
       if (!h || !e) return;
-      const t = typeOf(c), TY = TYPES[t], s = this._S(c.entity), cls = this._cls(), act = isAct(cls);
+      const t = typeOf(c), TY = TYPES2[t], s = this._S(c.entity), cls = this._cls(), act = isAct(cls);
       const na = !!c.entity && (!s || s.state === "unavailable");
       if (this._prev && this._prev !== cls) this._fx = cls === "done";
       if (cls !== "done") this._fx = false;
@@ -8210,7 +8871,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._e.acts.hidden = Object.values(b).every((x) => x.hidden);
     }
     _alerts(cls, stx) {
-      const c = this._c, h = this._h, t = typeOf(c), TY = TYPES[t], g = this._e.g, out = [], on = /* @__PURE__ */ new Set();
+      const c = this._c, h = this._h, t = typeOf(c), TY = TYPES2[t], g = this._e.g, out = [], on = /* @__PURE__ */ new Set();
       const add = (lvl, ic, msg, e, hit) => out.push(`<div class="al ${lvl}${hit ? " hit" : ""}"${e ? ` data-e="${esc(e)}"` : ""}><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span></div>`);
       if (this._msg) add("error", "mdi:alert-circle-outline", this._msg);
       if (cls === "err") add("error", "mdi:alert-circle-outline", stx, c.entity, true);
@@ -8266,7 +8927,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var ST = { entity: {} };
   var BTN = { entity: { domain: ["button", "input_button", "script", "scene", "switch", "input_boolean"] } };
   var GGEN = [
-    sel("device_type", Object.entries(TYPES).map(([k, v]) => [k, k === "generic" ? "Allgemein" : v.label])),
+    sel("device_type", Object.entries(TYPES2).map(([k, v]) => [k, k === "generic" ? "Allgemein" : v.label])),
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
     { name: "entity", selector: ST },
     { name: "power", selector: { entity: { domain: ["switch", "input_boolean"] } } }
@@ -8276,7 +8937,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     g2({ name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "duration", selector: ST }),
     g2({ name: "remaining", selector: ST }, { name: "end_time", selector: ST }),
     { name: "phase", selector: ST },
-    ...TYPES[t].alt ? [{ name: "phase_states", selector: { text: { multiple: true } }, context: { t } }] : []
+    ...TYPES2[t].alt ? [{ name: "phase_states", selector: { text: { multiple: true } }, context: { t } }] : []
   ];
   var GCTL = (it) => {
     const d = dom(it.entity);
@@ -8300,7 +8961,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var GINFO = (t) => [
     g2({ name: "remote_start", selector: ST }, { name: "remote_start_text", selector: T }),
     g2({ name: "door", selector: ST }, { name: "door_text", selector: T }),
-    ...TYPES[t].dview ? [{ name: "door_anim", selector: { boolean: {} } }] : [],
+    ...TYPES2[t].dview ? [{ name: "door_anim", selector: { boolean: {} } }] : [],
     g2({ name: "connection", selector: ST }, { name: "connection_text", selector: T })
   ];
   var GHINT = (t) => [
@@ -8329,7 +8990,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     sel("layout", [["full", "Voll"], ["compact", "Kompakt (läuft gerade)"]]),
     g2({ name: "hide_when_off", selector: { boolean: {} } }, { name: "animation", selector: { boolean: {} } }),
     g2(ROLE("color"), { name: "glow", selector: { boolean: {} } }),
-    ...t === "airfryer" ? [{ name: "window", selector: { boolean: {} } }] : []
+    ...t === "airfryer" ? [g2(ROLE("heat_color"), { name: "window", selector: { boolean: {} } })] : []
   ];
   var GACTS = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
   var PHASE_LBL = { dishwasher: "Zustände „trocknet“ (Dampf statt Sprüharm)", washer: "Zustände „schleudert“ (schnelle Trommel)", coffee: "Zustände „brüht“ (Kaffee läuft in die Tasse)" };
@@ -8392,7 +9053,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     animation: "Animation (aus = Standbild)",
     color: "Farbe",
     glow: "Rahmen leuchtet beim Laufen",
-    window: "Sichtfenster"
+    window: "Sichtfenster",
+    heat_color: "Glühfarbe (Heizspirale)"
   };
   var GHELPERS = {
     device_type: "Bestimmt nur Symbol, Texte, Standardfarbe und Animation",
@@ -8424,6 +9086,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     heat_states: "Leer = heating, preheating, preheat. Ruhiges Glühen statt Lauf-Animation",
     warm_states: "Leer = maintain (Philips), keep_warm, warming. Schwaches Glühen",
     text_running: "Leer = Übersetzung von HA, sonst Text zum Gerätetyp",
+    heat_color: "Farbe von Heizspirale, Fenster-Licht und Fuge beim Garen (Standard: Akzent 2)",
     window: "Aus = Gerät ohne Fenster: Hitze steigt oben auf, der Knopfring zeigt alles an",
     hide_when_off: "Gut für die Startseite: Karte nur, solange etwas läuft. Im Bearbeitungsmodus bleibt sie sichtbar",
     color: "Farbrolle aus dem Theme (Fortschritt, Start-Knopf, Animation)",
@@ -8440,10 +9103,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const w = r.querySelector(".wrap");
       const strip2 = (c) => {
         Object.entries(GDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
-        if (c.color === TYPES[typeOf(c)].color) delete c.color;
+        if (c.color === TYPES2[typeOf(c)].color) delete c.color;
         return c;
       };
-      const data = { ...GDEF, color: TYPES[t].color, ...c0 };
+      const data = { ...GDEF, color: TYPES2[t].color, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
         const c = strip2(merge(this._config, names(schema), v));
         this._emit(c);
@@ -8837,11 +9500,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 <rect class="tbh" x="44" y="116.8" width="52" height="1" rx=".5"/><rect class="tsc" x="45" y="119.5" width="50" height="20" rx="2.5"/>
 <text class="tt" x="48.5" y="132.5"></text><rect class="tbar" x="70" y="125" width="22.5" height="2" rx="1"/><rect class="tfill" x="70" y="125" width="0" height="2" rx="1"/>
 <text class="ts" x="70" y="133.5"></text><path class="tgl" d="M47 120 h14 l-6 19 h-8 z"/></g>
-<g class="bdg" transform="translate(74 172)"><circle class="bc" r="9.5"/>
+<g class="bpos"><g class="bdg"><circle class="bc" r="9.5"/>
 <path class="b-ok" d="M-4.2 0.2 l2.9 2.9 l5.6 -6"/>
 <g class="b-wn"><path d="M0 -5.6 l5.6 9.7 h-11.2 z"/><rect x="-.65" y="-2.4" width="1.3" height="3.6" rx=".65"/><circle cx="0" cy="2.6" r=".8"/></g>
 <g class="b-tp"><rect x="-1.6" y="-6" width="3.2" height="8" rx="1.6"/><circle cx="0" cy="3.4" r="2.8"/></g>
-<g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g>
+<g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g></g>
 </svg>`;
   var PCSS3 = `
 .g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
@@ -8952,7 +9615,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .scene .b-ok{fill:none;stroke:var(--dc-fg);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14}
 .scene .b-wn path{fill:#fff}.scene .b-wn rect,.scene .b-wn circle{fill:var(--bc)}
 .scene .b-tp,.scene .b-fn{fill:#fff}
-.scene .bdg{transform-box:fill-box}
+.scene .bdg{transform-box:fill-box;transform-origin:center}
+/* Badge-Stelle: Warnungen oben links im Innenraum, Fertig-Haken unten rechts nach der gemeinsamen Regel badgeAt() aus
+   shared/scene.js (Gehäuseecke 216/292, u = 1,3 → Mitte 190/242,6, Radius 15). Eigene Kopie, solange die Drucker-Card scene.js nicht nutzt. */
+.scene .bpos{transform:translate(74px,172px)}.b-ok .scene .bpos{transform:translate(190px,242.6px) scale(1.574)}
 .b-ok .scene .bdg,.b-wn .scene .bdg,.b-tp .scene .bdg,.b-fn .scene .bdg{opacity:1}
 .b-ok .scene .bc,.b-ok .scene .b-ok,.b-wn .scene .bc,.b-wn .scene .b-wn,.b-tp .scene .bc,.b-tp .scene .b-tp,.b-fn .scene .bc,.b-fn .scene .b-fn{display:inline}
 .b-wn .scene,.b-tp .scene,.b-fn .scene{--bc:var(--nv-warn)}.bad .scene{--bc:var(--nv-error)}
@@ -9021,7 +9687,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 @keyframes pr-wisp{0%{opacity:0;transform:translateY(6px)}40%{opacity:.7}100%{opacity:0;transform:translateY(-14px)}}
 @keyframes pr-glare{from{transform:translateX(0)}to{transform:translateX(70px)}}
 @keyframes pr-check{from{stroke-dashoffset:14}to{stroke-dashoffset:0}}
-@keyframes pr-pop{0%{transform:translate(74px,172px) scale(.3)}70%{transform:translate(74px,172px) scale(1.15)}100%{transform:translate(74px,172px) scale(1)}}
+@keyframes pr-pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 @keyframes pr-throb{0%,100%{opacity:1}50%{opacity:.45}}
 @keyframes pr-lvl{0%,100%{transform:translateX(-51px)}20%{transform:translateX(-27px)}40%{transform:translateX(-3px)}60%{transform:translateX(21px)}80%{transform:translateX(45px)}}
 @keyframes pr-tap{0%,60%,100%{transform:translateY(0)}75%{transform:translateY(4px)}}
@@ -10383,5 +11049,5 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
   define("remote-card-editor", NovaRemoteCardEditor);
 
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.10.1b1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.11.0b5"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();
