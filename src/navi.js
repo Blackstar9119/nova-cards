@@ -60,7 +60,9 @@ class NovaNaviPopup extends HTMLElement {
 define('navi-popup', NovaNaviPopup);
 
 /* ---------- Nova Navi ---------- */
-// .wrap ist die schwebende Hülle (Position), darin optional die Media-Leiste .mb und die Leiste .dock mit den Buttons
+// .wrap ist die schwebende Hülle (Position), darin optional die Media-Leiste .mb und die Leiste .dk: Glas .bg und
+// Scroll-Bereich .dock mit den Buttons. .dock ragt ringsum 6px über das Glas hinaus (Innenabstand), damit Pille und Schatten
+// am Rand nicht abgeschnitten werden; gibt es in einer Richtung mehr zu scrollen, blendet der Rand dort weich aus (fs/fe)
 const DCSS = `
 :host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px))}
 :host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
@@ -72,8 +74,12 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .wrap.side.right{left:auto;right:14px}
 .wrap.inline{position:static;transform:none;margin:0 auto;width:max-content;max-width:100%}
 .glass{background:var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(160%);border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(0,0,0,.4)}
-.dock{--g:8px;position:relative;display:flex;align-items:center;gap:var(--g);padding:8px;border-radius:999px;overflow-x:auto;scrollbar-width:none;box-sizing:border-box;max-width:100%}
-.side .dock{flex-direction:column;overflow-x:hidden;overflow-y:auto}
+.dk{position:relative;display:flex;border-radius:999px;max-width:100%;min-width:0;min-height:0}
+.side .dk{flex-direction:column}
+.dock{--g:8px;--o:6px;position:relative;z-index:1;flex:1 1 auto;min-width:0;min-height:0;margin:calc(-1 * var(--o));display:flex;align-items:center;gap:var(--g);padding:calc(8px + var(--o));border-radius:999px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-sizing:border-box;--a1:1;--a2:1;--md:to right}
+.side .dock{flex-direction:column;overflow-x:hidden;overflow-y:auto;--md:to bottom}
+.dock.fs{--a1:0}.dock.fe{--a2:0}
+.dock.fs,.dock.fe{-webkit-mask-image:linear-gradient(var(--md),rgba(0,0,0,var(--a1)) var(--o),#000 calc(var(--o) + 22px),#000 calc(100% - var(--o) - 22px),rgba(0,0,0,var(--a2)) calc(100% - var(--o)));mask-image:linear-gradient(var(--md),rgba(0,0,0,var(--a1)) var(--o),#000 calc(var(--o) + 22px),#000 calc(100% - var(--o) - 22px),rgba(0,0,0,var(--a2)) calc(100% - var(--o)))}
 .dock::-webkit-scrollbar{display:none}
 .d{--s:var(--sz);z-index:1;width:var(--s);height:var(--s);box-sizing:border-box;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none;user-select:none;-webkit-user-select:none}
 .d[hidden]{display:none}
@@ -82,9 +88,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
 /* Aktiver Eintrag: runde Markierung .hl gleitet unter die Buttons; Farbe nur übers Theme (--nova-navi-active-color), Standard Akzent 2.
    Animiert werden nur transform, opacity und max-width – schont schwache Tablets. */
-.dock{--hc:var(--nova-navi-active-color,var(--nv-a2));--ease:cubic-bezier(.25,.8,.25,1)}
+.dk{--hc:var(--nova-navi-active-color,var(--nv-a2));--ease:cubic-bezier(.25,.8,.25,1)}
 /* Glas der Leiste als eigene Ebene: gleitet beim Wechsel per transform auf die neue Breite (Blur bleibt unverändert) */
-.dock>.bg{position:absolute;inset:0;border-radius:inherit;z-index:0;pointer-events:none;transform-origin:0 50%}
+.dk>.bg{position:absolute;inset:0;border-radius:inherit;z-index:0;pointer-events:none;transform-origin:0 50%}
 .hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:var(--hc);box-shadow:0 0 14px color-mix(in srgb,var(--hc) 50%,transparent);pointer-events:none;opacity:0;will-change:transform}
 .hl.on{opacity:1}
 .d.here{color:var(--nova-navi-active-text-color,var(--nv-a2-fg))}
@@ -93,9 +99,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .d::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:50%;background:var(--hc);opacity:0;pointer-events:none}
 .d.lit::before{opacity:1}
 /* Während einer Animation: nur transform und opacity, gleiche Dauer und Kurve für alle Teile */
-.run .d,.run .d::before,.run .nm,.run>.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
+.run .d,.run .d::before,.run .nm,.run+.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
 /* Messen und Startlage setzen: ohne Übergang */
-.hold .d,.hold .d::before,.hold .nm,.hold>.bg,.hold .hl{transition:none!important}
+.hold .d,.hold .d::before,.hold .nm,.hold+.bg,.hold .hl{transition:none!important}
 .ghost{position:absolute;left:0;top:0;z-index:1;pointer-events:none;white-space:nowrap;color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
 .d img{width:calc(var(--s) * .6);height:calc(var(--s) * .6);object-fit:contain}
 .nm{flex:none;z-index:1;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
@@ -127,7 +133,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .mi .ic img{width:60%;height:60%;object-fit:contain}
 .mi ha-icon{--mdc-icon-size:18px}
 @keyframes mi{from{opacity:0;transform:scale(.96)}}
-@media(max-width:600px){.d,.hl{--s:calc(var(--sz) * .875)}.hl{width:var(--s);height:var(--s)}.dock{--g:5px;padding:6px}}`;
+/* Kompakt (schmale Bildschirme automatisch, oder per compact: true): kleinere Buttons und Abstände, Name nur am aktiven Eintrag */
+@media(max-width:600px){.wrap:not(.nocmp) .d,.wrap:not(.nocmp) .hl{--s:calc(var(--sz) * .875)}.wrap:not(.nocmp) .hl{width:var(--s);height:var(--s)}.wrap:not(.nocmp) .dock{--g:5px;padding:calc(6px + var(--o))}.wrap:not(.nocmp) .nm,.wrap:not(.nocmp) .ghost{font-size:13px}}
+.cmp .d,.cmp .hl{--s:calc(var(--sz) * .875)}.cmp .hl{width:var(--s);height:var(--s)}.cmp .dock{--g:5px;padding:calc(6px + var(--o))}.cmp .nm,.cmp .ghost{font-size:13px}`;
 
 const SRC = {};
 // Navi-Konfiguration in einem Dashboard finden (für „source“); alte Typen zählen mit, damit nichts kaputtgeht
@@ -275,11 +283,13 @@ class NovaNaviCard extends HTMLElement {
   _build() {
     this._built = true;
     const c = this._cfg, r = this.shadowRoot || this.attachShadow({mode: 'open'});
-    r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? 'inline' : ''}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms">`
+    r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? 'inline' : ''} ${{true: 'cmp', false: 'nocmp'}[this._opt('compact')] || ''}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms">`
       + `<div class="mb glass" hidden><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="pp" role="button" tabindex="0"><ha-icon></ha-icon></div></div>`
-      + `<div class="dock"><div class="bg glass"></div><div class="hl"></div></div></div>`;
+      + `<div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
     const dock = r.querySelector('.dock');
-    this._dock = dock; this._bg = dock.children[0]; this._hl = dock.children[1]; this._shown = null;
+    this._dock = dock; this._bg = r.querySelector('.dk>.bg'); this._hl = dock.firstChild; this._shown = null;
+    // Scrollstand merken, damit die neu erzeugte Karte beim Viewwechsel an derselben Stelle startet
+    dock.addEventListener('scroll', () => { const rec = LAST.get(this._key); if (rec) rec.sl = [dock.scrollLeft, dock.scrollTop]; this._edges(); }, {passive: true});
     this._mb = r.querySelector('.mb');
     this._mb.querySelector('.tx').addEventListener('click', () => this._mp && moreInfo(this, this._mp));
     const pp = this._mb.querySelector('.pp');
@@ -359,11 +369,12 @@ class NovaNaviCard extends HTMLElement {
     const from = this._shown != null ? +this._shown.split('|')[0] : !rec ? -1 : rec.i !== cur ? rec.i : fresh && !rec.played ? rec.from : cur;
     const first = this._shown == null;
     this._shown = sig;
-    if (!rec || rec.i !== cur) LAST.set(this._key, {i: cur, from, t: Date.now()});
+    if (!rec || rec.i !== cur) LAST.set(this._key, {i: cur, from, t: Date.now(), sl: rec?.sl});
     const anim = this._opt('animation') !== false && !REDUCED?.matches && this.isConnected && !inPicker(this) && from !== cur;
     // Neue Karte im gemerkten Ausgangszustand zeigen, bis die Animation startet
+    if (first && rec?.sl) [dock.scrollLeft, dock.scrollTop] = rec.sl;
     if (anim && first) { this._apply(from, lbl); this._pillTo(from, from >= 0); }
-    if (!anim) return this._jump(cur, lbl);
+    if (!anim) { this._jump(cur, lbl); return this._reveal(cur, false); }
     const go = () => { if (this._shown === sig) this._flip(cur, lbl, sig); };
     // Erst messen, wenn Layout und Schrift stehen
     requestAnimationFrame(() => (document.fonts?.status === 'loaded' ? go() : document.fonts.ready.then(go)));
@@ -375,6 +386,25 @@ class NovaNaviCard extends HTMLElement {
   }
   // Gelbe Ebene auf Button i (beim Wechsel gleichzeitig mit der Markierung übergeblendet)
   _lit(i) { this._btns.forEach((d, k) => d.classList.toggle('lit', k === i)); }
+  // Aktiven Eintrag (samt Name) in die Mitte des Scroll-Bereichs holen, wenn die Leiste nicht ganz passt.
+  // Mit den Maßen aus dem Layout (ohne transforms); Pille und Buttons scrollen als Inhalt einfach mit
+  // Weicher Rand nur dort, wo noch mehr zum Scrollen ist
+  _edges() {
+    const d = this._dock; if (!d) return;
+    const v = !!this._side, x = v ? d.scrollTop : d.scrollLeft, max = v ? d.scrollHeight - d.clientHeight : d.scrollWidth - d.clientWidth;
+    d.classList.toggle('fs', x > 1); d.classList.toggle('fe', x < max - 1);
+  }
+  _reveal(i, smooth, l) {
+    this._edges();
+    const dock = this._dock, d = this._btns[i];
+    if (!dock || !d || (dock.scrollWidth <= dock.clientWidth && dock.scrollHeight <= dock.clientHeight)) return;
+    const o = this._origin(), b = l || d.getBoundingClientRect(), nm = d._nm.classList.contains('on') ? d._nm.offsetWidth : 0;
+    const left = b.left - o.x + (b.width + nm) / 2 - dock.clientWidth / 2, top = b.top - o.y + b.height / 2 - dock.clientHeight / 2;
+    const x = this._side ? dock.scrollLeft : Math.max(0, left), y = this._side ? Math.max(0, top) : dock.scrollTop;
+    if (Math.abs(x - dock.scrollLeft) < 1 && Math.abs(y - dock.scrollTop) < 1) return;
+    dock.scrollTo({left: x, top: y, behavior: smooth ? 'smooth' : 'auto'});
+    const rec = LAST.get(this._key); if (rec) rec.sl = [x, y];
+  }
   // Ursprung der absolut positionierten Ebenen (Innenkante der Leiste)
   _origin() { const r = this._dock.getBoundingClientRect(); return {x: r.left + this._dock.clientLeft - this._dock.scrollLeft, y: r.top + this._dock.clientTop - this._dock.scrollTop}; }
   _pillTo(i, show) {
@@ -430,6 +460,7 @@ class NovaNaviCard extends HTMLElement {
       if (rec && rec.i === cur && this.isConnected) rec.played = true;
       dock.classList.remove('hold'); dock.classList.add('run');
       this._lit(cur);
+      this._reveal(cur, true, l.b[cur]);
       btns.forEach(d => { d.style.transform = ''; });
       this._bg.style.transform = '';
       // Ziel aus der Messung oben – jetzt gemessen läge es noch in der Startlage der Übergänge
@@ -580,7 +611,7 @@ const LOOK = c => [
     {name: 'button_size', selector: {number: {min: 32, max: 72, step: 2, mode: 'box', unit_of_measurement: 'px'}}}),
   g2(sel('sidebar', [['', 'Nie'], ['left', 'Links'], ['right', 'Rechts']]),
     ...(c.sidebar ? [{name: 'sidebar_min_width', selector: {number: {min: 480, max: 2560, step: 10, mode: 'box', unit_of_measurement: 'px'}}}] : [])),
-  {name: 'active_label', selector: {boolean: {}}},
+  g2({name: 'active_label', selector: {boolean: {}}}, sel('compact', [['', 'Automatisch (schmale Bildschirme)'], ['on', 'Immer'], ['off', 'Nie']])),
   g2({name: 'animation', selector: {boolean: {}}}, ...(c.animation !== false ? [{name: 'animation_duration', selector: {number: {min: 100, max: 1500, step: 10, mode: 'box', unit_of_measurement: 'ms'}}}] : [])),
   {name: 'haptic', selector: {boolean: {}}},
 ];
@@ -610,7 +641,7 @@ const I_BADGE = it => [
 const S_MAIN = opts => [...I_MAIN, ...I_TAP(opts)];
 const LABELS = {
   position: 'Position (Handy, schmale Bildschirme)', button_size: 'Button-Größe', source: 'Einträge aus anderem Dashboard übernehmen',
-  sidebar: 'Seitenleiste auf breiten Bildschirmen', sidebar_min_width: 'Seitenleiste ab Breite', haptic: 'Haptisches Feedback', active_label: 'Namen neben dem aktiven Icon zeigen', animation: 'Wechsel animieren', animation_duration: 'Dauer der Animation',
+  sidebar: 'Seitenleiste auf breiten Bildschirmen', sidebar_min_width: 'Seitenleiste ab Breite', haptic: 'Haptisches Feedback', active_label: 'Namen neben dem aktiven Icon zeigen', compact: 'Kompakte Leiste', animation: 'Wechsel animieren', animation_duration: 'Dauer der Animation',
   media_players: 'Media-Player', media_always: 'Auch zeigen, wenn nichts läuft',
   icon: 'Icon', label: 'Name', tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken', double_tap_action: 'Aktion bei Doppeltippen',
   popup_title: 'Titel', popup_hash: 'Nova Pop-up öffnen', cards: 'Karten (YAML-Liste)',
@@ -625,6 +656,7 @@ const HELPERS = {
   sidebar: 'Ab der eingestellten Breite steht die Leiste senkrecht am Rand, darunter unten bzw. oben.',
   animation: 'Markierung und Name gleiten beim Viewwechsel vom alten zum neuen Eintrag. Bei „Bewegung reduzieren“ im System immer aus.',
   active_label: 'Rechts neben dem runden Button der aktuellen Ansicht steht sein Name (nicht in der Seitenleiste).',
+  compact: 'Kleinere Buttons und Abstände. Automatisch: auf Bildschirmen bis 600 px Breite.',
   haptic: 'Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk).',
   media_players: 'Zeigt über der Leiste den laufenden Player mit Play/Pause. Leer = keine Media-Leiste.',
   popup_hash: 'Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion, dem Untermenü und dem einfachen Pop-up.',
@@ -661,7 +693,7 @@ class NovaNaviCardEditor extends NovaEditorBase {
     const r = this.shadowRoot;
     r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
     const w = r.querySelector('.wrap');
-    const data = {position: 'bottom', button_size: 48, sidebar: '', active_label: true, animation: true, animation_duration: 280, ...this._config};
+    const data = {position: 'bottom', button_size: 48, sidebar: '', active_label: true, animation: true, animation_duration: 280, ...this._config, compact: {true: 'on', false: 'off'}[this._config.compact] || ''};
     const form = schema => this._form(schema, data, v => {
       const c = merge(this._config, names(schema), v);
       if (c.position === 'bottom') delete c.position;
@@ -669,6 +701,7 @@ class NovaNaviCardEditor extends NovaEditorBase {
       if (!c.sidebar) { delete c.sidebar; delete c.sidebar_min_width; }
       if (!c.haptic) delete c.haptic;
       if (c.active_label !== false) delete c.active_label;
+      if (c.compact === 'on' || c.compact === 'off') c.compact = c.compact === 'on'; else delete c.compact;
       if (c.animation !== false) delete c.animation;
       if (c.animation === false || c.animation_duration === 280) delete c.animation_duration;
       if (!c.media_always) delete c.media_always;

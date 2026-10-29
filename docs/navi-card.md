@@ -68,6 +68,7 @@ items:
 | `sidebar_min_width` | `1024` | Ab dieser Fensterbreite (px) gilt die Seitenleiste |
 | `button_size` | `48` | Größe der Buttons in px |
 | `active_label` | an | Rechts neben dem aktiven (runden) Button steht in Weiß sein Name (nicht in der Seitenleiste) |
+| `compact` | automatisch | Kompakte Leiste (kleinere Buttons und Abstände): leer = automatisch bis 600 px Bildschirmbreite, `true` = immer, `false` = nie |
 | `animation` | an | Beim Viewwechsel gleiten Markierung, Name und Leistenbreite weich vom alten zum neuen Eintrag. Bei „Bewegung reduzieren“ im System immer aus |
 | `animation_duration` | `280` | Dauer der Animation in ms |
 | `haptic` | aus | Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk) |
@@ -110,5 +111,7 @@ Die Animation arbeitet nach dem FLIP-Prinzip: Start- und Endlage werden einmal g
 Buttons, Namen und Leistenhintergrund nur per `transform` und `opacity` mit gleicher Dauer und Kurve – ohne Layout-Neuberechnung
 in jedem Frame. Rendert Home Assistant die Karte doppelt, startet die Animation nicht ein zweites Mal; bei schnellem
 Mehrfachwechsel gleitet sie aus der aktuellen Zwischenlage weiter.
+Passt die Leiste nicht auf den Bildschirm (z. B. am Handy), lässt sie sich wischen: Der aktive Eintrag wird beim Wechsel
+weich in die Mitte gescrollt, Pille und Schatten werden am Rand nicht abgeschnitten, und wo es weitergeht, blendet der Rand weich aus.
 Jeder Button behält immer seine Inaktiv-Farbe als Grundfarbe; das Gelb liegt als eigene Ebene darüber und blendet
 beim Wechsel direkt zwischen Gelb und Inaktiv-Farbe über (gleiche Dauer und Kurve wie die Markierung).
