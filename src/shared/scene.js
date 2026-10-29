@@ -51,3 +51,7 @@ export function sweep(el) {
   void el.getBoundingClientRect();
   el.classList.add('sweep');
 }
+
+// Fertig-Haken-Badge: bei allen Geräten unten rechts – Mitte 20 Einheiten links und 38 über der unteren rechten Gehäuseecke,
+// Radius 11,5. Die Maße gelten für 200 Einheiten Zeichnungsbreite; u = Maßstab für andere Raster (Drucker 260 breit: u = 1,3).
+export const badgeAt = (right, bottom, u = 1) => ({x: right - 20 * u, y: bottom - 38 * u, r: 11.5 * u});

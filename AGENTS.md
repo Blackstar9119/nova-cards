@@ -36,7 +36,7 @@ src/
     sparkline.js      Flächen-Sparkline als SVG (Thermostat-Verlauf, Wetter-Stundenvorhersage)
     styles.js         Gemeinsame CSS-Bausteine (Variablen, Glas-Hintergrund, Editor-Styles)
     scene.js          Zeichenstil der Gerätezeichnungen: Farbpalette, Verläufe (Gehäuse, Glas, Chrom), Glas-Spiegelung,
-                      Lichtstreifen beim Reinscrollen (sweep), Rahmen-Glow – siehe „Stil der Zeichnungen“
+                      Lichtstreifen beim Reinscrollen (sweep), Rahmen-Glow, Badge-Stelle (badgeAt) – siehe „Stil der Zeichnungen“
     editor-base.js    NovaEditorBase – Basisklasse ALLER Editoren
     editor-schema.js  Bausteine für ha-form-Schemas + gemeinsame Beschriftungen
     lifecycle.js      Relevante hass-Änderungen erkennen (hassChanged, entityIds), Vorschau in der Kartenauswahl (inPicker)
@@ -117,7 +117,7 @@ Palette `PAL`), nicht neu anlegen. Die Drucker-Card selbst bleibt unverändert u
   und beim Wechsel auf „fertig“. Weg per `--gx`. Nie in Dauerschleife.
 - **Glow:** Rahmen der Karte leuchtet in `--dc`, solange das Gerät arbeitet (`frameGlow()`); in der Zeichnung warmes
   bzw. farbiges Innenlicht nur im aktiven Zustand.
-- **Zustände:** aus = ganze Zeichnung 0,55 Deckkraft, Display leer; fertig = Haken-Badge in `--dc` mit Pop-Animation;
+- **Zustände:** aus = ganze Zeichnung 0,55 Deckkraft, Display leer; fertig = Haken-Badge in `--dc` mit Pop-Animation, immer unten rechts an der Stelle aus `badgeAt()`;
   Animationen nur mit `.anim`, stehen bei `.still`, respektieren `prefers-reduced-motion`.
 
 ## Abhängigkeiten von HA-Interna
