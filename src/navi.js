@@ -72,10 +72,10 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .wrap.side.right{left:auto;right:14px}
 .wrap.inline{position:static;transform:none;margin:0 auto;width:max-content;max-width:100%}
 .glass{background:var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(160%);border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(0,0,0,.4)}
-.dock{display:flex;gap:8px;padding:8px;border-radius:999px;overflow-x:auto;scrollbar-width:none;box-sizing:border-box;max-width:100%}
+.dock{--g:8px;display:flex;align-items:center;gap:var(--g);padding:8px;border-radius:999px;overflow-x:auto;scrollbar-width:none;box-sizing:border-box;max-width:100%}
 .side .dock{flex-direction:column;overflow-x:hidden;overflow-y:auto}
 .dock::-webkit-scrollbar{display:none}
-.d{--s:var(--sz);min-width:var(--s);height:var(--s);box-sizing:border-box;padding:0;border-radius:calc(var(--s) / 2);flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s,padding .25s;-webkit-tap-highlight-color:transparent;outline:none;user-select:none;-webkit-user-select:none}
+.d{--s:var(--sz);width:var(--s);height:var(--s);box-sizing:border-box;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none;user-select:none;-webkit-user-select:none}
 .d[hidden]{display:none}
 .d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .d:active{transform:scale(.9)}
@@ -83,10 +83,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 /* Aktiver Eintrag: Farbe nur übers Theme (--nova-navi-active-color), Standard Akzent 2 */
 .d.here{--hc:var(--nova-navi-active-color,var(--nv-a2));background:var(--hc);color:var(--nova-navi-active-text-color,var(--nv-a2-fg));box-shadow:0 0 14px color-mix(in srgb,var(--hc) 50%,transparent)}
 .d img{width:calc(var(--s) * .6);height:calc(var(--s) * .6);object-fit:contain}
-/* Name neben dem Icon des aktiven Eintrags (nicht in der Seitenleiste) */
-.d .lb{max-width:0;overflow:hidden;white-space:nowrap;opacity:0;font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif);transition:max-width .25s,opacity .2s,margin .25s}
-.wrap:not(.side) .d.wide{justify-content:flex-start;padding:0 16px 0 calc((var(--s) - 22px) / 2)}
-.wrap:not(.side) .d.wide .lb{max-width:180px;opacity:1;margin-left:8px}
+.nm{flex:none;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif);transition:max-width .25s,opacity .2s,margin .25s,padding .25s}
+.nm.on{max-width:180px;opacity:1;margin-left:0;padding-right:6px}
+.side .nm{display:none}
 .dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--bc,var(--nv-accent));box-shadow:0 0 6px var(--bc,var(--nv-accent));display:none}
 .d.bd .dot{display:block}
 .num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bc,var(--nv-accent));color:var(--bfg,#3a2a00);font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
@@ -112,7 +111,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .mi .ic img{width:60%;height:60%;object-fit:contain}
 .mi ha-icon{--mdc-icon-size:18px}
 @keyframes mi{from{opacity:0;transform:scale(.96)}}
-@media(max-width:600px){.d{--s:calc(var(--sz) * .875)}.dock{gap:5px;padding:6px}}`;
+@media(max-width:600px){.d{--s:calc(var(--sz) * .875)}.dock{--g:5px;padding:6px}}`;
 
 const SRC = {};
 // Navi-Konfiguration in einem Dashboard finden (für „source“); alte Typen zählen mit, damit nichts kaputtgeht
@@ -271,9 +270,11 @@ class NovaNaviCard extends HTMLElement {
       const d = document.createElement('div');
       d.className = 'd'; d.tabIndex = 0; d.setAttribute('role', 'button');
       d.title = it.label || it.popup_title || '';
-      d.innerHTML = `${icon(it.icon || 'mdi:circle-outline')}<span class="lb"></span><span class="dot"></span><span class="num"></span>`;
+      d.innerHTML = `${icon(it.icon || 'mdi:circle-outline')}<span class="dot"></span><span class="num"></span>`;
       this._bind(d, it, kind => this._run(i, kind));
-      dock.appendChild(d);
+      // Name des aktiven Eintrags steht weiß neben dem runden Button
+      d._nm = document.createElement('span'); d._nm.className = 'nm';
+      dock.append(d, d._nm);
       return d;
     });
   }
@@ -303,13 +304,13 @@ class NovaNaviCard extends HTMLElement {
     const isHere = it => { const p = pathOf(it); return !!p && normPath(p) === here; };
     this._items.forEach((it, i) => {
       const d = this._btns[i]; if (!d) return;
-      d.hidden = !visible(h, it);
+      d.hidden = d._nm.hidden = !visible(h, it);
       d.classList.toggle('act', i === this._cur || (!!it.popup_hash && curHash() === cleanHash(it.popup_hash)));
       // Aktiver Eintrag; liegt der Pfad im Untermenü, ist dessen Button aktiv und zeigt den Namen des Menü-Eintrags
       const hit = isHere(it) ? it : (Array.isArray(it.menu) && it.menu.find(isHere)) || null, name = hit && (hit.label || it.label);
       d.classList.toggle('here', !!hit);
-      d.classList.toggle('wide', !!name && this._cfg.active_label !== false && !this._side);
-      if (name) d.querySelector('.lb').textContent = name;
+      d._nm.classList.toggle('on', !!name && this._cfg.active_label !== false && !this._side);
+      if (name) d._nm.textContent = name;
       this._badge(d, it);
     });
     this._menu?.querySelectorAll('.mi').forEach(m => { m.hidden = !visible(h, m._it); m.classList.toggle('here', isHere(m._it)); });
@@ -496,7 +497,7 @@ const LABELS = {
 const HELPERS = {
   source: 'Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Navi – praktisch für mehrere Ansichten oder Dashboards mit gleicher Leiste.',
   sidebar: 'Ab der eingestellten Breite steht die Leiste senkrecht am Rand, darunter unten bzw. oben.',
-  active_label: 'Der Button der aktuellen Ansicht wird breiter und zeigt rechts neben dem Icon seinen Namen (nicht in der Seitenleiste).',
+  active_label: 'Rechts neben dem runden Button der aktuellen Ansicht steht sein Name (nicht in der Seitenleiste).',
   haptic: 'Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk).',
   media_players: 'Zeigt über der Leiste den laufenden Player mit Play/Pause. Leer = keine Media-Leiste.',
   popup_hash: 'Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion, dem Untermenü und dem einfachen Pop-up.',
