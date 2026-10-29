@@ -1064,7 +1064,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     if (TY.drink) this._coffee(cls, p, TY);
     // Füllstand: Futtervorrat im Fenster bzw. Wasser im Tank; leer = Fenster leer, niedrig = Warndreieck
     if (TY.level) {
-      const lv = levelOf(this._S(c.level));
+      const lv = levelOf(this._S(c.fill_level));
       e.g.style.setProperty(t === 'feeder' ? '--fl' : '--wl', lv == null ? '' : lv.toFixed(2));
       e.g.classList.toggle('empty', lv === 0);
       e.g.classList.toggle('low', lv != null && lv > 0 && lv <= .2);
@@ -1218,7 +1218,7 @@ const GGEN = [
 const GPROG = t => [
   {name: 'program', selector: ST},
   ...(TYPES[t].drink ? [{name: 'drink', selector: ST}] : []),
-  ...(TYPES[t].level ? [{name: 'level', selector: {entity: {domain: ['sensor', 'binary_sensor', 'number', 'input_number']}}}] : []),
+  ...(TYPES[t].level ? [{name: 'fill_level', selector: {entity: {domain: ['sensor', 'binary_sensor', 'number', 'input_number']}}}] : []),
   ...(TYPES[t].feed ? [g2({name: 'feed_count', selector: {entity: {domain: ['sensor', 'counter', 'number', 'input_number']}}}, NUM('feed_done_minutes'))] : []),
   g2({name: 'progress', selector: {entity: {domain: ['sensor', 'number', 'input_number']}}}, {name: 'duration', selector: ST}),
   g2({name: 'remaining', selector: ST}, {name: 'end_time', selector: ST}),
@@ -1266,7 +1266,7 @@ const GLOOK = t => [sel('layout', [['full', 'Voll'], ['compact', 'Kompakt (läuf
 const GACTS = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
 const PHASE_LBL = {dishwasher: 'Zustände „trocknet“ (Dampf statt Sprüharm)', washer: 'Zustände „schleudert“ (schnelle Trommel)'};
 const GLABELS = {...BASE_LABELS, device_type: 'Gerätetyp', entity: 'Status', power: 'Ein/Aus-Schalter', program: 'Programm', progress: 'Fortschritt (%)', duration: 'Gesamtdauer',
-  remaining: 'Restzeit', end_time: 'Endzeit', drink: 'Getränk (optional)', level: 'Füllstand', feed_count: 'Fütterungen (Zähler)', feed_done_minutes: '„Fertig“ zeigen (Minuten)', phase: 'Phase (optional)', phase_states: 'Sonder-Zustände', display: 'Darstellung', step: 'Schrittweite', show: 'Anzeigen',
+  remaining: 'Restzeit', end_time: 'Endzeit', drink: 'Getränk (optional)', fill_level: 'Füllstand', feed_count: 'Fütterungen (Zähler)', feed_done_minutes: '„Fertig“ zeigen (Minuten)', phase: 'Phase (optional)', phase_states: 'Sonder-Zustände', display: 'Darstellung', step: 'Schrittweite', show: 'Anzeigen',
   start: 'Start', start_name: 'Text auf dem Start-Knopf', start_option: 'Programm für den Start', pause: 'Pause', resume: 'Fortsetzen', resume_with_start: 'Fortsetzen nutzt Start-Knopf', stop: 'Stopp',
   start_confirm: 'Rückfrage vor dem Start', start_at: '„Starten um“ (Uhrzeit wählen)', stop_confirm: 'Rückfrage vor dem Stopp', remote_start: 'Fernstart erlaubt', remote_start_text: 'Hinweis, wenn Fernstart aus',
   door: 'Tür / Schublade', door_anim: 'Tür im Bild zeigen', anim: 'Animation im Bild', door_text: 'Hinweis, wenn offen', connection: 'Verbindung', connection_text: 'Hinweis ohne Verbindung', message: 'Meldung', level: 'Stufe',
@@ -1281,7 +1281,7 @@ const GHELPERS = {
   program: 'Laufendes Programm (Select oder Sensor). Leer bzw. ohne Wert = Programm für den Start',
   progress: 'Leer = aus Restzeit und Gesamtdauer berechnet',
   drink: 'Leer = Programm. Erkennt Espresso, Kaffee, Cappuccino, Latte (Macchiato), Milch, Heißwasser – Kaffeefarbe, Milchschaum und Glas passen sich an',
-  level: 'Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer',
+  fill_level: 'Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer',
   feed_count: 'Für Geräte ohne Zustand „füttert“, z. B. sensor.futterautomat_times_dispensed: steigt der Wert, zeigt die Karte die Fütterung',
   feed_done_minutes: 'So lange bleibt nach einer Fütterung „Fertig“ mit vollem Napf stehen. Leer = 10',
   duration: 'Für den Fortschritt ohne Fortschritts-Sensor und für „Starten um“ (Programmdauer vor dem Start)',
