@@ -1892,8 +1892,8 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .d.here{--hc:var(--nova-navi-active-color,var(--nv-a2));background:var(--hc);color:var(--nova-navi-active-text-color,var(--nv-a2-fg));box-shadow:0 0 14px color-mix(in srgb,var(--hc) 50%,transparent)}
 .d img{width:calc(var(--s) * .6);height:calc(var(--s) * .6);object-fit:contain}
 .nm{flex:none;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif);transition:max-width .25s,opacity .2s,margin .25s,padding .25s}
-.nm.on{max-width:180px;opacity:1;margin-left:0;padding-right:6px;animation:nm .45s cubic-bezier(.2,.8,.2,1)}
-@keyframes nm{from{max-width:0;opacity:0;margin-left:calc(-1 * var(--g));transform:translateX(-14px)}}
+.nm.on{max-width:180px;opacity:1;margin-left:0;padding-right:6px;animation:nm .7s cubic-bezier(.2,.8,.2,1) .12s both}
+@keyframes nm{0%{max-width:0;opacity:0;margin-left:calc(-1 * var(--g));transform:translateX(-40px);clip-path:inset(0 100% 0 0)}40%{max-width:180px;margin-left:0}100%{opacity:1;transform:none;clip-path:inset(0 0 0 0)}}
 .side .nm{display:none}
 .dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--bc,var(--nv-accent));box-shadow:0 0 6px var(--bc,var(--nv-accent));display:none}
 .d.bd .dot{display:block}
