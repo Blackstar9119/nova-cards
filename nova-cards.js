@@ -7618,8 +7618,8 @@ ${doneAt(146, 189)}${WARN}</svg>`,
 <path class="s-refl" d="M62 70 q20 -3 34 -2 l-6 4 q-14 0 -28 3 z"/></g>
 <ellipse class="bflow" cx="100" cy="75" rx="51" ry="8"/><ellipse class="bdr" cx="100" cy="74" rx="57" ry="9.6"/>
 <rect class="s-part" x="146" y="64.6" width="9" height="3.4" rx="1.2" fill="url(#b-pt)"/>
-<ellipse class="bnz" cx="100" cy="75" rx="5" ry="1.8" fill="url(#b-cr)"/><path class="bdome" d="M95 75 q5 -9 10 0 Z"/><path class="bdhl" d="M97.4 72 q1 -2.6 2.4 -3.4"/>
-<g class="bdrop"><circle cx="97" cy="67" r=".9" style="--dx:-6px"/><circle cx="103" cy="66.4" r=".8" style="--dx:6px;animation-delay:.55s"/><circle cx="100" cy="65.6" r=".9" style="--dx:-2px;animation-delay:1.1s"/></g>
+<ellipse class="bnz" cx="100" cy="75" rx="5" ry="1.8" fill="url(#b-cr)"/><path class="bdome" d="M95 75 q5 -6 10 0 Z"/><g class="bjet"><path d="M98.4 74 Q99.2 62 99.5 55 h1 Q100.8 62 101.6 74 Z"/><ellipse cx="100" cy="55" rx="2.2" ry="1.3"/></g><path class="bdhl" d="M99.4 72 q.2 -8 .5 -14"/>
+<g class="bdrop">${[[-9, 18, 0], [8, 18, 0.3], [-5, 19, 0.6], [11, 17, 0.9], [-12, 17, 1.2], [4, 19, 1.5]].map(([dx, dy, d]) => `<circle cx="100" cy="55.5" r="${dx % 2 ? 0.8 : 1}" style="--dx:${dx}px;--dy:${dy}px;animation-delay:${d}s"/>`).join("")}</g>
 <g class="bfi"><rect x="98.3" y="148.4" width="3.4" height="1.4" rx=".5"/><rect x="97.2" y="149.8" width="5.6" height="7.6" rx="1.4"/><path d="M97.2 152.3 h5.6 M97.2 154.9 h5.6"/></g><circle class="led" cx="100" cy="163.6" r="1.5"/>
 ${WARN}</svg>`,
     generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
@@ -7972,8 +7972,9 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .w-fountain .brip ellipse{fill:none;stroke:#fff;stroke-opacity:.45;stroke-width:.5;opacity:0;transform-box:fill-box;transform-origin:center}
 .w-fountain .bflow{fill:none;stroke:#fff;stroke-opacity:0;stroke-width:.7;stroke-dasharray:3 5;transition:stroke-opacity .6s}
 .w-fountain .bdome{fill:var(--dc);fill-opacity:.65;opacity:0;transform-box:fill-box;transform-origin:center bottom;transition:opacity .4s}
-.w-fountain .bdhl{fill:none;stroke:#fff;stroke-opacity:.6;stroke-width:.6;stroke-linecap:round;opacity:0;transition:opacity .4s}
+.w-fountain .bdhl{fill:none;stroke:#fff;stroke-opacity:.35;stroke-width:.6;stroke-linecap:round;opacity:0;transition:opacity .4s}
 .w-fountain .bdrop circle{fill:var(--dc);opacity:0}
+.w-fountain .bjet{fill:var(--dc);fill-opacity:.7;opacity:0;transform-box:fill-box;transform-origin:center bottom;transition:opacity .4s}
 .w-fountain .bfi{transform-box:fill-box;transform-origin:center}
 /* Modus-LED: ruhiges Leuchten in der Modusfarbe, kein Blinken */
 .dv .w-fountain .led{fill:#5b6372;fill-opacity:.5;transition:fill .4s,fill-opacity .4s}
@@ -7982,10 +7983,11 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .m-normal.dv .w-feeder .fled,.m-smart.dv .w-feeder .fled{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
 .w-fountain .bfi rect,.w-fountain .bfi path{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.8;stroke-linejoin:round}
 /* Läuft: kleiner Sprudel wippt, Ringe laufen über die Schale, das Wasser fließt sanft über den Rand ab; aus/Pause = Wasser steht */
-.st-run .w-fountain .bdome,.st-run .w-fountain .bdhl{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
+.st-run .w-fountain .bdome,.st-run .w-fountain .bdhl,.st-run .w-fountain .bjet{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
 .anim.st-run .w-fountain .bdome{animation:dv-bob 2.4s ease-in-out infinite}
+.anim.st-run .w-fountain .bjet{animation:dv-jet2 1.8s ease-in-out infinite}
 .anim.st-run .w-fountain .brip ellipse{animation:dv-rip 3.3s ease-out infinite}
-.anim.st-run .w-fountain .bdrop circle{animation:dv-bdrop 1.6s ease-out infinite}
+.anim.st-run .w-fountain .bdrop circle{animation:dv-bdrop 1.8s cubic-bezier(.3,.1,.6,1) infinite}
 .anim.st-run .w-fountain .bflow{animation:dv-bflow 6s linear infinite}
 /* Wasser niedrig: Stand im Fenster sinkt, Ausrufezeichen; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
 .h-water .scene .wn{display:inline}
@@ -8030,7 +8032,8 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 @keyframes dv-fbowl{from{transform:translateY(15px)}to{transform:translateY(0)}}
 @keyframes dv-bob{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.2)}}
 @keyframes dv-rip{0%{opacity:.6;transform:scale(.4)}100%{opacity:0;transform:scale(4.2)}}
-@keyframes dv-bdrop{0%{opacity:0;transform:translate(0,5px)}40%{opacity:.9;transform:translate(calc(var(--dx,0) / 2),-3px)}100%{opacity:0;transform:translate(var(--dx,0),6px)}}
+@keyframes dv-bdrop{0%{opacity:0;transform:translate(0,0)}15%{opacity:.95}35%{transform:translate(calc(var(--dx,0) * .4),-4px)}90%{opacity:.8}100%{opacity:0;transform:translate(var(--dx,0),var(--dy,6px))}}
+@keyframes dv-jet2{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.86)}}
 @keyframes dv-bflow{to{stroke-dashoffset:-64}}
 @keyframes dv-fpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.18)}}
 @keyframes dv-pulse{0%{opacity:.7;transform:scale(.85)}100%{opacity:0;transform:scale(1.25)}}
