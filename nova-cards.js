@@ -7258,7 +7258,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-1", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
     coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-1", run: "Brüht", door: "Tür offen", phase: [], anims: ["tank", "beans", "descale"], drink: true },
     feeder: { label: "Futterautomat", icon: "mdi:bowl-mix-outline", color: "accent-1", run: "Füttert", door: "Deckel offen", phase: [], anims: ["food"], level: true, feed: true, mode: true, lvl: ["Füllstand", "Futter ausreichend", "Wenig Futter"], pick: "Portion" },
-    fountain: { label: "Trinkbrunnen", icon: "mdi:fountain", color: "accent-1", run: "Läuft", door: "Deckel offen", phase: [], anims: ["water", "filter"], level: true, nodone: true, mode: true, lvl: ["Wasserstand", "Wasser ok", "Wasser fehlt"] },
+    fountain: { label: "Trinkbrunnen", icon: "mdi:fountain", color: "accent-1", run: "Läuft", door: "Deckel offen", phase: [], anims: ["water", "filter"], level: true, nodone: true, mode: true, lvl: ["Wasserstand", "Wasser ok", "Wasser fehlt"], binEmpty: true, filter: true },
     generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
   };
   var typeOf = (c) => TYPES[c.device_type] ? c.device_type : "generic";
@@ -7327,11 +7327,11 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var SA = '<div class="ct sa"><div class="kv"><ha-icon icon="mdi:clock-start"></ha-icon><span class="k">Starten um</span><input type="time" aria-label="Startzeit"><div class="pill now">Sofort</div></div><div class="sah"></div></div>';
   var PICK = '<div class="ct pk"><div class="kv"><ha-icon icon="mdi:tune-variant"></ha-icon><span class="k"></span><div class="stp"><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div><span class="v"></span><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div></div></div></div>';
   var IC = { start: "mdi:play", pause: "mdi:pause", resume: "mdi:play-pause", stop: "mdi:stop" };
-  function levelOf(s) {
+  function levelOf(s, empty2) {
     if (!ok(s)) return null;
     const v = String(s.state).toLowerCase();
     if (NUMRE.test(v)) return Math.max(0, Math.min(1, +v / 100));
-    return ["on", "low", "niedrig"].includes(v) ? 0.12 : ["empty", "leer"].includes(v) ? 0 : null;
+    return ["on", "low", "niedrig"].includes(v) ? empty2 ? 0 : 0.12 : ["empty", "leer"].includes(v) ? 0 : null;
   }
   function levelText(s, L) {
     if (!ok(s)) return null;
@@ -8452,7 +8452,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         ["normal", "smart", "off"].forEach((k) => e.g.classList.toggle(`m-${k}`, k === md));
       }
       if (TY.level) {
-        const lv = levelOf(this._S(c.fill_level));
+        const lv = levelOf(this._S(c.fill_level), TY.binEmpty);
         e.g.style.setProperty(t === "feeder" ? "--fl" : "--wl", lv == null ? "" : lv.toFixed(2));
         e.g.classList.toggle("empty", lv === 0);
         e.g.classList.toggle("low", lv != null && lv > 0 && lv <= 0.2);
@@ -8468,9 +8468,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         e.sub.textContent = [pg && act ? pg : stx, p != null && act ? `${Math.round(p)} %` : ""].filter(Boolean).join(" · ");
         e.rm.textContent = rem != null ? fmtDur(rem) : "";
       } else {
-        const lt = TY.lvl ? levelText(this._S(c.fill_level), TY.lvl) : null;
+        const fp = TY.filter ? this._S(c.filter) : null, fd = TY.filter ? this._S(c.filter_days) : null;
+        const ft = ok(fp) && NUMRE.test(fp.state) ? `${Math.round(+fp.state)} %` : null;
+        const fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
+        const lt = ft ?? (TY.lvl ? levelText(this._S(c.fill_level), TY.lvl) : null);
         e.pg.textContent = TY.lvl ? lt ?? "" : pg || stx;
-        const phx = lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : "";
+        const phx = ft ? ["Filter", fdn != null ? `noch ${fdn} ${fdn === 1 ? "Tag" : "Tage"}` : ""].filter(Boolean).join(" · ") : lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : "";
         e.ph.hidden = !phx;
         e.ph.textContent = phx;
         e.rm.textContent = rem != null && cls !== "wait" ? `noch ${fmtDur(rem)}` : p != null && act ? `${Math.round(p)} %` : "";
@@ -8653,6 +8656,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     { name: "program", selector: ST },
     ...TYPES[t].drink ? [{ name: "drink", selector: ST }] : [],
     ...TYPES[t].level ? [{ name: "fill_level", selector: { entity: { domain: ["sensor", "binary_sensor", "number", "input_number"] } } }] : [],
+    ...TYPES[t].filter ? [g2({ name: "filter", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "filter_days", selector: { entity: { domain: ["sensor", "number", "input_number"] } } })] : [],
     ...TYPES[t].mode ? [{ name: "mode", selector: { entity: { domain: ["select", "input_select", "sensor", "switch", "input_boolean"] } } }] : [],
     ...TYPES[t].feed ? [g2({ name: "feed_count", selector: { entity: { domain: ["sensor", "counter", "number", "input_number"] } } }, NUM("feed_done_minutes"))] : [],
     g2({ name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "duration", selector: ST }),
@@ -8730,6 +8734,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     fill_level: "Füllstand",
     feed_count: "Fütterungen (Zähler)",
     mode: "Modus (LED)",
+    filter: "Filter (%)",
+    filter_days: "Filter: Resttage",
     feed_done_minutes: "„Fertig“ zeigen (Minuten)",
     phase: "Phase (optional)",
     phase_states: "Sonder-Zustände",
@@ -8794,6 +8800,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     progress: "Leer = aus Restzeit und Gesamtdauer berechnet",
     drink: "Leer = Programm. Erkennt Espresso, Kaffee, Cappuccino, Latte (Macchiato), Milch, Heißwasser – Kaffeefarbe, Milchschaum und Glas passen sich an",
     fill_level: "Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer",
+    filter: "Groß rechts neben dem Bild statt des Wasserstands, z. B. sensor.…_filter_percent",
+    filter_days: "Darunter „noch N Tage“, z. B. sensor.…_filter_days_remaining",
     mode: "z. B. select.trinkbrunnen_modus. LED: Smart grün, aus grau, sonst (Normal) blau. Leer = LED folgt dem Zustand. Farben per Theme: --nova-mode-normal-color / --nova-mode-smart-color",
     feed_count: "Für Geräte ohne Zustand „füttert“, z. B. sensor.futterautomat_times_dispensed: steigt der Wert, zeigt die Karte die Fütterung",
     feed_done_minutes: "So lange bleibt nach einer Fütterung „Fertig“ mit vollem Napf stehen. Leer = 10",

@@ -17,7 +17,7 @@ const TYPES = {
   airfryer: {label: 'Airfryer', icon: 'mdi:toaster-oven', color: 'accent-1', run: 'Gart', heat: 'Heizt vor', door: 'Schublade offen', phase: [], dview: true},
   coffee: {label: 'Kaffeemaschine', icon: 'mdi:coffee-maker-outline', color: 'accent-1', run: 'Brüht', door: 'Tür offen', phase: [], anims: ['tank', 'beans', 'descale'], drink: true},
   feeder: {label: 'Futterautomat', icon: 'mdi:bowl-mix-outline', color: 'accent-1', run: 'Füttert', door: 'Deckel offen', phase: [], anims: ['food'], level: true, feed: true, mode: true, lvl: ['Füllstand', 'Futter ausreichend', 'Wenig Futter'], pick: 'Portion'},
-  fountain: {label: 'Trinkbrunnen', icon: 'mdi:fountain', color: 'accent-1', run: 'Läuft', door: 'Deckel offen', phase: [], anims: ['water', 'filter'], level: true, nodone: true, mode: true, lvl: ['Wasserstand', 'Wasser ok', 'Wasser fehlt']},
+  fountain: {label: 'Trinkbrunnen', icon: 'mdi:fountain', color: 'accent-1', run: 'Läuft', door: 'Deckel offen', phase: [], anims: ['water', 'filter'], level: true, nodone: true, mode: true, lvl: ['Wasserstand', 'Wasser ok', 'Wasser fehlt'], binEmpty: true, filter: true},
   generic: {label: 'Gerät', icon: 'mdi:power-plug-outline', color: 'accent-1', run: 'Läuft', door: 'Tür offen', phase: []},
 };
 const typeOf = c => TYPES[c.device_type] ? c.device_type : 'generic';
@@ -71,11 +71,12 @@ const SA = '<div class="ct sa"><div class="kv"><ha-icon icon="mdi:clock-start"><
 const PICK = '<div class="ct pk"><div class="kv"><ha-icon icon="mdi:tune-variant"></ha-icon><span class="k"></span><div class="stp"><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div><span class="v"></span><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div></div></div></div>';
 const IC = {start: 'mdi:play', pause: 'mdi:pause', resume: 'mdi:play-pause', stop: 'mdi:stop'};
 // Füllstand 0…1 aus Prozent-Sensor oder binary_sensor bzw. Text (an/low = niedrig, empty = leer); null = unbekannt bzw. genug
-function levelOf(s) {
+// empty = „an“ heißt leer statt niedrig (z. B. Wasser fehlt beim Trinkbrunnen)
+function levelOf(s, empty) {
   if (!ok(s)) return null;
   const v = String(s.state).toLowerCase();
   if (NUMRE.test(v)) return Math.max(0, Math.min(1, +v / 100));
-  return ['on', 'low', 'niedrig'].includes(v) ? .12 : ['empty', 'leer'].includes(v) ? 0 : null;
+  return ['on', 'low', 'niedrig'].includes(v) ? (empty ? 0 : .12) : ['empty', 'leer'].includes(v) ? 0 : null;
 }
 // Füllstand als Hauptinfo: Prozent, sonst Text für ausreichend/niedrig (binary_sensor); null = keine Angabe
 function levelText(s, L) {
@@ -1109,7 +1110,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       ['normal', 'smart', 'off'].forEach(k => e.g.classList.toggle(`m-${k}`, k === md));
     }
     if (TY.level) {
-      const lv = levelOf(this._S(c.fill_level));
+      const lv = levelOf(this._S(c.fill_level), TY.binEmpty);
       e.g.style.setProperty(t === 'feeder' ? '--fl' : '--wl', lv == null ? '' : lv.toFixed(2));
       e.g.classList.toggle('empty', lv === 0);
       e.g.classList.toggle('low', lv != null && lv > 0 && lv <= .2);
@@ -1123,9 +1124,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.rm.textContent = rem != null ? fmtDur(rem) : '';
     } else {
       // Futterautomat/Trinkbrunnen: groß der Füll- bzw. Wasserstand statt Programm/Status (der steht schon im Kopf)
-      const lt = TY.lvl ? levelText(this._S(c.fill_level), TY.lvl) : null;
+      // Trinkbrunnen mit Filter-Sensor: Filter in % und Resttage statt Wasserstand
+      const fp = TY.filter ? this._S(c.filter) : null, fd = TY.filter ? this._S(c.filter_days) : null;
+      const ft = ok(fp) && NUMRE.test(fp.state) ? `${Math.round(+fp.state)} %` : null;
+      const fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
+      const lt = ft ?? (TY.lvl ? levelText(this._S(c.fill_level), TY.lvl) : null);
       e.pg.textContent = TY.lvl ? lt ?? '' : pg || stx;
-      const phx = lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : '';
+      const phx = ft ? ['Filter', fdn != null ? `noch ${fdn} ${fdn === 1 ? 'Tag' : 'Tage'}` : ''].filter(Boolean).join(' · ') : lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : '';
       e.ph.hidden = !phx; e.ph.textContent = phx;
       e.rm.textContent = rem != null && cls !== 'wait' ? `noch ${fmtDur(rem)}` : p != null && act ? `${Math.round(p)} %` : '';
       e.en.textContent = end != null ? `fertig um ${this._clock(end)}` : '';
@@ -1273,6 +1278,7 @@ const GPROG = t => [
   {name: 'program', selector: ST},
   ...(TYPES[t].drink ? [{name: 'drink', selector: ST}] : []),
   ...(TYPES[t].level ? [{name: 'fill_level', selector: {entity: {domain: ['sensor', 'binary_sensor', 'number', 'input_number']}}}] : []),
+  ...(TYPES[t].filter ? [g2({name: 'filter', selector: {entity: {domain: ['sensor', 'number', 'input_number']}}}, {name: 'filter_days', selector: {entity: {domain: ['sensor', 'number', 'input_number']}}})] : []),
   ...(TYPES[t].mode ? [{name: 'mode', selector: {entity: {domain: ['select', 'input_select', 'sensor', 'switch', 'input_boolean']}}}] : []),
   ...(TYPES[t].feed ? [g2({name: 'feed_count', selector: {entity: {domain: ['sensor', 'counter', 'number', 'input_number']}}}, NUM('feed_done_minutes'))] : []),
   g2({name: 'progress', selector: {entity: {domain: ['sensor', 'number', 'input_number']}}}, {name: 'duration', selector: ST}),
@@ -1321,7 +1327,7 @@ const GLOOK = t => [sel('layout', [['full', 'Voll'], ['compact', 'Kompakt (läuf
 const GACTS = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
 const PHASE_LBL = {dishwasher: 'Zustände „trocknet“ (Dampf statt Sprüharm)', washer: 'Zustände „schleudert“ (schnelle Trommel)'};
 const GLABELS = {...BASE_LABELS, device_type: 'Gerätetyp', entity: 'Status', power: 'Ein/Aus-Schalter', program: 'Programm', progress: 'Fortschritt (%)', duration: 'Gesamtdauer',
-  remaining: 'Restzeit', end_time: 'Endzeit', drink: 'Getränk (optional)', fill_level: 'Füllstand', feed_count: 'Fütterungen (Zähler)', mode: 'Modus (LED)', feed_done_minutes: '„Fertig“ zeigen (Minuten)', phase: 'Phase (optional)', phase_states: 'Sonder-Zustände', display: 'Darstellung', step: 'Schrittweite', show: 'Anzeigen',
+  remaining: 'Restzeit', end_time: 'Endzeit', drink: 'Getränk (optional)', fill_level: 'Füllstand', feed_count: 'Fütterungen (Zähler)', mode: 'Modus (LED)', filter: 'Filter (%)', filter_days: 'Filter: Resttage', feed_done_minutes: '„Fertig“ zeigen (Minuten)', phase: 'Phase (optional)', phase_states: 'Sonder-Zustände', display: 'Darstellung', step: 'Schrittweite', show: 'Anzeigen',
   start: 'Start', start_name: 'Text auf dem Start-Knopf', start_option: 'Programm für den Start', pause: 'Pause', resume: 'Fortsetzen', resume_with_start: 'Fortsetzen nutzt Start-Knopf', stop: 'Stopp',
   start_confirm: 'Rückfrage vor dem Start', start_at: '„Starten um“ (Uhrzeit wählen)', stop_confirm: 'Rückfrage vor dem Stopp', remote_start: 'Fernstart erlaubt', remote_start_text: 'Hinweis, wenn Fernstart aus',
   door: 'Tür / Schublade', door_anim: 'Tür im Bild zeigen', anim: 'Animation im Bild', door_text: 'Hinweis, wenn offen', connection: 'Verbindung', connection_text: 'Hinweis ohne Verbindung', message: 'Meldung', level: 'Stufe', reset: 'Reset-Knopf im Hinweis', reset_name: 'Text auf dem Reset-Knopf', start_option_name: 'Name der Auswahl',
@@ -1337,6 +1343,8 @@ const GHELPERS = {
   progress: 'Leer = aus Restzeit und Gesamtdauer berechnet',
   drink: 'Leer = Programm. Erkennt Espresso, Kaffee, Cappuccino, Latte (Macchiato), Milch, Heißwasser – Kaffeefarbe, Milchschaum und Glas passen sich an',
   fill_level: 'Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer',
+  filter: 'Groß rechts neben dem Bild statt des Wasserstands, z. B. sensor.…_filter_percent',
+  filter_days: 'Darunter „noch N Tage“, z. B. sensor.…_filter_days_remaining',
   mode: 'z. B. select.trinkbrunnen_modus. LED: Smart grün, aus grau, sonst (Normal) blau. Leer = LED folgt dem Zustand. Farben per Theme: --nova-mode-normal-color / --nova-mode-smart-color',
   feed_count: 'Für Geräte ohne Zustand „füttert“, z. B. sensor.futterautomat_times_dispensed: steigt der Wert, zeigt die Karte die Fütterung',
   feed_done_minutes: 'So lange bleibt nach einer Fütterung „Fertig“ mit vollem Napf stehen. Leer = 10',
