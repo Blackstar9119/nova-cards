@@ -7971,8 +7971,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", alt: "Trocknet", door: "Tür offen", phase: ["drying", "dry", "trocknen", "ending"], dview: true },
     airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-1", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
     coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-1", run: "Brüht", door: "Tür offen", phase: [], anims: ["tank", "beans", "descale"], drink: true },
-    feeder: { label: "Futterautomat", icon: "mdi:bowl-mix-outline", color: "accent-1", run: "Füttert", door: "Deckel offen", phase: [], anims: ["food"], level: true, feed: true },
-    fountain: { label: "Trinkbrunnen", icon: "mdi:fountain", color: "accent-1", run: "Läuft", door: "Deckel offen", phase: [], anims: ["water", "filter"], level: true, nodone: true, mode: true },
+    feeder: { label: "Futterautomat", icon: "mdi:bowl-mix-outline", color: "accent-1", run: "Füttert", door: "Deckel offen", phase: [], anims: ["food"], level: true, feed: true, mode: true, lvl: ["Füllstand", "Futter ausreichend", "Wenig Futter"], pick: "Portion" },
+    fountain: { label: "Trinkbrunnen", icon: "mdi:fountain", color: "accent-1", run: "Läuft", door: "Deckel offen", phase: [], anims: ["water", "filter"], level: true, nodone: true, mode: true, lvl: ["Wasserstand", "Wasser ok", "Wasser fehlt"], binEmpty: true, filter: true },
     generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
   };
   var typeOf = (c) => TYPES2[c.device_type] ? c.device_type : "generic";
@@ -8039,12 +8039,19 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     return m < 1 ? "< 1 min" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h`;
   };
   var SA = '<div class="ct sa"><div class="kv"><ha-icon icon="mdi:clock-start"></ha-icon><span class="k">Starten um</span><input type="time" aria-label="Startzeit"><div class="pill now">Sofort</div></div><div class="sah"></div></div>';
+  var PICK = '<div class="ct pk"><div class="kv"><ha-icon icon="mdi:tune-variant"></ha-icon><span class="k"></span><div class="stp"><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div><span class="v"></span><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div></div></div></div>';
   var IC = { start: "mdi:play", pause: "mdi:pause", resume: "mdi:play-pause", stop: "mdi:stop" };
-  function levelOf(s) {
+  function levelOf(s, empty2) {
     if (!ok(s)) return null;
     const v = String(s.state).toLowerCase();
     if (NUMRE.test(v)) return Math.max(0, Math.min(1, +v / 100));
-    return ["on", "low", "niedrig"].includes(v) ? 0.12 : ["empty", "leer"].includes(v) ? 0 : null;
+    return ["on", "low", "niedrig"].includes(v) ? empty2 ? 0 : 0.12 : ["empty", "leer"].includes(v) ? 0 : null;
+  }
+  function levelText(s, L) {
+    if (!ok(s)) return null;
+    const v = String(s.state).toLowerCase();
+    if (NUMRE.test(v)) return `${Math.round(+v)} %`;
+    return ["on", "low", "niedrig", "empty", "leer"].includes(v) ? L[2] : ["off", "ok", "normal", "full", "voll"].includes(v) ? L[1] : null;
   }
   var DRINKS = [
     ["water", /hot water|hei(ß|ss)wasser|\btee\b|\btea\b/, "Wasser"],
@@ -8367,7 +8374,8 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .ab.dis{box-shadow:none}
 .ab:active{transform:scale(.95)}
 .als:empty{display:none}
-.dv .al[data-e]{cursor:pointer}.dv .al.hit{background:color-mix(in srgb,var(--c) 32%,transparent);font-weight:600}
+.dv .al[data-e]{cursor:pointer}.dv .al .alr{margin-left:auto;flex:none;padding:5px 12px;border-radius:12px;background:rgba(255,255,255,.16);font-weight:600;cursor:pointer}.dv .al .alr:active{transform:scale(.95)}
+.pk .hb.dis{opacity:.35;pointer-events:none}.dv .al.hit{background:color-mix(in srgb,var(--c) 32%,transparent);font-weight:600}
 /* Kompakt: eine Zeile */
 .g.dv.cmp{gap:8px;padding:10px 14px}
 .cmp .hd .ic{width:40px;height:40px;position:relative}
@@ -8659,7 +8667,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .anim.st-run .w-feeder .fbw{animation:dv-fbowl 8s ease-out both}
 .anim.st-run .w-feeder .fled{animation:dv-blinko 1.4s ease-in-out infinite}
 /* Futter leer / Störung: Fenster leer, LED blinkt rot */
-.empty .w-feeder .fled,.h-food .w-feeder .fled,.st-err .w-feeder .fled{fill:var(--nv-error);fill-opacity:1}
+.g.dv.empty .w-feeder .fled,.g.dv.h-food .w-feeder .fled,.g.dv.st-err .w-feeder .fled{fill:var(--nv-error);fill-opacity:1}
 .anim.empty .w-feeder .fled,.anim.h-food .w-feeder .fled,.anim.st-err .w-feeder .fled{animation:dv-blinko 1s ease-in-out infinite}
 .empty .scene .wn,.low .scene .wn{display:inline}
 /* Trinkbrunnen im Nova-Zeichenstil: Wasserstand im Sichtfenster --wl, läuft nie „fertig“ */
@@ -8682,7 +8690,8 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 /* Modus-LED: ruhiges Leuchten in der Modusfarbe, kein Blinken */
 .dv .w-fountain .led{fill:#5b6372;fill-opacity:.5;transition:fill .4s,fill-opacity .4s}
 .m-normal.dv .w-fountain .led,.m-smart.dv .w-fountain .led{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
-.m-normal{--mc:var(--nova-fountain-normal-color,var(--nv-a1))}.m-smart{--mc:var(--nova-fountain-smart-color,var(--nv-a4))}
+.m-normal{--mc:var(--nova-mode-normal-color,var(--nv-a1))}.m-smart{--mc:var(--nova-mode-smart-color,var(--nv-a4))}
+.m-normal.dv .w-feeder .fled,.m-smart.dv .w-feeder .fled{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
 .w-fountain .bfi rect,.w-fountain .bfi path{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.8;stroke-linejoin:round}
 /* Läuft: kleiner Sprudel wippt, Ringe laufen über die Schale, das Wasser fließt sanft über den Rand ab; aus/Pause = Wasser steht */
 .st-run .w-fountain .bdome,.st-run .w-fountain .bdhl{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
@@ -8818,6 +8827,10 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
     }
     // Zustandsgruppe (SORDER) oder off
     _cls() {
+      const k = this._cls0(), c = this._c, pw = this._S(c.power);
+      return k === "off" && TYPES2[typeOf(c)].nodone && pw?.state === "on" && !c.paused_states ? "pause" : k;
+    }
+    _cls0() {
       const c = this._c, s = this._S(c.entity), fd = this._feed();
       if (fd) return fd;
       if (!s) return "off";
@@ -8857,7 +8870,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 <div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--hc:${roleVars(c.heat_color || "accent-2").c}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ""}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
 ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
-<div class="ctls"></div>${c.start_at === "home_connect" && c.start ? SA : ""}<div class="acts"></div>`}<div class="als"></div></div>`;
+<div class="ctls"></div>${c.start_at === "home_connect" && c.start ? SA : ""}${["select", "input_select"].includes(dom(c.start)) && !c.start_option ? PICK : ""}<div class="acts"></div>`}<div class="als"></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
         g: q(".g"),
@@ -8881,12 +8894,20 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         sa: q(".sa"),
         sat: q(".sa input"),
         san: q(".sa .now"),
-        sah: q(".sa .sah")
+        sah: q(".sa .sah"),
+        pk: q(".pk"),
+        pkv: q(".pk .v"),
+        pkk: q(".pk .k")
       };
       const e = this._e;
       press(e.ic, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
       if (cmp) press(e.name.parentElement, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
       e.als.addEventListener("click", (ev) => {
+        const r2 = ev.target.closest?.(".alr");
+        if (r2) {
+          const id = r2.dataset.r, d = dom(id);
+          return this._call(d, ["button", "input_button"].includes(d) ? "press" : ["script", "scene"].includes(d) ? "turn_on" : "turn_off", id, {}, r2.textContent);
+        }
         const el2 = ev.target.closest?.(".al[data-e]");
         if (el2) this._act({ entity: el2.dataset.e }, "tap", true);
       });
@@ -8901,6 +8922,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           this._at = null;
           this._update();
         }, isolate: true });
+      }
+      if (e.pk) {
+        press(e.pk.querySelector(".mi"), { tap: () => this._pick(-1), isolate: true });
+        press(e.pk.querySelector(".pl"), { tap: () => this._pick(1), isolate: true });
       }
       if (e.acts) {
         this._ab = {};
@@ -8988,6 +9013,20 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._update();
     }
     // Start über ein Select (Home Connect: „Aktives Programm“ setzen) – taugt nicht zum Fortsetzen
+    // Optionen des Start-Selects ohne leere Einträge; gewählte Option (in der Karte gemerkt, sonst der aktuelle Wert bzw. die erste)
+    _pickOpts() {
+      return (this._S(this._c.start)?.attributes.options || []).filter((x) => x !== "" && x != null);
+    }
+    _picked() {
+      const o = this._pickOpts(), cur2 = this._S(this._c.start)?.state;
+      return o.includes(this._pk) ? this._pk : o.includes(cur2) ? cur2 : o[0];
+    }
+    _pick(d) {
+      const o = this._pickOpts(), i = o.indexOf(this._picked());
+      if (!o.length) return;
+      this._pk = o[Math.max(0, Math.min(o.length - 1, i + d))];
+      this._update();
+    }
     _selStart() {
       return ["select", "input_select"].includes(dom(this._c.start));
     }
@@ -9017,8 +9056,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       if (at && !this._h.entities?.[c.start]?.device_id) return "Starten um: Gerät der Start-Entität nicht gefunden";
       if (c.remote_start && rs && rs.state !== "on") return c.remote_start_text || "Fernstart ist aus – an der Maschine aktivieren";
       if (!s || s.state === "unavailable") return "Start gerade nicht möglich (Entität nicht verfügbar)";
+      if (this._selStart() && !c.start_option) return this._picked() ? null : "Start: keine Auswahl möglich";
       if (this._selStart()) {
-        if (!c.start_option) return "Start: Programm-Quelle fehlt (Editor → Bedienung)";
         const o = this._S(c.start_option);
         if (!ok(o)) return "Erst ein Programm wählen";
         if (!(s.attributes.options || []).includes(o.state)) return `Programm „${fmtOpt(this._h, o, o.state)}“ kann nicht gestartet werden`;
@@ -9038,7 +9077,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         this._at = null;
         return Promise.resolve(this._h.callService("home_connect", "start_selected_program", { device_id: this._h.entities[c.start].device_id, b_s_h_common_option_finish_in_relative: fin })).catch((err) => this._flash(`${what}: ${err?.message || err}`)).finally(() => this._update());
       }
-      if (d === "select" || d === "input_select") return this._call(d, "select_option", id, { option: this._S(c.start_option)?.state }, what);
+      if (d === "select" || d === "input_select") return this._call(d, "select_option", id, { option: c.start_option ? this._S(c.start_option)?.state : this._picked() }, what);
       if (d === "button" || d === "input_button") return this._call(d, "press", id, {}, what);
       if (d === "script" || d === "scene") return this._call(d, "turn_on", id, {}, what);
       if (d === "switch" || d === "input_boolean") return this._call(d, k === "stop" || k === "pause" ? "turn_off" : "turn_on", id, {}, what);
@@ -9123,11 +9162,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       if (TY.drink) this._coffee(cls, p, TY);
       if (TY.mode) {
         const m = this._S(c.mode), v = ok(m) ? String(m.state).toLowerCase() : "";
-        const md = !ok(m) ? cls === "run" ? "normal" : "off" : /smart|intelligen|auto|eco|spar/.test(v) ? "smart" : ["off", "aus", "standby"].includes(v) ? "off" : "normal";
+        const md = cls === "off" ? "off" : !ok(m) ? cls === "run" ? "normal" : "off" : /smart|intelligen|auto|eco|spar/.test(v) ? "smart" : ["off", "aus", "standby"].includes(v) ? "off" : "normal";
         ["normal", "smart", "off"].forEach((k) => e.g.classList.toggle(`m-${k}`, k === md));
       }
       if (TY.level) {
-        const lv = levelOf(this._S(c.fill_level));
+        const lv = levelOf(this._S(c.fill_level), TY.binEmpty);
         e.g.style.setProperty(t === "feeder" ? "--fl" : "--wl", lv == null ? "" : lv.toFixed(2));
         e.g.classList.toggle("empty", lv === 0);
         e.g.classList.toggle("low", lv != null && lv > 0 && lv <= 0.2);
@@ -9143,8 +9182,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         e.sub.textContent = [pg && act ? pg : stx, p != null && act ? `${Math.round(p)} %` : ""].filter(Boolean).join(" · ");
         e.rm.textContent = rem != null ? fmtDur(rem) : "";
       } else {
-        e.pg.textContent = pg || stx;
-        const phx = c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : "";
+        const fp = TY.filter ? this._S(c.filter) : null, fd = TY.filter ? this._S(c.filter_days) : null;
+        const ft = ok(fp) && NUMRE.test(fp.state) ? `${Math.round(+fp.state)} %` : null;
+        const fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
+        const lt = ft ?? (TY.lvl ? levelText(this._S(c.fill_level), TY.lvl) : null);
+        e.pg.textContent = TY.lvl ? lt ?? "" : pg || stx;
+        const phx = ft ? ["Filter", fdn != null ? `noch ${fdn} ${fdn === 1 ? "Tag" : "Tage"}` : ""].filter(Boolean).join(" · ") : lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : "";
         e.ph.hidden = !phx;
         e.ph.textContent = phx;
         e.rm.textContent = rem != null && cls !== "wait" ? `noch ${fmtDur(rem)}` : p != null && act ? `${Math.round(p)} %` : "";
@@ -9225,6 +9268,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const at = this._atCalc();
       b.start.lastChild.textContent = at && !at.err ? `${c.start_name || "Start"} um ${this._clock(at.start.getTime())}` : c.start_name || "Start";
       const e = this._e;
+      if (e.pk) {
+        const v = this._picked(), o = this._pickOpts(), i = o.indexOf(v), s = this._S(c.start);
+        e.pk.hidden = act || !v;
+        e.pkk.textContent = c.start_option_name || TYPES2[typeOf(c)].pick || "Auswahl";
+        e.pkv.textContent = v && s ? fmtOpt(this._h, s, v) : "";
+        e.pk.querySelector(".mi").classList.toggle("dis", i <= 0);
+        e.pk.querySelector(".pl").classList.toggle("dis", i >= o.length - 1);
+      }
       if (e.sa) {
         e.sa.hidden = act;
         if (e.sat !== this.shadowRoot.activeElement) e.sat.value = this._at || "";
@@ -9254,7 +9305,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     }
     _alerts(cls, stx) {
       const c = this._c, h = this._h, t = typeOf(c), TY = TYPES2[t], g = this._e.g, out = [], on = /* @__PURE__ */ new Set();
-      const add = (lvl, ic, msg, e, hit) => out.push(`<div class="al ${lvl}${hit ? " hit" : ""}"${e ? ` data-e="${esc(e)}"` : ""}><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span></div>`);
+      const add = (lvl, ic, msg, e, hit, r) => out.push(`<div class="al ${lvl}${hit ? " hit" : ""}"${e ? ` data-e="${esc(e)}"` : ""}><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span>${r && ok(this._S(r.id)) || r && dom(r.id) === "button" ? `<span class="alr" data-r="${esc(r.id)}">${esc(r.name)}</span>` : ""}</div>`);
       if (this._msg) add("error", "mdi:alert-circle-outline", this._msg);
       if (cls === "err") add("error", "mdi:alert-circle-outline", stx, c.entity, true);
       const cn = this._S(c.connection);
@@ -9277,7 +9328,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           a.icon || (H && an !== "warning" ? H[2] : s?.attributes.icon) || "mdi:information-outline",
           a.message || H && H[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`,
           a.entity,
-          !!an
+          !!an,
+          a.reset && { id: a.reset, name: a.reset_name || "Zurücksetzen" }
         );
       });
       Object.keys(HANIM).forEach((k) => g.classList.toggle(`h-${k}`, on.has(k)));
@@ -9318,6 +9370,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     { name: "program", selector: ST },
     ...TYPES2[t].drink ? [{ name: "drink", selector: ST }] : [],
     ...TYPES2[t].level ? [{ name: "fill_level", selector: { entity: { domain: ["sensor", "binary_sensor", "number", "input_number"] } } }] : [],
+    ...TYPES2[t].filter ? [g2({ name: "filter", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "filter_days", selector: { entity: { domain: ["sensor", "number", "input_number"] } } })] : [],
     ...TYPES2[t].mode ? [{ name: "mode", selector: { entity: { domain: ["select", "input_select", "sensor", "switch", "input_boolean"] } } }] : [],
     ...TYPES2[t].feed ? [g2({ name: "feed_count", selector: { entity: { domain: ["sensor", "counter", "number", "input_number"] } } }, NUM("feed_done_minutes"))] : [],
     g2({ name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "duration", selector: ST }),
@@ -9356,7 +9409,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     g2({ name: "message", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
     g2({ name: "state", selector: T }, { name: "state_not", selector: T }),
     g2(NUM("above"), NUM("below")),
-    sel("level", [["warning", "Warnung"], ["error", "Fehler"], ["info", "Info"]])
+    sel("level", [["warning", "Warnung"], ["error", "Fehler"], ["info", "Info"]]),
+    g2({ name: "reset", selector: BTN }, { name: "reset_name", selector: T })
   ];
   var GSTATE = [
     { name: "running_states", selector: { text: { multiple: true } } },
@@ -9394,6 +9448,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     fill_level: "Füllstand",
     feed_count: "Fütterungen (Zähler)",
     mode: "Modus (LED)",
+    filter: "Filter (%)",
+    filter_days: "Filter: Resttage",
     feed_done_minutes: "„Fertig“ zeigen (Minuten)",
     phase: "Phase (optional)",
     phase_states: "Sonder-Zustände",
@@ -9420,6 +9476,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     connection_text: "Hinweis ohne Verbindung",
     message: "Meldung",
     level: "Stufe",
+    reset: "Reset-Knopf im Hinweis",
+    reset_name: "Text auf dem Reset-Knopf",
+    start_option_name: "Name der Auswahl",
     running_states: "Zustände „läuft“",
     paused_states: "Zustände „pausiert“",
     waiting_states: "Zustände „startet später“",
@@ -9455,7 +9514,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     progress: "Leer = aus Restzeit und Gesamtdauer berechnet",
     drink: "Leer = Programm. Erkennt Espresso, Kaffee, Cappuccino, Latte (Macchiato), Milch, Heißwasser – Kaffeefarbe, Milchschaum und Glas passen sich an",
     fill_level: "Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer",
-    mode: "z. B. select.trinkbrunnen_modus. LED: Smart grün, aus grau, sonst (Normal) blau. Leer = LED folgt dem Zustand. Farben per Theme: --nova-fountain-normal-color / --nova-fountain-smart-color",
+    filter: "Groß rechts neben dem Bild statt des Wasserstands, z. B. sensor.…_filter_percent",
+    filter_days: "Darunter „noch N Tage“, z. B. sensor.…_filter_days_remaining",
+    mode: "z. B. select.trinkbrunnen_modus. LED: Smart grün, aus grau, sonst (Normal) blau. Leer = LED folgt dem Zustand. Farben per Theme: --nova-mode-normal-color / --nova-mode-smart-color",
     feed_count: "Für Geräte ohne Zustand „füttert“, z. B. sensor.futterautomat_times_dispensed: steigt der Wert, zeigt die Karte die Fütterung",
     feed_done_minutes: "So lange bleibt nach einer Fütterung „Fertig“ mit vollem Napf stehen. Leer = 10",
     duration: "Für den Fortschritt ohne Fortschritts-Sensor und für „Starten um“ (Programmdauer vor dem Start)",
@@ -9488,6 +9549,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     color: "Farbrolle aus dem Theme (Fortschritt, Start-Knopf, Animation)",
     message: "Leer = Name: Zustand",
     state: "Hinweis bei diesem Zustand (mehrere mit Komma)",
+    reset: "z. B. button.…_reset_filter – erscheint rechts im Hinweis. Schalter werden ausgeschaltet",
+    start_option_name: "Leer = „Portion“ (Futterautomat) bzw. „Auswahl“",
     state_not: "Hinweis bei jedem Zustand außer diesem, z. B. 0 bei einem Fehlercode"
   };
   var gvis = (c) => `${typeOf(c)}|${["select", "input_select"].includes(dom(c.start))}|${!c.resume}`;
