@@ -8588,11 +8588,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 <rect class="tbh" x="44" y="116.8" width="52" height="1" rx=".5"/><rect class="tsc" x="45" y="119.5" width="50" height="20" rx="2.5"/>
 <text class="tt" x="48.5" y="132.5"></text><rect class="tbar" x="70" y="125" width="22.5" height="2" rx="1"/><rect class="tfill" x="70" y="125" width="0" height="2" rx="1"/>
 <text class="ts" x="70" y="133.5"></text><path class="tgl" d="M47 120 h14 l-6 19 h-8 z"/></g>
-<g class="bdg" transform="translate(74 172)"><circle class="bc" r="9.5"/>
+<g class="bpos"><g class="bdg"><circle class="bc" r="9.5"/>
 <path class="b-ok" d="M-4.2 0.2 l2.9 2.9 l5.6 -6"/>
 <g class="b-wn"><path d="M0 -5.6 l5.6 9.7 h-11.2 z"/><rect x="-.65" y="-2.4" width="1.3" height="3.6" rx=".65"/><circle cx="0" cy="2.6" r=".8"/></g>
 <g class="b-tp"><rect x="-1.6" y="-6" width="3.2" height="8" rx="1.6"/><circle cx="0" cy="3.4" r="2.8"/></g>
-<g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g>
+<g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g></g>
 </svg>`;
   var PCSS3 = `
 .g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
@@ -8703,7 +8703,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .scene .b-ok{fill:none;stroke:var(--dc-fg);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14}
 .scene .b-wn path{fill:#fff}.scene .b-wn rect,.scene .b-wn circle{fill:var(--bc)}
 .scene .b-tp,.scene .b-fn{fill:#fff}
-.scene .bdg{transform-box:fill-box}
+.scene .bdg{transform-box:fill-box;transform-origin:center}
+/* Badge-Stelle: Warnungen oben links im Innenraum, Fertig-Haken unten rechts nach der gemeinsamen Regel badgeAt() aus
+   shared/scene.js (Gehäuseecke 216/292, u = 1,3 → Mitte 190/242,6, Radius 15). Eigene Kopie, solange die Drucker-Card scene.js nicht nutzt. */
+.scene .bpos{transform:translate(74px,172px)}.b-ok .scene .bpos{transform:translate(190px,242.6px) scale(1.574)}
 .b-ok .scene .bdg,.b-wn .scene .bdg,.b-tp .scene .bdg,.b-fn .scene .bdg{opacity:1}
 .b-ok .scene .bc,.b-ok .scene .b-ok,.b-wn .scene .bc,.b-wn .scene .b-wn,.b-tp .scene .bc,.b-tp .scene .b-tp,.b-fn .scene .bc,.b-fn .scene .b-fn{display:inline}
 .b-wn .scene,.b-tp .scene,.b-fn .scene{--bc:var(--nv-warn)}.bad .scene{--bc:var(--nv-error)}
@@ -8772,7 +8775,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 @keyframes pr-wisp{0%{opacity:0;transform:translateY(6px)}40%{opacity:.7}100%{opacity:0;transform:translateY(-14px)}}
 @keyframes pr-glare{from{transform:translateX(0)}to{transform:translateX(70px)}}
 @keyframes pr-check{from{stroke-dashoffset:14}to{stroke-dashoffset:0}}
-@keyframes pr-pop{0%{transform:translate(74px,172px) scale(.3)}70%{transform:translate(74px,172px) scale(1.15)}100%{transform:translate(74px,172px) scale(1)}}
+@keyframes pr-pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 @keyframes pr-throb{0%,100%{opacity:1}50%{opacity:.45}}
 @keyframes pr-lvl{0%,100%{transform:translateX(-51px)}20%{transform:translateX(-27px)}40%{transform:translateX(-3px)}60%{transform:translateX(21px)}80%{transform:translateX(45px)}}
 @keyframes pr-tap{0%,60%,100%{transform:translateY(0)}75%{transform:translateY(4px)}}
