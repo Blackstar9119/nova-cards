@@ -7392,6 +7392,21 @@ ${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" 
     const x = 49 + i * 37 % 103, y = 67 + i * 53 % 94;
     return `<circle cx="${x}" cy="${y}" r="${(0.35 + i % 4 * 0.18).toFixed(2)}"/>`;
   }).join("");
+  function kibble(x0, x1, y1, top, rMin, rMax, seed) {
+    let q = seed;
+    const rnd = () => (q = q * 16807 % 2147483647) / 2147483647, out = [];
+    for (let y = Math.min(...[x0, (x0 + x1) / 2, x1].map(top)) - 2; y < y1 + 3; y += 2.6 + rMax * 0.55) {
+      for (let x = x0 - 1 + rnd() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd() * rMax * 0.6) {
+        const r = rMin + rnd() * (rMax - rMin), cx = x + (rnd() - 0.5) * 1.6, cy = y + (rnd() - 0.5) * 1.8;
+        if (cy < top(cx) + r * 0.2 || rnd() < 0.1) continue;
+        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f = (n) => n.toFixed(1);
+        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f(cx)} ${f(cy)})"><path d="M${f(cx - a[0])} ${f(cy)}Q${f(cx - a[0])} ${f(cy - a[1])} ${f(cx)} ${f(cy - a[1])}Q${f(cx + a[2])} ${f(cy - a[1])} ${f(cx + a[2])} ${f(cy)}Q${f(cx + a[2])} ${f(cy + a[3])} ${f(cx)} ${f(cy + a[3])}Q${f(cx - a[0])} ${f(cy + a[3])} ${f(cx - a[0])} ${f(cy)}Z"/><ellipse cx="${f(cx - r * 0.3)}" cy="${f(cy - r * 0.38)}" rx="${f(r * 0.38)}" ry="${f(r * 0.24)}"/></g>`);
+      }
+    }
+    return out.join("");
+  }
+  var KIB_BIN = kibble(64, 136, 124, (x) => 45 + 2.4 * Math.sin((x - 64) / 9), 2.2, 3.6, 7);
+  var KIB_BOWL = kibble(62, 138, 178, (x) => 174.5 - 15 * Math.max(0, 1 - ((x - 100) / 38) ** 2), 1.7, 2.7, 11);
   var SV = {
     washer: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("w")}
 <radialGradient id="w-dr" cx=".42" cy=".35" r=".75"><stop offset="0" stop-color="#5a6479"/><stop offset=".6" stop-color="#2c3342"/><stop offset="1" stop-color="#141821"/></radialGradient>
@@ -7552,9 +7567,9 @@ ${doneAt(150, 188)}${WARN}</svg>`,
     // Futterautomat im Nova-Zeichenstil: Säule mit Deckel, Sichtfenster mit Trockenfutter (Füllstand), Status-LED, Ausgabeschacht
     // mit Chromlippe, davor ein Edelstahlnapf
     feeder: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("f")}
-<pattern id="f-kb" width="24" height="22.8" patternUnits="userSpaceOnUse"><rect class="fk0" width="24" height="22.8"/><path class="fk4" d="M-2.7 1.9Q-2.7 -1.0 -0.0 -1.0Q2.4 -1.0 2.4 1.9Q2.4 4.8 -0.0 4.8Q-2.7 4.8 -2.7 1.9Z"/><circle class="fkh" cx="-1.0" cy="0.9" r="0.7"/><path class="fk4" d="M-2.7 24.7Q-2.7 21.8 -0.0 21.8Q2.4 21.8 2.4 24.7Q2.4 27.6 -0.0 27.6Q-2.7 27.6 -2.7 24.7Z"/><circle class="fkh" cx="-1.0" cy="23.7" r="0.7"/><path class="fk4" d="M21.3 1.9Q21.3 -1.0 24.0 -1.0Q26.4 -1.0 26.4 1.9Q26.4 4.8 24.0 4.8Q21.3 4.8 21.3 1.9Z"/><circle class="fkh" cx="23.0" cy="0.9" r="0.7"/><path class="fk4" d="M21.3 24.7Q21.3 21.8 24.0 21.8Q26.4 21.8 26.4 24.7Q26.4 27.6 24.0 27.6Q21.3 27.6 21.3 24.7Z"/><circle class="fkh" cx="23.0" cy="23.7" r="0.7"/><path class="fk4" d="M2.7 2.0Q2.7 0.1 4.8 0.1Q7.2 0.1 7.2 2.0Q7.2 4.3 4.8 4.3Q2.7 4.3 2.7 2.0Z"/><circle class="fkh" cx="4.0" cy="1.1" r="0.6"/><path class="fk4" d="M2.7 24.8Q2.7 22.9 4.8 22.9Q7.2 22.9 7.2 24.8Q7.2 27.1 4.8 27.1Q2.7 27.1 2.7 24.8Z"/><circle class="fkh" cx="4.0" cy="23.9" r="0.6"/><path class="fk2" d="M6.4 2.3Q6.4 -0.7 9.1 -0.7Q11.5 -0.7 11.5 2.3Q11.5 4.6 9.1 4.6Q6.4 4.6 6.4 2.3Z"/><circle class="fkh" cx="8.2" cy="1.2" r="0.7"/><path class="fk2" d="M6.4 25.1Q6.4 22.1 9.1 22.1Q11.5 22.1 11.5 25.1Q11.5 27.4 9.1 27.4Q6.4 27.4 6.4 25.1Z"/><circle class="fkh" cx="8.2" cy="24.0" r="0.7"/><path class="fk3" d="M12.3 2.0Q12.3 -0.9 14.8 -0.9Q17.4 -0.9 17.4 2.0Q17.4 4.7 14.8 4.7Q12.3 4.7 12.3 2.0Z"/><circle class="fkh" cx="13.9" cy="1.0" r="0.7"/><path class="fk3" d="M12.3 24.8Q12.3 21.9 14.8 21.9Q17.4 21.9 17.4 24.8Q17.4 27.5 14.8 27.5Q12.3 27.5 12.3 24.8Z"/><circle class="fkh" cx="13.9" cy="23.8" r="0.7"/><path class="fk3" d="M16.9 2.0Q16.9 -0.4 19.2 -0.4Q21.9 -0.4 21.9 2.0Q21.9 4.1 19.2 4.1Q16.9 4.1 16.9 2.0Z"/><circle class="fkh" cx="18.4" cy="1.1" r="0.6"/><path class="fk3" d="M16.9 24.8Q16.9 22.4 19.2 22.4Q21.9 22.4 21.9 24.8Q21.9 26.9 19.2 26.9Q16.9 26.9 16.9 24.8Z"/><circle class="fkh" cx="18.4" cy="23.9" r="0.6"/><path class="fk1" d="M0.1 5.9Q0.1 3.3 2.2 3.3Q4.5 3.3 4.5 5.9Q4.5 8.6 2.2 8.6Q0.1 8.6 0.1 5.9Z"/><circle class="fkh" cx="1.3" cy="4.9" r="0.6"/><path class="fk1" d="M24.1 5.9Q24.1 3.3 26.2 3.3Q28.5 3.3 28.5 5.9Q28.5 8.6 26.2 8.6Q24.1 8.6 24.1 5.9Z"/><circle class="fkh" cx="25.3" cy="4.9" r="0.6"/><path class="fk1" d="M4.7 6.1Q4.7 3.1 7.1 3.1Q9.3 3.1 9.3 6.1Q9.3 8.6 7.1 8.6Q4.7 8.6 4.7 6.1Z"/><circle class="fkh" cx="6.2" cy="5.0" r="0.7"/><path class="fk2" d="M9.6 5.6Q9.6 3.4 12.2 3.4Q14.3 3.4 14.3 5.6Q14.3 8.0 12.2 8.0Q9.6 8.0 9.6 5.6Z"/><circle class="fkh" cx="11.4" cy="4.7" r="0.6"/><path class="fk2" d="M15.0 5.9Q15.0 4.1 17.3 4.1Q19.4 4.1 19.4 5.9Q19.4 8.1 17.3 8.1Q15.0 8.1 15.0 5.9Z"/><circle class="fkh" cx="16.5" cy="5.0" r="0.6"/><path class="fk2" d="M-4.6 5.5Q-4.6 3.1 -2.2 3.1Q0.1 3.1 0.1 5.5Q0.1 8.2 -2.2 8.2Q-4.6 8.2 -4.6 5.5Z"/><circle class="fkh" cx="-3.1" cy="4.5" r="0.6"/><path class="fk2" d="M19.4 5.5Q19.4 3.1 21.8 3.1Q24.1 3.1 24.1 5.5Q24.1 8.2 21.8 8.2Q19.4 8.2 19.4 5.5Z"/><circle class="fkh" cx="20.9" cy="4.5" r="0.6"/><path class="fk3" d="M-3.6 9.8Q-3.6 7.5 -0.5 7.5Q1.9 7.5 1.9 9.8Q1.9 12.9 -0.5 12.9Q-3.6 12.9 -3.6 9.8Z"/><circle class="fkh" cx="-1.4" cy="8.7" r="0.7"/><path class="fk3" d="M20.4 9.8Q20.4 7.5 23.5 7.5Q25.9 7.5 25.9 9.8Q25.9 12.9 23.5 12.9Q20.4 12.9 20.4 9.8Z"/><circle class="fkh" cx="22.6" cy="8.7" r="0.7"/><path class="fk2" d="M3.0 9.6Q3.0 7.6 4.9 7.6Q7.2 7.6 7.2 9.6Q7.2 11.6 4.9 11.6Q3.0 11.6 3.0 9.6Z"/><circle class="fkh" cx="4.2" cy="8.7" r="0.6"/><path class="fk2" d="M7.6 9.2Q7.6 7.1 9.4 7.1Q11.6 7.1 11.6 9.2Q11.6 11.1 9.4 11.1Q7.6 11.1 7.6 9.2Z"/><circle class="fkh" cx="8.6" cy="8.3" r="0.6"/><path class="fk4" d="M12.5 9.8Q12.5 7.8 14.5 7.8Q16.9 7.8 16.9 9.8Q16.9 12.2 14.5 12.2Q12.5 12.2 12.5 9.8Z"/><circle class="fkh" cx="13.7" cy="8.9" r="0.6"/><path class="fk2" d="M16.3 9.3Q16.3 6.8 18.9 6.8Q21.5 6.8 21.5 9.3Q21.5 11.5 18.9 11.5Q16.3 11.5 16.3 9.3Z"/><circle class="fkh" cx="18.1" cy="8.2" r="0.7"/><path class="fk3" d="M-0.3 13.0Q-0.3 10.4 1.9 10.4Q4.2 10.4 4.2 13.0Q4.2 15.6 1.9 15.6Q-0.3 15.6 -0.3 13.0Z"/><circle class="fkh" cx="1.1" cy="12.0" r="0.6"/><path class="fk3" d="M23.7 13.0Q23.7 10.4 25.9 10.4Q28.2 10.4 28.2 13.0Q28.2 15.6 25.9 15.6Q23.7 15.6 23.7 13.0Z"/><circle class="fkh" cx="25.1" cy="12.0" r="0.6"/><path class="fk1" d="M5.3 13.1Q5.3 10.9 7.3 10.9Q9.6 10.9 9.6 13.1Q9.6 15.4 7.3 15.4Q5.3 15.4 5.3 13.1Z"/><circle class="fkh" cx="6.5" cy="12.3" r="0.6"/><path class="fk1" d="M9.3 13.1Q9.3 10.5 11.6 10.5Q14.0 10.5 14.0 13.1Q14.0 15.4 11.6 15.4Q9.3 15.4 9.3 13.1Z"/><circle class="fkh" cx="10.6" cy="12.0" r="0.7"/><path class="fk1" d="M14.0 13.3Q14.0 10.3 16.6 10.3Q19.7 10.3 19.7 13.3Q19.7 16.1 16.6 16.1Q14.0 16.1 14.0 13.3Z"/><circle class="fkh" cx="15.6" cy="12.3" r="0.7"/><path class="fk1" d="M-4.7 13.4Q-4.7 11.2 -2.2 11.2Q-0.1 11.2 -0.1 13.4Q-0.1 15.4 -2.2 15.4Q-4.7 15.4 -4.7 13.4Z"/><circle class="fkh" cx="-3.0" cy="12.5" r="0.6"/><path class="fk1" d="M19.3 13.4Q19.3 11.2 21.8 11.2Q23.9 11.2 23.9 13.4Q23.9 15.4 21.8 15.4Q19.3 15.4 19.3 13.4Z"/><circle class="fkh" cx="21.0" cy="12.5" r="0.6"/><path class="fk1" d="M-2.8 17.2Q-2.8 15.2 -0.5 15.2Q2.0 15.2 2.0 17.2Q2.0 19.1 -0.5 19.1Q-2.8 19.1 -2.8 17.2Z"/><circle class="fkh" cx="-1.2" cy="16.3" r="0.6"/><path class="fk1" d="M21.2 17.2Q21.2 15.2 23.5 15.2Q26.0 15.2 26.0 17.2Q26.0 19.1 23.5 19.1Q21.2 19.1 21.2 17.2Z"/><circle class="fkh" cx="22.8" cy="16.3" r="0.6"/><path class="fk2" d="M2.0 17.3Q2.0 14.3 4.8 14.3Q7.4 14.3 7.4 17.3Q7.4 20.1 4.8 20.1Q2.0 20.1 2.0 17.3Z"/><circle class="fkh" cx="3.9" cy="16.2" r="0.7"/><path class="fk1" d="M7.4 17.4Q7.4 15.0 10.0 15.0Q12.4 15.0 12.4 17.4Q12.4 19.7 10.0 19.7Q7.4 19.7 7.4 17.4Z"/><circle class="fkh" cx="9.2" cy="16.5" r="0.6"/><path class="fk1" d="M12.0 17.2Q12.0 14.8 14.5 14.8Q16.8 14.8 16.8 17.2Q16.8 19.3 14.5 19.3Q12.0 19.3 12.0 17.2Z"/><circle class="fkh" cx="13.7" cy="16.3" r="0.6"/><path class="fk1" d="M17.1 17.2Q17.1 14.8 19.4 14.8Q21.7 14.8 21.7 17.2Q21.7 19.2 19.4 19.2Q17.1 19.2 17.1 17.2Z"/><circle class="fkh" cx="18.6" cy="16.2" r="0.6"/><path class="fk4" d="M-0.1 -1.5Q-0.1 -3.4 1.9 -3.4Q4.0 -3.4 4.0 -1.5Q4.0 0.7 1.9 0.7Q-0.1 0.7 -0.1 -1.5Z"/><circle class="fkh" cx="1.2" cy="-2.4" r="0.6"/><path class="fk4" d="M-0.1 21.3Q-0.1 19.4 1.9 19.4Q4.0 19.4 4.0 21.3Q4.0 23.5 1.9 23.5Q-0.1 23.5 -0.1 21.3Z"/><circle class="fkh" cx="1.2" cy="20.4" r="0.6"/><path class="fk4" d="M23.9 -1.5Q23.9 -3.4 25.9 -3.4Q28.0 -3.4 28.0 -1.5Q28.0 0.7 25.9 0.7Q23.9 0.7 23.9 -1.5Z"/><circle class="fkh" cx="25.2" cy="-2.4" r="0.6"/><path class="fk4" d="M23.9 21.3Q23.9 19.4 25.9 19.4Q28.0 19.4 28.0 21.3Q28.0 23.5 25.9 23.5Q23.9 23.5 23.9 21.3Z"/><circle class="fkh" cx="25.2" cy="20.4" r="0.6"/><path class="fk4" d="M4.3 -2.2Q4.3 -4.6 6.9 -4.6Q9.5 -4.6 9.5 -2.2Q9.5 0.3 6.9 0.3Q4.3 0.3 4.3 -2.2Z"/><circle class="fkh" cx="6.0" cy="-3.2" r="0.7"/><path class="fk4" d="M4.3 20.6Q4.3 18.2 6.9 18.2Q9.5 18.2 9.5 20.6Q9.5 23.1 6.9 23.1Q4.3 23.1 4.3 20.6Z"/><circle class="fkh" cx="6.0" cy="19.6" r="0.7"/><path class="fk2" d="M9.3 -1.7Q9.3 -4.1 12.1 -4.1Q14.8 -4.1 14.8 -1.7Q14.8 0.8 12.1 0.8Q9.3 0.8 9.3 -1.7Z"/><circle class="fkh" cx="11.2" cy="-2.7" r="0.7"/><path class="fk2" d="M9.3 21.1Q9.3 18.7 12.1 18.7Q14.8 18.7 14.8 21.1Q14.8 23.6 12.1 23.6Q9.3 23.6 9.3 21.1Z"/><circle class="fkh" cx="11.2" cy="20.1" r="0.7"/><path class="fk1" d="M13.7 -1.9Q13.7 -4.9 16.4 -4.9Q18.9 -4.9 18.9 -1.9Q18.9 0.4 16.4 0.4Q13.7 0.4 13.7 -1.9Z"/><circle class="fkh" cx="15.5" cy="-2.9" r="0.7"/><path class="fk1" d="M13.7 20.9Q13.7 17.9 16.4 17.9Q18.9 17.9 18.9 20.9Q18.9 23.2 16.4 23.2Q13.7 23.2 13.7 20.9Z"/><circle class="fkh" cx="15.5" cy="19.9" r="0.7"/><path class="fk4" d="M-4.6 -2.1Q-4.6 -4.3 -2.4 -4.3Q-0.1 -4.3 -0.1 -2.1Q-0.1 0.3 -2.4 0.3Q-4.6 0.3 -4.6 -2.1Z"/><circle class="fkh" cx="-3.2" cy="-3.0" r="0.6"/><path class="fk4" d="M-4.6 20.7Q-4.6 18.5 -2.4 18.5Q-0.1 18.5 -0.1 20.7Q-0.1 23.1 -2.4 23.1Q-4.6 23.1 -4.6 20.7Z"/><circle class="fkh" cx="-3.2" cy="19.8" r="0.6"/><path class="fk4" d="M19.4 -2.1Q19.4 -4.3 21.6 -4.3Q23.9 -4.3 23.9 -2.1Q23.9 0.3 21.6 0.3Q19.4 0.3 19.4 -2.1Z"/><circle class="fkh" cx="20.8" cy="-3.0" r="0.6"/><path class="fk4" d="M19.4 20.7Q19.4 18.5 21.6 18.5Q23.9 18.5 23.9 20.7Q23.9 23.1 21.6 23.1Q19.4 23.1 19.4 20.7Z"/><circle class="fkh" cx="20.8" cy="19.8" r="0.6"/></pattern>
+
 <linearGradient id="f-ps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".2" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
-<radialGradient id="f-vg" cx=".5" cy=".4" r=".8"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<radialGradient id="f-vg" cx=".5" cy=".4" r=".8"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></radialGradient>
 <radialGradient id="f-lt" cx=".5" cy="0" r="1"><stop offset="0" class="f-lc" stop-opacity=".8"/><stop offset="1" class="f-lc" stop-opacity="0"/></radialGradient>
 <clipPath id="f-wc"><rect x="66" y="40" width="68" height="74" rx="8"/></clipPath><clipPath id="f-bc"><path d="M61 172 a39 5.2 0 0 0 78 0 V150 H61 Z"/></clipPath></defs>
 <ellipse class="s-shd" cx="100" cy="193" rx="66" ry="4.5"/><rect class="fft" x="62" y="176" width="12" height="4" rx="1.5"/><rect class="fft" x="126" y="176" width="12" height="4" rx="1.5"/>
@@ -7562,7 +7577,7 @@ ${doneAt(150, 188)}${WARN}</svg>`,
 <path class="s-part" d="M50 32 v-6 q0 -12 14 -12 h72 q14 0 14 12 v6 Z" fill="url(#f-pt)"/><rect class="s-edge" x="62" y="15" width="76" height="1.2" rx=".6"/><rect class="fsep" x="50" y="31.6" width="100" height=".8"/>
 <rect class="fwf" x="63.6" y="37.6" width="72.8" height="78.8" rx="10"/>
 <g clip-path="url(#f-wc)"><rect x="66" y="40" width="68" height="74" fill="url(#f-in)"/>
-<g class="fpl"><path d="M64 46 q8.5 -4 17 0 t17 0 t17 0 t17 0 V122 H64 Z" fill="url(#f-kb)"/><path d="M64 46 q8.5 -4 17 0 t17 0 t17 0 t17 0 V122 H64 Z" fill="url(#f-ps)"/></g>
+<g class="fpl"><path class="fk0" d="M64 58 q9 -3 18 0 t18 0 t18 0 t18 0 V126 H64 Z"/>${KIB_BIN}</g>
 <rect x="66" y="40" width="68" height="74" fill="url(#f-vg)"/><path class="s-refl" d="M76 40 h16 l-26 50 v-24 z"/><path class="s-refl" d="M102 40 h5 l-41 74 v-10 z"/>
 <g transform="rotate(18 100 77)"><rect class="s-gls" x="40" y="20" width="14" height="120" fill="url(#f-gs)"/></g></g>
 <rect class="s-glass" x="66" y="40" width="68" height="74" rx="8" fill="url(#f-gl)"/><path class="fmk" d="M128 52 h3.6 M128 70 h3.6 M128 88 h3.6 M128 104 h3.6"/>
@@ -7572,7 +7587,7 @@ ${doneAt(150, 188)}${WARN}</svg>`,
 <g class="fdrop">${[[97, 1, 0], [102.4, 2, 0.3], [99.2, 3, 0.55], [103.6, 1, 0.8], [96, 2, 1.05]].map(([x, k, d]) => `<ellipse class="fk${k}" cx="${x}" cy="160" rx="1.9" ry="1.7" style="animation-delay:${d}s"/>`).join("")}</g>
 <rect class="flip" x="80" y="155" width="40" height="4.4" rx="2" fill="url(#f-cr)"/>
 <path class="fbo" d="M58 172 L65 186 Q66.5 189 70 189 H130 Q133.5 189 135 186 L142 172 Z" fill="url(#f-cr)"/><ellipse class="fbi" cx="100" cy="172" rx="39.4" ry="5.4"/>
-<g clip-path="url(#f-bc)"><g class="fbw"><path d="M63 175 q4 -15 20 -17 q17 -3 34 0 q16 2 20 17 Z" fill="url(#f-kb)"/><path d="M63 175 q4 -15 20 -17 q17 -3 34 0 q16 2 20 17 Z" fill="url(#f-ps)"/></g></g>
+<g clip-path="url(#f-bc)"><g class="fbw"><path class="fk0" d="M66 177 q6 -12 22 -14 q12 -1.4 24 0 q16 2 22 14 Z"/>${KIB_BOWL}</g></g>
 <ellipse class="fbr" cx="100" cy="172" rx="42" ry="6.5"/><path class="fbh" d="M64.5 178 l3.6 7.4"/>
 ${doneAt(146, 189)}${WARN}</svg>`,
     // Trinkbrunnen im Nova-Zeichenstil (Vorbild Petkit Eversweet): flacher runder Zylinder, oben breite Trinkschale mit kleinem
@@ -7598,7 +7613,7 @@ ${doneAt(146, 189)}${WARN}</svg>`,
 <rect class="s-part" x="146" y="64.6" width="9" height="3.4" rx="1.2" fill="url(#b-pt)"/>
 <ellipse class="bnz" cx="100" cy="75" rx="5" ry="1.8" fill="url(#b-cr)"/><path class="bdome" d="M95 75 q5 -9 10 0 Z"/><path class="bdhl" d="M97.4 72 q1 -2.6 2.4 -3.4"/>
 <g class="bdrop"><circle cx="97" cy="67" r=".9" style="--dx:-6px"/><circle cx="103" cy="66.4" r=".8" style="--dx:6px;animation-delay:.55s"/><circle cx="100" cy="65.6" r=".9" style="--dx:-2px;animation-delay:1.1s"/></g>
-<circle class="led" cx="100" cy="175" r="1.7"/><g class="bfi"><path d="M110 170.6 h7.4 l-2.9 3.7 v3.1 l-1.6 1 v-4.1 Z"/></g>
+<circle class="led" cx="100" cy="175" r="1.7"/><g class="bfi"><rect x="111.6" y="168.4" width="3.8" height="1.6" rx=".6"/><rect x="110.4" y="170" width="6.2" height="8.4" rx="1.6"/><path d="M110.4 172.8 h6.2 M110.4 175.6 h6.2"/></g>
 ${WARN}</svg>`,
     generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
 <path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}<g transform="scale(.5)">${WARN}</g></svg>`
@@ -7846,7 +7861,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .anim.dopen .w-dishwasher .qsteam ellipse{animation:dv-puff 2.8s ease-in-out infinite}
 /* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
 .scene .wn{display:none;transform-box:fill-box;transform-origin:center}
-.scene .wn{--wc:var(--nv-warn)}.st-err .scene .wn{--wc:var(--nv-error)}
+.scene .wn{--wc:var(--nv-error)}
 .scene .wt3{fill:var(--wc);stroke:rgba(0,0,0,.25);stroke-width:.5;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--wc) 50%,transparent))}.scene .wx,.scene .wx2{fill:#fff}
 .h-warning .scene .wn,.st-err .scene .wn{display:inline}
 .anim.h-warning .scene .wn,.anim.st-err .scene .wn{animation:dv-pop2 1.6s ease-in-out infinite}
@@ -7908,8 +7923,9 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 /* Futterautomat im Nova-Zeichenstil: Vorrat im Fenster --fl, Napf --fb */
 .w-feeder{--gx:80px}
 .w-feeder .fft{fill:#0d1016}.w-feeder .fsep{fill:#000;opacity:.3}
-.w-feeder .fk0{fill:#3b2414}.w-feeder .fk1{fill:#a8743f}.w-feeder .fk2{fill:#7f512a}.w-feeder .fk3{fill:#c49158}.w-feeder .fk4{fill:#93603a}
-.w-feeder [class^=fk]:not(.fk0):not(.fkh){stroke:#000;stroke-opacity:.35;stroke-width:.4}.w-feeder .fkh{fill:#fff;opacity:.16}
+.w-feeder .fk0{fill:#1d120a;opacity:.6}
+.w-feeder .kbl path{stroke:#000;stroke-opacity:.45;stroke-width:.45}.w-feeder .kbl ellipse{fill:#fff;opacity:.18}
+.w-feeder .k1 path,.w-feeder .fk1{fill:#c4844a}.w-feeder .k2 path,.w-feeder .fk2{fill:#9c6232}.w-feeder .k3 path,.w-feeder .fk3{fill:#dba468}.w-feeder .k4 path{fill:#b0723e}.w-feeder .k5 path{fill:#7e4f28}
 .w-feeder .fwf{fill:#0b0e13;stroke:rgba(255,255,255,.08);stroke-width:.5}
 .w-feeder .fpl{transform:translateY(calc((1 - var(--fl,.7)) * 80px));transition:transform .8s}
 .h-food .w-feeder .fpl,.empty .w-feeder .fpl{--fl:0}
@@ -7949,7 +7965,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .w-fountain .bdhl{fill:none;stroke:#fff;stroke-opacity:.6;stroke-width:.6;stroke-linecap:round;opacity:0;transition:opacity .4s}
 .w-fountain .bdrop circle{fill:var(--dc);opacity:0}
 .w-fountain .bfi{transform-box:fill-box;transform-origin:center}
-.w-fountain .bfi path{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.9;stroke-linejoin:round}
+.w-fountain .bfi rect,.w-fountain .bfi path{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.8;stroke-linejoin:round}
 /* Läuft: kleiner Sprudel wippt, Ringe laufen über die Schale, das Wasser fließt sanft über den Rand ab; aus/Pause = Wasser steht */
 .st-run .w-fountain .bdome,.st-run .w-fountain .bdhl{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
 .anim.st-run .w-fountain .bdome{animation:dv-bob 2.4s ease-in-out infinite}
@@ -7958,7 +7974,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .anim.st-run .w-fountain .bflow{animation:dv-bflow 6s linear infinite}
 /* Wasser niedrig: Stand im Fenster sinkt, Ausrufezeichen; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
 .h-water .scene .wn{display:inline}
-.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1.1;filter:drop-shadow(0 0 1.5px var(--fc))}
+.h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px var(--fc))}
 .anim.h-filter .w-fountain .bfi{animation:dv-fpulse 1.6s ease-in-out infinite}
 .anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
 .scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}
