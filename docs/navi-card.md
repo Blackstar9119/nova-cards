@@ -68,6 +68,8 @@ items:
 | `sidebar_min_width` | `1024` | Ab dieser Fensterbreite (px) gilt die Seitenleiste |
 | `button_size` | `48` | Größe der Buttons in px |
 | `active_label` | an | Rechts neben dem aktiven (runden) Button steht in Weiß sein Name (nicht in der Seitenleiste) |
+| `animation` | an | Beim Viewwechsel gleiten Markierung, Name und Leistenbreite weich vom alten zum neuen Eintrag. Bei „Bewegung reduzieren“ im System immer aus |
+| `animation_duration` | `280` | Dauer der Animation in ms |
 | `haptic` | aus | Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk) |
 | `source` | – | Einträge aus einem anderen Dashboard übernehmen (URL-Pfad), z. B. für mehrere Ansichten mit gleicher Leiste |
 
@@ -102,4 +104,6 @@ In der Seitenleiste ist die Media-Leiste ein kompakter Knopf mit Cover und Play/
 Markiert ist der Eintrag, dessen `navigation_path` genau dem aktuellen Pfad entspricht (ein `/` am Ende ist egal).
 Liegt der Pfad in einem Untermenü, ist dessen Button markiert und zeigt den Namen des Menü-Eintrags.
 Der aktive Button ist gelb (Theme-Variable `--nova-navi-active-color`, Standard `--nova-accent-2`; Textfarbe `--nova-navi-active-text-color`) und rechts daneben steht sein Name in Weiß (`active_label`). Die Markierung wird bei jedem Wechsel der Ansicht neu
-berechnet.
+berechnet. Weil Home Assistant die Karte dabei neu erzeugt, merkt sich Nova Navi den zuletzt aktiven Eintrag: Die neue
+Leiste startet im alten Zustand, die gelbe Markierung gleitet zum neuen Eintrag, der alte Name fährt ein und der neue aus.
+Animiert werden nur `transform`, `opacity` und `max-width` – das schont schwache Tablets.
