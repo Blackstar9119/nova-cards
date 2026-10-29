@@ -8688,6 +8688,9 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .anim.st-run .w-fountain .bflow{animation:dv-bflow 6s linear infinite}
 /* Wasser niedrig: Stand im Fenster sinkt, Ausrufezeichen; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
 .h-water .scene .wn{display:inline}
+.h-water .w-fountain .led,.low .w-fountain .led,.empty .w-fountain .led,.st-err .w-fountain .led{fill:var(--nv-error);fill-opacity:1}
+.anim.h-water .w-fountain .led,.anim.low .w-fountain .led,.anim.empty .w-fountain .led,.anim.st-err .w-fountain .led{animation:dv-blinko 1s ease-in-out infinite}
+.st-err .w-fountain .bdome,.st-err .w-fountain .bdhl{opacity:0}
 .h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px var(--fc))}
 .anim.h-filter .w-fountain .bfi{animation:dv-fpulse 1.6s ease-in-out infinite}
 .anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
