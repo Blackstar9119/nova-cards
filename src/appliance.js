@@ -17,7 +17,7 @@ const TYPES = {
   airfryer: {label: 'Airfryer', icon: 'mdi:toaster-oven', color: 'accent-1', run: 'Gart', heat: 'Heizt vor', door: 'Schublade offen', phase: [], dview: true},
   coffee: {label: 'Kaffeemaschine', icon: 'mdi:coffee-maker-outline', color: 'accent-1', run: 'Brüht', door: 'Tür offen', phase: [], anims: ['tank', 'beans', 'descale'], drink: true},
   feeder: {label: 'Futterautomat', icon: 'mdi:bowl-mix-outline', color: 'accent-1', run: 'Füttert', door: 'Deckel offen', phase: [], anims: ['food'], level: true, feed: true},
-  fountain: {label: 'Trinkbrunnen', icon: 'mdi:fountain', color: 'accent-1', run: 'Läuft', door: 'Deckel offen', phase: [], anims: ['water', 'filter'], level: true},
+  fountain: {label: 'Trinkbrunnen', icon: 'mdi:fountain', color: 'accent-1', run: 'Läuft', door: 'Deckel offen', phase: [], anims: ['water', 'filter'], level: true, nodone: true},
   generic: {label: 'Gerät', icon: 'mdi:power-plug-outline', color: 'accent-1', run: 'Läuft', door: 'Tür offen', phase: []},
 };
 const typeOf = c => TYPES[c.device_type] ? c.device_type : 'generic';
@@ -89,7 +89,8 @@ const CK = {espresso: ['#2e1a10', '#9a6436', '#d9c4a4'], coffee: ['#4a2c19', '#b
 const FEED_MS = 8000;
 
 // Fertig-Haken, in allen Zeichnungen unten rechts
-const WARN = '<g class="wn"><path class="wt3" d="M14 3 l10 17 h-20 Z"/><line class="wx" x1="14" y1="9" x2="14" y2="14"/><circle class="wx2" cx="14" cy="17" r="1.1"/></g>';
+// Warnung/Störung: rundes Ausrufezeichen oben links, gleiche Größe wie der Fertig-Badge (Radius 11,5)
+const WARN = '<g class="wn"><circle class="wt3" cx="22" cy="20" r="11.5"/><rect class="wx" x="20.5" y="12.6" width="3" height="9.6" rx="1.5"/><circle class="wx2" cx="22" cy="26.4" r="1.8"/></g>';
 const DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
 // Fertig-Badge der Zeichnungen im Nova-Stil an der gemeinsamen Stelle (badgeAt): Ecke unten rechts des Gehäuses
 const doneAt = (right, bottom) => { const b = badgeAt(right, bottom), s = b.r / 10; return `<g transform="translate(${+(b.x - 80 * s).toFixed(2)} ${+(b.y - 82 * s).toFixed(2)}) scale(${s})">${DONE}</g>`; };
@@ -166,7 +167,7 @@ ${[0, 120, 240].map(a => `<g class="pdl" transform="rotate(${a} 100 114)"><path 
 <circle cx="100" cy="114" r="36" fill="url(#w-vg)"/></g>
 <rect class="hng s-part" x="45" y="101" width="13" height="26" rx="3" fill="url(#w-pt)"/><g class="pd"><circle class="pdt" cx="105" cy="114" r="44"/>${WDOOR}<circle class="pgb" cx="100" cy="114" r="36" fill="url(#w-gb)"/></g>
 
-${doneAt(170, 189)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
+${doneAt(170, 189)}${WARN}</svg>`,
   // Spülmaschine (Vorbild Siemens Unterbau): Bedienleiste mit Display, Edelstahlfront mit Rauchglas-Fenster, Körbe mit
   // Gläsern, Tassen, Tellern und Besteck, zwei Sprüharme; Tür offen = Klappe nach unten, Körbe frei
   dishwasher: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs('d')}
@@ -209,7 +210,7 @@ ${[124, 131, 138, 145].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width
 <rect class="s-part" x="80" y="16.5" width="40" height="28" rx="2.5" fill="url(#d-pt)"/><rect class="s-scr" x="83.5" y="19.5" width="33" height="13" rx="1.6"/>
 <text class="wdt" x="102.6" y="29.2"></text><g class="lk"><rect x="86.2" y="25.2" width="4.2" height="3.4" rx=".7"/><path d="M87.2 25.2 v-1 a1.1 1.1 0 0 1 2.2 0 v1"/></g>
 <path class="s-tgl" d="M85 20 h8 l-4 12 h-5 z"/><g class="qtb"><rect x="85" y="36.5" width="6" height="1.6" rx=".8"/><rect x="94" y="36.5" width="6" height="1.6" rx=".8"/><rect x="103" y="36.5" width="6" height="1.6" rx=".8"/><rect x="112" y="36.5" width="4" height="1.6" rx=".8"/></g></g>
-${doneAt(170, 189)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
+${doneAt(170, 189)}${WARN}</svg>`,
   // Airfryer im Nova-Zeichenstil (Vorbild Philips Essential): nach unten breiter werdendes Gehäuse, oben Touchfeld mit rundem
   // Display (Restzeit-Ring wie eine Eieruhr, Haken bei fertig), Fuge, Schublade mit Rauchglas-Fenster (Heizspirale, Korb,
   // Pommes) und senkrechtem Griff
@@ -248,7 +249,7 @@ ${doneAt(170, 189)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
 <rect class="s-glass" x="64" y="99" width="72" height="32" rx="6" fill="url(#a-gl)"/></g>
 <rect class="ahr" x="92.5" y="140" width="17" height="22" rx="6"/><rect class="s-part" x="91" y="138" width="18" height="22" rx="6" fill="url(#a-pt)"/><rect class="ahh" x="92.6" y="140" width="1.2" height="18" rx=".6"/></g>
 <g class="apuff" filter="url(#a-bl)"><ellipse cx="72" cy="94" rx="8" ry="3.6" style="--sx:-10px;--sy:-22px"/><ellipse cx="100" cy="92" rx="10" ry="3.8" style="--sx:2px;--sy:-26px;animation-delay:.25s"/><ellipse cx="128" cy="94" rx="8" ry="3.6" style="--sx:10px;--sy:-22px;animation-delay:.5s"/></g>
-${doneAt(162, 172)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
+${doneAt(162, 172)}${WARN}</svg>`,
   // Kaffeevollautomat im Nova-Zeichenstil: oben Bohnenbehälter-Deckel, Bedienfeld mit Display und Status-LED, Nische mit
   // Chrom-Auslauf, Glastasse (bei Latte Macchiato hohes Glas) auf der Tropfschale, Wassertank aus Glas seitlich rechts
   coffee: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs('c')}
@@ -286,11 +287,11 @@ ${doneAt(162, 172)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
 <g class="cgls"><g clip-path="url(#c-gc)"><g class="cfl g"><rect x="83" y="97" width="26" height="61" fill="url(#c-lm)"/><rect class="cff" x="83" y="97" width="26" height="11"/></g></g>
 <path class="s-glass" d="M83 96 h26 l-1.6 60 a4 4 0 0 1 -4 4 h-14.8 a4 4 0 0 1 -4 -4 Z" fill="url(#c-gl)"/><path class="s-refl" d="M86 98 h3 l-1 56 h-3 z"/><ellipse class="crim" cx="96" cy="96" rx="13" ry="1.2"/></g>
 <g class="csteam" filter="url(#c-bl)"><path d="M87 120 c-3 -5 3 -8 0 -13 c-2 -3 1 -6 0 -9"/><path d="M95 120 c3 -5 -3 -8 0 -13 c2 -3 -1 -6 0 -9"/><path d="M103 120 c-3 -5 3 -8 0 -13 c-2 -3 1 -6 0 -9"/></g>
-${doneAt(150, 188)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
+${doneAt(150, 188)}${WARN}</svg>`,
   // Futterautomat im Nova-Zeichenstil: Säule mit Deckel, Sichtfenster mit Trockenfutter (Füllstand), Status-LED, Ausgabeschacht
   // mit Chromlippe, davor ein Edelstahlnapf
   feeder: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs('f')}
-<pattern id="f-kb" width="11" height="8" patternUnits="userSpaceOnUse"><rect class="fk0" width="11" height="8"/><ellipse class="fk1" cx="2.6" cy="2.2" rx="2.4" ry="1.8"/><ellipse class="fk2" cx="8.2" cy="1.6" rx="2.2" ry="1.7"/><ellipse class="fk3" cx="5.4" cy="5.8" rx="2.5" ry="1.9"/><ellipse class="fk1" cx="10.8" cy="6.2" rx="2" ry="1.6"/><ellipse class="fk2" cx=".2" cy="6.4" rx="2" ry="1.6"/></pattern>
+<pattern id="f-kb" width="24" height="22.8" patternUnits="userSpaceOnUse"><rect class="fk0" width="24" height="22.8"/><path class="fk4" d="M-2.7 1.9Q-2.7 -1.0 -0.0 -1.0Q2.4 -1.0 2.4 1.9Q2.4 4.8 -0.0 4.8Q-2.7 4.8 -2.7 1.9Z"/><circle class="fkh" cx="-1.0" cy="0.9" r="0.7"/><path class="fk4" d="M-2.7 24.7Q-2.7 21.8 -0.0 21.8Q2.4 21.8 2.4 24.7Q2.4 27.6 -0.0 27.6Q-2.7 27.6 -2.7 24.7Z"/><circle class="fkh" cx="-1.0" cy="23.7" r="0.7"/><path class="fk4" d="M21.3 1.9Q21.3 -1.0 24.0 -1.0Q26.4 -1.0 26.4 1.9Q26.4 4.8 24.0 4.8Q21.3 4.8 21.3 1.9Z"/><circle class="fkh" cx="23.0" cy="0.9" r="0.7"/><path class="fk4" d="M21.3 24.7Q21.3 21.8 24.0 21.8Q26.4 21.8 26.4 24.7Q26.4 27.6 24.0 27.6Q21.3 27.6 21.3 24.7Z"/><circle class="fkh" cx="23.0" cy="23.7" r="0.7"/><path class="fk4" d="M2.7 2.0Q2.7 0.1 4.8 0.1Q7.2 0.1 7.2 2.0Q7.2 4.3 4.8 4.3Q2.7 4.3 2.7 2.0Z"/><circle class="fkh" cx="4.0" cy="1.1" r="0.6"/><path class="fk4" d="M2.7 24.8Q2.7 22.9 4.8 22.9Q7.2 22.9 7.2 24.8Q7.2 27.1 4.8 27.1Q2.7 27.1 2.7 24.8Z"/><circle class="fkh" cx="4.0" cy="23.9" r="0.6"/><path class="fk2" d="M6.4 2.3Q6.4 -0.7 9.1 -0.7Q11.5 -0.7 11.5 2.3Q11.5 4.6 9.1 4.6Q6.4 4.6 6.4 2.3Z"/><circle class="fkh" cx="8.2" cy="1.2" r="0.7"/><path class="fk2" d="M6.4 25.1Q6.4 22.1 9.1 22.1Q11.5 22.1 11.5 25.1Q11.5 27.4 9.1 27.4Q6.4 27.4 6.4 25.1Z"/><circle class="fkh" cx="8.2" cy="24.0" r="0.7"/><path class="fk3" d="M12.3 2.0Q12.3 -0.9 14.8 -0.9Q17.4 -0.9 17.4 2.0Q17.4 4.7 14.8 4.7Q12.3 4.7 12.3 2.0Z"/><circle class="fkh" cx="13.9" cy="1.0" r="0.7"/><path class="fk3" d="M12.3 24.8Q12.3 21.9 14.8 21.9Q17.4 21.9 17.4 24.8Q17.4 27.5 14.8 27.5Q12.3 27.5 12.3 24.8Z"/><circle class="fkh" cx="13.9" cy="23.8" r="0.7"/><path class="fk3" d="M16.9 2.0Q16.9 -0.4 19.2 -0.4Q21.9 -0.4 21.9 2.0Q21.9 4.1 19.2 4.1Q16.9 4.1 16.9 2.0Z"/><circle class="fkh" cx="18.4" cy="1.1" r="0.6"/><path class="fk3" d="M16.9 24.8Q16.9 22.4 19.2 22.4Q21.9 22.4 21.9 24.8Q21.9 26.9 19.2 26.9Q16.9 26.9 16.9 24.8Z"/><circle class="fkh" cx="18.4" cy="23.9" r="0.6"/><path class="fk1" d="M0.1 5.9Q0.1 3.3 2.2 3.3Q4.5 3.3 4.5 5.9Q4.5 8.6 2.2 8.6Q0.1 8.6 0.1 5.9Z"/><circle class="fkh" cx="1.3" cy="4.9" r="0.6"/><path class="fk1" d="M24.1 5.9Q24.1 3.3 26.2 3.3Q28.5 3.3 28.5 5.9Q28.5 8.6 26.2 8.6Q24.1 8.6 24.1 5.9Z"/><circle class="fkh" cx="25.3" cy="4.9" r="0.6"/><path class="fk1" d="M4.7 6.1Q4.7 3.1 7.1 3.1Q9.3 3.1 9.3 6.1Q9.3 8.6 7.1 8.6Q4.7 8.6 4.7 6.1Z"/><circle class="fkh" cx="6.2" cy="5.0" r="0.7"/><path class="fk2" d="M9.6 5.6Q9.6 3.4 12.2 3.4Q14.3 3.4 14.3 5.6Q14.3 8.0 12.2 8.0Q9.6 8.0 9.6 5.6Z"/><circle class="fkh" cx="11.4" cy="4.7" r="0.6"/><path class="fk2" d="M15.0 5.9Q15.0 4.1 17.3 4.1Q19.4 4.1 19.4 5.9Q19.4 8.1 17.3 8.1Q15.0 8.1 15.0 5.9Z"/><circle class="fkh" cx="16.5" cy="5.0" r="0.6"/><path class="fk2" d="M-4.6 5.5Q-4.6 3.1 -2.2 3.1Q0.1 3.1 0.1 5.5Q0.1 8.2 -2.2 8.2Q-4.6 8.2 -4.6 5.5Z"/><circle class="fkh" cx="-3.1" cy="4.5" r="0.6"/><path class="fk2" d="M19.4 5.5Q19.4 3.1 21.8 3.1Q24.1 3.1 24.1 5.5Q24.1 8.2 21.8 8.2Q19.4 8.2 19.4 5.5Z"/><circle class="fkh" cx="20.9" cy="4.5" r="0.6"/><path class="fk3" d="M-3.6 9.8Q-3.6 7.5 -0.5 7.5Q1.9 7.5 1.9 9.8Q1.9 12.9 -0.5 12.9Q-3.6 12.9 -3.6 9.8Z"/><circle class="fkh" cx="-1.4" cy="8.7" r="0.7"/><path class="fk3" d="M20.4 9.8Q20.4 7.5 23.5 7.5Q25.9 7.5 25.9 9.8Q25.9 12.9 23.5 12.9Q20.4 12.9 20.4 9.8Z"/><circle class="fkh" cx="22.6" cy="8.7" r="0.7"/><path class="fk2" d="M3.0 9.6Q3.0 7.6 4.9 7.6Q7.2 7.6 7.2 9.6Q7.2 11.6 4.9 11.6Q3.0 11.6 3.0 9.6Z"/><circle class="fkh" cx="4.2" cy="8.7" r="0.6"/><path class="fk2" d="M7.6 9.2Q7.6 7.1 9.4 7.1Q11.6 7.1 11.6 9.2Q11.6 11.1 9.4 11.1Q7.6 11.1 7.6 9.2Z"/><circle class="fkh" cx="8.6" cy="8.3" r="0.6"/><path class="fk4" d="M12.5 9.8Q12.5 7.8 14.5 7.8Q16.9 7.8 16.9 9.8Q16.9 12.2 14.5 12.2Q12.5 12.2 12.5 9.8Z"/><circle class="fkh" cx="13.7" cy="8.9" r="0.6"/><path class="fk2" d="M16.3 9.3Q16.3 6.8 18.9 6.8Q21.5 6.8 21.5 9.3Q21.5 11.5 18.9 11.5Q16.3 11.5 16.3 9.3Z"/><circle class="fkh" cx="18.1" cy="8.2" r="0.7"/><path class="fk3" d="M-0.3 13.0Q-0.3 10.4 1.9 10.4Q4.2 10.4 4.2 13.0Q4.2 15.6 1.9 15.6Q-0.3 15.6 -0.3 13.0Z"/><circle class="fkh" cx="1.1" cy="12.0" r="0.6"/><path class="fk3" d="M23.7 13.0Q23.7 10.4 25.9 10.4Q28.2 10.4 28.2 13.0Q28.2 15.6 25.9 15.6Q23.7 15.6 23.7 13.0Z"/><circle class="fkh" cx="25.1" cy="12.0" r="0.6"/><path class="fk1" d="M5.3 13.1Q5.3 10.9 7.3 10.9Q9.6 10.9 9.6 13.1Q9.6 15.4 7.3 15.4Q5.3 15.4 5.3 13.1Z"/><circle class="fkh" cx="6.5" cy="12.3" r="0.6"/><path class="fk1" d="M9.3 13.1Q9.3 10.5 11.6 10.5Q14.0 10.5 14.0 13.1Q14.0 15.4 11.6 15.4Q9.3 15.4 9.3 13.1Z"/><circle class="fkh" cx="10.6" cy="12.0" r="0.7"/><path class="fk1" d="M14.0 13.3Q14.0 10.3 16.6 10.3Q19.7 10.3 19.7 13.3Q19.7 16.1 16.6 16.1Q14.0 16.1 14.0 13.3Z"/><circle class="fkh" cx="15.6" cy="12.3" r="0.7"/><path class="fk1" d="M-4.7 13.4Q-4.7 11.2 -2.2 11.2Q-0.1 11.2 -0.1 13.4Q-0.1 15.4 -2.2 15.4Q-4.7 15.4 -4.7 13.4Z"/><circle class="fkh" cx="-3.0" cy="12.5" r="0.6"/><path class="fk1" d="M19.3 13.4Q19.3 11.2 21.8 11.2Q23.9 11.2 23.9 13.4Q23.9 15.4 21.8 15.4Q19.3 15.4 19.3 13.4Z"/><circle class="fkh" cx="21.0" cy="12.5" r="0.6"/><path class="fk1" d="M-2.8 17.2Q-2.8 15.2 -0.5 15.2Q2.0 15.2 2.0 17.2Q2.0 19.1 -0.5 19.1Q-2.8 19.1 -2.8 17.2Z"/><circle class="fkh" cx="-1.2" cy="16.3" r="0.6"/><path class="fk1" d="M21.2 17.2Q21.2 15.2 23.5 15.2Q26.0 15.2 26.0 17.2Q26.0 19.1 23.5 19.1Q21.2 19.1 21.2 17.2Z"/><circle class="fkh" cx="22.8" cy="16.3" r="0.6"/><path class="fk2" d="M2.0 17.3Q2.0 14.3 4.8 14.3Q7.4 14.3 7.4 17.3Q7.4 20.1 4.8 20.1Q2.0 20.1 2.0 17.3Z"/><circle class="fkh" cx="3.9" cy="16.2" r="0.7"/><path class="fk1" d="M7.4 17.4Q7.4 15.0 10.0 15.0Q12.4 15.0 12.4 17.4Q12.4 19.7 10.0 19.7Q7.4 19.7 7.4 17.4Z"/><circle class="fkh" cx="9.2" cy="16.5" r="0.6"/><path class="fk1" d="M12.0 17.2Q12.0 14.8 14.5 14.8Q16.8 14.8 16.8 17.2Q16.8 19.3 14.5 19.3Q12.0 19.3 12.0 17.2Z"/><circle class="fkh" cx="13.7" cy="16.3" r="0.6"/><path class="fk1" d="M17.1 17.2Q17.1 14.8 19.4 14.8Q21.7 14.8 21.7 17.2Q21.7 19.2 19.4 19.2Q17.1 19.2 17.1 17.2Z"/><circle class="fkh" cx="18.6" cy="16.2" r="0.6"/><path class="fk4" d="M-0.1 -1.5Q-0.1 -3.4 1.9 -3.4Q4.0 -3.4 4.0 -1.5Q4.0 0.7 1.9 0.7Q-0.1 0.7 -0.1 -1.5Z"/><circle class="fkh" cx="1.2" cy="-2.4" r="0.6"/><path class="fk4" d="M-0.1 21.3Q-0.1 19.4 1.9 19.4Q4.0 19.4 4.0 21.3Q4.0 23.5 1.9 23.5Q-0.1 23.5 -0.1 21.3Z"/><circle class="fkh" cx="1.2" cy="20.4" r="0.6"/><path class="fk4" d="M23.9 -1.5Q23.9 -3.4 25.9 -3.4Q28.0 -3.4 28.0 -1.5Q28.0 0.7 25.9 0.7Q23.9 0.7 23.9 -1.5Z"/><circle class="fkh" cx="25.2" cy="-2.4" r="0.6"/><path class="fk4" d="M23.9 21.3Q23.9 19.4 25.9 19.4Q28.0 19.4 28.0 21.3Q28.0 23.5 25.9 23.5Q23.9 23.5 23.9 21.3Z"/><circle class="fkh" cx="25.2" cy="20.4" r="0.6"/><path class="fk4" d="M4.3 -2.2Q4.3 -4.6 6.9 -4.6Q9.5 -4.6 9.5 -2.2Q9.5 0.3 6.9 0.3Q4.3 0.3 4.3 -2.2Z"/><circle class="fkh" cx="6.0" cy="-3.2" r="0.7"/><path class="fk4" d="M4.3 20.6Q4.3 18.2 6.9 18.2Q9.5 18.2 9.5 20.6Q9.5 23.1 6.9 23.1Q4.3 23.1 4.3 20.6Z"/><circle class="fkh" cx="6.0" cy="19.6" r="0.7"/><path class="fk2" d="M9.3 -1.7Q9.3 -4.1 12.1 -4.1Q14.8 -4.1 14.8 -1.7Q14.8 0.8 12.1 0.8Q9.3 0.8 9.3 -1.7Z"/><circle class="fkh" cx="11.2" cy="-2.7" r="0.7"/><path class="fk2" d="M9.3 21.1Q9.3 18.7 12.1 18.7Q14.8 18.7 14.8 21.1Q14.8 23.6 12.1 23.6Q9.3 23.6 9.3 21.1Z"/><circle class="fkh" cx="11.2" cy="20.1" r="0.7"/><path class="fk1" d="M13.7 -1.9Q13.7 -4.9 16.4 -4.9Q18.9 -4.9 18.9 -1.9Q18.9 0.4 16.4 0.4Q13.7 0.4 13.7 -1.9Z"/><circle class="fkh" cx="15.5" cy="-2.9" r="0.7"/><path class="fk1" d="M13.7 20.9Q13.7 17.9 16.4 17.9Q18.9 17.9 18.9 20.9Q18.9 23.2 16.4 23.2Q13.7 23.2 13.7 20.9Z"/><circle class="fkh" cx="15.5" cy="19.9" r="0.7"/><path class="fk4" d="M-4.6 -2.1Q-4.6 -4.3 -2.4 -4.3Q-0.1 -4.3 -0.1 -2.1Q-0.1 0.3 -2.4 0.3Q-4.6 0.3 -4.6 -2.1Z"/><circle class="fkh" cx="-3.2" cy="-3.0" r="0.6"/><path class="fk4" d="M-4.6 20.7Q-4.6 18.5 -2.4 18.5Q-0.1 18.5 -0.1 20.7Q-0.1 23.1 -2.4 23.1Q-4.6 23.1 -4.6 20.7Z"/><circle class="fkh" cx="-3.2" cy="19.8" r="0.6"/><path class="fk4" d="M19.4 -2.1Q19.4 -4.3 21.6 -4.3Q23.9 -4.3 23.9 -2.1Q23.9 0.3 21.6 0.3Q19.4 0.3 19.4 -2.1Z"/><circle class="fkh" cx="20.8" cy="-3.0" r="0.6"/><path class="fk4" d="M19.4 20.7Q19.4 18.5 21.6 18.5Q23.9 18.5 23.9 20.7Q23.9 23.1 21.6 23.1Q19.4 23.1 19.4 20.7Z"/><circle class="fkh" cx="20.8" cy="19.8" r="0.6"/></pattern>
 <linearGradient id="f-ps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".2" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
 <radialGradient id="f-vg" cx=".5" cy=".4" r=".8"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
 <radialGradient id="f-lt" cx=".5" cy="0" r="1"><stop offset="0" class="f-lc" stop-opacity=".8"/><stop offset="1" class="f-lc" stop-opacity="0"/></radialGradient>
@@ -307,40 +308,39 @@ ${doneAt(150, 188)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
 <circle class="fring" cx="100" cy="128" r="5.4"/><circle class="led fled" cx="100" cy="128" r="2.4"/>
 <rect class="ftb" x="76" y="127" width="10" height="2" rx="1"/><rect class="ftb" x="114" y="127" width="10" height="2" rx="1"/>
 <path class="fch" d="M84 142 q0 -4 4 -4 h24 q4 0 4 4 v14 h-32 Z"/><rect class="fchl" x="86" y="139" width="28" height="16" fill="url(#f-lt)"/>
-<g class="fdrop">${[[97, 1, 0], [102.4, 2, .3], [99.2, 3, .55], [103.6, 1, .8], [96, 2, 1.05]].map(([x, k, d]) => `<ellipse class="fk${k}" cx="${x}" cy="160" rx="1.8" ry="1.4" style="animation-delay:${d}s"/>`).join('')}</g>
+<g class="fdrop">${[[97, 1, 0], [102.4, 2, .3], [99.2, 3, .55], [103.6, 1, .8], [96, 2, 1.05]].map(([x, k, d]) => `<ellipse class="fk${k}" cx="${x}" cy="160" rx="1.9" ry="1.7" style="animation-delay:${d}s"/>`).join('')}</g>
 <rect class="flip" x="80" y="155" width="40" height="4.4" rx="2" fill="url(#f-cr)"/>
 <path class="fbo" d="M58 172 L65 186 Q66.5 189 70 189 H130 Q133.5 189 135 186 L142 172 Z" fill="url(#f-cr)"/><ellipse class="fbi" cx="100" cy="172" rx="39.4" ry="5.4"/>
 <g clip-path="url(#f-bc)"><g class="fbw"><path d="M63 175 q4 -15 20 -17 q17 -3 34 0 q16 2 20 17 Z" fill="url(#f-kb)"/><path d="M63 175 q4 -15 20 -17 q17 -3 34 0 q16 2 20 17 Z" fill="url(#f-ps)"/></g></g>
 <ellipse class="fbr" cx="100" cy="172" rx="42" ry="6.5"/><path class="fbh" d="M64.5 178 l3.6 7.4"/>
-${doneAt(146, 189)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
-  // Trinkbrunnen im Nova-Zeichenstil: Deckel mit Wasserschale und kleiner Fontäne, darunter Glastank mit Wasser und
-  // Filterpatrone (Pumpe mit Steigrohr), Sockel mit Status-LED und Filter-Symbol
+${doneAt(146, 189)}${WARN}</svg>`,
+  // Trinkbrunnen im Nova-Zeichenstil (Vorbild Petkit Eversweet): flacher runder Zylinder, oben breite Trinkschale mit kleinem
+  // Sprudel in der Mitte, vorne Sichtfenster für den Wasserstand (MAX/MIN), Sockel mit Status-LED und kleinem Filter-Symbol
   fountain: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs('b')}
-<linearGradient id="b-wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="b-wc" stop-opacity=".5"/><stop offset="1" class="b-wc" stop-opacity=".22"/></linearGradient>
-<radialGradient id="b-ds" cx=".5" cy=".5" r=".5"><stop offset="0" class="b-wc" stop-opacity=".75"/><stop offset="1" class="b-wc" stop-opacity=".3"/></radialGradient>
-<radialGradient id="b-vg" cx=".5" cy=".45" r=".8"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
-<clipPath id="b-tc"><rect x="46" y="80" width="108" height="78" rx="6"/></clipPath><clipPath id="b-dc"><ellipse cx="100" cy="66" rx="44" ry="6"/></clipPath></defs>
-<ellipse class="s-shd" cx="100" cy="193" rx="70" ry="4.5"/>
-<rect class="s-body" x="38" y="154" width="124" height="34" rx="10" fill="url(#b-bd)"/><rect class="s-sheen" x="38" y="154" width="124" height="34" rx="10" fill="url(#b-sh)"/>
-<g clip-path="url(#b-tc)"><rect x="46" y="80" width="108" height="78" fill="url(#b-in)"/>
-<g class="bwl"><rect x="40" y="88" width="120" height="76" fill="url(#b-wa)"/><path class="bws" d="M40 88 ${Array.from({length: 10}, () => 'q6.25 -1.6 12.5 0 t12.5 0').join(' ')}"/></g>
-<rect class="btb" x="98" y="76" width="4" height="36" fill="url(#b-cr)"/>
-<g class="bflt"><rect class="bfc" x="82" y="110" width="36" height="6" rx="2" fill="url(#b-cr)"/><rect class="s-part" x="84" y="116" width="32" height="40" rx="3" fill="url(#b-pt)"/>
-<path class="bpl" d="${Array.from({length: 7}, (_, i) => `M${88 + i * 4} 120 v32`).join(' ')}"/></g>
-<g class="bbub">${[[90, 0], [108, .8], [95, 1.6], [112, 2.2], [86, 2.8]].map(([x, d]) => `<circle cx="${x}" cy="154" r="${x % 2 ? .9 : 1.2}" style="animation-delay:${d}s"/>`).join('')}</g>
-<rect x="46" y="80" width="108" height="78" fill="url(#b-vg)"/><path class="s-refl" d="M58 80 h18 l-30 52 v-26 z"/><path class="s-refl" d="M86 80 h5 l-45 72 v-9 z"/>
-<g transform="rotate(18 100 125)"><rect class="s-gls" x="10" y="70" width="16" height="110" fill="url(#b-gs)"/></g></g>
-<rect class="s-glass" x="46" y="80" width="108" height="78" rx="6" fill="url(#b-gl)"/>
-<g transform="translate(0 -12)"><path class="s-body" d="M40 90 V74 q0 -10 12 -10 h96 q12 0 12 10 V90 q0 4 -4 4 H44 q-4 0 -4 -4 Z" fill="url(#b-bd)"/><path class="s-sheen" d="M40 90 V74 q0 -10 12 -10 h96 q12 0 12 10 V90 q0 4 -4 4 H44 q-4 0 -4 -4 Z" fill="url(#b-sh)"/>
-<ellipse class="btop" cx="100" cy="66" rx="56" ry="8.5" fill="url(#b-pt)"/><ellipse class="bdish" cx="100" cy="66" rx="44" ry="6" fill="url(#b-ds)"/>
-<g clip-path="url(#b-dc)" class="brip"><ellipse cx="100" cy="66" rx="10" ry="1.4"/><ellipse cx="100" cy="66" rx="10" ry="1.4" style="animation-delay:1s"/><ellipse cx="100" cy="66" rx="10" ry="1.4" style="animation-delay:2s"/></g>
-<ellipse class="bdr" cx="100" cy="66" rx="44" ry="6"/><path class="bdome" d="M91 65 q9 -12 18 0 Z"/><rect x="97" y="61" width="6" height="5" rx="1.5" fill="url(#b-cr)"/>
-<g class="bdrop"><circle cx="96" cy="58" r=".9" style="--dx:-7px"/><circle cx="104" cy="57" r=".8" style="--dx:7px;animation-delay:.5s"/><circle cx="100" cy="56" r=".9" style="--dx:-3px;animation-delay:1s"/></g></g>
-<rect class="s-edge" x="50" y="154.6" width="100" height="1" rx=".5"/><circle class="led" cx="100" cy="171" r="1.8"/>
-<g class="bfi"><path d="M117 166 h12 l-4.6 6 v5 l-2.8 1.6 v-6.6 Z"/></g><rect class="btb2" x="70" y="170" width="10" height="2" rx="1"/>
-${doneAt(162, 188)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
+<linearGradient id="b-wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="b-wc" stop-opacity=".85"/><stop offset="1" class="b-wc" stop-opacity=".5"/></linearGradient>
+<radialGradient id="b-ds" cx=".5" cy=".45" r=".55"><stop offset="0" class="b-wc" stop-opacity=".7"/><stop offset=".7" class="b-wc" stop-opacity=".38"/><stop offset="1" class="b-wc" stop-opacity=".2"/></radialGradient>
+<linearGradient id="b-cy" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset=".22" stop-color="#fff" stop-opacity=".1"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset=".85" stop-color="#000" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>
+<filter id="b-bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=".6"/></filter>
+<clipPath id="b-dc"><ellipse cx="100" cy="75" rx="51" ry="8"/></clipPath><clipPath id="b-wc"><rect x="95.5" y="102" width="9" height="50" rx="4.5"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="190" rx="72" ry="5"/><rect class="bft" x="56" y="181" width="14" height="5" rx="2"/><rect class="bft" x="130" y="181" width="14" height="5" rx="2"/>
+<path class="s-body" d="M34 72 V172 a66 11 0 0 0 132 0 V72 Z" fill="url(#b-bd)"/><path d="M34 72 V172 a66 11 0 0 0 132 0 V72 Z" fill="url(#b-cy)"/>
+<path class="s-part" d="M34 160 a66 11 0 0 0 132 0 V172 a66 11 0 0 1 -132 0 Z" fill="url(#b-pt)"/><path class="bsep" d="M34 160 a66 11 0 0 0 132 0"/><path class="bsh" d="M35 161.4 a65 11 0 0 0 130 0"/>
+<rect class="bwf" x="93.6" y="100" width="12.8" height="54" rx="6.4"/>
+<g clip-path="url(#b-wc)"><rect x="95.5" y="102" width="9" height="50" fill="url(#b-in)"/><g class="bwl"><rect x="95.5" y="102" width="9" height="52" fill="url(#b-wa)"/><rect class="bws" x="95.5" y="102" width="9" height=".9"/></g>
+<rect class="s-refl" x="96.4" y="102" width="2" height="50"/><g transform="rotate(14 100 127)"><rect class="s-gls" x="70" y="88" width="8" height="80" fill="url(#b-gs)"/></g></g>
+<rect class="s-glass" x="95.5" y="102" width="9" height="50" rx="4.5" fill="url(#b-gl)"/><path class="bmk" d="M106.8 106 h2.4 M106.8 148 h2.4"/>
+<ellipse class="btop" cx="100" cy="72" rx="66" ry="12" fill="url(#b-pt)"/><path class="s-edge" d="M44 66 a62 9 0 0 1 112 0 a62 10.4 0 0 0 -112 0 Z"/>
+<ellipse class="brec" cx="100" cy="74" rx="57" ry="9.6"/><ellipse class="bdish" cx="100" cy="75" rx="51" ry="8" fill="url(#b-ds)"/>
+<g clip-path="url(#b-dc)"><g class="brip"><ellipse cx="100" cy="75" rx="9" ry="1.4"/><ellipse cx="100" cy="75" rx="9" ry="1.4" style="animation-delay:1.1s"/><ellipse cx="100" cy="75" rx="9" ry="1.4" style="animation-delay:2.2s"/></g>
+<path class="s-refl" d="M62 70 q20 -3 34 -2 l-6 4 q-14 0 -28 3 z"/></g>
+<ellipse class="bflow" cx="100" cy="75" rx="51" ry="8"/><ellipse class="bdr" cx="100" cy="74" rx="57" ry="9.6"/>
+<rect class="s-part" x="146" y="64.6" width="9" height="3.4" rx="1.2" fill="url(#b-pt)"/>
+<ellipse class="bnz" cx="100" cy="75" rx="5" ry="1.8" fill="url(#b-cr)"/><path class="bdome" d="M95 75 q5 -9 10 0 Z"/><path class="bdhl" d="M97.4 72 q1 -2.6 2.4 -3.4"/>
+<g class="bdrop"><circle cx="97" cy="67" r=".9" style="--dx:-6px"/><circle cx="103" cy="66.4" r=".8" style="--dx:6px;animation-delay:.55s"/><circle cx="100" cy="65.6" r=".9" style="--dx:-2px;animation-delay:1.1s"/></g>
+<circle class="led" cx="100" cy="175" r="1.7"/><g class="bfi"><path d="M110 170.6 h7.4 l-2.9 3.7 v3.1 l-1.6 1 v-4.1 Z"/></g>
+${WARN}</svg>`,
   generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
-<path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}${WARN}</svg>`,
+<path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}<g transform="scale(.5)">${WARN}</g></svg>`,
 };
 const scene = t => `<div class="scene">${SV[t]}</div>`;
 
@@ -587,7 +587,7 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 /* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
 .scene .wn{display:none;transform-box:fill-box;transform-origin:center}
 .scene .wn{--wc:var(--nv-warn)}.st-err .scene .wn{--wc:var(--nv-error)}
-.scene .wt3{fill:var(--wc);fill-opacity:.25;stroke:var(--wc);stroke-width:1.8;stroke-linejoin:round}.scene .wx{stroke:var(--wc);stroke-width:2.2;stroke-linecap:round}.scene .wx2{fill:var(--wc)}
+.scene .wt3{fill:var(--wc);stroke:rgba(0,0,0,.25);stroke-width:.5;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--wc) 50%,transparent))}.scene .wx,.scene .wx2{fill:#fff}
 .h-warning .scene .wn,.st-err .scene .wn{display:inline}
 .anim.h-warning .scene .wn,.anim.st-err .scene .wn{animation:dv-pop2 1.6s ease-in-out infinite}
 /* Tür offen: Bullauge ca. 30° angelehnt (verkürzt, Seitenkante, gewölbtes Glas), Scharnierblock, Manschette, Trommel ohne Wasser */
@@ -648,7 +648,8 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 /* Futterautomat im Nova-Zeichenstil: Vorrat im Fenster --fl, Napf --fb */
 .w-feeder{--gx:80px}
 .w-feeder .fft{fill:#0d1016}.w-feeder .fsep{fill:#000;opacity:.3}
-.w-feeder .fk0{fill:#5e3a1e}.w-feeder .fk1{fill:#a8743f}.w-feeder .fk2{fill:#8a5a2e}.w-feeder .fk3{fill:#c38d52}
+.w-feeder .fk0{fill:#3b2414}.w-feeder .fk1{fill:#a8743f}.w-feeder .fk2{fill:#7f512a}.w-feeder .fk3{fill:#c49158}.w-feeder .fk4{fill:#93603a}
+.w-feeder [class^=fk]:not(.fk0):not(.fkh){stroke:#000;stroke-opacity:.35;stroke-width:.4}.w-feeder .fkh{fill:#fff;opacity:.16}
 .w-feeder .fwf{fill:#0b0e13;stroke:rgba(255,255,255,.08);stroke-width:.5}
 .w-feeder .fpl{transform:translateY(calc((1 - var(--fl,.7)) * 80px));transition:transform .8s}
 .h-food .w-feeder .fpl,.empty .w-feeder .fpl{--fl:0}
@@ -671,30 +672,33 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .empty .w-feeder .fled,.h-food .w-feeder .fled,.st-err .w-feeder .fled{fill:var(--nv-error);fill-opacity:1}
 .anim.empty .w-feeder .fled,.anim.h-food .w-feeder .fled,.anim.st-err .w-feeder .fled{animation:dv-blinko 1s ease-in-out infinite}
 .empty .scene .wn,.low .scene .wn{display:inline}
-/* Trinkbrunnen im Nova-Zeichenstil: Wasserstand im Tank --wl */
-.w-fountain{--gx:130px}
+/* Trinkbrunnen im Nova-Zeichenstil: Wasserstand im Sichtfenster --wl, läuft nie „fertig“ */
+.w-fountain{--gx:40px}
 .w-fountain .b-wc{stop-color:var(--dc)}
-.w-fountain .bwl{transform:translateY(calc((1 - var(--wl,.8)) * 66px));transition:transform .8s}.h-water .w-fountain .bwl{--wl:.12}
-.w-fountain .bws{fill:none;stroke:#fff;stroke-opacity:.35;stroke-width:.8}
-.w-fountain .bpl{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:.8;transition:stroke .4s}.w-fountain .bfc{stroke:rgba(0,0,0,.4);stroke-width:.4}
-.w-fountain .bbub circle{fill:#fff;opacity:0}
-.w-fountain .btop{stroke:rgba(255,255,255,.15);stroke-width:.5}.w-fountain .bdr{fill:none;stroke:#fff;stroke-opacity:.18;stroke-width:.7}
-.w-fountain .bdish{transition:opacity .6s}.st-off .w-fountain .bdish{opacity:.55}
-.w-fountain .brip ellipse{fill:none;stroke:#fff;stroke-opacity:.5;stroke-width:.6;opacity:0;transform-box:fill-box;transform-origin:center}
-.w-fountain .bdome{fill:var(--dc);fill-opacity:.6;opacity:0;transform-box:fill-box;transform-origin:center bottom;transition:opacity .4s}
+.w-fountain .bft{fill:#0d1016}.w-fountain .bsep{fill:none;stroke:#000;stroke-opacity:.45;stroke-width:.8}.w-fountain .bsh{fill:none;stroke:#fff;stroke-opacity:.08;stroke-width:.6}
+.w-fountain .bwf{fill:#07090d;stroke:rgba(255,255,255,.1);stroke-width:.5}.w-fountain .bmk{fill:none;stroke:#fff;stroke-opacity:.35;stroke-width:.6}
+.w-fountain .bwl{transform:translateY(calc((1 - var(--wl,.8)) * 48px));transition:transform .8s}.h-water .w-fountain .bwl{--wl:.12}
+.w-fountain .bws{fill:#fff;opacity:.5}
+.w-fountain .btop{stroke:rgba(255,255,255,.18);stroke-width:.5}.w-fountain .brec{fill:#0b0e13}
+.w-fountain .bdr{fill:none;stroke:#fff;stroke-opacity:.14;stroke-width:.6}
+.w-fountain .bdish{transition:opacity .6s}.st-off .w-fountain .bdish,.st-pause .w-fountain .bdish{opacity:.6}
+.w-fountain .bnz{stroke:rgba(0,0,0,.4);stroke-width:.3}
+.w-fountain .brip ellipse{fill:none;stroke:#fff;stroke-opacity:.45;stroke-width:.5;opacity:0;transform-box:fill-box;transform-origin:center}
+.w-fountain .bflow{fill:none;stroke:#fff;stroke-opacity:0;stroke-width:.7;stroke-dasharray:3 5;transition:stroke-opacity .6s}
+.w-fountain .bdome{fill:var(--dc);fill-opacity:.65;opacity:0;transform-box:fill-box;transform-origin:center bottom;transition:opacity .4s}
+.w-fountain .bdhl{fill:none;stroke:#fff;stroke-opacity:.6;stroke-width:.6;stroke-linecap:round;opacity:0;transition:opacity .4s}
 .w-fountain .bdrop circle{fill:var(--dc);opacity:0}
 .w-fountain .bfi{transform-box:fill-box;transform-origin:center}
-.w-fountain .bfi path{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:1.1;stroke-linejoin:round}.w-fountain .btb2{fill:#fff;opacity:.14}
-/* Läuft: Fontäne wippt, Wellen in der Schale und im Tank, Bläschen steigen an der Pumpe auf; aus/Pause = Wasser steht */
-.st-run .w-fountain .bdome{opacity:1}
+.w-fountain .bfi path{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.9;stroke-linejoin:round}
+/* Läuft: kleiner Sprudel wippt, Ringe laufen über die Schale, das Wasser fließt sanft über den Rand ab; aus/Pause = Wasser steht */
+.st-run .w-fountain .bdome,.st-run .w-fountain .bdhl{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
 .anim.st-run .w-fountain .bdome{animation:dv-bob 2.4s ease-in-out infinite}
-.anim.st-run .w-fountain .brip ellipse{animation:dv-rip 3s ease-out infinite}
+.anim.st-run .w-fountain .brip ellipse{animation:dv-rip 3.3s ease-out infinite}
 .anim.st-run .w-fountain .bdrop circle{animation:dv-bdrop 1.6s ease-out infinite}
-.anim.st-run .w-fountain .bbub circle{animation:dv-bub 3.2s ease-in infinite}
-.anim.st-run .w-fountain .bws{animation:dv-wave 4s linear infinite}
-/* Wasser niedrig: Stand sinkt, Warndreieck; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
+.anim.st-run .w-fountain .bflow{animation:dv-bflow 6s linear infinite}
+/* Wasser niedrig: Stand im Fenster sinkt, Ausrufezeichen; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
 .h-water .scene .wn{display:inline}
-.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;filter:drop-shadow(0 0 1.5px var(--fc))}.h-filter .w-fountain .bpl{stroke:var(--fc);stroke-opacity:.55}
+.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1.1;filter:drop-shadow(0 0 1.5px var(--fc))}
 .anim.h-filter .w-fountain .bfi{animation:dv-fpulse 1.6s ease-in-out infinite}
 .anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
 .scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}
@@ -735,7 +739,7 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 @keyframes dv-bob{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.2)}}
 @keyframes dv-rip{0%{opacity:.6;transform:scale(.4)}100%{opacity:0;transform:scale(4.2)}}
 @keyframes dv-bdrop{0%{opacity:0;transform:translate(0,5px)}40%{opacity:.9;transform:translate(calc(var(--dx,0) / 2),-3px)}100%{opacity:0;transform:translate(var(--dx,0),6px)}}
-@keyframes dv-bub{0%{opacity:0;transform:translateY(0)}20%{opacity:.55}100%{opacity:0;transform:translateY(-42px)}}
+@keyframes dv-bflow{to{stroke-dashoffset:-64}}
 @keyframes dv-fpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.18)}}
 @keyframes dv-pulse{0%{opacity:.7;transform:scale(.85)}100%{opacity:0;transform:scale(1.25)}}
 @keyframes dv-pop{0%{opacity:0;transform:scale(.4)}70%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
@@ -803,7 +807,8 @@ class NovaApplianceCard extends HTMLElement {
     if (['binary_sensor', 'switch', 'input_boolean'].includes(dom(c.entity)) && !c.running_states) return v === 'on' ? 'run' : 'off';
     for (const k of SORDER) {
       const own = c[SKEY[k]] != null ? list(c[SKEY[k]]).map(x => x.toLowerCase()) : STATES[k];
-      if (own.includes(v)) return k;
+      // Geräte ohne Ende (Trinkbrunnen): „fertig“ gilt als aus
+      if (own.includes(v)) return k === 'done' && TYPES[typeOf(c)].nodone ? 'off' : k;
     }
     return 'off';
   }
