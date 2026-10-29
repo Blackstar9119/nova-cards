@@ -9117,7 +9117,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       if (e.wd) e.wd.textContent = cls === "done" ? "End" : cls === "off" ? "" : rem != null ? fmtDisp(rem) : "– –";
       if (TY.drink) this._coffee(cls, p, TY);
       if (TY.level) {
-        const lv = levelOf(this._S(c.level));
+        const lv = levelOf(this._S(c.fill_level));
         e.g.style.setProperty(t === "feeder" ? "--fl" : "--wl", lv == null ? "" : lv.toFixed(2));
         e.g.classList.toggle("empty", lv === 0);
         e.g.classList.toggle("low", lv != null && lv > 0 && lv <= 0.2);
@@ -9307,7 +9307,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var GPROG = (t) => [
     { name: "program", selector: ST },
     ...TYPES2[t].drink ? [{ name: "drink", selector: ST }] : [],
-    ...TYPES2[t].level ? [{ name: "level", selector: { entity: { domain: ["sensor", "binary_sensor", "number", "input_number"] } } }] : [],
+    ...TYPES2[t].level ? [{ name: "fill_level", selector: { entity: { domain: ["sensor", "binary_sensor", "number", "input_number"] } } }] : [],
     ...TYPES2[t].feed ? [g2({ name: "feed_count", selector: { entity: { domain: ["sensor", "counter", "number", "input_number"] } } }, NUM("feed_done_minutes"))] : [],
     g2({ name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "duration", selector: ST }),
     g2({ name: "remaining", selector: ST }, { name: "end_time", selector: ST }),
@@ -9380,7 +9380,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     remaining: "Restzeit",
     end_time: "Endzeit",
     drink: "Getränk (optional)",
-    level: "Füllstand",
+    fill_level: "Füllstand",
     feed_count: "Fütterungen (Zähler)",
     feed_done_minutes: "„Fertig“ zeigen (Minuten)",
     phase: "Phase (optional)",
@@ -9442,7 +9442,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     program: "Laufendes Programm (Select oder Sensor). Leer bzw. ohne Wert = Programm für den Start",
     progress: "Leer = aus Restzeit und Gesamtdauer berechnet",
     drink: "Leer = Programm. Erkennt Espresso, Kaffee, Cappuccino, Latte (Macchiato), Milch, Heißwasser – Kaffeefarbe, Milchschaum und Glas passen sich an",
-    level: "Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer",
+    fill_level: "Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer",
     feed_count: "Für Geräte ohne Zustand „füttert“, z. B. sensor.futterautomat_times_dispensed: steigt der Wert, zeigt die Karte die Fütterung",
     feed_done_minutes: "So lange bleibt nach einer Fütterung „Fertig“ mit vollem Napf stehen. Leer = 10",
     duration: "Für den Fortschritt ohne Fortschritts-Sensor und für „Starten um“ (Programmdauer vor dem Start)",
