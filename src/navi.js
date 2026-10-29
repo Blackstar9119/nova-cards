@@ -85,7 +85,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .d img{width:calc(var(--s) * .6);height:calc(var(--s) * .6);object-fit:contain}
 .nm{flex:none;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif);transition:max-width .25s,opacity .2s,margin .25s,padding .25s}
 .nm.on{max-width:180px;opacity:1;margin-left:0;padding-right:6px;animation:nm 1.1s cubic-bezier(.2,.8,.2,1) .15s both}
-@keyframes nm{0%{max-width:0;opacity:0;margin-left:calc(-1 * var(--g));transform:translateX(-40px);clip-path:inset(0 100% 0 0)}40%{max-width:180px;margin-left:0}100%{opacity:1;transform:none;clip-path:inset(0 0 0 0)}}
+@keyframes nm{0%{max-width:0;opacity:0;margin-left:calc(-1 * var(--g));clip-path:inset(0 100% 0 0)}40%{max-width:180px;margin-left:0}100%{opacity:1;clip-path:inset(0 0 0 0)}}
 .side .nm{display:none}
 .dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--bc,var(--nv-accent));box-shadow:0 0 6px var(--bc,var(--nv-accent));display:none}
 .d.bd .dot{display:block}
