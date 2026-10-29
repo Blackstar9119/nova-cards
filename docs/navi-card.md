@@ -110,3 +110,5 @@ Die Animation arbeitet nach dem FLIP-Prinzip: Start- und Endlage werden einmal g
 Buttons, Namen und Leistenhintergrund nur per `transform` und `opacity` mit gleicher Dauer und Kurve – ohne Layout-Neuberechnung
 in jedem Frame. Rendert Home Assistant die Karte doppelt, startet die Animation nicht ein zweites Mal; bei schnellem
 Mehrfachwechsel gleitet sie aus der aktuellen Zwischenlage weiter.
+Jeder Button behält immer seine Inaktiv-Farbe als Grundfarbe; das Gelb liegt als eigene Ebene darüber und blendet
+beim Wechsel direkt zwischen Gelb und Inaktiv-Farbe über (gleiche Dauer und Kurve wie die Markierung).

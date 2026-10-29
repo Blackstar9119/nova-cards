@@ -87,11 +87,15 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .dock>.bg{position:absolute;inset:0;border-radius:inherit;z-index:0;pointer-events:none;transform-origin:0 50%}
 .hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:var(--hc);box-shadow:0 0 14px color-mix(in srgb,var(--hc) 50%,transparent);pointer-events:none;opacity:0;will-change:transform}
 .hl.on{opacity:1}
-.d.here{background:transparent;color:var(--nova-navi-active-text-color,var(--nv-a2-fg))}
+.d.here{color:var(--nova-navi-active-text-color,var(--nv-a2-fg))}
+/* Inaktiv-Farbe bleibt immer die Grundfarbe des Buttons; Gelb liegt als eigene Ebene darüber (unter dem Icon).
+   So geht der alte Button direkt von Gelb zu Blau über, nie über transparent */
+.d::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:50%;background:var(--hc);opacity:0;pointer-events:none}
+.d.lit::before{opacity:1}
 /* Während einer Animation: nur transform und opacity, gleiche Dauer und Kurve für alle Teile */
-.run .d,.run .nm,.run>.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
+.run .d,.run .d::before,.run .nm,.run>.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
 /* Messen und Startlage setzen: ohne Übergang */
-.hold .d,.hold .nm,.hold>.bg,.hold .hl{transition:none!important}
+.hold .d,.hold .d::before,.hold .nm,.hold>.bg,.hold .hl{transition:none!important}
 .ghost{position:absolute;left:0;top:0;z-index:1;pointer-events:none;white-space:nowrap;color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
 .d img{width:calc(var(--s) * .6);height:calc(var(--s) * .6);object-fit:contain}
 .nm{flex:none;z-index:1;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
@@ -365,9 +369,12 @@ class NovaNaviCard extends HTMLElement {
     requestAnimationFrame(() => (document.fonts?.status === 'loaded' ? go() : document.fonts.ready.then(go)));
   }
   // Klassen für aktiven Eintrag i setzen (ohne Animation)
-  _apply(i, lbl) {
+  _apply(i, lbl, lit = true) {
     this._btns.forEach((d, k) => { d.classList.toggle('here', k === i); d._nm.classList.toggle('on', k === i && lbl && !!d._nm.textContent); });
+    if (lit) this._lit(i);
   }
+  // Gelbe Ebene auf Button i (beim Wechsel gleichzeitig mit der Markierung übergeblendet)
+  _lit(i) { this._btns.forEach((d, k) => d.classList.toggle('lit', k === i)); }
   // Ursprung der absolut positionierten Ebenen (Innenkante der Leiste)
   _origin() { const r = this._dock.getBoundingClientRect(); return {x: r.left + this._dock.clientLeft - this._dock.scrollLeft, y: r.top + this._dock.clientTop - this._dock.scrollTop}; }
   _pillTo(i, show) {
@@ -401,7 +408,7 @@ class NovaNaviCard extends HTMLElement {
     const fn = oldNm && {r: rect(oldNm), t: oldNm.textContent, o: +getComputedStyle(oldNm).opacity};
     // Last: Endlage ohne transforms
     this._stop();
-    this._apply(cur, lbl);
+    this._apply(cur, lbl, false);
     const o = this._origin(), l = {bg: rect(this._bg), b: btns.map(rect)}, newNm = btns[cur]?._nm.classList.contains('on') ? btns[cur]._nm : null;
     // Invert: alles optisch zurück in die alte Lage (noch ohne Übergang)
     btns.forEach((d, k) => { if (!d.hidden && f.b[k].width) d.style.transform = `translate(${f.b[k].left - l.b[k].left}px,${f.b[k].top - l.b[k].top}px)`; });
@@ -422,6 +429,7 @@ class NovaNaviCard extends HTMLElement {
       const rec = LAST.get(this._key);
       if (rec && rec.i === cur && this.isConnected) rec.played = true;
       dock.classList.remove('hold'); dock.classList.add('run');
+      this._lit(cur);
       btns.forEach(d => { d.style.transform = ''; });
       this._bg.style.transform = '';
       // Ziel aus der Messung oben – jetzt gemessen läge es noch in der Startlage der Übergänge
