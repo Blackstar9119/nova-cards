@@ -841,8 +841,8 @@ class NovaApplianceCard extends HTMLElement {
   // Zustandsgruppe (SORDER) oder off
   _cls() {
     const k = this._cls0(), c = this._c, pw = this._S(c.power);
-    // Trinkbrunnen: Gerät an, Pumpe ruht (z. B. Smart-Modus) = Pause
-    return k === 'off' && TYPES[typeOf(c)].nodone && pw?.state === 'on' && !c.paused_states ? 'pause' : k;
+    // Trinkbrunnen: eingeschaltet = läuft (Fontäne), auch wenn die Pumpe gerade ruht (z. B. Smart-Modus oder Sensor hinkt)
+    return k === 'off' && TYPES[typeOf(c)].nodone && pw?.state === 'on' ? 'run' : k;
   }
   _cls0() {
     const c = this._c, s = this._S(c.entity), fd = this._feed();
@@ -1134,7 +1134,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const mt = ok(md) ? nice(md.state, fmtState(h, md)).replace(/^./, x => x.toUpperCase()) : null;
       const lt = mt ?? (TY.lvl ? levelText(this._S(c.fill_level), TY.lvl) : null);
       e.pg.textContent = TY.lvl ? lt ?? '' : pg || stx;
-      const phx = mt ? (cls === 'run' ? 'Pumpe läuft' : cls === 'pause' ? 'Pumpe pausiert' : '') : lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : '';
+      const pu = this._S(c.entity), pon = ok(pu) && pu.state === 'on';
+      const phx = mt ? (cls === 'off' ? '' : pon ? 'Pumpe läuft' : 'Pumpe pausiert') : lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : '';
       e.ph.hidden = !phx; e.ph.textContent = phx;
       e.rm.textContent = rem != null && cls !== 'wait' ? `noch ${fmtDur(rem)}` : p != null && act ? `${Math.round(p)} %` : '';
       e.en.textContent = end != null ? `fertig um ${this._clock(end)}` : '';
