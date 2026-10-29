@@ -7256,7 +7256,9 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     washer: { label: "Waschmaschine", icon: "mdi:washing-machine", color: "accent-1", run: "Wäscht", alt: "Schleudert", door: "Tür offen", phase: ["spin", "spinning", "schleudern"], anims: ["detergent", "softener"], dview: true },
     dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", alt: "Trocknet", door: "Tür offen", phase: ["drying", "dry", "trocknen", "ending"], dview: true },
     airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-1", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
-    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-3", run: "Läuft", alt: "Brüht", door: "Tür offen", phase: ["brew", "brewing", "brühen"], anims: ["tank", "beans", "descale"] },
+    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-1", run: "Brüht", door: "Tür offen", phase: [], anims: ["tank", "beans", "descale"], drink: true },
+    feeder: { label: "Futterautomat", icon: "mdi:bowl-mix-outline", color: "accent-1", run: "Füttert", door: "Deckel offen", phase: [], anims: ["food"], level: true, feed: true },
+    fountain: { label: "Trinkbrunnen", icon: "mdi:fountain", color: "accent-1", run: "Läuft", door: "Deckel offen", phase: [], anims: ["water", "filter"], level: true },
     generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
   };
   var typeOf = (c) => TYPES[c.device_type] ? c.device_type : "generic";
@@ -7266,11 +7268,14 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     descale: ["Entkalken", "Entkalken", "mdi:water-alert-outline"],
     detergent: ["Waschmittel", "Waschmittel leer", "mdi:bottle-tonic-outline"],
     softener: ["Weichspüler", "Weichspüler leer", "mdi:bottle-tonic-plus-outline"],
+    food: ["Futter leer", "Futter nachfüllen", "mdi:food-off"],
+    water: ["Wasser niedrig", "Wasser nachfüllen", "mdi:water-alert-outline"],
+    filter: ["Filter", "Filter wechseln", "mdi:air-filter"],
     warning: ["Allgemeine Warnung", "", "mdi:alert-outline"]
   };
   var animsOf = (t) => [...TYPES[t].anims || [], "warning"];
   var STATES = {
-    run: ["run", "running", "on", "cooking", "brewing", "starting", "ending", "anti_wrinkle", "washing", "rinsing", "spinning", "drying", "aborting", "in_use", "programmed_running"],
+    run: ["run", "running", "on", "cooking", "brewing", "feeding", "dispensing", "starting", "ending", "anti_wrinkle", "washing", "rinsing", "spinning", "drying", "aborting", "in_use", "programmed_running"],
     pause: ["pause", "paused", "user_paused"],
     wait: ["delayedstart", "delayed_start", "delay_wait", "scheduled", "waiting_to_start"],
     done: ["finished", "finish", "done", "complete", "completed", "clean", "end", "programme_ended"],
@@ -7278,7 +7283,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     prep: ["setting", "programming", "selecting", "adjusting"],
     heat: ["heating", "preheating", "preheat", "heat_up"],
     warm: ["maintain", "keep_warm", "keepwarm", "warming"],
-    ready: ["ready", "idle", "standby", "mainmenu"]
+    ready: ["ready", "idle", "standby", "mainmenu", "online"]
   };
   var SORDER = ["err", "pause", "wait", "done", "prep", "heat", "warm", "run", "ready"];
   var ACT = ["run", "pause", "wait", "heat", "warm"];
@@ -7321,6 +7326,33 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   };
   var SA = '<div class="ct sa"><div class="kv"><ha-icon icon="mdi:clock-start"></ha-icon><span class="k">Starten um</span><input type="time" aria-label="Startzeit"><div class="pill now">Sofort</div></div><div class="sah"></div></div>';
   var IC = { start: "mdi:play", pause: "mdi:pause", resume: "mdi:play-pause", stop: "mdi:stop" };
+  function levelOf(s) {
+    if (!ok(s)) return null;
+    const v = String(s.state).toLowerCase();
+    if (NUMRE.test(v)) return Math.max(0, Math.min(1, +v / 100));
+    return ["on", "low", "niedrig"].includes(v) ? 0.12 : ["empty", "leer"].includes(v) ? 0 : null;
+  }
+  var DRINKS = [
+    ["water", /hot water|hei(ß|ss)wasser|\btee\b|\btea\b/, "Wasser"],
+    ["lm", /latte macchiato/, "Latte M."],
+    ["latte", /latte|milchkaffee|caf(e|é) au lait|con leche/, "Latte"],
+    ["cappu", /cappuccino|flat white|cortado|macchiato/, "Cappuccino"],
+    ["milk", /milk|milch/, "Milch"],
+    ["espresso", /espresso|ristretto|doppio/, "Espresso"],
+    ["coffee", /^/, "Kaffee"]
+  ];
+  var drinkOf = (txt) => DRINKS.find((d) => d[1].test(txt.toLowerCase().replace(/_/g, " ")));
+  var MILK = /* @__PURE__ */ new Set(["cappu", "latte", "lm", "milk"]);
+  var CK = {
+    espresso: ["#2e1a10", "#9a6436", "#d9c4a4"],
+    coffee: ["#4a2c19", "#b07a48", "#e8dccb"],
+    cappu: ["#6b4329", "#b07a48", "#efe6d8"],
+    latte: ["#9a6c47", "#c49a6c", "#f1e9dd"],
+    lm: ["#7a4e2e", "#c49a6c", "#f3ece2"],
+    milk: ["#ece3d4", "#f3ece2", "#f6f1ea"],
+    water: ["#a9c6e8", "#a9c6e8", "#a9c6e8"]
+  };
+  var FEED_MS = 8e3;
   var WARN = '<g class="wn"><path class="wt3" d="M14 3 l10 17 h-20 Z"/><line class="wx" x1="14" y1="9" x2="14" y2="14"/><circle class="wx2" cx="14" cy="17" r="1.1"/></g>';
   var DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
   var doneAt = (right, bottom) => {
@@ -7479,25 +7511,102 @@ ${doneAt(170, 189)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
 <rect class="ahr" x="92.5" y="140" width="17" height="22" rx="6"/><rect class="s-part" x="91" y="138" width="18" height="22" rx="6" fill="url(#a-pt)"/><rect class="ahh" x="92.6" y="140" width="1.2" height="18" rx=".6"/></g>
 <g class="apuff" filter="url(#a-bl)"><ellipse cx="72" cy="94" rx="8" ry="3.6" style="--sx:-10px;--sy:-22px"/><ellipse cx="100" cy="92" rx="10" ry="3.8" style="--sx:2px;--sy:-26px;animation-delay:.25s"/><ellipse cx="128" cy="94" rx="8" ry="3.6" style="--sx:10px;--sy:-22px;animation-delay:.5s"/></g>
 ${doneAt(162, 172)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
-    // Kaffeevollautomat (Vorbild Siemens EQ): Bohnenfach oben, Bedienfeld, mittiger Auslauf mit Tasse, Wassertank seitlich
-    coffee: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvc"><path d="M41 66 h18 v10 a6 6 0 0 1 -6 6 h-6 a6 6 0 0 1 -6 -6 Z"/></clipPath><clipPath id="nvt"><rect x="80" y="26" width="7" height="50" rx="2.5"/></clipPath></defs>
-<path class="bn" d="M28 12.5 q11 -9 22 0 Z"/>
-<rect class="bd" x="16" y="12" width="64" height="82" rx="9"/>
-<rect class="tk" x="80" y="26" width="7" height="50" rx="2.5"/><g clip-path="url(#nvt)"><rect class="tw" x="80" y="38" width="7" height="40"/></g>
-<rect class="pnl" x="23" y="18" width="50" height="11" rx="3"/><circle class="led" cx="29" cy="23.5" r="1.8"/><rect class="kx" x="34" y="21.5" width="18" height="4" rx="2"/>
-<path class="dp" d="M65 19.5 c2 3 3 4.5 3 6 a3 3 0 0 1 -6 0 c0 -1.5 1 -3 3 -6 Z"/>
-<rect class="sp" x="38" y="34" width="24" height="7" rx="2.5"/><rect class="sp" x="43.5" y="41" width="4" height="3" rx="1"/><rect class="sp" x="52.5" y="41" width="4" height="3" rx="1"/>
-<line class="flow" x1="45.5" y1="44" x2="45.5" y2="80"/><line class="flow" x1="54.5" y1="44" x2="54.5" y2="80"/>
-<g clip-path="url(#nvc)"><rect class="cf" x="39" y="66" width="22" height="18"/></g>
-<path class="cup" d="M41 66 h18 v10 a6 6 0 0 1 -6 6 h-6 a6 6 0 0 1 -6 -6 Z"/><path class="cup" d="M59 69 h2.5 a3.5 3.5 0 0 1 0 7 h-2.5"/>
-<rect class="tray" x="28" y="85" width="44" height="4" rx="2"/>
-<g class="steam"><path d="M45 63 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 63 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M55 63 q3 -4 0 -8 q-3 -4 0 -8"/></g>${DONE}${WARN}</svg>`,
+    // Kaffeevollautomat im Nova-Zeichenstil: oben Bohnenbehälter-Deckel, Bedienfeld mit Display und Status-LED, Nische mit
+    // Chrom-Auslauf, Glastasse (bei Latte Macchiato hohes Glas) auf der Tropfschale, Wassertank aus Glas seitlich rechts
+    coffee: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("c")}
+<radialGradient id="c-lt" cx=".5" cy="0" r="1"><stop offset="0" class="c-lc" stop-opacity=".55"/><stop offset="1" class="c-lc" stop-opacity="0"/></radialGradient>
+<radialGradient id="c-vg" cx=".5" cy=".4" r=".8"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<linearGradient id="c-wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="c-lc" stop-opacity=".55"/><stop offset="1" class="c-lc" stop-opacity=".28"/></linearGradient>
+<linearGradient id="c-lm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="c-f"/><stop offset=".18" class="c-f"/><stop offset=".26" class="c-c"/><stop offset=".4" class="c-c"/><stop offset=".56" class="c-m"/><stop offset="1" class="c-m"/></linearGradient>
+<filter id="c-bl" x="-100%" y="-40%" width="300%" height="180%"><feGaussianBlur stdDeviation="1.2"/></filter>
+<clipPath id="c-cc"><path d="M78.5 124 h31 v25 a8.5 8.5 0 0 1 -8.5 8.5 h-14 a8.5 8.5 0 0 1 -8.5 -8.5 Z"/></clipPath>
+<clipPath id="c-gc"><path d="M85 97 h22 l-1.5 57.5 a3 3 0 0 1 -3 3 h-13 a3 3 0 0 1 -3 -3 Z"/></clipPath>
+<clipPath id="c-tc"><rect x="151" y="44" width="16" height="131" rx="3"/></clipPath><clipPath id="c-nc"><path d="M58 76 q0 -8 8 -8 h56 q8 0 8 8 V178 H58 Z"/></clipPath></defs>
+<ellipse class="s-shd" cx="102" cy="193" rx="70" ry="4.5"/><rect class="cft" x="46" y="186" width="14" height="5" rx="1.5"/><rect class="cft" x="128" y="186" width="14" height="5" rx="1.5"/>
+<rect class="s-part" x="149" y="36" width="20" height="9" rx="3" fill="url(#c-pt)"/>
+<g clip-path="url(#c-tc)"><rect x="151" y="44" width="16" height="131" fill="url(#c-in)"/><g class="ctw"><rect x="151" y="84" width="16" height="96" fill="url(#c-wa)"/><rect class="ctws" x="151" y="84" width="16" height="1"/></g>
+<path class="s-refl" d="M152.5 44 h3 v131 h-3 z"/><g transform="rotate(12 159 110)"><rect class="s-gls" x="128" y="30" width="10" height="160" fill="url(#c-gs)"/></g></g>
+<rect class="tk s-glass" x="151" y="44" width="16" height="131" rx="3" fill="url(#c-gl)"/><path class="ctm" d="M163 70 h2.6 M163 100 h2.6 M163 130 h2.6 M163 160 h2.6"/>
+<rect class="s-part" x="149" y="173" width="20" height="7" rx="2.5" fill="url(#c-pt)"/>
+<path class="bn s-part" d="M50 23 v-5 a5 5 0 0 1 5 -5 h40 a5 5 0 0 1 5 5 v5 Z" fill="url(#c-pt)"/><rect class="cbh" x="54" y="14" width="42" height=".8" rx=".4"/>
+<rect class="s-body" x="36" y="22" width="114" height="166" rx="10" fill="url(#c-bd)"/><rect class="s-sheen" x="36" y="22" width="114" height="166" rx="10" fill="url(#c-sh)"/>
+<rect class="s-edge" x="42" y="23" width="102" height="1.2" rx=".6"/>
+<rect class="s-part" x="46" y="31" width="96" height="28" rx="4" fill="url(#c-pt)"/><rect class="s-scr cscr" x="50" y="35" width="68" height="16" rx="2"/>
+<text class="ctx" x="84" y="46"></text><path class="s-tgl" d="M52 35.5 h12 l-5 15 h-7 z"/>
+<g class="ctb"><rect x="52" y="54" width="7" height="1.8" rx=".9"/><rect x="62" y="54" width="7" height="1.8" rx=".9"/><rect x="72" y="54" width="7" height="1.8" rx=".9"/><rect x="82" y="54" width="7" height="1.8" rx=".9"/></g>
+<circle class="led" cx="130" cy="40" r="1.8"/><path class="dp" d="M130 45.6 c1.6 2.4 2.4 3.6 2.4 4.8 a2.4 2.4 0 0 1 -4.8 0 c0 -1.2 .8 -2.4 2.4 -4.8 Z"/>
+<path d="M58 76 q0 -8 8 -8 h56 q8 0 8 8 V178 H58 Z" fill="url(#c-in)"/><g clip-path="url(#c-nc)"><rect class="cnl" x="58" y="68" width="72" height="70" fill="url(#c-lt)"/><rect x="58" y="68" width="72" height="110" fill="url(#c-vg)"/></g>
+<path class="cnr" d="M58 76 q0 -8 8 -8 h56 q8 0 8 8 V178 H58 Z"/>
+<rect class="cspb" x="78" y="64" width="32" height="14" rx="3.5" fill="url(#c-cr)"/><rect class="csph" x="81" y="65" width="26" height=".8" rx=".4"/>
+<rect class="cnz" x="85" y="77" width="6" height="5" rx="1.6" fill="url(#c-cr)"/><rect class="cnz" x="97" y="77" width="6" height="5" rx="1.6" fill="url(#c-cr)"/>
+<rect class="s-part" x="56" y="160" width="76" height="20" rx="3.5" fill="url(#c-pt)"/><rect class="cgr" x="58" y="157.6" width="72" height="3.4" rx="1.2" fill="url(#c-cr)"/>
+<path class="cgs" d="M61 159.3 h66"/><rect class="cth" x="60" y="163.4" width="68" height=".7"/><rect class="ctf" x="88" y="171" width="12" height="3" rx="1.5"/>
+<g class="flow"><line x1="88" y1="82" x2="88" y2="157"/><line x1="100" y1="82" x2="100" y2="157"/></g>
+<g class="ccup"><g clip-path="url(#c-cc)"><g class="cfl"><rect class="cfc" x="76" y="124" width="36" height="36"/><rect class="cfr" x="76" y="124" width="36" height="2.2"/><rect class="cff" x="76" y="124" width="36" height="9"/></g></g>
+<path class="s-glass" d="M76 124 h36 v26 a10 10 0 0 1 -10 10 h-16 a10 10 0 0 1 -10 -10 Z" fill="url(#c-gl)"/><path class="chd" d="M112 130 h3 a6.5 6.5 0 0 1 0 13 h-3.4"/>
+<path class="s-refl" d="M79 126 h4 v23 h-4 z"/><ellipse class="crim" cx="94" cy="124" rx="18" ry="1.5"/></g>
+<g class="cgls"><g clip-path="url(#c-gc)"><g class="cfl g"><rect x="83" y="97" width="26" height="61" fill="url(#c-lm)"/><rect class="cff" x="83" y="97" width="26" height="11"/></g></g>
+<path class="s-glass" d="M83 96 h26 l-1.6 60 a4 4 0 0 1 -4 4 h-14.8 a4 4 0 0 1 -4 -4 Z" fill="url(#c-gl)"/><path class="s-refl" d="M86 98 h3 l-1 56 h-3 z"/><ellipse class="crim" cx="96" cy="96" rx="13" ry="1.2"/></g>
+<g class="csteam" filter="url(#c-bl)"><path d="M87 120 c-3 -5 3 -8 0 -13 c-2 -3 1 -6 0 -9"/><path d="M95 120 c3 -5 -3 -8 0 -13 c2 -3 -1 -6 0 -9"/><path d="M103 120 c-3 -5 3 -8 0 -13 c-2 -3 1 -6 0 -9"/></g>
+${doneAt(150, 188)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
+    // Futterautomat im Nova-Zeichenstil: Säule mit Deckel, Sichtfenster mit Trockenfutter (Füllstand), Status-LED, Ausgabeschacht
+    // mit Chromlippe, davor ein Edelstahlnapf
+    feeder: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("f")}
+<pattern id="f-kb" width="11" height="8" patternUnits="userSpaceOnUse"><rect class="fk0" width="11" height="8"/><ellipse class="fk1" cx="2.6" cy="2.2" rx="2.4" ry="1.8"/><ellipse class="fk2" cx="8.2" cy="1.6" rx="2.2" ry="1.7"/><ellipse class="fk3" cx="5.4" cy="5.8" rx="2.5" ry="1.9"/><ellipse class="fk1" cx="10.8" cy="6.2" rx="2" ry="1.6"/><ellipse class="fk2" cx=".2" cy="6.4" rx="2" ry="1.6"/></pattern>
+<linearGradient id="f-ps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".2" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
+<radialGradient id="f-vg" cx=".5" cy=".4" r=".8"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<radialGradient id="f-lt" cx=".5" cy="0" r="1"><stop offset="0" class="f-lc" stop-opacity=".8"/><stop offset="1" class="f-lc" stop-opacity="0"/></radialGradient>
+<clipPath id="f-wc"><rect x="66" y="40" width="68" height="74" rx="8"/></clipPath><clipPath id="f-bc"><path d="M61 172 a39 5.2 0 0 0 78 0 V150 H61 Z"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="193" rx="66" ry="4.5"/><rect class="fft" x="62" y="176" width="12" height="4" rx="1.5"/><rect class="fft" x="126" y="176" width="12" height="4" rx="1.5"/>
+<rect class="s-body" x="54" y="24" width="92" height="154" rx="14" fill="url(#f-bd)"/><rect class="s-sheen" x="54" y="24" width="92" height="154" rx="14" fill="url(#f-sh)"/>
+<path class="s-part" d="M50 32 v-6 q0 -12 14 -12 h72 q14 0 14 12 v6 Z" fill="url(#f-pt)"/><rect class="s-edge" x="62" y="15" width="76" height="1.2" rx=".6"/><rect class="fsep" x="50" y="31.6" width="100" height=".8"/>
+<rect class="fwf" x="63.6" y="37.6" width="72.8" height="78.8" rx="10"/>
+<g clip-path="url(#f-wc)"><rect x="66" y="40" width="68" height="74" fill="url(#f-in)"/>
+<g class="fpl"><path d="M64 46 q8.5 -4 17 0 t17 0 t17 0 t17 0 V122 H64 Z" fill="url(#f-kb)"/><path d="M64 46 q8.5 -4 17 0 t17 0 t17 0 t17 0 V122 H64 Z" fill="url(#f-ps)"/></g>
+<rect x="66" y="40" width="68" height="74" fill="url(#f-vg)"/><path class="s-refl" d="M76 40 h16 l-26 50 v-24 z"/><path class="s-refl" d="M102 40 h5 l-41 74 v-10 z"/>
+<g transform="rotate(18 100 77)"><rect class="s-gls" x="40" y="20" width="14" height="120" fill="url(#f-gs)"/></g></g>
+<rect class="s-glass" x="66" y="40" width="68" height="74" rx="8" fill="url(#f-gl)"/><path class="fmk" d="M128 52 h3.6 M128 70 h3.6 M128 88 h3.6 M128 104 h3.6"/>
+<circle class="fring" cx="100" cy="128" r="5.4"/><circle class="led fled" cx="100" cy="128" r="2.4"/>
+<rect class="ftb" x="76" y="127" width="10" height="2" rx="1"/><rect class="ftb" x="114" y="127" width="10" height="2" rx="1"/>
+<path class="fch" d="M84 142 q0 -4 4 -4 h24 q4 0 4 4 v14 h-32 Z"/><rect class="fchl" x="86" y="139" width="28" height="16" fill="url(#f-lt)"/>
+<g class="fdrop">${[[97, 1, 0], [102.4, 2, 0.3], [99.2, 3, 0.55], [103.6, 1, 0.8], [96, 2, 1.05]].map(([x, k, d]) => `<ellipse class="fk${k}" cx="${x}" cy="160" rx="1.8" ry="1.4" style="animation-delay:${d}s"/>`).join("")}</g>
+<rect class="flip" x="80" y="155" width="40" height="4.4" rx="2" fill="url(#f-cr)"/>
+<path class="fbo" d="M58 172 L65 186 Q66.5 189 70 189 H130 Q133.5 189 135 186 L142 172 Z" fill="url(#f-cr)"/><ellipse class="fbi" cx="100" cy="172" rx="39.4" ry="5.4"/>
+<g clip-path="url(#f-bc)"><g class="fbw"><path d="M63 175 q4 -15 20 -17 q17 -3 34 0 q16 2 20 17 Z" fill="url(#f-kb)"/><path d="M63 175 q4 -15 20 -17 q17 -3 34 0 q16 2 20 17 Z" fill="url(#f-ps)"/></g></g>
+<ellipse class="fbr" cx="100" cy="172" rx="42" ry="6.5"/><path class="fbh" d="M64.5 178 l3.6 7.4"/>
+${doneAt(146, 189)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
+    // Trinkbrunnen im Nova-Zeichenstil: Deckel mit Wasserschale und kleiner Fontäne, darunter Glastank mit Wasser und
+    // Filterpatrone (Pumpe mit Steigrohr), Sockel mit Status-LED und Filter-Symbol
+    fountain: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("b")}
+<linearGradient id="b-wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="b-wc" stop-opacity=".5"/><stop offset="1" class="b-wc" stop-opacity=".22"/></linearGradient>
+<radialGradient id="b-ds" cx=".5" cy=".5" r=".5"><stop offset="0" class="b-wc" stop-opacity=".75"/><stop offset="1" class="b-wc" stop-opacity=".3"/></radialGradient>
+<radialGradient id="b-vg" cx=".5" cy=".45" r=".8"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<clipPath id="b-tc"><rect x="46" y="80" width="108" height="78" rx="6"/></clipPath><clipPath id="b-dc"><ellipse cx="100" cy="66" rx="44" ry="6"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="193" rx="70" ry="4.5"/>
+<rect class="s-body" x="38" y="154" width="124" height="34" rx="10" fill="url(#b-bd)"/><rect class="s-sheen" x="38" y="154" width="124" height="34" rx="10" fill="url(#b-sh)"/>
+<g clip-path="url(#b-tc)"><rect x="46" y="80" width="108" height="78" fill="url(#b-in)"/>
+<g class="bwl"><rect x="40" y="88" width="120" height="76" fill="url(#b-wa)"/><path class="bws" d="M40 88 ${Array.from({ length: 10 }, () => "q6.25 -1.6 12.5 0 t12.5 0").join(" ")}"/></g>
+<rect class="btb" x="98" y="76" width="4" height="36" fill="url(#b-cr)"/>
+<g class="bflt"><rect class="bfc" x="82" y="110" width="36" height="6" rx="2" fill="url(#b-cr)"/><rect class="s-part" x="84" y="116" width="32" height="40" rx="3" fill="url(#b-pt)"/>
+<path class="bpl" d="${Array.from({ length: 7 }, (_, i) => `M${88 + i * 4} 120 v32`).join(" ")}"/></g>
+<g class="bbub">${[[90, 0], [108, 0.8], [95, 1.6], [112, 2.2], [86, 2.8]].map(([x, d]) => `<circle cx="${x}" cy="154" r="${x % 2 ? 0.9 : 1.2}" style="animation-delay:${d}s"/>`).join("")}</g>
+<rect x="46" y="80" width="108" height="78" fill="url(#b-vg)"/><path class="s-refl" d="M58 80 h18 l-30 52 v-26 z"/><path class="s-refl" d="M86 80 h5 l-45 72 v-9 z"/>
+<g transform="rotate(18 100 125)"><rect class="s-gls" x="10" y="70" width="16" height="110" fill="url(#b-gs)"/></g></g>
+<rect class="s-glass" x="46" y="80" width="108" height="78" rx="6" fill="url(#b-gl)"/>
+<g transform="translate(0 -12)"><path class="s-body" d="M40 90 V74 q0 -10 12 -10 h96 q12 0 12 10 V90 q0 4 -4 4 H44 q-4 0 -4 -4 Z" fill="url(#b-bd)"/><path class="s-sheen" d="M40 90 V74 q0 -10 12 -10 h96 q12 0 12 10 V90 q0 4 -4 4 H44 q-4 0 -4 -4 Z" fill="url(#b-sh)"/>
+<ellipse class="btop" cx="100" cy="66" rx="56" ry="8.5" fill="url(#b-pt)"/><ellipse class="bdish" cx="100" cy="66" rx="44" ry="6" fill="url(#b-ds)"/>
+<g clip-path="url(#b-dc)" class="brip"><ellipse cx="100" cy="66" rx="10" ry="1.4"/><ellipse cx="100" cy="66" rx="10" ry="1.4" style="animation-delay:1s"/><ellipse cx="100" cy="66" rx="10" ry="1.4" style="animation-delay:2s"/></g>
+<ellipse class="bdr" cx="100" cy="66" rx="44" ry="6"/><path class="bdome" d="M91 65 q9 -12 18 0 Z"/><rect x="97" y="61" width="6" height="5" rx="1.5" fill="url(#b-cr)"/>
+<g class="bdrop"><circle cx="96" cy="58" r=".9" style="--dx:-7px"/><circle cx="104" cy="57" r=".8" style="--dx:7px;animation-delay:.5s"/><circle cx="100" cy="56" r=".9" style="--dx:-3px;animation-delay:1s"/></g></g>
+<rect class="s-edge" x="50" y="154.6" width="100" height="1" rx=".5"/><circle class="led" cx="100" cy="171" r="1.8"/>
+<g class="bfi"><path d="M117 166 h12 l-4.6 6 v5 l-2.8 1.6 v-6.6 Z"/></g><rect class="btb2" x="70" y="170" width="10" height="2" rx="1"/>
+${doneAt(162, 188)}<g transform="translate(4 2) scale(1.3)">${WARN}</g></svg>`,
     generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
 <path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}${WARN}</svg>`
   };
   var scene = (t) => `<div class="scene">${SV[t]}</div>`;
   var DCSS2 = `
-.g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg)}
+.g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--nova-filter-color,var(--nv-a2))}
 ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
 .dv .hd small.er{color:var(--nv-error);opacity:1}
@@ -7558,11 +7667,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .scene .drops circle{fill:var(--dc);opacity:0}
 .scene .arm{fill:currentColor;fill-opacity:.4;transform-box:view-box;transform-origin:50px 82px}
 .scene .drum{transform-box:view-box;transform-origin:50px 58px}
-.scene .heat path,.scene .steam path{fill:none;stroke:var(--dc);stroke-width:1.6;stroke-linecap:round;opacity:0}
-.scene .steam path{stroke:currentColor;stroke-opacity:.6}
-.scene .cup{fill:none;stroke:currentColor;stroke-opacity:.55;stroke-width:1.6;stroke-linejoin:round}
-.scene .cf{fill:var(--dc);fill-opacity:.75;transform-box:fill-box;transform-origin:center bottom;transform:scaleY(.15)}
-.scene .flow{stroke:var(--dc);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:4 3;opacity:0}
+.scene .heat path{fill:none;stroke:var(--dc);stroke-width:1.6;stroke-linecap:round;opacity:0}
 .scene .pulse{fill:none;stroke:var(--dc);stroke-width:2;opacity:0;transform-box:view-box;transform-origin:50px 50px}
 .scene .pw{fill:none;stroke:currentColor;stroke-opacity:.55;stroke-width:3;stroke-linecap:round}
 .st-run .scene .pw{stroke:var(--dc);stroke-opacity:1}
@@ -7593,7 +7698,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .scene .gap{fill:rgba(0,0,0,.42)}.scene .ahs{fill:rgba(0,0,0,.35)}
 .scene .dhl{fill:none;stroke:currentColor;stroke-opacity:.35;stroke-width:1.2;stroke-linecap:round}
 .scene .ahd{fill:currentColor;fill-opacity:.5;stroke:currentColor;stroke-opacity:.7;stroke-width:1}
-.scene .kd,.scene .pnl{fill:rgba(0,0,0,.3);stroke:currentColor;stroke-opacity:.18;stroke-width:1}
+.scene .kd{fill:rgba(0,0,0,.3);stroke:currentColor;stroke-opacity:.18;stroke-width:1}
 .scene .kb{fill:currentColor;fill-opacity:.14;stroke:currentColor;stroke-opacity:.32;stroke-width:1}
 .scene .opn{fill:rgba(0,0,0,.55);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
 .w-airfryer .dw{fill:currentColor;fill-opacity:.2;stroke:currentColor;stroke-opacity:.45;stroke-width:1.2}
@@ -7757,26 +7862,104 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .scene .lk{display:none;fill:none;stroke:currentColor;stroke-opacity:.8;stroke-width:1.4}.scene .lk rect{fill:currentColor;fill-opacity:.8;stroke:none}
 .dlock .w-washer .lk{display:inline}
 .scene .dd{transform-box:view-box;transition:transform .5s ease}
-.h-detergent .w-washer .dw,.h-softener .w-washer .dw,.h-beans .w-coffee .bn,.h-descale .w-coffee .dp{fill:var(--nv-warn);fill-opacity:.95}
-.h-tank .w-coffee .tw{transform:translateY(40px)}.h-tank .w-coffee .tk{stroke:var(--nv-warn);stroke-opacity:1;stroke-width:1.4}
-.anim.h-detergent .w-washer .dw,.anim.h-softener .w-washer .dw,.anim.h-tank .w-coffee .tk,.anim.h-beans .w-coffee .bn,.anim.h-descale .w-coffee .dp{animation:dv-blinko 1.3s ease-in-out infinite}
-/* Kaffeevollautomat */
-.scene .bn{fill:currentColor;fill-opacity:.16;stroke:currentColor;stroke-opacity:.28;stroke-width:1.2}
-.scene .tk{fill:rgba(0,0,0,.22);stroke:currentColor;stroke-opacity:.3;stroke-width:1}
-.scene .tw{fill:currentColor;fill-opacity:.3;transform-box:view-box;transition:transform .8s}
-.scene .dp{fill:currentColor;fill-opacity:.15}
-.scene .sp,.scene .tray{fill:currentColor;fill-opacity:.24}
-.st-heat .w-coffee .pnl{stroke:var(--dc);stroke-opacity:.8}
-.anim.st-heat .w-coffee .pnl{animation:dv-stk 2.6s ease-in-out infinite}
-.anim.st-run .w-coffee .steam path,.anim.st-done.fx .w-coffee .steam path{animation:dv-steam 3s ease-out infinite}
-.anim.st-done.fx .w-coffee .steam path{animation-iteration-count:2}
-.st-run.alt .w-coffee .flow{opacity:.9}
-.anim.st-run.alt .w-coffee .flow{animation:dv-flow .5s linear infinite}
-.anim.st-run.alt .w-coffee .cf{animation:dv-fill 9s ease-out both}
-.st-run:not(.alt) .w-coffee .cf,.st-done .w-coffee .cf{transform:none}
+.h-detergent .w-washer .dw,.h-softener .w-washer .dw{fill:var(--nv-warn);fill-opacity:.95}
+.anim.h-detergent .w-washer .dw,.anim.h-softener .w-washer .dw{animation:dv-blinko 1.3s ease-in-out infinite}
+/* Kaffeevollautomat im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js); Getränkefarben --cc/--cr/--cm aus der Karte */
+.w-coffee{--gx:70px}
+.w-coffee .cft{fill:#0d1016}.w-coffee .c-lc{stop-color:var(--dc)}
+.w-coffee .c-f{stop-color:var(--cm,#f3ece2)}.w-coffee .c-c{stop-color:var(--cc,#7a4e2e)}.w-coffee .c-m{stop-color:color-mix(in srgb,var(--cm,#f3ece2) 82%,var(--cc,#7a4e2e))}
+.w-coffee .ctw{transform-box:view-box;transition:transform .8s}.w-coffee .ctws{fill:#fff;opacity:.35}
+.w-coffee .tk{transition:stroke .3s}.w-coffee .ctm{fill:none;stroke:#fff;stroke-opacity:.25;stroke-width:.6}
+.w-coffee .cbh{fill:#fff;opacity:.14}.w-coffee .ctb rect{fill:#fff;opacity:.14}
+.w-coffee .cscr{transition:fill .6s}
+.w-coffee .ctx{font:600 8.4px Roboto,system-ui,sans-serif;fill:#fff;text-anchor:middle}
+.w-coffee .dp{fill:#fff;opacity:.2}
+.w-coffee .cnr{fill:none;stroke:#000;stroke-opacity:.45;stroke-width:1}.w-coffee .cnl{opacity:0;transition:opacity .6s}
+.w-coffee .cspb,.w-coffee .cnz{stroke:rgba(0,0,0,.4);stroke-width:.4}.w-coffee .csph{fill:#fff;opacity:.35}
+.w-coffee .cgr{stroke:rgba(0,0,0,.35);stroke-width:.4}.w-coffee .cgs{fill:none;stroke:#0b0e13;stroke-width:1.2;stroke-dasharray:3 1.6}
+.w-coffee .cth{fill:#fff;opacity:.1}.w-coffee .ctf{fill:#0b0e13}
+.w-coffee .flow line{stroke:var(--cc,#4a2c19);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:5 2.5;opacity:0;transition:opacity .3s}
+.w-coffee .cfc{fill:var(--cc,#4a2c19)}.w-coffee .cfr{fill:var(--cr,#b07a48)}
+.w-coffee .cff{fill:var(--cm,#efe6d8);transform-box:fill-box;transform-origin:center top;transform:scaleY(var(--mf,0))}
+.w-coffee .cfl{--ch:34px;transform:translateY(calc((1 - var(--cl,0)) * var(--ch)));transition:transform 1s}.w-coffee .cfl.g{--ch:61px}
+.k-water .w-coffee .cfc{opacity:.45}.k-water .w-coffee .cfr{display:none}.k-milk .w-coffee .cfr{opacity:.4}
+.w-coffee .chd{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:1.6}.w-coffee .crim{fill:none;stroke:#fff;stroke-opacity:.28;stroke-width:.6}
+.w-coffee .cgls{display:none}.k-lm .w-coffee .cgls{display:inline}.k-lm .w-coffee .ccup,.k-lm .w-coffee .csteam{display:none}
+.w-coffee .csteam path{fill:none;stroke:#d7dfec;stroke-width:2;stroke-linecap:round;opacity:0;transform-box:fill-box;transform-origin:center bottom}
+.st-off .w-coffee .ctx{display:none}
+.st-ready .w-coffee .cscr,.st-done .w-coffee .cscr,.st-prep .w-coffee .cscr{fill:color-mix(in srgb,var(--dc) 12%,${PAL.screen})}
+.st-run .w-coffee .cscr,.st-heat .w-coffee .cscr,.st-pause .w-coffee .cscr,.st-warm .w-coffee .cscr{fill:color-mix(in srgb,var(--dc) 20%,${PAL.screen})}
+.st-ready .w-coffee .cnl{opacity:.22}.st-run .w-coffee .cnl{opacity:.85}.st-done .w-coffee .cnl,.st-pause .w-coffee .cnl{opacity:.4}
+.st-heat .w-coffee .cscr{stroke:var(--dc);stroke-opacity:.8}.anim.st-heat .w-coffee .cscr{animation:dv-stk 2.6s ease-in-out infinite}
+.anim.st-pause .w-coffee .ctx{animation:dv-blinko 1.4s ease-in-out infinite}
+/* Brüht: zwei Strahlen, Tasse füllt sich (nach Fortschritt, sonst in 9 s), bei Milchgetränken wächst der Schaum, Dampf steigt */
+.st-run .w-coffee .flow line{opacity:.95}
+.anim.st-run .w-coffee .flow line{animation:dv-flow .5s linear infinite}
+.anim.st-run:not(.cprog) .w-coffee .cfl{animation:dv-cfill 9s ease-out both}
+.anim.st-run.milk:not(.cprog) .w-coffee .cff{animation:dv-foam 9s ease-out both}
+.anim.st-run .w-coffee .csteam path,.anim.st-done .w-coffee .csteam path{animation:dv-hz 3.6s ease-out infinite}
+.anim.st-done .w-coffee .csteam path{animation-duration:4.4s}
+.w-coffee .csteam path:nth-child(2){animation-delay:1.2s}.w-coffee .csteam path:nth-child(3){animation-delay:2.4s}
+/* Störung: Display rot; Wassertank leer: Tank leer und blinkt rot; Bohnen/Entkalken: Deckel bzw. Tropfen in der Warnfarbe */
+.st-err .w-coffee .cscr{stroke:var(--nv-error);stroke-opacity:.9}.st-err .w-coffee .ctx{fill:var(--nv-error)}
+.h-tank .w-coffee .ctw{transform:translateY(86px)}.h-tank .w-coffee .tk{stroke:var(--nv-error);stroke-opacity:1;stroke-width:1.2}
+.h-beans .w-coffee .bn{fill:var(--nv-warn)}.h-descale .w-coffee .dp{fill:var(--nv-warn);opacity:1}
+.anim.h-tank .w-coffee .tk,.anim.h-beans .w-coffee .bn,.anim.h-descale .w-coffee .dp{animation:dv-blinko 1.3s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.st-run:not(.cprog) .w-coffee .cfl{--cl:.6}.st-run.milk:not(.cprog) .w-coffee .cff{--mf:.5}}
+/* Futterautomat im Nova-Zeichenstil: Vorrat im Fenster --fl, Napf --fb */
+.w-feeder{--gx:80px}
+.w-feeder .fft{fill:#0d1016}.w-feeder .fsep{fill:#000;opacity:.3}
+.w-feeder .fk0{fill:#5e3a1e}.w-feeder .fk1{fill:#a8743f}.w-feeder .fk2{fill:#8a5a2e}.w-feeder .fk3{fill:#c38d52}
+.w-feeder .fwf{fill:#0b0e13;stroke:rgba(255,255,255,.08);stroke-width:.5}
+.w-feeder .fpl{transform:translateY(calc((1 - var(--fl,.7)) * 80px));transition:transform .8s}
+.h-food .w-feeder .fpl,.empty .w-feeder .fpl{--fl:0}
+.w-feeder .fmk{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.7}
+.w-feeder .fring{fill:#07090d;stroke:rgba(255,255,255,.15);stroke-width:.5}.w-feeder .ftb{fill:#fff;opacity:.14}
+.w-feeder .fch{fill:#05070a;stroke:rgba(255,255,255,.08);stroke-width:.5}
+.w-feeder .f-lc{stop-color:var(--dc)}.w-feeder .fchl{opacity:0;transition:opacity .6s}
+.w-feeder .flip,.w-feeder .fbo{stroke:rgba(0,0,0,.4);stroke-width:.4}
+.w-feeder .fdrop ellipse{opacity:0}
+.w-feeder .fbi{fill:#151921}.w-feeder .fbr{fill:none;stroke:#fff;stroke-opacity:.35;stroke-width:.8}
+.w-feeder .fbh{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:1.4;stroke-linecap:round}
+.w-feeder .fbw{transform:translateY(calc((1 - var(--fb,.2)) * 15px));transition:transform 1s}
+/* Füttert: Licht im Schacht, Brocken fallen in den Napf, der Napf füllt sich; fertig = voller Napf */
+.st-run .w-feeder .fchl{opacity:.75}
+.anim.st-run .w-feeder .fdrop ellipse{animation:dv-kib .9s ease-in infinite}
+.st-run .w-feeder .fbw,.st-done .w-feeder .fbw{--fb:1}
+.anim.st-run .w-feeder .fbw{animation:dv-fbowl 8s ease-out both}
+.anim.st-run .w-feeder .fled{animation:dv-blinko 1.4s ease-in-out infinite}
+/* Futter leer / Störung: Fenster leer, LED blinkt rot */
+.empty .w-feeder .fled,.h-food .w-feeder .fled,.st-err .w-feeder .fled{fill:var(--nv-error);fill-opacity:1}
+.anim.empty .w-feeder .fled,.anim.h-food .w-feeder .fled,.anim.st-err .w-feeder .fled{animation:dv-blinko 1s ease-in-out infinite}
+.empty .scene .wn,.low .scene .wn{display:inline}
+/* Trinkbrunnen im Nova-Zeichenstil: Wasserstand im Tank --wl */
+.w-fountain{--gx:130px}
+.w-fountain .b-wc{stop-color:var(--dc)}
+.w-fountain .bwl{transform:translateY(calc((1 - var(--wl,.8)) * 66px));transition:transform .8s}.h-water .w-fountain .bwl{--wl:.12}
+.w-fountain .bws{fill:none;stroke:#fff;stroke-opacity:.35;stroke-width:.8}
+.w-fountain .bpl{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:.8;transition:stroke .4s}.w-fountain .bfc{stroke:rgba(0,0,0,.4);stroke-width:.4}
+.w-fountain .bbub circle{fill:#fff;opacity:0}
+.w-fountain .btop{stroke:rgba(255,255,255,.15);stroke-width:.5}.w-fountain .bdr{fill:none;stroke:#fff;stroke-opacity:.18;stroke-width:.7}
+.w-fountain .bdish{transition:opacity .6s}.st-off .w-fountain .bdish{opacity:.55}
+.w-fountain .brip ellipse{fill:none;stroke:#fff;stroke-opacity:.5;stroke-width:.6;opacity:0;transform-box:fill-box;transform-origin:center}
+.w-fountain .bdome{fill:var(--dc);fill-opacity:.6;opacity:0;transform-box:fill-box;transform-origin:center bottom;transition:opacity .4s}
+.w-fountain .bdrop circle{fill:var(--dc);opacity:0}
+.w-fountain .bfi{transform-box:fill-box;transform-origin:center}
+.w-fountain .bfi path{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:1.1;stroke-linejoin:round}.w-fountain .btb2{fill:#fff;opacity:.14}
+/* Läuft: Fontäne wippt, Wellen in der Schale und im Tank, Bläschen steigen an der Pumpe auf; aus/Pause = Wasser steht */
+.st-run .w-fountain .bdome{opacity:1}
+.anim.st-run .w-fountain .bdome{animation:dv-bob 2.4s ease-in-out infinite}
+.anim.st-run .w-fountain .brip ellipse{animation:dv-rip 3s ease-out infinite}
+.anim.st-run .w-fountain .bdrop circle{animation:dv-bdrop 1.6s ease-out infinite}
+.anim.st-run .w-fountain .bbub circle{animation:dv-bub 3.2s ease-in infinite}
+.anim.st-run .w-fountain .bws{animation:dv-wave 4s linear infinite}
+/* Wasser niedrig: Stand sinkt, Warndreieck; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
+.h-water .scene .wn{display:inline}
+.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;filter:drop-shadow(0 0 1.5px var(--fc))}.h-filter .w-fountain .bpl{stroke:var(--fc);stroke-opacity:.55}
+.anim.h-filter .w-fountain .bfi{animation:dv-fpulse 1.6s ease-in-out infinite}
 .anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
-.scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .steam path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}
-.scene .drops circle:nth-child(3),.scene .heat path:nth-child(3),.scene .steam path:nth-child(3),.scene .puff path:nth-child(3){animation-delay:1s}
+.scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}
+.scene .drops circle:nth-child(3),.scene .heat path:nth-child(3),.scene .puff path:nth-child(3){animation-delay:1s}
 .scene .drops circle:nth-child(4){animation-delay:.25s}.scene .drops circle:nth-child(5){animation-delay:.75s}.scene .drops circle:nth-child(6){animation-delay:1.15s}
 .scene .drops circle:nth-child(odd){--dx:-6px}.scene .drops circle:nth-child(even){--dx:6px}
 /* Unsichtbar (außerhalb des Bildschirms, Tab im Hintergrund, Kartenauswahl): alles steht */
@@ -7806,7 +7989,15 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 @keyframes dv-jolt{0%,100%{transform:translateY(0)}35%{transform:translateY(6px)}65%{transform:translateY(-1px)}}
 @keyframes dv-steam{0%{opacity:0;transform:translateY(4px)}35%{opacity:.6}100%{opacity:0;transform:translateY(-12px)}}
 @keyframes dv-flow{to{stroke-dashoffset:-7}}
-@keyframes dv-fill{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+@keyframes dv-cfill{from{transform:translateY(var(--ch))}to{transform:translateY(0)}}
+@keyframes dv-foam{0%,45%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+@keyframes dv-kib{0%{opacity:0;transform:translateY(-2px)}15%,80%{opacity:1}100%{opacity:0;transform:translateY(12px)}}
+@keyframes dv-fbowl{from{transform:translateY(15px)}to{transform:translateY(0)}}
+@keyframes dv-bob{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.2)}}
+@keyframes dv-rip{0%{opacity:.6;transform:scale(.4)}100%{opacity:0;transform:scale(4.2)}}
+@keyframes dv-bdrop{0%{opacity:0;transform:translate(0,5px)}40%{opacity:.9;transform:translate(calc(var(--dx,0) / 2),-3px)}100%{opacity:0;transform:translate(var(--dx,0),6px)}}
+@keyframes dv-bub{0%{opacity:0;transform:translateY(0)}20%{opacity:.55}100%{opacity:0;transform:translateY(-42px)}}
+@keyframes dv-fpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.18)}}
 @keyframes dv-pulse{0%{opacity:.7;transform:scale(.85)}100%{opacity:0;transform:scale(1.25)}}
 @keyframes dv-pop{0%{opacity:0;transform:scale(.4)}70%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes dv-check{from{stroke-dashoffset:16}to{stroke-dashoffset:0}}
@@ -7822,7 +8013,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      if (c.device_type && !TYPES[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee oder generic sein");
+      if (c.device_type && !TYPES[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee, feeder, fountain oder generic sein");
       this._c = { ...GDEF, ...c, controls: [].concat(c.controls || []).map(toObj).filter((o) => o.entity), hints: [].concat(c.hints || []).map(toObj).filter((o) => o.entity) };
       this._ids = entityIds(this._c);
       this._built = false;
@@ -7873,6 +8064,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
         this._io.observe(this);
       } else this._inView = true;
       this._tick();
+      if (this._fat && this._e) this._update();
     }
     disconnectedCallback() {
       document.removeEventListener("visibilitychange", this._onVis);
@@ -7881,13 +8073,15 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
       this._tick();
       Object.values(this._pend || {}).forEach((p) => clearTimeout(p.t));
       clearTimeout(this._ft);
+      clearTimeout(this._fdt);
     }
     _S(id) {
       return id ? this._h?.states[id] : null;
     }
     // Zustandsgruppe (SORDER) oder off
     _cls() {
-      const c = this._c, s = this._S(c.entity);
+      const c = this._c, s = this._S(c.entity), fd = this._feed();
+      if (fd) return fd;
       if (!s) return "off";
       const v = String(s.state).toLowerCase();
       if (["binary_sensor", "switch", "input_boolean"].includes(dom(c.entity)) && !c.running_states) return v === "on" ? "run" : "off";
@@ -7896,6 +8090,25 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
         if (own.includes(v)) return k;
       }
       return "off";
+    }
+    // Futterautomat ohne „füttert“-Zustand: steigt der Zähler „Fütterungen“, kurz „läuft“ (Animation), danach eine Weile „fertig“
+    _feed() {
+      const c = this._c;
+      if (!TYPES[typeOf(c)].feed || !c.feed_count) return null;
+      const s = this._S(c.feed_count), v = ok(s) && NUMRE.test(s.state) ? +s.state : null;
+      if (v != null) {
+        if (this._fc != null && v > this._fc) this._fat = Date.now();
+        this._fc = v;
+      }
+      if (!this._fat) return null;
+      const dt = Date.now() - this._fat, end = FEED_MS + Math.max(0, +(c.feed_done_minutes ?? 10) || 0) * 6e4;
+      clearTimeout(this._fdt);
+      if (dt >= end) {
+        this._fat = 0;
+        return null;
+      }
+      this._fdt = setTimeout(() => this._update(), (dt < FEED_MS ? FEED_MS : end) - dt + 50);
+      return dt < FEED_MS ? "run" : "done";
     }
     _build() {
       this._built = true;
@@ -7922,6 +8135,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         kp: q(".kp"),
         kt: q(".kt"),
         wd: q(".wdt"),
+        cx: q(".ctx"),
         en: q(".en"),
         ctls: q(".ctls"),
         acts: q(".acts"),
@@ -8168,6 +8382,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         if (e.kt) e.kt.textContent = r > 0 ? fmtDisp(r) : "";
       }
       if (e.wd) e.wd.textContent = cls === "done" ? "End" : cls === "off" ? "" : rem != null ? fmtDisp(rem) : "– –";
+      if (TY.drink) this._coffee(cls, p, TY);
+      if (TY.level) {
+        const lv = levelOf(this._S(c.level));
+        e.g.style.setProperty(t === "feeder" ? "--fl" : "--wl", lv == null ? "" : lv.toFixed(2));
+        e.g.classList.toggle("empty", lv === 0);
+        e.g.classList.toggle("low", lv != null && lv > 0 && lv <= 0.2);
+      }
       if (this._fx && !this._sw) {
         this._sw = true;
         sweep(e.g);
@@ -8275,6 +8496,19 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       });
       this._e.acts.hidden = Object.values(b).every((x) => x.hidden);
     }
+    // Kaffee: Getränk aus „Getränk“, Programm oder Start-Programm → Farben, Tasse/Glas, Milchschaum, Füllung, Display-Text
+    _coffee(cls, p, TY) {
+      const c = this._c, g = this._e.g, src = [c.drink, c.program, c.start_option].map((x) => this._S(x)).find((x) => ok(x) && x.state !== "off");
+      const D = drinkOf(src ? `${src.state} ${fmtState(this._h, src)}` : ""), k = D[0], col = CK[k], milk = MILK.has(k);
+      DRINKS.forEach(([x]) => g.classList.toggle(`k-${x}`, x === k));
+      ["--cc", "--cr", "--cm"].forEach((v, i) => g.style.setProperty(v, col[i]));
+      g.classList.toggle("milk", milk);
+      const prog = cls === "run" && p != null, f = cls === "done" ? 1 : prog ? p / 100 : 0;
+      g.classList.toggle("cprog", prog);
+      g.style.setProperty("--cl", f.toFixed(2));
+      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f - 0.45) / 0.55)).toFixed(2) : "0");
+      if (this._e.cx) this._e.cx.textContent = { off: "", err: "Störung", done: "Fertig", heat: "Heizt auf", warm: "Warm", wait: "Später" }[cls] ?? (src ? D[2] : cls === "run" ? TY.run : "Bereit");
+    }
     _alerts(cls, stx) {
       const c = this._c, h = this._h, t = typeOf(c), TY = TYPES[t], g = this._e.g, out = [], on = /* @__PURE__ */ new Set();
       const add = (lvl, ic, msg, e, hit) => out.push(`<div class="al ${lvl}${hit ? " hit" : ""}"${e ? ` data-e="${esc(e)}"` : ""}><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span></div>`);
@@ -8328,7 +8562,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       return runAction(this, o, kind, info);
     }
   };
-  define("geraet-card", NovaApplianceCard, { name: "Nova Gerät Card", description: "Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.", documentationURL: docUrl("nova-gerät-card") });
+  define("geraet-card", NovaApplianceCard, { name: "Nova Gerät Card", description: "Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.", documentationURL: docUrl("nova-gerät-card") });
   var ST = { entity: {} };
   var BTN = { entity: { domain: ["button", "input_button", "script", "scene", "switch", "input_boolean"] } };
   var GGEN = [
@@ -8339,6 +8573,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   ];
   var GPROG = (t) => [
     { name: "program", selector: ST },
+    ...TYPES[t].drink ? [{ name: "drink", selector: ST }] : [],
+    ...TYPES[t].level ? [{ name: "level", selector: { entity: { domain: ["sensor", "binary_sensor", "number", "input_number"] } } }] : [],
+    ...TYPES[t].feed ? [g2({ name: "feed_count", selector: { entity: { domain: ["sensor", "counter", "number", "input_number"] } } }, NUM("feed_done_minutes"))] : [],
     g2({ name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "duration", selector: ST }),
     g2({ name: "remaining", selector: ST }, { name: "end_time", selector: ST }),
     { name: "phase", selector: ST },
@@ -8398,7 +8635,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     ...t === "airfryer" ? [g2(ROLE("heat_color"), { name: "window", selector: { boolean: {} } })] : []
   ];
   var GACTS = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
-  var PHASE_LBL = { dishwasher: "Zustände „trocknet“ (Dampf statt Sprüharm)", washer: "Zustände „schleudert“ (schnelle Trommel)", coffee: "Zustände „brüht“ (Kaffee läuft in die Tasse)" };
+  var PHASE_LBL = { dishwasher: "Zustände „trocknet“ (Dampf statt Sprüharm)", washer: "Zustände „schleudert“ (schnelle Trommel)" };
   var GLABELS = {
     ...BASE_LABELS,
     device_type: "Gerätetyp",
@@ -8409,6 +8646,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     duration: "Gesamtdauer",
     remaining: "Restzeit",
     end_time: "Endzeit",
+    drink: "Getränk (optional)",
+    level: "Füllstand",
+    feed_count: "Fütterungen (Zähler)",
+    feed_done_minutes: "„Fertig“ zeigen (Minuten)",
     phase: "Phase (optional)",
     phase_states: "Sonder-Zustände",
     display: "Darstellung",
@@ -8467,6 +8708,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     power: "Optional: runder Knopf oben rechts",
     program: "Laufendes Programm (Select oder Sensor). Leer bzw. ohne Wert = Programm für den Start",
     progress: "Leer = aus Restzeit und Gesamtdauer berechnet",
+    drink: "Leer = Programm. Erkennt Espresso, Kaffee, Cappuccino, Latte (Macchiato), Milch, Heißwasser – Kaffeefarbe, Milchschaum und Glas passen sich an",
+    level: "Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer",
+    feed_count: "Für Geräte ohne Zustand „füttert“, z. B. sensor.futterautomat_times_dispensed: steigt der Wert, zeigt die Karte die Fütterung",
+    feed_done_minutes: "So lange bleibt nach einer Fütterung „Fertig“ mit vollem Napf stehen. Leer = 10",
     duration: "Für den Fortschritt ohne Fortschritts-Sensor und für „Starten um“ (Programmdauer vor dem Start)",
     remaining: "Sensor mit s/min/h oder H:MM. Endzeit wird daraus berechnet",
     end_time: "Zeitpunkt-Sensor. Restzeit wird daraus berechnet",
