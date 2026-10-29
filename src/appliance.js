@@ -17,7 +17,7 @@ const TYPES = {
   airfryer: {label: 'Airfryer', icon: 'mdi:toaster-oven', color: 'accent-1', run: 'Gart', heat: 'Heizt vor', door: 'Schublade offen', phase: [], dview: true},
   coffee: {label: 'Kaffeemaschine', icon: 'mdi:coffee-maker-outline', color: 'accent-1', run: 'Brüht', door: 'Tür offen', phase: [], anims: ['tank', 'beans', 'descale'], drink: true},
   feeder: {label: 'Futterautomat', icon: 'mdi:bowl-mix-outline', color: 'accent-1', run: 'Füttert', door: 'Deckel offen', phase: [], anims: ['food'], level: true, feed: true},
-  fountain: {label: 'Trinkbrunnen', icon: 'mdi:fountain', color: 'accent-1', run: 'Läuft', door: 'Deckel offen', phase: [], anims: ['water', 'filter'], level: true, nodone: true},
+  fountain: {label: 'Trinkbrunnen', icon: 'mdi:fountain', color: 'accent-1', run: 'Läuft', door: 'Deckel offen', phase: [], anims: ['water', 'filter'], level: true, nodone: true, mode: true},
   generic: {label: 'Gerät', icon: 'mdi:power-plug-outline', color: 'accent-1', run: 'Läuft', door: 'Tür offen', phase: []},
 };
 const typeOf = c => TYPES[c.device_type] ? c.device_type : 'generic';
@@ -707,6 +707,10 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .w-fountain .bdhl{fill:none;stroke:#fff;stroke-opacity:.6;stroke-width:.6;stroke-linecap:round;opacity:0;transition:opacity .4s}
 .w-fountain .bdrop circle{fill:var(--dc);opacity:0}
 .w-fountain .bfi{transform-box:fill-box;transform-origin:center}
+/* Modus-LED: ruhiges Leuchten in der Modusfarbe, kein Blinken */
+.dv .w-fountain .led{fill:#5b6372;fill-opacity:.5;transition:fill .4s,fill-opacity .4s}
+.m-normal.dv .w-fountain .led,.m-smart.dv .w-fountain .led{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
+.m-normal{--mc:var(--nova-fountain-normal-color,var(--nv-a1))}.m-smart{--mc:var(--nova-fountain-smart-color,var(--nv-a4))}
 .w-fountain .bfi rect,.w-fountain .bfi path{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.8;stroke-linejoin:round}
 /* Läuft: kleiner Sprudel wippt, Ringe laufen über die Schale, das Wasser fließt sanft über den Rand ab; aus/Pause = Wasser steht */
 .st-run .w-fountain .bdome,.st-run .w-fountain .bdhl{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
@@ -716,8 +720,6 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .anim.st-run .w-fountain .bflow{animation:dv-bflow 6s linear infinite}
 /* Wasser niedrig: Stand im Fenster sinkt, Ausrufezeichen; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
 .h-water .scene .wn{display:inline}
-.h-water .w-fountain .led,.low .w-fountain .led,.empty .w-fountain .led,.st-err .w-fountain .led{fill:var(--nv-error);fill-opacity:1}
-.anim.h-water .w-fountain .led,.anim.low .w-fountain .led,.anim.empty .w-fountain .led,.anim.st-err .w-fountain .led{animation:dv-blinko 1s ease-in-out infinite}
 .st-err .w-fountain .bdome,.st-err .w-fountain .bdhl{opacity:0}
 .h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px var(--fc))}
 .anim.h-filter .w-fountain .bfi{animation:dv-fpulse 1.6s ease-in-out infinite}
@@ -1066,6 +1068,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     if (e.wd) e.wd.textContent = cls === 'done' ? 'End' : cls === 'off' ? '' : rem != null ? fmtDisp(rem) : '– –';
     if (TY.drink) this._coffee(cls, p, TY);
     // Füllstand: Futtervorrat im Fenster bzw. Wasser im Tank; leer = Fenster leer, niedrig = Warndreieck
+    // Trinkbrunnen: Modus-LED (normal blau, smart grün, aus grau); ohne Modus-Entität folgt sie dem Zustand
+    if (TY.mode) {
+      const m = this._S(c.mode), v = ok(m) ? String(m.state).toLowerCase() : '';
+      const md = !ok(m) ? (cls === 'run' ? 'normal' : 'off') : /smart|intelligen|auto|eco|spar/.test(v) ? 'smart' : ['off', 'aus', 'standby'].includes(v) ? 'off' : 'normal';
+      ['normal', 'smart', 'off'].forEach(k => e.g.classList.toggle(`m-${k}`, k === md));
+    }
     if (TY.level) {
       const lv = levelOf(this._S(c.fill_level));
       e.g.style.setProperty(t === 'feeder' ? '--fl' : '--wl', lv == null ? '' : lv.toFixed(2));
@@ -1222,6 +1230,7 @@ const GPROG = t => [
   {name: 'program', selector: ST},
   ...(TYPES[t].drink ? [{name: 'drink', selector: ST}] : []),
   ...(TYPES[t].level ? [{name: 'fill_level', selector: {entity: {domain: ['sensor', 'binary_sensor', 'number', 'input_number']}}}] : []),
+  ...(TYPES[t].mode ? [{name: 'mode', selector: {entity: {domain: ['select', 'input_select', 'sensor', 'switch', 'input_boolean']}}}] : []),
   ...(TYPES[t].feed ? [g2({name: 'feed_count', selector: {entity: {domain: ['sensor', 'counter', 'number', 'input_number']}}}, NUM('feed_done_minutes'))] : []),
   g2({name: 'progress', selector: {entity: {domain: ['sensor', 'number', 'input_number']}}}, {name: 'duration', selector: ST}),
   g2({name: 'remaining', selector: ST}, {name: 'end_time', selector: ST}),
@@ -1269,7 +1278,7 @@ const GLOOK = t => [sel('layout', [['full', 'Voll'], ['compact', 'Kompakt (läuf
 const GACTS = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
 const PHASE_LBL = {dishwasher: 'Zustände „trocknet“ (Dampf statt Sprüharm)', washer: 'Zustände „schleudert“ (schnelle Trommel)'};
 const GLABELS = {...BASE_LABELS, device_type: 'Gerätetyp', entity: 'Status', power: 'Ein/Aus-Schalter', program: 'Programm', progress: 'Fortschritt (%)', duration: 'Gesamtdauer',
-  remaining: 'Restzeit', end_time: 'Endzeit', drink: 'Getränk (optional)', fill_level: 'Füllstand', feed_count: 'Fütterungen (Zähler)', feed_done_minutes: '„Fertig“ zeigen (Minuten)', phase: 'Phase (optional)', phase_states: 'Sonder-Zustände', display: 'Darstellung', step: 'Schrittweite', show: 'Anzeigen',
+  remaining: 'Restzeit', end_time: 'Endzeit', drink: 'Getränk (optional)', fill_level: 'Füllstand', feed_count: 'Fütterungen (Zähler)', mode: 'Modus (LED)', feed_done_minutes: '„Fertig“ zeigen (Minuten)', phase: 'Phase (optional)', phase_states: 'Sonder-Zustände', display: 'Darstellung', step: 'Schrittweite', show: 'Anzeigen',
   start: 'Start', start_name: 'Text auf dem Start-Knopf', start_option: 'Programm für den Start', pause: 'Pause', resume: 'Fortsetzen', resume_with_start: 'Fortsetzen nutzt Start-Knopf', stop: 'Stopp',
   start_confirm: 'Rückfrage vor dem Start', start_at: '„Starten um“ (Uhrzeit wählen)', stop_confirm: 'Rückfrage vor dem Stopp', remote_start: 'Fernstart erlaubt', remote_start_text: 'Hinweis, wenn Fernstart aus',
   door: 'Tür / Schublade', door_anim: 'Tür im Bild zeigen', anim: 'Animation im Bild', door_text: 'Hinweis, wenn offen', connection: 'Verbindung', connection_text: 'Hinweis ohne Verbindung', message: 'Meldung', level: 'Stufe',
@@ -1285,6 +1294,7 @@ const GHELPERS = {
   progress: 'Leer = aus Restzeit und Gesamtdauer berechnet',
   drink: 'Leer = Programm. Erkennt Espresso, Kaffee, Cappuccino, Latte (Macchiato), Milch, Heißwasser – Kaffeefarbe, Milchschaum und Glas passen sich an',
   fill_level: 'Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer',
+  mode: 'z. B. select.trinkbrunnen_modus. LED: Smart grün, aus grau, sonst (Normal) blau. Leer = LED folgt dem Zustand. Farben per Theme: --nova-fountain-normal-color / --nova-fountain-smart-color',
   feed_count: 'Für Geräte ohne Zustand „füttert“, z. B. sensor.futterautomat_times_dispensed: steigt der Wert, zeigt die Karte die Fütterung',
   feed_done_minutes: 'So lange bleibt nach einer Fütterung „Fertig“ mit vollem Napf stehen. Leer = 10',
   duration: 'Für den Fortschritt ohne Fortschritts-Sensor und für „Starten um“ (Programmdauer vor dem Start)',
