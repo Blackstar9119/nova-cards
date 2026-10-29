@@ -8425,7 +8425,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const raw = s ? fmtState(h, s) : "";
       const own = c[TKEY[cls]];
       const def = cls === "run" ? alt && TY.alt || TY.run : TY[cls] || TXT[cls];
-      const stx = !c.entity ? "Status-Entität im Editor wählen" : na ? "Nicht verfügbar" : own || (["ready", "heat", "warm"].includes(cls) || raw === s.state && def ? def : nice(s.state, raw));
+      const stx = !c.entity ? "Status-Entität im Editor wählen" : na ? "Nicht verfügbar" : own || (["ready", "heat", "warm"].includes(cls) || TY.nodone || raw === s.state && def ? def : nice(s.state, raw));
       e.sub.textContent = stx;
       e.sub.classList.toggle("er", cls === "err");
       if (e.pw) {
