@@ -15,6 +15,7 @@ const VCSS = `
 .vc.run .hd .ic ha-icon{animation:nv-vc 2.4s ease-in-out infinite}
 @keyframes nv-vc{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 .vc .hd small.er{color:var(--nv-error);opacity:1}
+.erb .pill{background:color-mix(in srgb,var(--nv-error) 30%,transparent);border-color:color-mix(in srgb,var(--nv-error) 50%,transparent)}
 .bat{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:var(--nv-chip);font-size:12.5px;font-weight:600;flex:none}
 .bat ha-icon{--mdc-icon-size:17px}
 .bat.low{background:color-mix(in srgb,var(--nv-error) 30%,transparent)}
@@ -142,7 +143,7 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
 
 // supported_features von vacuum
 const VF = {PAUSE: 4, STOP: 8, RETURN: 16, FAN: 32, LOCATE: 512, SPOT: 1024, START: 8192, AREA: 16384};
-const VDEF = {map_max_height: 280, scene: true, scene_auto: true, station_type: 'auto', layout: 'auto', controls: 'pills', battery_display: 'status', rooms_title: 'Raum reinigen', map_title: 'Karte', glow: true, show_stop: true, show_return: true, show_locate: true, show_spot: false, show_fan_speed: true,
+const VDEF = {map_max_height: 280, scene: true, scene_auto: true, station_type: 'auto', layout: 'auto', controls: 'pills', battery_display: 'status', rooms_title: 'Raum reinigen', map_title: 'Karte', glow: true, show_stop: true, show_return: true, show_locate: true, show_spot: false, show_fan_speed: true, show_error_reset: true,
   map_aspect_ratio: 'auto', map_refresh: 5, map_action: 'more-info', segment_mode: 'roborock', segment_repeat: 1, consumables_layout: 'rows'};
 const VRUN = ['cleaning', 'returning'];
 // Steuer-Pillen: Schlüssel → [Icon, Text, Feature, Service]
@@ -170,6 +171,41 @@ const batOf = (h, id) => {
   const dev = h.entities?.[id]?.device_id;
   if (!dev) return null;
   return Object.values(h.entities).find(e => e.device_id === dev && dom(e.entity_id) === 'sensor' && h.states[e.entity_id]?.attributes.device_class === 'battery')?.entity_id || null;
+};
+
+// Fehlercodes (Roborock: Sensor „Staubsauger-Fehler“ bzw. „Ladestation-Fehler“) → deutsche Meldung
+const VERR = {
+  lidar_blocked: 'Lasersensor blockiert', bumper_stuck: 'Stoßfänger klemmt', wheels_suspended: 'Räder hängen in der Luft',
+  cliff_sensor_error: 'Absturzsensor verschmutzt', main_brush_jammed: 'Hauptbürste blockiert', side_brush_jammed: 'Seitenbürste blockiert',
+  wheels_jammed: 'Räder blockiert', robot_trapped: 'Roboter steckt fest', no_dustbin: 'Staubbehälter fehlt', strainer_error: 'Filter verschmutzt oder nass',
+  compass_error: 'Magnetfeld erkannt', low_battery: 'Akku fast leer', charging_error: 'Ladefehler', battery_error: 'Akkufehler',
+  wall_sensor_dirty: 'Wandsensor verschmutzt', robot_tilted: 'Roboter steht schräg', side_brush_error: 'Seitenbürste defekt', fan_error: 'Gebläsefehler',
+  dock: 'Problem mit der Station', optical_flow_sensor_dirt: 'Bodensensor verschmutzt', vertical_bumper_pressed: 'Oberer Stoßfänger gedrückt',
+  dock_locator_error: 'Station nicht gefunden', return_to_dock_fail: 'Rückkehr zur Station fehlgeschlagen', nogo_zone_detected: 'In Sperrzone',
+  visual_sensor: 'Kamera verschmutzt', light_touch: 'Wandsensor gestört', vibrarise_jammed: 'Wischmodul blockiert', robot_on_carpet: 'Roboter steht auf Teppich',
+  filter_blocked: 'Filter verstopft', invisible_wall_detected: 'Unsichtbare Wand erkannt', cannot_cross_carpet: 'Kommt nicht über den Teppich',
+  internal_error: 'Interner Fehler', collect_dust_error_3: 'Absaugen fehlgeschlagen', collect_dust_error_4: 'Absaugen fehlgeschlagen',
+  mopping_roller_1: 'Wischrolle blockiert', mopping_roller_error_2: 'Wischrolle defekt', clear_water_box_hoare: 'Frischwassertank prüfen',
+  dirty_water_box_hoare: 'Schmutzwassertank prüfen', sink_strainer_hoare: 'Sieb der Station reinigen', clear_water_box_exception: 'Frischwassertank fehlt oder leer',
+  clear_brush_exception: 'Reinigungsbürste prüfen', clear_brush_exception_2: 'Reinigungsbürste prüfen', filter_screen_exception: 'Filtersieb prüfen',
+  up_water_exception: 'Wasserzufuhr gestört', drain_water_exception: 'Wasserablauf gestört', temperature_protection: 'Temperaturschutz aktiv',
+  clean_carousel_exception: 'Waschwanne prüfen', clean_carousel_water_full: 'Waschwanne voll', water_carriage_drop: 'Wischmodul abgefallen',
+  check_clean_carouse: 'Waschwanne prüfen', audio_error: 'Lautsprecherfehler',
+  // Station
+  no_dustbin_or_filter: 'Staubbehälter oder Filter fehlt', auto_empty_dock_fan_error: 'Absauggebläse der Station defekt', duct_blockage: 'Absaugkanal verstopft',
+  auto_empty_dock_voltage_error: 'Spannungsfehler der Station', water_empty: 'Frischwassertank leer', waste_water_tank_full: 'Schmutzwassertank voll',
+  maintenance_brush_jammed: 'Wartungsbürste blockiert', dirty_tank_latch_open: 'Schmutzwassertank nicht eingerastet', cleaning_tank_full_or_blocked: 'Reinigungstank voll oder verstopft',
+};
+const VNOERR = ['', 'ok', 'none', 'no_error', 'unknown', 'unavailable', '0'];
+// Meldung zum Fehlersensor: Tabelle, sonst HA-Übersetzung, sonst Code lesbar (main_brush_jammed → Main brush jammed); null = kein Fehler
+const verrText = (h, s) => {
+  const v = String(s?.state ?? '').trim();
+  if (VNOERR.includes(v.toLowerCase())) return null;
+  if (VERR[v]) return VERR[v];
+  const t = fmtState(h, s);
+  if (t && t !== v) return t;
+  const r = v.replace(/_/g, ' ');
+  return r.charAt(0).toUpperCase() + r.slice(1);
 };
 
 // Animation: Station hinten, Roboter davor, Effekte obendrauf (Seitenansicht, viewBox 320×120)
@@ -238,6 +274,10 @@ function vauto(h, id) {
   out.charging = find(['binary_sensor'], /charg|ladestatus/);
   out.emptying = find(['binary_sensor'], /empty|entleer|absaug/);
   out.washing = find(['binary_sensor'], /wash|wasch|wäsch/);
+  // Fehlersensoren: Roboter (z. B. vacuum_error / …_staubsauger_fehler) und Station (dock_error / …_dock_fehler)
+  out.dock_error_entity = find(['sensor'], /(dock|station|base)\w*_(error|fehler)|(error|fehler)\w*_(dock|station)/);
+  out.error_entity = find(['sensor'], /(^|_)(error|fehler|fault)(_?code)?( |$)|^error /, /dock|station|base/);
+  out.error_reset_entity = ents.find(e => ['button', 'input_button', 'script'].includes(dom(e.entity_id)) && /(reset|clear|quittier|zur(ü|ue)cksetz|behebe?n?)\w*_(error|fehler)|(error|fehler)\w*_(reset|clear|quittier|zur(ü|ue)cksetz)/.test(txt(e)))?.entity_id;
   return Object.fromEntries(Object.entries(out).filter(([, v]) => v));
 }
 
@@ -315,6 +355,7 @@ class NovaVacuumCard extends HTMLElement {
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${VCSS}</style><div class="g vc ${lay}"><div class="main">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${c.all ? '<div class="pill all"><span class="i"></span><span class="t"></span></div>' : ''}<div class="bat" hidden><ha-icon></ha-icon><span></span></div></div>
 ${c.scene !== false ? VSCENE : ''}
+<div class="pills erb" hidden><div class="pill"><ha-icon icon="mdi:wrench-check-outline"></ha-icon><span class="t"></span></div></div>
 ${pills ? `<div class="ctl pl pills">${Object.entries(VCTL).map(([k, [ic, t]]) => `<div class="pill c-${k}"><ha-icon icon="${ic}"></ha-icon><span>${t}</span></div>`).join('')}</div>`
     : '<div class="ctl"><div class="cb sp" title="Spot"><ha-icon icon="mdi:target-variant"></ha-icon></div><div class="cb st" title="Stopp"><ha-icon icon="mdi:stop"></ha-icon></div><div class="cb pp" title="Start/Pause"><ha-icon icon="mdi:play"></ha-icon></div><div class="cb hm" title="Zur Station"><ha-icon icon="mdi:home-import-outline"></ha-icon></div><div class="cb lo" title="Suchen"><ha-icon icon="mdi:map-marker-question-outline"></ha-icon></div></div>'}
 ${c.show_fan_speed !== false ? '<div class="pills fs"></div>' : ''}
@@ -330,6 +371,10 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     this._allEl = q('.hd .all');
     if (this._allEl) press(this._allEl, {tap: () => this._act({entity: c.all, confirm: c.all_confirm}, 'tap'), hold: () => this._act({entity: c.all}, 'hold')});
     press(e.bat, {tap: () => this._bat && moreInfo(this, this._bat)});
+    // Fehler beheben/zurücksetzen: Button/Skript auslösen, lange drücken = Details des Fehlersensors
+    e.erb = q('.erb');
+    press(e.erb.firstChild, {tap: () => this._act({entity: this._ek('error_reset_entity'), confirm: c.error_reset_confirm}, 'tap'),
+      hold: () => { const id = this._ek('error_entity') || this._ek('dock_error_entity'); id && moreInfo(this, id); }});
     // Start: eingeplante Räume reinigen; nichts eingeplant, „Überall“ an oder Pause = normal starten bzw. fortsetzen
     const start = () => { const p = this._picked(); p.length && this._st()?.state !== 'paused' ? this._clean(p) : svc('start'); };
     if (pills) this._ctl = Object.entries(VCTL).map(([k, d]) => { const el = q(`.c-${k}`); press(el, {tap: () => k === 'start' ? start() : svc(d[3])}); return [k, el, d]; });
@@ -398,6 +443,8 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     this._tick();
   }
   _st() { return this._h?.states[this._c.entity]; }
+  // Fehler-Entitäten: konfiguriert, sonst am Gerät gefunden; false = aus
+  _ek(k) { const v = this._c[k]; return v === false ? null : v || this._auto?.[k] || null; }
   // Eingeplant: angetippt oder Raum-Entität an – nur Räume mit Bereich oder Segmenten; „Überall“ an = nichts (alles)
   _picked() {
     const c = this._c, h = this._h;
@@ -471,8 +518,15 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     const ss = c.status && h.states[c.status];
     const bs = this._bat && h.states[this._bat], bv = parseFloat(bs ? bs.state : a.battery_level), chg = st === 'docked' && bv < 100;
     const bd = c.battery_display, btxt = bd === 'status' && !isNaN(bv) ? `Akku ${Math.round(bv)} %` : null;
-    e.sub.textContent = !s ? 'nicht gefunden' : [ss ? fmtState(h, ss) : fmtState(h, s), !ss && a.fan_speed && run ? fanName(h, s, a.fan_speed) : null, btxt].filter(Boolean).join(' · ');
-    e.sub.classList.toggle('er', err);
+    // Konkreter Fehler aus dem Fehlersensor statt nur „Fehler“; Fehler der Station kommt dazu
+    const es = this._ek('error_entity'), ds = this._ek('dock_error_entity');
+    const et = es ? verrText(h, h.states[es]) : null, dt = ds ? verrText(h, h.states[ds]) : null;
+    const stxt = et || (ss ? fmtState(h, ss) : fmtState(h, s));
+    e.sub.textContent = !s ? 'nicht gefunden' : [stxt, !ss && !et && a.fan_speed && run ? fanName(h, s, a.fan_speed) : null, dt && dt !== et ? `Station: ${dt}` : null, btxt].filter(Boolean).join(' · ');
+    e.sub.classList.toggle('er', err || !!et || !!dt);
+    const rid = (et || dt || err) && this._ek('error_reset_entity');
+    e.erb.hidden = !rid || c.show_error_reset === false;
+    if (!e.erb.hidden) e.erb.querySelector('.t').textContent = c.error_reset_name ?? 'Fehler beheben';
     setIcon(e.ic, c.icon || a.icon || 'mdi:robot-vacuum');
     e.ic.parentElement.classList.toggle('on', run);
     // Akku: eigener Sensor, sonst Sensor am Gerät, sonst Attribut
@@ -541,7 +595,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
     e.g.classList.toggle('err', err && c.glow !== false);
     this._bv = bv;
     if (this._scene()) warn = true;
-    e.g.classList.toggle('warn', !err && warn && c.glow !== false);
+    e.g.classList.toggle('warn', !err && (warn || !!et || !!dt) && c.glow !== false);
     this._mapSync();
     this._tick();
   }
@@ -604,6 +658,12 @@ const VCTRL = [
   g2({name: 'show_stop', selector: {boolean: {}}}, {name: 'show_return', selector: {boolean: {}}}),
   g2({name: 'show_locate', selector: {boolean: {}}}, {name: 'show_spot', selector: {boolean: {}}}),
 ];
+const VERRF = [
+  g2({name: 'error_entity', selector: {entity: {domain: ['sensor']}}}, {name: 'dock_error_entity', selector: {entity: {domain: ['sensor']}}}),
+  g2({name: 'error_reset_entity', selector: {entity: {domain: ['button', 'input_button', 'script']}}}, {name: 'show_error_reset', selector: {boolean: {}}}),
+  g2({name: 'error_reset_name', selector: T}, {name: 'error_reset_confirm', selector: T}),
+];
+const VERRK = ['error_entity', 'dock_error_entity', 'error_reset_entity'];
 const VLOOK = [sel('layout', [['auto', 'Automatisch'], ['side', 'Karte daneben'], ['stack', 'Karte darüber']]), {name: 'glow', selector: {boolean: {}}}];
 const VACT = [g2({name: 'tap_action', selector: A}, {name: 'hold_action', selector: A})];
 // Felder der Animation nur, wenn sie angezeigt wird
@@ -629,7 +689,7 @@ const VMAPX = [
   g2(sel('map_action', [['more-info', 'Karte groß öffnen'], ['vacuum', 'Details des Roboters'], ['none', 'Nichts']]),
     {name: 'map_max_height', selector: {number: {min: 0, max: 800, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
 ];
-const vvis = c => `${c.scene === false}|${c.show_fan_speed === false}|${!!c.map}`;
+const vvis = c => `${c.scene === false}|${c.show_fan_speed === false}|${!!c.map}|${c.entity}`;
 const VSEG = [{name: 'rooms_title', selector: T}, g2({name: 'room_sensor', selector: {entity: {domain: ['sensor', 'select', 'input_select']}}}, {name: 'all', selector: {entity: {}}}),
   g2({name: 'all_name', selector: T}, {name: 'all_icon', selector: I}), g2(sel('segment_mode', [['roborock', 'Roborock'], ['valetudo', 'Valetudo (MQTT)'], ['dreame', 'Dreame (HACS)'], ['xiaomi', 'Xiaomi Miio']]),
   {name: 'segment_repeat', selector: {number: {min: 1, max: 3, mode: 'slider'}}})];
@@ -640,7 +700,8 @@ const VCONSL = [sel('consumables_layout', [['rows', 'Liste'], ['chips', 'Chips']
 const VCONS = [ENT, NAMEICON, g2({name: 'unit', selector: T}, {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}), g2(NUM('below'), NUM('max'))];
 const VLABELS = {...BASE_LABELS, station_type: 'Station', scene: 'Animation anzeigen', scene_auto: 'Entitäten automatisch suchen', mop_attached: 'Mopp angebracht', mop_mode: 'Reinigungsmodus (Wischen?)',
   mop_states: 'Zustände, die „wischt“ bedeuten', clean_water: 'Frischwassertank', dirty_water: 'Schmutzwassertank', emptying: 'Absaugen aktiv', washing: 'Moppwäsche aktiv',
-  drying: 'Trocknung aktiv', charging: 'Lädt', station: 'Stations-Status', battery: 'Akku-Sensor', battery_display: 'Akku anzeigen', controls: 'Steuerung', layout: 'Layout',
+  drying: 'Trocknung aktiv', error_entity: 'Fehler-Sensor Roboter', dock_error_entity: 'Fehler-Sensor Station', error_reset_entity: 'Fehler beheben: Entität',
+  show_error_reset: 'Fehler-beheben-Button', error_reset_name: 'Fehler beheben: Text', error_reset_confirm: 'Fehler beheben: Rückfrage', charging: 'Lädt', station: 'Stations-Status', battery: 'Akku-Sensor', battery_display: 'Akku anzeigen', controls: 'Steuerung', layout: 'Layout',
   map_title: 'Überschrift Karte', rooms_title: 'Überschrift Räume', room_sensor: 'Aktueller Raum (Sensor)', all: '„Überall“-Button: Entität',
   all_name: '„Überall“-Button: Text', all_icon: '„Überall“-Button: Icon', area: 'Bereich', switches_columns: 'Spalten', battery_low: 'Akku niedrig ab', status: 'Status-Entität (optional)', glow: 'Leuchten beim Reinigen / bei Warnung',
   show_stop: 'Stopp-Button', show_return: 'Zur-Station-Button', show_locate: 'Suchen-Button', show_spot: 'Spot-Reinigung',
@@ -657,6 +718,10 @@ const VHELPERS = {
   drying: 'An oder Zahl > 0 (z. B. Rest-Trocknungszeit) = trocknet',
   station: 'Text-Sensor der Station; wird wie der Status nach Absaugen/Waschen/Trocknen durchsucht',
   battery: 'Leer = Akku-Sensor am Gerät des Roboters automatisch',
+  error_entity: 'Leer = automatisch am Gerät (z. B. sensor.robbi_staubsauger_fehler). Zeigt z. B. „Hauptbürste blockiert“ statt „Fehler“',
+  dock_error_entity: 'Leer = automatisch an der Station (z. B. sensor.robbi_dock_fehler)',
+  error_reset_entity: 'Button/Skript, das den Fehler quittiert. Leer = automatisch, falls es so einen Button gibt. Erscheint nur bei einem Fehler',
+  error_reset_name: 'Standard: Fehler beheben',
   status: 'Text unter dem Namen, z. B. sensor.robbi_status. Leer = Zustand des Roboters',
   tap_action: 'Standard: Details des Roboters',
   fan_speeds: 'Leer = alle Stufen des Roboters. Genaue Namen wie in fan_speed_list',
@@ -700,10 +765,15 @@ class NovaVacuumCardEditor extends NovaEditorBase {
       this._section('scene', 'mdi:robot-vacuum', 'Animation', b => {
         b.append(form(VSCN(data)));
         if (c0.scene !== false && this._hass) {
-          const auto = vauto(this._hass, c0.entity), au = Object.entries(auto);
+          const auto = vauto(this._hass, c0.entity), au = Object.entries(auto).filter(([k]) => !VERRK.includes(k));
           const ST = {dock: 'Nur Ladestation', empty: 'Absaugstation', wash: 'Waschstation', full: 'Komplett'};
           b.append(this._hint(`Station: ${ST[vstation(this._hass, c0.entity, data, auto)]}` + (au.length && c0.scene_auto !== false ? ` · Automatisch gefunden: ${au.map(([k, v]) => `${VLABELS[k] || k} = ${v}`).join(', ')}` : '')));
         }
+      }),
+      this._section('errors', 'mdi:alert-circle-outline', 'Fehler', b => {
+        b.append(form(VERRF));
+        const auto = this._hass ? vauto(this._hass, c0.entity) : {}, au = VERRK.filter(k => !c0[k] && c0[k] !== false && auto[k]);
+        b.append(this._hint(au.length ? `Automatisch gefunden: ${au.map(k => `${VLABELS[k]} = ${auto[k]}`).join(', ')}` : 'Nichts automatisch gefunden – Fehler-Sensoren oben wählen. In YAML mit false abschalten.'));
       }),
       this._section('rooms', 'mdi:floor-plan', 'Räume', b => {
         b.append(this._hint('Je Raum einen HA-Bereich wählen: antippen plant ein, Start reinigt die eingeplanten Räume (vacuum.clean_area). Nichts eingeplant = alles.'));

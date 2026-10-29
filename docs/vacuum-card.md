@@ -4,6 +4,7 @@
 
 Saugroboter mit Status, Akku und Steuer-Pillen (Start, Pause, Stopp, Zur Station) – leuchtet beim Reinigen. Buttons erscheinen nur, wenn der Roboter sie kann (`supported_features`).
 Mit Animation von Roboter und Station: fährt beim Reinigen, wischt (nasse Spur), fährt zurück, lädt, saugt ab, wäscht und trocknet den Mopp, zeigt Frisch-/Schmutzwassertank. Die nötigen Entitäten sucht die Karte selbst am Gerät des Roboters und seiner Station (auch wenn die Station ein eigenes Gerät ist, wie bei Roborock) – ohne sie läuft die Animation nur mit dem `vacuum`-Zustand, den jeder Roboter hat.
+Bei einer Störung zeigt die Karte den konkreten Fehler, z. B. „Hauptbürste blockiert“ statt nur „Fehler“, auch Fehler der Station. Die Fehler-Sensoren findet sie am Gerät selbst (Roborock: „Staubsauger-Fehler“ und „Ladestation-Fehler“).
 Optional: Karte/Kamera-Bild (bei breiter Karte, z. B. im Popup, automatisch daneben), Saugstärke, Raumreinigung per Segment, Schalter (Staubentleerung, Moppwäsche …) sowie Infos und Verbrauchsteile. Alles im grafischen Editor einstellbar.
 
 ```yaml
@@ -12,6 +13,9 @@ entity: vacuum.robbi
 name: Robbi
 battery: sensor.robbi_akku     # optional, sonst automatisch vom Gerät
 status: sensor.robbi_status    # optional: genauerer Statustext
+error_entity: sensor.robbi_staubsauger_fehler    # optional, sonst automatisch vom Gerät
+dock_error_entity: sensor.robbi_dock_fehler      # optional, sonst automatisch von der Station
+error_reset_entity: button.robbi_fehler_zuruecksetzen   # optional: Button „Fehler beheben“
 map: image.robbi_karte         # oder camera.*
 layout: auto                   # side = Karte immer daneben, stack = darüber
 map_aspect_ratio: auto         # 1:1, 4:3, 16:9, 3:4
@@ -56,6 +60,11 @@ consumables:                   # Infos & Verbrauchsteile
 | `battery` / `battery_low` | automatisch / `20` | Akku-Sensor (leer = Akku-Sensor am selben Gerät, sonst Attribut `battery_level`); darunter rot. Beim Laden auf der Station: Lade-Icon |
 | `battery_display` | `status` | Akku `status` (im Text unter dem Namen), `chip` (Pille rechts), `none` |
 | `status` | – | Entität für den Text unter dem Namen statt des Roboter-Zustands |
+| `error_entity` | automatisch | Fehler-Sensor des Roboters (z. B. `sensor.robbi_staubsauger_fehler`). Steht er nicht auf `ok`/`none`/leer, steht statt „Fehler“ die Meldung unter dem Namen, z. B. `main_brush_jammed` → „Hauptbürste blockiert“. Gängige Roborock-Codes sind übersetzt, sonst die Übersetzung von HA, sonst der Code lesbar gemacht (`new_error` → „New error“). Die Animation bleibt wie gehabt |
+| `dock_error_entity` | automatisch | Fehler-Sensor der Station (z. B. `sensor.robbi_dock_fehler`), erscheint als „Station: …“, z. B. „Station: Frischwassertank leer“. Rahmen gelb |
+| `error_reset_entity` | automatisch | `button`, `input_button` oder `script`, das den Fehler quittiert. Der Button „Fehler beheben“ erscheint nur bei einem Fehler; lange drücken = Details des Fehler-Sensors |
+| `show_error_reset` / `error_reset_name` / `error_reset_confirm` | `true` / `Fehler beheben` / – | Button anzeigen, Text, optionale Rückfrage |
+| | | Fehler-Entitäten mit `false` abschalten |
 | `controls` | `pills` | `pills` = Pillen mit Text (aktive leuchtet), `round` = runde Buttons mit großem Start/Pause |
 | `layout` | `auto` | `auto` = Karte daneben ab 640 px Kartenbreite, sonst darüber; `side` = immer daneben; `stack` = immer darüber |
 | `glow` | `true` | Rahmen leuchtet beim Reinigen, gelb/rot bei Warnung bzw. Fehler |
