@@ -374,6 +374,8 @@ const scene = t => `<div class="scene">${SV[t]}</div>`;
 const DCSS = `
 .g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--nova-filter-color,var(--nv-a2))}
 ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
+.g.dv.glow.t-feeder.st-ready{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 25%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.g.dv.glow.t-feeder.st-run{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 65%,transparent),0 0 22px color-mix(in srgb,var(--dc) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
 .dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
 .dv .hd small.er{color:var(--nv-error);opacity:1}
 .dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
@@ -1124,13 +1126,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.rm.textContent = rem != null ? fmtDur(rem) : '';
     } else {
       // Futterautomat/Trinkbrunnen: groß der Füll- bzw. Wasserstand statt Programm/Status (der steht schon im Kopf)
-      // Trinkbrunnen mit Filter-Sensor: Filter in % und Resttage statt Wasserstand
-      const fp = TY.filter ? this._S(c.filter) : null, fd = TY.filter ? this._S(c.filter_days) : null;
-      const ft = ok(fp) && NUMRE.test(fp.state) ? `${Math.round(+fp.state)} %` : null;
-      const fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
-      const lt = ft ?? (TY.lvl ? levelText(this._S(c.fill_level), TY.lvl) : null);
+      // Trinkbrunnen mit Modus: groß der Modus, darunter die Pumpe; sonst groß der Füll- bzw. Wasserstand
+      const md = TY.filter ? this._S(c.mode) : null;
+      const mt = ok(md) ? nice(md.state, fmtState(h, md)).replace(/^./, x => x.toUpperCase()) : null;
+      const lt = mt ?? (TY.lvl ? levelText(this._S(c.fill_level), TY.lvl) : null);
       e.pg.textContent = TY.lvl ? lt ?? '' : pg || stx;
-      const phx = ft ? ['Filter', fdn != null ? `noch ${fdn} ${fdn === 1 ? 'Tag' : 'Tage'}` : ''].filter(Boolean).join(' · ') : lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : '';
+      const phx = mt ? (cls === 'run' ? 'Pumpe läuft' : cls === 'pause' ? 'Pumpe pausiert' : '') : lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : '';
       e.ph.hidden = !phx; e.ph.textContent = phx;
       e.rm.textContent = rem != null && cls !== 'wait' ? `noch ${fmtDur(rem)}` : p != null && act ? `${Math.round(p)} %` : '';
       e.en.textContent = end != null ? `fertig um ${this._clock(end)}` : '';
@@ -1193,7 +1194,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const v = this._picked(), o = this._pickOpts(), i = o.indexOf(v), s = this._S(c.start);
       e.pk.hidden = act || !v;
       e.pkk.textContent = c.start_option_name || TYPES[typeOf(c)].pick || 'Auswahl';
-      e.pkv.textContent = v && s ? fmtOpt(this._h, s, v) : '';
+      // Portion: nur die Menge in Gramm zeigen (z. B. „1/10th Cup (10g)“ → „10 g“), sonst den Optionstext
+      const g = v && /(\d+(?:[.,]\d+)?)\s*g\b/i.exec(v);
+      e.pkv.textContent = g ? `${g[1]} g` : v && s ? fmtOpt(this._h, s, v) : '';
       e.pk.querySelector('.mi').classList.toggle('dis', i <= 0); e.pk.querySelector('.pl').classList.toggle('dis', i >= o.length - 1);
     }
     if (e.sa) {
@@ -1242,8 +1245,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       if (!alertHit(a, s)) return;
       const an = can.includes(a.anim) ? a.anim : null, H = HANIM[an];
       if (an) on.add(an);
+      // Filter-Hinweis: Resttage anhängen
+      const fd = an === 'filter' ? this._S(c.filter_days) : null, fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
+      const fx = fdn != null ? `noch ${fdn} ${fdn === 1 ? 'Tag' : 'Tage'}` : '';
       add(['error', 'info'].includes(a.level) ? a.level : 'warning', a.icon || (H && an !== 'warning' ? H[2] : s?.attributes.icon) || 'mdi:information-outline',
-        a.message || (H && H[1]) || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, a.entity, !!an, a.reset && {id: a.reset, name: a.reset_name || 'Zurücksetzen'});
+        [a.message || (H && H[1]) || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(' · '), a.entity, !!an, a.reset && {id: a.reset, name: a.reset_name || 'Zurücksetzen'});
     });
     Object.keys(HANIM).forEach(k => g.classList.toggle(`h-${k}`, on.has(k)));
     const html = out.join('');
@@ -1343,8 +1349,8 @@ const GHELPERS = {
   progress: 'Leer = aus Restzeit und Gesamtdauer berechnet',
   drink: 'Leer = Programm. Erkennt Espresso, Kaffee, Cappuccino, Latte (Macchiato), Milch, Heißwasser – Kaffeefarbe, Milchschaum und Glas passen sich an',
   fill_level: 'Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer',
-  filter: 'Groß rechts neben dem Bild statt des Wasserstands, z. B. sensor.…_filter_percent',
-  filter_days: 'Darunter „noch N Tage“, z. B. sensor.…_filter_days_remaining',
+  filter: 'Erscheint im Hinweis „Filter wechseln“, z. B. sensor.…_filter_percent',
+  filter_days: '„noch N Tage“ im Hinweis „Filter wechseln“, z. B. sensor.…_filter_days_remaining',
   mode: 'z. B. select.trinkbrunnen_modus. LED: Smart grün, aus grau, sonst (Normal) blau. Leer = LED folgt dem Zustand. Farben per Theme: --nova-mode-normal-color / --nova-mode-smart-color',
   feed_count: 'Für Geräte ohne Zustand „füttert“, z. B. sensor.futterautomat_times_dispensed: steigt der Wert, zeigt die Karte die Fütterung',
   feed_done_minutes: 'So lange bleibt nach einer Fütterung „Fertig“ mit vollem Napf stehen. Leer = 10',
