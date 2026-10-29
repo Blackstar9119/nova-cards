@@ -1,4 +1,4 @@
-/* Nova Cards v0.11.0b2 DEV – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
+/* Nova Cards v0.11.0b3 DEV – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -1888,22 +1888,28 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
 /* Aktiver Eintrag: runde Markierung .hl gleitet unter die Buttons; Farbe nur übers Theme (--nova-navi-active-color), Standard Akzent 2.
    Animiert werden nur transform, opacity und max-width – schont schwache Tablets. */
-.dock{--hc:var(--nova-navi-active-color,var(--nv-a2))}
-.hl{position:absolute;left:0;top:0;width:var(--sz);height:var(--sz);border-radius:50%;background:var(--hc);box-shadow:0 0 14px color-mix(in srgb,var(--hc) 50%,transparent);pointer-events:none;opacity:0;transition:transform var(--dur) ease-out,opacity var(--dur) ease-out}
+.dock{--hc:var(--nova-navi-active-color,var(--nv-a2));--ease:cubic-bezier(.25,.8,.25,1)}
+/* Glas der Leiste als eigene Ebene: gleitet beim Wechsel per transform auf die neue Breite (Blur bleibt unverändert) */
+.dock>.bg{position:absolute;inset:0;border-radius:inherit;z-index:0;pointer-events:none;transform-origin:0 50%}
+.hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:var(--hc);box-shadow:0 0 14px color-mix(in srgb,var(--hc) 50%,transparent);pointer-events:none;opacity:0;will-change:transform}
 .hl.on{opacity:1}
-.d.here{background:transparent;color:var(--nova-navi-active-text-color,var(--nv-a2-fg));transition:color var(--dur) ease-out,transform .2s}
+.d.here{background:transparent;color:var(--nova-navi-active-text-color,var(--nv-a2-fg))}
+/* Während einer Animation: nur transform und opacity, gleiche Dauer und Kurve für alle Teile */
+.run .d,.run .nm,.run>.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
+/* Messen und Startlage setzen: ohne Übergang */
+.hold .d,.hold .nm,.hold>.bg,.hold .hl{transition:none!important}
+.ghost{position:absolute;left:0;top:0;z-index:1;pointer-events:none;white-space:nowrap;color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
 .d img{width:calc(var(--s) * .6);height:calc(var(--s) * .6);object-fit:contain}
-.nm{flex:none;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif);transition:max-width var(--dur) ease-out,opacity var(--dur) ease-out,margin var(--dur) ease-out,padding var(--dur) ease-out}
+.nm{flex:none;z-index:1;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
 .nm.on{max-width:180px;opacity:1;margin-left:0;padding-right:6px}
 .nm[hidden],.side .nm{display:none}
-.still,.still *{transition:none!important}
 @media(prefers-reduced-motion:reduce){.dock,.dock *{transition:none!important}}
 .dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--bc,var(--nv-accent));box-shadow:0 0 6px var(--bc,var(--nv-accent));display:none}
 .d.bd .dot{display:block}
 .num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bc,var(--nv-accent));color:var(--bfg,#3a2a00);font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
 .d.bn .num{display:block}.d.bn .dot{display:none}
 .empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
-.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;min-width:260px;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;align-self:center;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 .mb[hidden]{display:none}
 .mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
 .mb .art.pic ha-icon{display:none}
@@ -1912,7 +1918,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .mb .tx b{font-size:13px;font-weight:600}.mb .tx span{font-size:11px;opacity:.7}
 .mb .pp{width:40px;height:40px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-active);color:var(--nv-active-fg);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .mb .pp:active{transform:scale(.9)}
-.side .mb{min-width:0;flex-direction:column;padding:6px;border-radius:28px}
+.side .mb{width:auto;flex-direction:column;padding:6px;border-radius:28px}
 .side .mb .tx{display:none}
 .menu{position:fixed;z-index:8;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:22px;min-width:180px;max-width:calc(100vw - 16px);max-height:60vh;overflow-y:auto;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:mi .16s ease-out}
 .mi{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:999px;cursor:pointer;font-size:14px;white-space:nowrap;-webkit-tap-highlight-color:transparent;outline:none}
@@ -2095,10 +2101,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     _build() {
       this._built = true;
       const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms"><div class="mb glass" hidden><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="pp" role="button" tabindex="0"><ha-icon></ha-icon></div></div><div class="dock glass"><div class="hl"></div></div></div>`;
+      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms"><div class="mb glass" hidden><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="pp" role="button" tabindex="0"><ha-icon></ha-icon></div></div><div class="dock"><div class="bg glass"></div><div class="hl"></div></div></div>`;
       const dock = r.querySelector(".dock");
       this._dock = dock;
-      this._hl = dock.firstChild;
+      this._bg = dock.children[0];
+      this._hl = dock.children[1];
       this._shown = null;
       this._mb = r.querySelector(".mb");
       this._mb.querySelector(".tx").addEventListener("click", () => this._mp && moreInfo(this, this._mp));
@@ -2223,41 +2230,125 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       const sig = `${cur2}|${lbl}|${this._side}|${this._dur}|${lay}`;
       if (this._shown === sig) return;
       const rec = LAST.get(this._key), fresh = rec && Date.now() - rec.t < 1500;
-      const from = this._shown != null ? +this._shown.split("|")[0] : !rec ? -1 : rec.i !== cur2 ? rec.i : fresh ? rec.from : cur2;
+      const from = this._shown != null ? +this._shown.split("|")[0] : !rec ? -1 : rec.i !== cur2 ? rec.i : fresh && !rec.played ? rec.from : cur2;
+      const first = this._shown == null;
       this._shown = sig;
       if (!rec || rec.i !== cur2) LAST.set(this._key, { i: cur2, from, t: Date.now() });
-      const apply = (i) => this._btns.forEach((d, k) => {
+      const anim = this._opt("animation") !== false && !REDUCED?.matches && this.isConnected && !inPicker(this) && from !== cur2;
+      if (anim && first) {
+        this._apply(from, lbl);
+        this._pillTo(from, from >= 0);
+      }
+      if (!anim) return this._jump(cur2, lbl);
+      const go = () => {
+        if (this._shown === sig) this._flip(cur2, lbl, sig);
+      };
+      requestAnimationFrame(() => document.fonts?.status === "loaded" ? go() : document.fonts.ready.then(go));
+    }
+    // Klassen für aktiven Eintrag i setzen (ohne Animation)
+    _apply(i, lbl) {
+      this._btns.forEach((d, k) => {
         d.classList.toggle("here", k === i);
         d._nm.classList.toggle("on", k === i && lbl && !!d._nm.textContent);
       });
-      const pos = (i) => {
-        const d = this._btns[i];
-        return d ? `translate(${d.offsetLeft}px,${d.offsetTop}px)` : null;
-      };
-      const pill = (i, show) => {
-        const t = pos(i);
-        if (t) this._hl.style.transform = t;
-        this._hl.classList.toggle("on", show && i >= 0);
-      };
-      const anim = this._opt("animation") !== false && !REDUCED?.matches && this.isConnected && !inPicker(this) && from !== cur2;
-      dock.classList.add("still");
-      apply(cur2);
-      const end = pos(cur2);
-      if (anim) {
-        apply(from);
-        pill(from >= 0 ? from : cur2, from >= 0);
-        void dock.offsetWidth;
-        dock.classList.remove("still");
-        requestAnimationFrame(() => {
-          apply(cur2);
-          if (end) this._hl.style.transform = end;
-          this._hl.classList.toggle("on", cur2 >= 0);
-        });
-      } else {
-        pill(cur2, true);
-        void dock.offsetWidth;
-        dock.classList.remove("still");
+    }
+    // Ursprung der absolut positionierten Ebenen (Innenkante der Leiste)
+    _origin() {
+      const r = this._dock.getBoundingClientRect();
+      return { x: r.left + this._dock.clientLeft - this._dock.scrollLeft, y: r.top + this._dock.clientTop - this._dock.scrollTop };
+    }
+    _pillTo(i, show) {
+      const d = this._btns[i], o = this._origin();
+      if (d) {
+        const b = d.getBoundingClientRect();
+        this._hl.style.transform = `translate(${b.left - o.x}px,${b.top - o.y}px)`;
       }
+      this._hl.classList.toggle("on", !!show && i >= 0);
+    }
+    _stop() {
+      clearTimeout(this._ft);
+      this._ghost?.remove();
+      this._ghost = null;
+      this._dock.classList.remove("run");
+      this._dock.classList.add("hold");
+      [this._bg, ...this._btns, ...this._btns.map((d) => d._nm)].forEach((e) => {
+        e.style.transform = "";
+        e.style.opacity = "";
+      });
+    }
+    // Ohne Animation direkt in den Endzustand
+    _jump(cur2, lbl) {
+      this._stop();
+      this._apply(cur2, lbl);
+      this._pillTo(cur2, true);
+      this._release();
+    }
+    // Nach dem Zeichnen wieder normale Übergänge (z. B. Drücken)
+    _release() {
+      const dock = this._dock;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (dock === this._dock && !dock.classList.contains("run")) dock.classList.remove("hold");
+      }));
+    }
+    // FLIP: aktuelle (sichtbare) Lage merken, Endlage einmal messen, dann per transform/opacity vom Alten zum Neuen gleiten.
+    // Pro Frame wird nichts neu berechnet; bei schnellem Mehrfachwechsel startet die nächste Animation von der aktuellen Zwischenlage
+    _flip(cur2, lbl, sig) {
+      const dock = this._dock, btns = this._btns;
+      const rect = (e) => e.getBoundingClientRect();
+      const f = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
+      const oldNm = btns.map((d) => d._nm).find((n) => n.classList.contains("on") && !n.hidden);
+      const fn = oldNm && { r: rect(oldNm), t: oldNm.textContent, o: +getComputedStyle(oldNm).opacity };
+      this._stop();
+      this._apply(cur2, lbl);
+      const o = this._origin(), l = { bg: rect(this._bg), b: btns.map(rect) }, newNm = btns[cur2]?._nm.classList.contains("on") ? btns[cur2]._nm : null;
+      btns.forEach((d, k) => {
+        if (!d.hidden && f.b[k].width) d.style.transform = `translate(${f.b[k].left - l.b[k].left}px,${f.b[k].top - l.b[k].top}px)`;
+      });
+      if (l.bg.width) this._bg.style.transform = `translate(${f.bg.left - l.bg.left}px,${f.bg.top - l.bg.top}px) scale(${f.bg.width / l.bg.width},${f.bg.height / l.bg.height})`;
+      if (f.hlOn) this._hl.style.transform = `translate(${f.hl.left - o.x}px,${f.hl.top - o.y}px)`;
+      else this._pillTo(cur2, false);
+      if (newNm) {
+        newNm.style.opacity = "0";
+        newNm.style.transform = `translate(${f.b[cur2].left - l.b[cur2].left - 12}px,0)`;
+      }
+      if (fn) {
+        const g = this._ghost = document.createElement("span");
+        g.className = "ghost";
+        g.textContent = fn.t;
+        g.style.opacity = fn.o;
+        g.style.transform = `translate(${fn.r.left - o.x}px,${fn.r.top - o.y}px)`;
+        dock.appendChild(g);
+        g._dx = fn.r.left - o.x;
+        g._dy = fn.r.top - o.y;
+      }
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (this._shown !== sig) return;
+        const rec = LAST.get(this._key);
+        if (rec && rec.i === cur2 && this.isConnected) rec.played = true;
+        dock.classList.remove("hold");
+        dock.classList.add("run");
+        btns.forEach((d) => {
+          d.style.transform = "";
+        });
+        this._bg.style.transform = "";
+        if (l.b[cur2]) this._hl.style.transform = `translate(${l.b[cur2].left - o.x}px,${l.b[cur2].top - o.y}px)`;
+        this._hl.classList.toggle("on", cur2 >= 0);
+        if (newNm) {
+          newNm.style.opacity = "";
+          newNm.style.transform = "";
+        }
+        const g = this._ghost, ob = fn && btns.findIndex((d) => d._nm === oldNm);
+        if (g) {
+          g.style.opacity = "0";
+          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f.b[ob].left : 0) - 8}px,${g._dy}px)`;
+        }
+        this._ft = setTimeout(() => {
+          if (this._shown === sig) {
+            this._stop();
+            this._release();
+          }
+        }, this._dur + 60);
+      }));
     }
     // Punkt oder Zahl; Farbe als Farbrolle, bei erfüllter Bedingung eine zweite Farbrolle
     _badge(d, it) {
@@ -8918,5 +9009,5 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   define("geraet-card-editor", NovaApplianceCardEditor);
 
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.11.0b2"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.11.0b3"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();
