@@ -106,4 +106,7 @@ Liegt der Pfad in einem Untermenü, ist dessen Button markiert und zeigt den Nam
 Der aktive Button ist gelb (Theme-Variable `--nova-navi-active-color`, Standard `--nova-accent-2`; Textfarbe `--nova-navi-active-text-color`) und rechts daneben steht sein Name in Weiß (`active_label`). Die Markierung wird bei jedem Wechsel der Ansicht neu
 berechnet. Weil Home Assistant die Karte dabei neu erzeugt, merkt sich Nova Navi den zuletzt aktiven Eintrag: Die neue
 Leiste startet im alten Zustand, die gelbe Markierung gleitet zum neuen Eintrag, der alte Name fährt ein und der neue aus.
-Animiert werden nur `transform`, `opacity` und `max-width` – das schont schwache Tablets.
+Die Animation arbeitet nach dem FLIP-Prinzip: Start- und Endlage werden einmal gemessen, danach bewegen sich Markierung,
+Buttons, Namen und Leistenhintergrund nur per `transform` und `opacity` mit gleicher Dauer und Kurve – ohne Layout-Neuberechnung
+in jedem Frame. Rendert Home Assistant die Karte doppelt, startet die Animation nicht ein zweites Mal; bei schnellem
+Mehrfachwechsel gleitet sie aus der aktuellen Zwischenlage weiter.
