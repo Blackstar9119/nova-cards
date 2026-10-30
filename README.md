@@ -2,7 +2,7 @@
 
 **Schöne Home-Assistant-Dashboards, ganz ohne YAML.**
 
-Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard: dreizehn Karten mit Glas-Look, die zusammenpassen und sich
+Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard: sechzehn Karten mit Glas-Look, die zusammenpassen und sich
 gemeinsam ans Theme anpassen. Gedacht für alle, die ein aufgeräumtes, modernes Dashboard wollen, ohne Code zu schreiben oder
 YAML zu pflegen.
 
@@ -23,9 +23,6 @@ Nova Cards wird als benutzerdefiniertes Repository in [HACS](https://hacs.xyz) e
 4. Auf **Hinzufügen** tippen und das Fenster schließen.
 5. In HACS nach **Nova Cards** suchen, öffnen und **Herunterladen** wählen.
 6. Die Seite hart neu laden (Strg/Cmd + Umschalt + R), in der App den Cache leeren.
-
-> **Beta:** Solange Nova Cards in der Beta ist, in HACS bei Nova Cards über **⋮ → Neu herunterladen** den Schalter
-> **Beta-Versionen anzeigen** aktivieren und dann die neueste Version wählen.
 
 HACS legt die Dashboard-Ressource automatisch an. Danach findest du alle Karten unter **Karte hinzufügen**, wenn du nach
 „Nova“ suchst.
@@ -146,6 +143,24 @@ pro Chip ein.
 ➜ [Alle Optionen der Chips Card](docs/chips-card.md)
 
 <!-- Screenshot: Chips Card -->
+
+### Nova Gerät Card
+Eine Karte für Haushaltsgeräte: Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen oder ein
+beliebiges anderes Gerät. Status, Programm, Fortschritt, Restzeit und Endzeit, dazu Regler, Start/Pause/Stopp und ein animiertes
+Gerätebild, das zeigt, was gerade passiert, samt Hinweisen wie „Wassertank leer“ oder „Filter wechseln“. Kompakt auf Wunsch nur,
+solange etwas läuft.
+
+➜ [Alle Optionen der Gerät Card](docs/geraet-card.md)
+
+<!-- Screenshot/GIF: Gerät Card -->
+
+### Nova 3D-Drucker Card
+Dein Bambu-Lab-Drucker als animierte Zeichnung mit AMS, Kamerabild, Fortschritt, Restzeit, Temperaturen, Druckphase und
+Meldungen, dazu Pause, Fortsetzen, Stopp und Kammerlicht. Gerät auswählen, den Rest findet die Karte selbst.
+
+➜ [Alle Optionen der 3D-Drucker Card](docs/drucker-card.md)
+
+<!-- Screenshot/GIF: 3D-Drucker Card -->
 
 ### Nova Fernbedienung
 Eine Fernbedienung für Fernseher und Streaming-Boxen: Steuerkreuz oder Touchpad, Zurück/Home/Menü, Medientasten,
