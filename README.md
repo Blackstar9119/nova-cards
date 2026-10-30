@@ -114,7 +114,8 @@ der gerade spielt.
 
 ### Nova Saugroboter Card
 Status, Akku und Steuerung deines Saugroboters mit einer kleinen Animation von Roboter und Station. Daneben die Raumkarte,
-darunter Raumreinigung, Schalter der Station und Verbrauchsteile mit Restlaufzeit. Vieles findet die Karte am Gerät selbst.
+darunter Raumreinigung, Schalter der Station und Verbrauchsteile mit Restlaufzeit. Bei einer Störung steht der konkrete Fehler da,
+z. B. „Hauptbürste blockiert“, auch für die Station. Vieles findet die Karte am Gerät selbst.
 
 ➜ [Alle Optionen der Saugroboter Card](docs/vacuum-card.md)
 
