@@ -6,7 +6,7 @@ import {NOVA_VARS, roleVars, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from 
 import {hassChanged, entityIds} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, ENT, sel, ROLE, NAMEICON} from './shared/editor-schema.js';
-import {register, unregister, curHash, cleanHash, clearHash, cameByNav, lockScroll, hasPopup} from './shared/popup-hub.js';
+import {register, unregister, curHash, cleanHash, clearHash, cameByNav, lockScroll, hasPopup, followContent} from './shared/popup-hub.js';
 import {normRows, PREV, EDIT, GRID_CSS, CHIP_CSS, renderChips, GridCard} from './shared/card-grid.js';
 import {GridEditor, GRID_ED_CSS, GRID_LABELS, GRID_HELPERS, INFO} from './shared/card-grid-editor.js';
 
@@ -21,10 +21,10 @@ ha-icon{--mdc-icon-size:20px;display:flex}
 .ph{display:none;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;border:1px dashed var(--divider-color,#666);color:var(--primary-text-color);font-size:13px}
 :host(.edit) .ph{display:flex}
 .ph .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pop{position:fixed;inset:0;z-index:var(--nova-popup-z-index,6);display:flex;align-items:center;justify-content:center}
+.pop{position:fixed;inset:0 var(--nv-pop-r,0px) 0 var(--nv-pop-l,0px);z-index:var(--nova-popup-z-index,6);display:flex;align-items:center;justify-content:center}
 .pop[hidden]{display:none}
 .ov{position:absolute;inset:0;background:var(--nv-popup-backdrop);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .22s}
-.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96vw);max-height:88vh;
+.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96%);max-height:88vh;
 background:var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
 box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s}
 .sh.tint{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,var(--nv-popup-base)),var(--nv-popup-base))}
@@ -49,7 +49,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
 @media(max-width:600px){
 .pop{align-items:flex-end}
 .bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
-.sh{width:100vw;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
+.sh{width:100%;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
 .grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
 .body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
 .pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
@@ -170,6 +170,8 @@ class NovaPopupCard extends GridCard(HTMLElement) {
     this._pop.hidden = false;
     this._sh.style.transform = '';
     lockScroll(true);
+    this._unfollow?.();
+    this._unfollow = followContent(this._pop);
     if (this._dirty) this._grid();
     if (this._h) this.hass = this._h;
     this._body.scrollTop = 0;
@@ -181,6 +183,7 @@ class NovaPopupCard extends GridCard(HTMLElement) {
     this._pop.classList.remove('in');
     this._sh.style.transform = '';
     lockScroll(false);
+    this._unfollow?.(); this._unfollow = null;
     window.removeEventListener('keydown', this._key);
     clearTimeout(this._ht);
     if (now) this._pop.hidden = this._mode !== 'preview';

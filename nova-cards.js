@@ -1,4 +1,4 @@
-/* Nova Cards v0.11.0 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.11.1 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips, Gerät, 3D-Drucker, Fernbedienung – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
@@ -655,6 +655,24 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     if (!on && locks > 0 && --locks === 0) els.forEach((e, i) => {
       e.style.overflow = saved?.[i] || "";
     });
+  };
+  var panelEl = () => document.querySelector("home-assistant")?.shadowRoot?.querySelector("home-assistant-main")?.shadowRoot?.querySelector("partial-panel-resolver");
+  var followContent = (el2) => {
+    const p = panelEl();
+    const set = () => {
+      const b = p?.isConnected ? p.getBoundingClientRect() : null;
+      const l = b ? Math.max(0, Math.round(b.left)) : 0, r = b ? Math.max(0, Math.round(innerWidth - b.right)) : 0;
+      el2.style.setProperty("--nv-pop-l", `${l}px`);
+      el2.style.setProperty("--nv-pop-r", `${r}px`);
+    };
+    set();
+    const ro = p ? new ResizeObserver(set) : null;
+    ro?.observe(p);
+    addEventListener("resize", set);
+    return () => {
+      ro?.disconnect();
+      removeEventListener("resize", set);
+    };
   };
   var findPopups = (o, out = []) => {
     if (!o || typeof o !== "object") return out;
@@ -1833,8 +1851,8 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   // src/navi.js
   var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
   var PCSS = `
-:host{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
-.root{width:min(var(--nova-popup-width,1180px),96vw);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
+:host{position:fixed;inset:0 var(--nv-pop-r,0px) 0 var(--nv-pop-l,0px);z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
+.root{width:min(var(--nova-popup-width,1180px),96%);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
 background:linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9));border:1px solid var(--nv-border);box-shadow:0 20px 60px rgba(0,0,0,.45);color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:up .28s cubic-bezier(.2,.8,.2,1)}
 .hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(60,72,100,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1843,7 +1861,7 @@ ha-icon{--mdc-icon-size:20px;display:flex}
 .body{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-popup-min-col,300px),1fr));gap:12px;align-items:start}
 .body.one{grid-template-columns:1fr}
 .empty{opacity:.6;font-size:13px;padding:8px}
-@media(max-width:600px){:host{align-items:flex-end}.root{width:100vw;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
+@media(max-width:600px){:host{align-items:flex-end}.root{width:100%;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
 @keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fi{from{opacity:0}}`;
   var NovaNaviPopup = class extends HTMLElement {
     constructor() {
@@ -1856,6 +1874,14 @@ ha-icon{--mdc-icon-size:20px;display:flex}
       this.addEventListener("click", (e) => {
         if (e.composedPath()[0] === this) this.onclose?.();
       });
+    }
+    connectedCallback() {
+      this._unfollow?.();
+      this._unfollow = followContent(this);
+    }
+    disconnectedCallback() {
+      this._unfollow?.();
+      this._unfollow = null;
     }
     set cfg(c) {
       this._cfg = c;
@@ -7124,10 +7150,10 @@ ha-icon{--mdc-icon-size:20px;display:flex}
 .ph{display:none;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;border:1px dashed var(--divider-color,#666);color:var(--primary-text-color);font-size:13px}
 :host(.edit) .ph{display:flex}
 .ph .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pop{position:fixed;inset:0;z-index:var(--nova-popup-z-index,6);display:flex;align-items:center;justify-content:center}
+.pop{position:fixed;inset:0 var(--nv-pop-r,0px) 0 var(--nv-pop-l,0px);z-index:var(--nova-popup-z-index,6);display:flex;align-items:center;justify-content:center}
 .pop[hidden]{display:none}
 .ov{position:absolute;inset:0;background:var(--nv-popup-backdrop);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .22s}
-.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96vw);max-height:88vh;
+.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96%);max-height:88vh;
 background:var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
 box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s}
 .sh.tint{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,var(--nv-popup-base)),var(--nv-popup-base))}
@@ -7152,7 +7178,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
 @media(max-width:600px){
 .pop{align-items:flex-end}
 .bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
-.sh{width:100vw;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
+.sh{width:100%;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
 .grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
 .body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
 .pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
@@ -7289,6 +7315,8 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       this._pop.hidden = false;
       this._sh.style.transform = "";
       lockScroll(true);
+      this._unfollow?.();
+      this._unfollow = followContent(this._pop);
       if (this._dirty) this._grid();
       if (this._h) this.hass = this._h;
       this._body.scrollTop = 0;
@@ -7302,6 +7330,8 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       this._pop.classList.remove("in");
       this._sh.style.transform = "";
       lockScroll(false);
+      this._unfollow?.();
+      this._unfollow = null;
       window.removeEventListener("keydown", this._key);
       clearTimeout(this._ht);
       if (now) this._pop.hidden = this._mode !== "preview";
@@ -11529,5 +11559,5 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
   define("remote-card-editor", NovaRemoteCardEditor);
 
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.11.0"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.11.1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();
