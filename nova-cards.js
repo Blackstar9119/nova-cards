@@ -2476,6 +2476,8 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}</style><div class="g"></div>`;
       this._g = r.querySelector(".g");
+      const z = +this._c.size;
+      if (z > 0 && z !== 100) this._g.style.zoom = z / 100;
       this._ups = this._c.blocks.map((b) => {
         const w = document.createElement("div");
         w.className = `blk ${b.type}`;
@@ -2567,7 +2569,9 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       ]
     }
   };
+  var MLOOK = [{ name: "size", selector: { number: { min: 50, max: 250, step: 10, mode: "slider", unit_of_measurement: "%" } } }];
   var MHELPERS = {
+    size: "Skaliert die ganze Karte, z. B. 150 % für Wandpanels. Standard 100 %",
     status: "Text unter dem Namen. Aus/Standby/Idle = inaktiv",
     active: "Optional: bestimmt, ob das Icon leuchtet (statt Status-Entität)",
     button_icon: "Button erscheint, sobald Icon oder Aktion gesetzt ist",
@@ -2591,7 +2595,14 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     _build() {
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      r.querySelector(".wrap").append(this._section("blocks", "mdi:view-dashboard-outline", "Bausteine", (w) => this._blockList(w)));
+      r.querySelector(".wrap").append(
+        this._section("blocks", "mdi:view-dashboard-outline", "Bausteine", (w) => this._blockList(w)),
+        this._section("look", "mdi:palette-outline", "Aussehen", (w) => w.append(this._form(MLOOK, { size: 100, ...this._config }, (v) => {
+          const n = merge(this._config, ["size"], v);
+          if (n.size === 100) delete n.size;
+          this._emit(n);
+        })))
+      );
     }
     _blockList(w) {
       const bl = this._blocks();
@@ -2700,7 +2711,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       this._rebuild();
     }
   };
-  __publicField(NovaModularCardEditor, "labels", BASE_LABELS);
+  __publicField(NovaModularCardEditor, "labels", { ...BASE_LABELS, size: "Größe" });
   __publicField(NovaModularCardEditor, "helpers", MHELPERS);
   __publicField(NovaModularCardEditor, "openSections", ["blocks"]);
   define("modular-card-editor", NovaModularCardEditor);
