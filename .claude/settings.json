@@ -8,6 +8,7 @@
     }
   },
   "enabledPlugins": {
-    "ponytail@ponytail": true
+    "ponytail@ponytail": true,
+    "claude-code-setup@claude-plugins-official": true
   }
 }
