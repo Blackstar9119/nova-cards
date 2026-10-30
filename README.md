@@ -2,7 +2,7 @@
 
 **Schöne Home-Assistant-Dashboards, ganz ohne YAML.**
 
-Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard: dreizehn Karten mit Glas-Look, die zusammenpassen und sich
+Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard: sechzehn Karten mit Glas-Look, die zusammenpassen und sich
 gemeinsam ans Theme anpassen. Gedacht für alle, die ein aufgeräumtes, modernes Dashboard wollen, ohne Code zu schreiben oder
 YAML zu pflegen.
 
@@ -23,9 +23,6 @@ Nova Cards wird als benutzerdefiniertes Repository in [HACS](https://hacs.xyz) e
 4. Auf **Hinzufügen** tippen und das Fenster schließen.
 5. In HACS nach **Nova Cards** suchen, öffnen und **Herunterladen** wählen.
 6. Die Seite hart neu laden (Strg/Cmd + Umschalt + R), in der App den Cache leeren.
-
-> **Beta:** Solange Nova Cards in der Beta ist, in HACS bei Nova Cards über **⋮ → Neu herunterladen** den Schalter
-> **Beta-Versionen anzeigen** aktivieren und dann die neueste Version wählen.
 
 HACS legt die Dashboard-Ressource automatisch an. Danach findest du alle Karten unter **Karte hinzufügen**, wenn du nach
 „Nova“ suchst.
@@ -76,13 +73,16 @@ in der Farbe ihrer Lampe. Farbknöpfe für Lieblingsfarben und ein „Alle aus�
 
 <!-- Screenshot/GIF: Licht Card -->
 
-### Nova Dock Card
-Eine schwebende Leiste mit Buttons am unteren oder oberen Rand. Ein Button kann navigieren, eine Aktion auslösen oder ein
-Pop-up öffnen. Punkte oder Zahlen zeigen an, ob zum Beispiel noch Lampen an sind.
+### Nova Navi
+Eine schwebende Navigationsleiste am unteren oder oberen Rand, auf breiten Bildschirmen auf Wunsch als Seitenleiste.
+Ein Button kann navigieren, eine Aktion auslösen (Antippen, lange drücken, Doppeltippen), ein Untermenü oder ein
+Pop-up öffnen. Badges zeigen Punkte oder Zahlen in wählbarer Farbe, Einträge lassen sich je Benutzer oder Zustand
+ausblenden, und eine kleine Media-Leiste zeigt den laufenden Player. Früher hieß sie Nova Dock Card – der alte Typ
+`custom:nova-dock-card` läuft weiter.
 
-➜ [Alle Optionen der Dock Card](docs/dock-card.md)
+➜ [Alle Optionen von Nova Navi](docs/navi-card.md)
 
-<!-- Screenshot/GIF: Dock Card -->
+<!-- Screenshot/GIF: Nova Navi -->
 
 ### Nova Modular Card
 Eine Gerätekarte zum Selbst-Zusammenbauen aus Bausteinen: Kopfzeile mit Fortschritt, Infos, Schalter, Schieberegler,
@@ -111,14 +111,15 @@ der gerade spielt.
 
 ### Nova Saugroboter Card
 Status, Akku und Steuerung deines Saugroboters mit einer kleinen Animation von Roboter und Station. Daneben die Raumkarte,
-darunter Raumreinigung, Schalter der Station und Verbrauchsteile mit Restlaufzeit. Vieles findet die Karte am Gerät selbst.
+darunter Raumreinigung, Schalter der Station und Verbrauchsteile mit Restlaufzeit. Bei einer Störung steht der konkrete Fehler da,
+z. B. „Hauptbürste blockiert“, auch für die Station. Vieles findet die Karte am Gerät selbst.
 
 ➜ [Alle Optionen der Saugroboter Card](docs/vacuum-card.md)
 
 <!-- Screenshot/GIF: Saugroboter Card -->
 
 ### Nova Pop-up Card
-Ein Pop-up mit beliebigen Karten in Zeilen und Spalten, geöffnet über eine Adresse wie `#wohnzimmer`, zum Beispiel vom Dock
+Ein Pop-up mit beliebigen Karten in Zeilen und Spalten, geöffnet über eine Adresse wie `#wohnzimmer`, zum Beispiel von Nova Navi
 oder von der Raum Card. Kopfzeile mit Badges und Info-Leiste, auf dem Handy per Wischen schließbar.
 
 ➜ [Alle Optionen der Pop-up Card](docs/popup-card.md)
@@ -142,6 +143,33 @@ pro Chip ein.
 ➜ [Alle Optionen der Chips Card](docs/chips-card.md)
 
 <!-- Screenshot: Chips Card -->
+
+### Nova Gerät Card
+Eine Karte für Haushaltsgeräte: Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen oder ein
+beliebiges anderes Gerät. Status, Programm, Fortschritt, Restzeit und Endzeit, dazu Regler, Start/Pause/Stopp und ein animiertes
+Gerätebild, das zeigt, was gerade passiert, samt Hinweisen wie „Wassertank leer“ oder „Filter wechseln“. Kompakt auf Wunsch nur,
+solange etwas läuft.
+
+➜ [Alle Optionen der Gerät Card](docs/geraet-card.md)
+
+<!-- Screenshot/GIF: Gerät Card -->
+
+### Nova 3D-Drucker Card
+Dein Bambu-Lab-Drucker als animierte Zeichnung mit AMS, Kamerabild, Fortschritt, Restzeit, Temperaturen, Druckphase und
+Meldungen, dazu Pause, Fortsetzen, Stopp und Kammerlicht. Gerät auswählen, den Rest findet die Karte selbst.
+
+➜ [Alle Optionen der 3D-Drucker Card](docs/drucker-card.md)
+
+<!-- Screenshot/GIF: 3D-Drucker Card -->
+
+### Nova Fernbedienung
+Eine Fernbedienung für Fernseher und Streaming-Boxen: Steuerkreuz oder Touchpad, Zurück/Home/Menü, Medientasten,
+Lautstärke und Ein/Aus, dazu App-Kacheln, die die App direkt öffnen und leuchten, solange sie läuft. Erkennt Android TV /
+Google TV (z. B. Xiaomi TV Box, Chromecast), Fire TV per ADB, Philips, Apple TV, Roku und Samsung automatisch.
+
+➜ [Alle Optionen der Fernbedienung](docs/remote-card.md)
+
+<!-- Screenshot: Fernbedienung -->
 
 ---
 

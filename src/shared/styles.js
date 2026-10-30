@@ -1,13 +1,19 @@
 // Farben & Maße – überschreibbar per Theme-Variablen --nova-*
-// Dock: eigene, etwas hellere Werte
-export const DOCK_VARS = `:host{
+// Nova Navi: eigene, etwas hellere Werte
+export const NAVI_VARS = `:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.16));
 --nv-fg:var(--nova-text-color,#fff);
 --nv-accent:var(--nova-accent-color,#f5b83d);
 --nv-active:var(--nova-active-color,#3d8bf5);
 --nv-chip:var(--nova-chip-color,rgba(255,255,255,.1));
---nv-blur:var(--nova-blur,22px)}`;
+--nv-blur:var(--nova-blur,22px);
+--nv-active-fg:var(--nova-active-text-color,#fff);
+--nv-a1:var(--nova-accent-1,#3d8bf5);--nv-a1-fg:var(--nova-accent-1-text,#fff);
+--nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
+--nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
+--nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff)}`;
 
 // Alle anderen Karten
 export const NOVA_VARS = `:host{

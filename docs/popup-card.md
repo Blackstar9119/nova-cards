@@ -15,9 +15,9 @@ Ein Pop-up mit beliebigen Karten (Nova-Karten, HA-Karten, andere Custom Cards). 
 
 ## Öffnen
 
-- **Über das Dock:** Im Dock-Editor beim Button unter **Nova Pop-up öffnen** das Pop-up aus der Liste wählen
-  (angezeigt mit seinem Titel). Das Dock findet Pop-ups im ganzen Dashboard und öffnet sie in jeder Ansicht.
-  „Einfaches Pop-up“ im Dock ist das alte, schlichte Pop-up mit einer YAML-Kartenliste.
+- **Über Nova Navi:** Im Navi-Editor beim Button unter **Nova Pop-up öffnen** das Pop-up aus der Liste wählen
+  (angezeigt mit seinem Titel). Nova Navi findet Pop-ups im ganzen Dashboard und öffnet sie in jeder Ansicht.
+  „Einfaches Pop-up“ in Nova Navi ist das alte, schlichte Pop-up mit einer YAML-Kartenliste.
 - **Über die Raum-Karte:** Im Editor der Nova Room Card unter **Beim Antippen Nova Pop-up öffnen** das Pop-up wählen.
 - **Über jede andere Karte:** Aktion „Navigieren“ mit dem Pfad `#wohnzimmer`. Dafür muss die Pop-up Card in
   derselben Ansicht liegen.

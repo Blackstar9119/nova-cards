@@ -1,5 +1,5 @@
-/* Nova Cards v0.10.1b1 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Dock, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips – alle als custom:nova-*.
+/* Nova Cards v0.11.0 | MIT | https://github.com/Blackstar9119/nova-cards
+   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips, Gerät, 3D-Drucker, Fernbedienung – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
   var __defProp = Object.defineProperty;
@@ -89,6 +89,21 @@
     if (a.above != null || a.below != null) return NUMRE.test(v) && (a.above == null || n > a.above) && (a.below == null || n < a.below);
     return ["on", "problem"].includes(v);
   }
+  var SLIDE = {
+    number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("number", "set_value", { entity_id: id, value: v }) },
+    input_number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("input_number", "set_value", { entity_id: id, value: v }) },
+    light: {
+      v: (s) => s.state === "on" ? Math.max(1, Math.round((s.attributes.brightness || 0) / 2.55)) : 0,
+      r: () => [0, 100, 1],
+      u: "%",
+      set: (h, id, v) => v > 0 ? h.callService("light", "turn_on", { entity_id: id, brightness_pct: v }) : h.callService("light", "turn_off", { entity_id: id })
+    },
+    fan: { v: (s) => s.state === "on" ? s.attributes.percentage ?? 0 : 0, r: (a) => [0, 100, a.percentage_step || 1], u: "%", set: (h, id, v) => h.callService("fan", "set_percentage", { entity_id: id, percentage: Math.round(v) }) },
+    cover: { v: (s) => s.attributes.current_position ?? 0, r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("cover", "set_cover_position", { entity_id: id, position: v }) },
+    media_player: { v: (s) => Math.round((s.attributes.volume_level ?? 0) * 100), r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("media_player", "volume_set", { entity_id: id, volume_level: v / 100 }) },
+    climate: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 7, a.max_temp ?? 35, a.target_temp_step ?? 0.5], u: "°", set: (h, id, v) => h.callService("climate", "set_temperature", { entity_id: id, temperature: v }) },
+    water_heater: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 30, a.max_temp ?? 70, a.target_temp_step ?? 1], u: "°", set: (h, id, v) => h.callService("water_heater", "set_temperature", { entity_id: id, temperature: v }) }
+  };
 
   // src/shared/actions.js
   var fire = (el2, type, detail) => el2.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
@@ -143,14 +158,20 @@
   }
 
   // src/shared/styles.js
-  var DOCK_VARS = `:host{
+  var NAVI_VARS = `:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.16));
 --nv-fg:var(--nova-text-color,#fff);
 --nv-accent:var(--nova-accent-color,#f5b83d);
 --nv-active:var(--nova-active-color,#3d8bf5);
 --nv-chip:var(--nova-chip-color,rgba(255,255,255,.1));
---nv-blur:var(--nova-blur,22px)}`;
+--nv-blur:var(--nova-blur,22px);
+--nv-active-fg:var(--nova-active-text-color,#fff);
+--nv-a1:var(--nova-accent-1,#3d8bf5);--nv-a1-fg:var(--nova-accent-1-text,#fff);
+--nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
+--nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
+--nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff)}`;
   var NOVA_VARS = `:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
@@ -409,12 +430,12 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       return f;
     }
     // Runder Icon-Button (Verschieben, Löschen …)
-    _btn(icon, title, fn, dis) {
+    _btn(icon2, title, fn, dis) {
       const b = document.createElement("button");
       b.className = "ib";
       b.title = title;
       b.disabled = !!dis;
-      b.innerHTML = `<ha-icon icon="${icon}"></ha-icon>`;
+      b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon>`;
       b.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -446,7 +467,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     // Aufklapp-Eintrag; key merkt sich, ob er offen ist. Liefert [details, summary, body].
     // Mit fill(body, summary) wird der Inhalt erst beim ersten Aufklappen gebaut – zugeklappte Einträge kosten dann nichts
-    _details(key, icon, label, btns, fill) {
+    _details(key, icon2, label, btns, fill) {
       const d = document.createElement("details");
       d.className = "item";
       d.open = this._open.has(key);
@@ -455,7 +476,7 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
         d.open ? this._open.add(key) : this._open.delete(key);
       });
       const s = document.createElement("summary");
-      s.innerHTML = `<ha-icon icon="${esc(icon)}"></ha-icon><span class="lbl"></span>`;
+      s.innerHTML = `<ha-icon icon="${esc(icon2)}"></ha-icon><span class="lbl"></span>`;
       s.querySelector(".lbl").textContent = label;
       s.append(...btns);
       const body = document.createElement("div");
@@ -476,11 +497,11 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     // Aufklappbarer Bereich im Stil des Pop-up-Editors (Icon + Überschrift, Inhalt erst beim Aufklappen).
     // Welche Bereiche offen sind, bleibt beim Neuaufbau erhalten; anfangs offen: static openSections der Unterklasse.
-    _section(key, icon, label, fill) {
+    _section(key, icon2, label, fill) {
       const open = this._openSecs ||= new Set(this.constructor.openSections || []), k = `sec.${key}`;
       if (open.has(key)) this._open.add(k);
       else this._open.delete(k);
-      const [d] = this._details(k, icon, label, [], fill);
+      const [d] = this._details(k, icon2, label, [], fill);
       d.classList.add("sec");
       d.addEventListener("toggle", () => {
         if (d.open) open.add(key);
@@ -1767,437 +1788,6 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   };
   define(TAG3, NovaLightCard, { name: "Nova Licht Card", description: "Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.", documentationURL: docUrl("nova-licht-card") });
 
-  // src/dock.js
-  var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
-  var PCSS = `
-:host{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
-.root{width:min(var(--nova-popup-width,1180px),96vw);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
-background:linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9));border:1px solid var(--nv-border);box-shadow:0 20px 60px rgba(0,0,0,.45);color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:up .28s cubic-bezier(.2,.8,.2,1)}
-.hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(60,72,100,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.x{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);cursor:pointer;flex:none}
-ha-icon{--mdc-icon-size:20px;display:flex}
-.body{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-popup-min-col,300px),1fr));gap:12px;align-items:start}
-.body.one{grid-template-columns:1fr}
-.empty{opacity:.6;font-size:13px;padding:8px}
-@media(max-width:600px){:host{align-items:flex-end}.root{width:100vw;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
-@keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fi{from{opacity:0}}`;
-  var NovaDockPopup = class extends HTMLElement {
-    constructor() {
-      super();
-      const r = this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${DOCK_VARS}${PCSS}</style><div class="root"><div class="hd"><ha-icon class="hi"></ha-icon><span class="tt"></span><div class="x" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></div></div><div class="body"></div></div>`;
-      this._body = r.querySelector(".body");
-      this._cards = [];
-      r.querySelector(".x").addEventListener("click", () => this.onclose?.());
-      this.addEventListener("click", (e) => {
-        if (e.composedPath()[0] === this) this.onclose?.();
-      });
-    }
-    set cfg(c) {
-      this._cfg = c;
-      const r = this.shadowRoot;
-      r.querySelector(".tt").textContent = c.title || "";
-      r.querySelector(".hi").setAttribute("icon", c.icon || "mdi:dots-horizontal");
-      this._body.classList.toggle("one", (c.cards || []).length === 1);
-      this._load();
-    }
-    async _load() {
-      const helpers2 = await window.loadCardHelpers();
-      this._body.innerHTML = "";
-      this._cards = (this._cfg.cards || []).map((cc) => {
-        const el2 = helpers2.createCardElement(cc);
-        if (this._h) el2.hass = this._h;
-        this._body.appendChild(el2);
-        return el2;
-      });
-      if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Pop-up – im Dock-Editor unter „Einfaches Pop-up: Karten“ eintragen.</div>';
-    }
-    set hass(h) {
-      this._h = h;
-      this._cards.forEach((c) => {
-        c.hass = h;
-      });
-    }
-  };
-  define("dock-popup", NovaDockPopup);
-  var DCSS = `
-:host{display:block;height:var(--nova-dock-space,64px)}
-.dock.inline{max-width:100%}
-ha-icon{--mdc-icon-size:22px;display:flex}
-.dock{position:fixed;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:8px;border-radius:999px;background:var(--nv-bg);
-backdrop-filter:blur(var(--nv-blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(160%);border:1px solid var(--nv-border);
-box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none;box-sizing:border-box}
-.dock.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.dock.top{top:14px}
-.dock::-webkit-scrollbar{display:none}
-.dock.inline{position:static;transform:none;margin:0 auto;width:max-content}
-.d{width:var(--sz);height:var(--sz);border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none}
-.d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
-.d:active{transform:scale(.9)}
-.d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
-.d.here{outline:2px solid rgba(255,255,255,.5)}
-.d img{width:60%;height:60%;object-fit:contain}
-.dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--nv-accent);box-shadow:0 0 6px var(--nv-accent);display:none}
-.d.bd .dot{display:block}
-.num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--nv-accent);color:#3a2a00;font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
-.d.bn .num{display:block}.d.bn .dot{display:none}
-.empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
-@media(max-width:600px){.d{width:calc(var(--sz) * .875);height:calc(var(--sz) * .875)}.dock{gap:5px;padding:6px}}`;
-  var SRC2 = {};
-  var findDock = (o) => {
-    if (!o || typeof o !== "object") return null;
-    if ((o.type === `custom:${tag("dock-card")}` || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
-    for (const v of Object.values(o)) {
-      const r = findDock(v);
-      if (r) return r;
-    }
-    return null;
-  };
-  var NovaDockCard = class extends HTMLElement {
-    static getConfigElement() {
-      return document.createElement(tag("dock-card-editor"));
-    }
-    static getStubConfig() {
-      return { items: [
-        { icon: "mdi:home", label: "Start", tap_action: { action: "navigate", navigation_path: location.pathname } },
-        { icon: "mdi:lightbulb-group", label: "Licht", popup_title: "Licht", cards: [{ type: "markdown", content: "Hier deine Licht-Karten eintragen" }] }
-      ] };
-    }
-    setConfig(c) {
-      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      if (!c.items && !c.source) throw new Error("items oder source angeben");
-      this._cfg = { position: "bottom", button_size: 48, ...c };
-      this._ids = entityIds(c);
-      this._close();
-      this._items = null;
-      this._btns = null;
-      this._built = false;
-      this._cur = -1;
-      if (this._h) this.hass = this._h;
-    }
-    set hass(h) {
-      const old = this._h;
-      this._h = h;
-      if (!this._cfg) return;
-      if (this._pop) this._pop.hass = h;
-      if (this._hp) this._hp.hass = h;
-      if (!this._items) {
-        if (this._cfg.items) this._items = this._cfg.items;
-        else {
-          this._loadSource();
-          return;
-        }
-      }
-      if (!this._built) this._build();
-      else if (!hassChanged(old, h, this._watch(old))) return;
-      this._update();
-    }
-    // Entitäten der Einträge, bei Zählern auch die Mitglieder der Gruppe
-    _watch(h) {
-      if (this._srcIds?.items !== this._items) this._srcIds = { items: this._items, ids: entityIds(this._items) };
-      const ids = [...this._ids, ...this._srcIds.ids];
-      (this._items || []).forEach((it) => {
-        if (it.badge_count_of) ids.push(...h?.states[it.badge_count_of]?.attributes.entity_id || []);
-      });
-      return ids;
-    }
-    async _loadSource() {
-      if (this._loading) return;
-      this._loading = true;
-      const k = this._cfg.source;
-      SRC2[k] = SRC2[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findDock).catch(() => null);
-      const d = await SRC2[k];
-      this._loading = false;
-      this._items = d ? d.items : [];
-      this._srcCfg = d || {};
-      this.hass = this._h;
-    }
-    connectedCallback() {
-      this._applyInline();
-      requestAnimationFrame(() => this._applyInline());
-      this._loc = () => this._update();
-      window.addEventListener("location-changed", this._loc);
-      window.addEventListener("popstate", this._loc);
-      window.addEventListener("hashchange", this._loc);
-    }
-    disconnectedCallback() {
-      window.removeEventListener("location-changed", this._loc);
-      window.removeEventListener("popstate", this._loc);
-      window.removeEventListener("hashchange", this._loc);
-      this._close();
-      if (this._hp) {
-        this._hp.remove();
-        this._hp = null;
-      }
-    }
-    getCardSize() {
-      return 1;
-    }
-    getGridOptions() {
-      return { columns: "full", rows: 1 };
-    }
-    get _inline() {
-      if (this.preview || this.editMode || this.hasAttribute("preview") || this._cfg?.inline) return true;
-      const PREV2 = /* @__PURE__ */ new Set(["HUI-CARD-PICKER", "HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR"]);
-      let n = this;
-      for (let i = 0; i < 40 && n; i++) {
-        if (PREV2.has(n.tagName)) return true;
-        n = n.parentElement || n.getRootNode?.().host;
-      }
-      return false;
-    }
-    _applyInline() {
-      this.shadowRoot?.querySelector(".dock")?.classList.toggle("inline", this._inline);
-    }
-    _build() {
-      this._built = true;
-      const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${DOCK_VARS}${DCSS}</style><div class="dock ${esc(c.position)} ${this._inline ? "inline" : ""}" style="--sz:${+c.button_size || 48}px"></div>`;
-      const dock = r.querySelector(".dock");
-      if (this._hp) r.appendChild(this._hp);
-      if (!this._items.length) {
-        dock.innerHTML = `<span class="empty">${c.source ? `Kein Dock in „${esc(c.source)}“ gefunden` : "Noch keine Einträge"}</span>`;
-        this._btns = [];
-        return;
-      }
-      this._btns = this._items.map((it, i) => {
-        const d = document.createElement("div");
-        d.className = "d";
-        d.tabIndex = 0;
-        d.setAttribute("role", "button");
-        d.title = it.label || it.popup_title || "";
-        const ic = it.icon || "mdi:circle-outline";
-        d.innerHTML = `${isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`}<span class="dot"></span><span class="num"></span>`;
-        d.addEventListener("click", () => this._tap(i));
-        d.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            this._tap(i);
-          }
-        });
-        if (it.hold_action) {
-          let t;
-          d.addEventListener("pointerdown", () => {
-            t = setTimeout(() => {
-              d._held = true;
-              hassAction(this, { entity: it.entity, hold_action: it.hold_action }, "hold");
-            }, 500);
-          });
-          ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => d.addEventListener(ev, () => clearTimeout(t)));
-        }
-        dock.appendChild(d);
-        return d;
-      });
-    }
-    _path(it) {
-      return it.tap_action?.action === "navigate" ? it.tap_action.navigation_path : it.navigation_path;
-    }
-    _update() {
-      if (!this._btns || !this._h) return;
-      const h = this._h;
-      this._items.forEach((it, i) => {
-        const d = this._btns[i];
-        if (!d) return;
-        const p = this._path(it);
-        d.classList.toggle("act", i === this._cur || !!it.popup_hash && curHash() === cleanHash(it.popup_hash));
-        d.classList.toggle("here", !!p && location.pathname === p);
-        let n = 0, dot = false;
-        if (it.badge_count_of) n = countOn(h, it.badge_count_of, it.badge_exclude);
-        else if (it.badge) dot = isOn(h.states[it.badge]);
-        const showNum = n > 0 && it.badge_show_number;
-        d.classList.toggle("bd", dot || n > 0 && !showNum);
-        d.classList.toggle("bn", showNum);
-        if (showNum) d.querySelector(".num").textContent = n > 99 ? "99+" : n;
-      });
-    }
-    _tap(i) {
-      const it = this._items[i];
-      if (this._btns[i]?._held) {
-        this._btns[i]._held = false;
-        return;
-      }
-      if (it.popup_hash) {
-        this._close();
-        return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
-      }
-      if (this._cur === i) return this._close();
-      this._close();
-      if (Array.isArray(it.cards)) return this._openCards(i, it);
-      if (typeof it.popup === "string" && customElements.get("nz-popup")) return this._openLegacy(i, it);
-      if (it.tap_action && it.tap_action.action !== "none") return hassAction(this, { entity: it.entity, tap_action: it.tap_action }, "tap");
-      if (it.navigation_path) return navigate(it.navigation_path);
-      if (it.entity) moreInfo(this, it.entity);
-    }
-    _openCards(i, it) {
-      const p = document.createElement(tag("dock-popup"));
-      p.onclose = () => this._close();
-      p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
-      p.hass = this._h;
-      this.shadowRoot.appendChild(p);
-      this._opened(i, p);
-    }
-    _openLegacy(i, it) {
-      const p = document.createElement("nz-popup");
-      p.host = this;
-      p.onclose = () => this._close();
-      p.cfg = { weather: this._srcCfg?.weather || this._cfg.weather, ...it, title: it.title || it.label };
-      document.body.appendChild(p);
-      p.hass = this._h;
-      this._opened(i, p);
-    }
-    _opened(i, p) {
-      this._pop = p;
-      this._cur = i;
-      this._update();
-      this._esc = (e) => {
-        if (e.key === "Escape") this._close();
-      };
-      window.addEventListener("keydown", this._esc);
-    }
-    _close() {
-      if (this._pop) {
-        this._pop.remove();
-        this._pop = null;
-      }
-      this._cur = -1;
-      if (this._esc) window.removeEventListener("keydown", this._esc);
-      this._update();
-    }
-  };
-  define("dock-card", NovaDockCard, { name: "Nova Dock Card", description: "Schwebende Leiste unten mit Buttons: navigieren, Aktion auslösen oder Popup mit beliebigen Karten öffnen.", documentationURL: docUrl("nova-dock-card") });
-  var GEN3 = [{ name: "source", selector: { text: {} } }];
-  var LOOK3 = [{ type: "grid", name: "", schema: [
-    { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
-    { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
-  ] }];
-  var I_MAIN = [{ type: "grid", name: "", schema: [
-    { name: "icon", required: true, selector: { icon: {} } },
-    { name: "label", selector: { text: {} } }
-  ] }];
-  var I_TAP = (opts) => [
-    { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
-    { name: "tap_action", selector: { ui_action: {} } }
-  ];
-  var I_POP = [{ name: "popup_title", selector: { text: {} } }, { name: "cards", selector: { object: {} } }];
-  var I_BADGE = (it) => [
-    { name: "badge", selector: { entity: {} } },
-    { name: "badge_count_of", selector: { entity: {} } },
-    ...it.badge_count_of ? [{ name: "badge_show_number", selector: { boolean: {} } }, { name: "badge_exclude", selector: { entity: { multiple: true } } }] : []
-  ];
-  var LABELS = {
-    position: "Position",
-    button_size: "Button-Größe",
-    source: "Einträge aus anderem Dashboard übernehmen",
-    icon: "Icon",
-    label: "Name",
-    tap_action: "Aktion beim Antippen",
-    popup_title: "Titel",
-    popup_hash: "Nova Pop-up öffnen",
-    cards: "Karten (YAML-Liste)",
-    badge: "Punkt, wenn diese Entität an ist",
-    badge_count_of: "Zähler: Gruppe",
-    badge_show_number: "Zahl statt Punkt",
-    badge_exclude: "Beim Zählen ignorieren"
-  };
-  var HELPERS = {
-    source: "Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Dock – praktisch für mehrere Dashboards mit gleicher Leiste.",
-    popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion und dem einfachen Pop-up.",
-    cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
-    badge_count_of: "Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)"
-  };
-  var NovaDockCardEditor = class extends NovaEditorBase {
-    // Pop-ups des Dashboards für die Auswahlliste einmal laden
-    set hass(h) {
-      super.hass = h;
-      if (h && !this._hashes) {
-        this._hashes = [];
-        popupOptions(h).then((o) => {
-          this._hashes = o;
-          this._rebuild();
-        });
-      }
-    }
-    _build() {
-      const r = this.shadowRoot;
-      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap");
-      const data = { position: "bottom", button_size: 48, ...this._config };
-      const form = (schema) => this._form(schema, data, (v) => {
-        const c = merge(this._config, names(schema), v);
-        if (c.position === "bottom") delete c.position;
-        if (c.button_size === 48) delete c.button_size;
-        const hadSrc = !!this._config.source;
-        this._emit(c);
-        if (hadSrc !== !!c.source) this._rebuild();
-      });
-      const items = this._config.items || [];
-      w.append(
-        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
-          b.append(form(GEN3));
-          if (this._config.source && !items.length) b.append(this._hint("Einträge kommen aus dem anderen Dashboard. Eigene Buttons überschreiben das."));
-        }),
-        this._section("buttons", "mdi:dock-bottom", "Buttons", (b) => {
-          items.forEach((it, i) => b.append(this._item(it, i, items.length)));
-          b.append(this._add("Button hinzufügen", () => {
-            const n = [...items, { icon: "mdi:circle-outline" }];
-            this._open = /* @__PURE__ */ new Set([n.length - 1]);
-            this._emit({ ...this._config, items: n });
-            this._rebuild();
-          }));
-        }),
-        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(LOOK3)))
-      );
-    }
-    _popName(h) {
-      h = cleanHash(h);
-      return this._hashes?.find((o) => o.value === h)?.label || `#${h}`;
-    }
-    _label(it, i) {
-      return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : it.tap_action?.navigation_path) || "Neuer Button"}`;
-    }
-    _item(it, i, n) {
-      const opts = this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
-      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => {
-        const form = (schema) => this._form(schema, it, (v) => {
-          const list2 = [...this._config.items], old = list2[i];
-          const nx = merge(old, names(schema), v);
-          if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
-          if (!nx.popup_hash) delete nx.popup_hash;
-          if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
-          if (!nx.badge_show_number) delete nx.badge_show_number;
-          list2[i] = nx;
-          this._emit({ ...this._config, items: list2 });
-          s.querySelector(".lbl").textContent = this._label(nx, i);
-          s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
-          if (!!old.badge_count_of !== !!nx.badge_count_of) this._rebuild();
-        });
-        b.append(form(I_MAIN), this._h4("Beim Antippen"), form(I_TAP(opts)), this._h4("Einfaches Pop-up"), form(I_POP), this._h4("Punkt und Zähler"), form(I_BADGE(it)));
-      });
-      return d;
-    }
-    _move(i, dir) {
-      const j = i + dir, list2 = [...this._config.items];
-      [list2[i], list2[j]] = [list2[j], list2[i]];
-      this._open = /* @__PURE__ */ new Set([j]);
-      this._emit({ ...this._config, items: list2 });
-      this._rebuild();
-    }
-    _remove(i) {
-      this._open = /* @__PURE__ */ new Set();
-      const list2 = this._config.items.filter((_, k) => k !== i);
-      const c = { ...this._config };
-      if (list2.length) c.items = list2;
-      else delete c.items;
-      if (!c.items && !c.source) c.items = [];
-      this._emit(c);
-      this._rebuild();
-    }
-  };
-  __publicField(NovaDockCardEditor, "labels", LABELS);
-  __publicField(NovaDockCardEditor, "helpers", HELPERS);
-  __publicField(NovaDockCardEditor, "openSections", ["buttons"]);
-  define("dock-card-editor", NovaDockCardEditor);
-
   // src/shared/editor-schema.js
   var g2 = (...schema) => ({ type: "grid", name: "", schema });
   var T = { text: {} };
@@ -2240,22 +1830,1029 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     glow: "Kartenrahmen einfärben"
   };
 
-  // src/modular.js
-  var SLIDE = {
-    number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("number", "set_value", { entity_id: id, value: v }) },
-    input_number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("input_number", "set_value", { entity_id: id, value: v }) },
-    light: {
-      v: (s) => s.state === "on" ? Math.max(1, Math.round((s.attributes.brightness || 0) / 2.55)) : 0,
-      r: () => [0, 100, 1],
-      u: "%",
-      set: (h, id, v) => v > 0 ? h.callService("light", "turn_on", { entity_id: id, brightness_pct: v }) : h.callService("light", "turn_off", { entity_id: id })
-    },
-    fan: { v: (s) => s.state === "on" ? s.attributes.percentage ?? 0 : 0, r: (a) => [0, 100, a.percentage_step || 1], u: "%", set: (h, id, v) => h.callService("fan", "set_percentage", { entity_id: id, percentage: Math.round(v) }) },
-    cover: { v: (s) => s.attributes.current_position ?? 0, r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("cover", "set_cover_position", { entity_id: id, position: v }) },
-    media_player: { v: (s) => Math.round((s.attributes.volume_level ?? 0) * 100), r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("media_player", "volume_set", { entity_id: id, volume_level: v / 100 }) },
-    climate: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 7, a.max_temp ?? 35, a.target_temp_step ?? 0.5], u: "°", set: (h, id, v) => h.callService("climate", "set_temperature", { entity_id: id, temperature: v }) },
-    water_heater: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 30, a.max_temp ?? 70, a.target_temp_step ?? 1], u: "°", set: (h, id, v) => h.callService("water_heater", "set_temperature", { entity_id: id, temperature: v }) }
+  // src/navi.js
+  var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
+  var PCSS = `
+:host{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
+.root{width:min(var(--nova-popup-width,1180px),96vw);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
+background:linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9));border:1px solid var(--nv-border);box-shadow:0 20px 60px rgba(0,0,0,.45);color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:up .28s cubic-bezier(.2,.8,.2,1)}
+.hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(60,72,100,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);cursor:pointer;flex:none}
+ha-icon{--mdc-icon-size:20px;display:flex}
+.body{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-popup-min-col,300px),1fr));gap:12px;align-items:start}
+.body.one{grid-template-columns:1fr}
+.empty{opacity:.6;font-size:13px;padding:8px}
+@media(max-width:600px){:host{align-items:flex-end}.root{width:100vw;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
+@keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fi{from{opacity:0}}`;
+  var NovaNaviPopup = class extends HTMLElement {
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NAVI_VARS}${PCSS}</style><div class="root"><div class="hd"><ha-icon class="hi"></ha-icon><span class="tt"></span><div class="x" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></div></div><div class="body"></div></div>`;
+      this._body = r.querySelector(".body");
+      this._cards = [];
+      r.querySelector(".x").addEventListener("click", () => this.onclose?.());
+      this.addEventListener("click", (e) => {
+        if (e.composedPath()[0] === this) this.onclose?.();
+      });
+    }
+    set cfg(c) {
+      this._cfg = c;
+      const r = this.shadowRoot;
+      r.querySelector(".tt").textContent = c.title || "";
+      r.querySelector(".hi").setAttribute("icon", c.icon || "mdi:dots-horizontal");
+      this._body.classList.toggle("one", (c.cards || []).length === 1);
+      this._load();
+    }
+    async _load() {
+      const helpers2 = await window.loadCardHelpers();
+      this._body.innerHTML = "";
+      this._cards = (this._cfg.cards || []).map((cc) => {
+        const el2 = helpers2.createCardElement(cc);
+        if (this._h) el2.hass = this._h;
+        this._body.appendChild(el2);
+        return el2;
+      });
+      if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Pop-up – im Navi-Editor unter „Einfaches Pop-up: Karten“ eintragen.</div>';
+    }
+    set hass(h) {
+      this._h = h;
+      this._cards.forEach((c) => {
+        c.hass = h;
+      });
+    }
   };
+  define("navi-popup", NovaNaviPopup);
+  var DCSS = `
+:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px))}
+:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
+:host([side]){height:0}
+ha-icon{--mdc-icon-size:22px;display:flex}
+.wrap{position:fixed;left:50%;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:stretch;gap:8px;max-width:calc(100vw - 24px)}
+.wrap.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.wrap.top{top:14px;flex-direction:column-reverse}
+.wrap.side{top:50%;bottom:auto;left:14px;right:auto;transform:translateY(-50%);max-width:none;max-height:calc(100vh - 28px);flex-direction:column}
+.wrap.side.right{left:auto;right:14px}
+.wrap.inline{position:static;transform:none;margin:0 auto;width:max-content;max-width:100%}
+.glass{background:var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(160%);border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(0,0,0,.4)}
+.dk{position:relative;display:flex;border-radius:999px;max-width:100%;min-width:0;min-height:0}
+.side .dk{flex-direction:column}
+.dock{--g:8px;--o:6px;position:relative;z-index:1;flex:1 1 auto;min-width:0;min-height:0;margin:calc(-1 * var(--o));display:flex;align-items:center;gap:var(--g);padding:calc(8px + var(--o));border-radius:999px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-sizing:border-box;--a1:1;--a2:1;--md:to right}
+.side .dock{flex-direction:column;overflow-x:hidden;overflow-y:auto;--md:to bottom}
+.dock.fs{--a1:0}.dock.fe{--a2:0}
+.dock.fs,.dock.fe{-webkit-mask-image:linear-gradient(var(--md),rgba(0,0,0,var(--a1)) var(--o),#000 calc(var(--o) + 22px),#000 calc(100% - var(--o) - 22px),rgba(0,0,0,var(--a2)) calc(100% - var(--o)));mask-image:linear-gradient(var(--md),rgba(0,0,0,var(--a1)) var(--o),#000 calc(var(--o) + 22px),#000 calc(100% - var(--o) - 22px),rgba(0,0,0,var(--a2)) calc(100% - var(--o)))}
+.dock::-webkit-scrollbar{display:none}
+.d{--s:var(--sz);z-index:1;width:var(--s);height:var(--s);box-sizing:border-box;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none;user-select:none;-webkit-user-select:none}
+.d[hidden]{display:none}
+.d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.d:active{transform:scale(.9)}
+.d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
+/* Aktiver Eintrag: runde Markierung .hl gleitet unter die Buttons; Farbe nur übers Theme (--nova-navi-active-color), Standard Akzent 2.
+   Animiert werden nur transform, opacity und max-width – schont schwache Tablets. */
+.dk{--hc:var(--nova-navi-active-color,var(--nv-a2));--ease:cubic-bezier(.25,.8,.25,1)}
+/* Glas der Leiste als eigene Ebene: gleitet beim Wechsel per transform auf die neue Breite (Blur bleibt unverändert) */
+.dk>.bg{position:absolute;inset:0;border-radius:inherit;z-index:0;pointer-events:none;transform-origin:0 50%}
+.hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:var(--hc);box-shadow:0 0 14px color-mix(in srgb,var(--hc) 50%,transparent);pointer-events:none;opacity:0;will-change:transform}
+.hl.on{opacity:1}
+.d.here{color:var(--nova-navi-active-text-color,var(--nv-a2-fg))}
+/* Inaktiv-Farbe bleibt immer die Grundfarbe des Buttons; Gelb liegt als eigene Ebene darüber (unter dem Icon).
+   So geht der alte Button direkt von Gelb zu Blau über, nie über transparent */
+.d::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:50%;background:var(--hc);opacity:0;pointer-events:none}
+.d.lit::before{opacity:1}
+/* Während einer Animation: nur transform und opacity, gleiche Dauer und Kurve für alle Teile */
+.run .d,.run .d::before,.run .nm,.run+.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
+/* Messen und Startlage setzen: ohne Übergang */
+.hold .d,.hold .d::before,.hold .nm,.hold+.bg,.hold .hl{transition:none!important}
+.ghost{position:absolute;left:0;top:0;z-index:1;pointer-events:none;white-space:nowrap;color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
+.d img{width:calc(var(--s) * .6);height:calc(var(--s) * .6);object-fit:contain}
+.nm{flex:none;z-index:1;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
+.nm.on{max-width:180px;opacity:1;margin-left:0;padding-right:6px}
+.nm[hidden],.side .nm{display:none}
+@media(prefers-reduced-motion:reduce){.dock,.dock *{transition:none!important}}
+.dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--bc,var(--nv-accent));box-shadow:0 0 6px var(--bc,var(--nv-accent));display:none}
+.d.bd .dot{display:block}
+.num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bc,var(--nv-accent));color:var(--bfg,#3a2a00);font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
+.d.bn .num{display:block}.d.bn .dot{display:none}
+.empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
+.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;align-self:center;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.mb[hidden]{display:none}
+.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.mb .art.pic ha-icon{display:none}
+.mb .tx{flex:1;min-width:0;cursor:pointer}
+.mb .tx b,.mb .tx span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb .tx b{font-size:13px;font-weight:600}.mb .tx span{font-size:11px;opacity:.7}
+.mb .pp{width:40px;height:40px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-active);color:var(--nv-active-fg);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mb .pp:active{transform:scale(.9)}
+.side .mb{width:auto;flex-direction:column;padding:6px;border-radius:28px}
+.side .mb .tx{display:none}
+.menu{position:fixed;z-index:8;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:22px;min-width:180px;max-width:calc(100vw - 16px);max-height:60vh;overflow-y:auto;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:mi .16s ease-out}
+.mi{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:999px;cursor:pointer;font-size:14px;white-space:nowrap;-webkit-tap-highlight-color:transparent;outline:none}
+.mi[hidden]{display:none}
+.mi:hover,.mi:focus-visible{background:var(--nv-chip)}
+.mi.here{background:var(--nv-chip);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+.mi .ic{width:32px;height:32px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
+.mi .ic img{width:60%;height:60%;object-fit:contain}
+.mi ha-icon{--mdc-icon-size:18px}
+@keyframes mi{from{opacity:0;transform:scale(.96)}}
+/* Kompakt (schmale Bildschirme automatisch, oder per compact: true): kleinere Buttons und Abstände, Name nur am aktiven Eintrag */
+@media(max-width:600px){.wrap:not(.nocmp) .d,.wrap:not(.nocmp) .hl{--s:calc(var(--sz) * .875)}.wrap:not(.nocmp) .hl{width:var(--s);height:var(--s)}.wrap:not(.nocmp) .dock{--g:5px;padding:calc(6px + var(--o))}.wrap:not(.nocmp) .nm,.wrap:not(.nocmp) .ghost{font-size:13px}}
+.cmp .d,.cmp .hl{--s:calc(var(--sz) * .875)}.cmp .hl{width:var(--s);height:var(--s)}.cmp .dock{--g:5px;padding:calc(6px + var(--o))}.cmp .nm,.cmp .ghost{font-size:13px}`;
+  var SRC2 = {};
+  var TYPES = ["navi-card", "dock-card"];
+  var findNavi = (o) => {
+    if (!o || typeof o !== "object") return null;
+    if ((TYPES.some((t) => o.type === `custom:${tag(t)}`) || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
+    for (const v of Object.values(o)) {
+      const r = findNavi(v);
+      if (r) return r;
+    }
+    return null;
+  };
+  var normPath = (p) => {
+    p = String(p || "").split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+    try {
+      return decodeURI(p);
+    } catch {
+      return p;
+    }
+  };
+  var pathOf = (it) => it.tap_action?.action === "navigate" ? it.tap_action.navigation_path : it.navigation_path;
+  var icon = (ic) => isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`;
+  var haptic = () => {
+    window.dispatchEvent(new CustomEvent("haptic", { detail: "light" }));
+    if (!window.externalApp && !window.webkit?.messageHandlers?.externalBus) try {
+      navigator.vibrate?.(12);
+    } catch {
+    }
+  };
+  var visible = (h, it) => {
+    if (list(it.visible_users).length && !list(it.visible_users).includes(h.user?.id)) return false;
+    if (!it.visible_entity) return true;
+    const s = h.states[it.visible_entity];
+    const cond = { state: it.visible_state, state_not: it.visible_state_not, above: it.visible_above, below: it.visible_below };
+    return Object.values(cond).some((v) => v != null) ? alertHit(cond, s) : isOn(s);
+  };
+  var MEDIA_ON = ["playing", "paused"];
+  var LAST = /* @__PURE__ */ new Map();
+  var REDUCED = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+  var NovaNaviCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("navi-card-editor"));
+    }
+    static getStubConfig() {
+      return { items: [
+        { icon: "mdi:home", label: "Start", tap_action: { action: "navigate", navigation_path: location.pathname } },
+        { icon: "mdi:lightbulb-group", label: "Licht", popup_title: "Licht", cards: [{ type: "markdown", content: "Hier deine Licht-Karten eintragen" }] }
+      ] };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (!c.items && !c.source) throw new Error("items oder source angeben");
+      this._cfg = { position: "bottom", button_size: 48, ...c };
+      this._ids = entityIds(c);
+      this._close();
+      this._items = null;
+      this._btns = null;
+      this._built = false;
+      this._cur = -1;
+      this._watchSide();
+      if (this._h) this.hass = this._h;
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._cfg) return;
+      if (this._pop) this._pop.hass = h;
+      if (this._hp) this._hp.hass = h;
+      if (!this._items) {
+        if (this._cfg.items) this._items = this._cfg.items;
+        else {
+          this._loadSource();
+          return;
+        }
+      }
+      if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._watch(old))) return;
+      this._update();
+    }
+    // Entitäten der Einträge (auch im Untermenü) und Media-Player, bei Zählern auch die Mitglieder der Gruppe
+    _watch(h) {
+      if (this._srcIds?.items !== this._items) this._srcIds = { items: this._items, ids: entityIds([this._items, this._srcCfg?.media_players]) };
+      const ids = [...this._ids, ...this._srcIds.ids];
+      (this._items || []).forEach((it) => {
+        if (it.badge_count_of) ids.push(...h?.states[it.badge_count_of]?.attributes.entity_id || []);
+      });
+      return ids;
+    }
+    async _loadSource() {
+      if (this._loading) return;
+      this._loading = true;
+      const k = this._cfg.source;
+      SRC2[k] = SRC2[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findNavi).catch(() => null);
+      const d = await SRC2[k];
+      this._loading = false;
+      this._items = d ? d.items : [];
+      this._srcCfg = d || {};
+      this.hass = this._h;
+    }
+    connectedCallback() {
+      this._applyInline();
+      requestAnimationFrame(() => this._applyInline());
+      this._loc = () => {
+        if (this._menu) this._close();
+        this._update();
+      };
+      window.addEventListener("location-changed", this._loc);
+      window.addEventListener("popstate", this._loc);
+      window.addEventListener("hashchange", this._loc);
+      this._watchSide();
+      this._shown = null;
+      this._update();
+    }
+    disconnectedCallback() {
+      window.removeEventListener("location-changed", this._loc);
+      window.removeEventListener("popstate", this._loc);
+      window.removeEventListener("hashchange", this._loc);
+      this._mq?.removeEventListener("change", this._mqf);
+      this._mq = null;
+      this._close();
+      if (this._hp) {
+        this._hp.remove();
+        this._hp = null;
+      }
+    }
+    getCardSize() {
+      return 1;
+    }
+    getGridOptions() {
+      return { columns: "full", rows: 1 };
+    }
+    get _inline() {
+      if (this.preview || this.editMode || this.hasAttribute("preview") || this._cfg?.inline) return true;
+      const PREV2 = /* @__PURE__ */ new Set(["HUI-CARD-PICKER", "HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR"]);
+      let n = this;
+      for (let i = 0; i < 40 && n; i++) {
+        if (PREV2.has(n.tagName)) return true;
+        n = n.parentElement || n.getRootNode?.().host;
+      }
+      return false;
+    }
+    _applyInline() {
+      this.shadowRoot?.querySelector(".wrap")?.classList.toggle("inline", this._inline);
+    }
+    // Seitenleiste ab einer Mindestbreite (z. B. Tablet quer, PC), darunter Leiste unten bzw. oben
+    _watchSide() {
+      this._mq?.removeEventListener("change", this._mqf);
+      this._mq = null;
+      const c = this._cfg;
+      if (!c || !this.isConnected || !["left", "right"].includes(c.sidebar)) return this._applySide();
+      this._mq = window.matchMedia(`(min-width: ${+c.sidebar_min_width || 1024}px)`);
+      this._mqf = () => this._applySide();
+      this._mq.addEventListener("change", this._mqf);
+      this._applySide();
+    }
+    get _side() {
+      return this._mq?.matches ? this._cfg.sidebar : null;
+    }
+    _applySide() {
+      const w = this.shadowRoot?.querySelector(".wrap"), s = this._side;
+      this.toggleAttribute("side", !!s && !this._inline);
+      if (!w) return;
+      w.classList.toggle("side", !!s);
+      w.classList.toggle("right", s === "right");
+      w.classList.toggle(this._cfg.position === "top" ? "top" : "bottom", !s);
+      if (this._menu) this._close();
+      if (this._shown) this._shown = `${this._shown.split("|")[0]}|neu`;
+      this._update();
+    }
+    _build() {
+      this._built = true;
+      const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""} ${{ true: "cmp", false: "nocmp" }[this._opt("compact")] || ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms"><div class="mb glass" hidden><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="pp" role="button" tabindex="0"><ha-icon></ha-icon></div></div><div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
+      const dock = r.querySelector(".dock");
+      this._dock = dock;
+      this._bg = r.querySelector(".dk>.bg");
+      this._hl = dock.firstChild;
+      this._shown = null;
+      dock.addEventListener("scroll", () => {
+        const rec = LAST.get(this._key);
+        if (rec) rec.sl = [dock.scrollLeft, dock.scrollTop];
+        this._edges();
+      }, { passive: true });
+      this._mb = r.querySelector(".mb");
+      this._mb.querySelector(".tx").addEventListener("click", () => this._mp && moreInfo(this, this._mp));
+      const pp = this._mb.querySelector(".pp");
+      const play = () => {
+        if (!this._mp) return;
+        if (this._haptic) haptic();
+        this._h.callService("media_player", "media_play_pause", { entity_id: this._mp });
+      };
+      pp.addEventListener("click", play);
+      pp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          play();
+        }
+      });
+      this._applySide();
+      if (this._hp) r.appendChild(this._hp);
+      if (!this._items.length) {
+        this._dock = null;
+        dock.innerHTML = `<span class="empty">${c.source ? `Kein Navi in „${esc(c.source)}“ gefunden` : "Noch keine Einträge"}</span>`;
+        this._btns = [];
+        return;
+      }
+      this._btns = this._items.map((it, i) => {
+        const d = document.createElement("div");
+        d.className = "d";
+        d.tabIndex = 0;
+        d.setAttribute("role", "button");
+        d.title = it.label || it.popup_title || "";
+        d.innerHTML = `${icon(it.icon || "mdi:circle-outline")}<span class="dot"></span><span class="num"></span>`;
+        this._bind(d, it, (kind) => this._run(i, kind));
+        d._nm = document.createElement("span");
+        d._nm.className = "nm";
+        dock.append(d, d._nm);
+        return d;
+      });
+    }
+    get _haptic() {
+      return !!(this._cfg.haptic ?? this._srcCfg?.haptic);
+    }
+    // Antippen, doppelt antippen (wartet kurz auf den zweiten Tipp) und lange drücken
+    _bind(el2, it, run) {
+      let t, wait2;
+      const hold = it.hold_action && it.hold_action.action !== "none", dbl = it.double_tap_action && it.double_tap_action.action !== "none";
+      if (hold) {
+        el2.addEventListener("pointerdown", () => {
+          el2._held = false;
+          clearTimeout(t);
+          t = setTimeout(() => {
+            el2._held = true;
+            run("hold");
+          }, 500);
+        });
+        ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => el2.addEventListener(ev, () => clearTimeout(t)));
+        el2.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
+      el2.addEventListener("click", () => {
+        if (el2._held) {
+          el2._held = false;
+          return;
+        }
+        if (!dbl) return run("tap");
+        if (wait2) {
+          clearTimeout(wait2);
+          wait2 = null;
+          return run("double_tap");
+        }
+        wait2 = setTimeout(() => {
+          wait2 = null;
+          run("tap");
+        }, 250);
+      });
+      el2.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          run("tap");
+        }
+      });
+    }
+    _update() {
+      if (!this._btns || !this._h) return;
+      const h = this._h, here = normPath(location.pathname);
+      const isHere = (it) => {
+        const p = pathOf(it);
+        return !!p && normPath(p) === here;
+      };
+      let cur2 = -1;
+      this._items.forEach((it, i) => {
+        const d = this._btns[i];
+        if (!d) return;
+        d.hidden = d._nm.hidden = !visible(h, it);
+        d.classList.toggle("act", i === this._cur || !!it.popup_hash && curHash() === cleanHash(it.popup_hash));
+        const hit = isHere(it) ? it : Array.isArray(it.menu) && it.menu.find(isHere) || null;
+        if (hit && cur2 < 0 && !d.hidden) cur2 = i;
+        d._nm.textContent = hit && hit.label || it.label || "";
+        this._badge(d, it);
+      });
+      this._setActive(cur2);
+      this._menu?.querySelectorAll(".mi").forEach((m) => {
+        m.hidden = !visible(h, m._it);
+        m.classList.toggle("here", isHere(m._it));
+      });
+      this._media();
+    }
+    _opt(k) {
+      return this._cfg[k] ?? this._srcCfg?.[k];
+    }
+    get _dur() {
+      const v = +this._opt("animation_duration");
+      return v > 0 ? v : 280;
+    }
+    get _key() {
+      return (this._items || []).map(pathOf).join("|");
+    }
+    // Aktiven Eintrag zeigen: Markierung und Name. Wechselt er, gleitet alles vom alten Zustand (auch aus der
+    // vorherigen Karte, siehe LAST) zum neuen – erst Endlage messen, dann im Ausgangszustand starten (FLIP)
+    _setActive(cur2) {
+      const dock = this._dock;
+      if (!dock) return;
+      const lbl = this._opt("active_label") !== false && !this._side, lay = this._btns.map((d) => (d.hidden ? 0 : 1) + d._nm.textContent).join(",");
+      const sig = `${cur2}|${lbl}|${this._side}|${this._dur}|${lay}`;
+      if (this._shown === sig) return;
+      const rec = LAST.get(this._key), fresh = rec && Date.now() - rec.t < 1500;
+      const from = this._shown != null ? +this._shown.split("|")[0] : !rec ? -1 : rec.i !== cur2 ? rec.i : fresh && !rec.played ? rec.from : cur2;
+      const first = this._shown == null;
+      this._shown = sig;
+      if (!rec || rec.i !== cur2) LAST.set(this._key, { i: cur2, from, t: Date.now(), sl: rec?.sl });
+      const anim = this._opt("animation") !== false && !REDUCED?.matches && this.isConnected && !inPicker(this) && from !== cur2;
+      if (first && rec?.sl) [dock.scrollLeft, dock.scrollTop] = rec.sl;
+      if (anim && first) {
+        this._apply(from, lbl);
+        this._pillTo(from, from >= 0);
+      }
+      if (!anim) {
+        this._jump(cur2, lbl);
+        return this._reveal(cur2, false);
+      }
+      const go = () => {
+        if (this._shown === sig) this._flip(cur2, lbl, sig);
+      };
+      requestAnimationFrame(() => document.fonts?.status === "loaded" ? go() : document.fonts.ready.then(go));
+    }
+    // Klassen für aktiven Eintrag i setzen (ohne Animation)
+    _apply(i, lbl, lit = true) {
+      this._btns.forEach((d, k) => {
+        d.classList.toggle("here", k === i);
+        d._nm.classList.toggle("on", k === i && lbl && !!d._nm.textContent);
+      });
+      if (lit) this._lit(i);
+    }
+    // Gelbe Ebene auf Button i (beim Wechsel gleichzeitig mit der Markierung übergeblendet)
+    _lit(i) {
+      this._btns.forEach((d, k) => d.classList.toggle("lit", k === i));
+    }
+    // Aktiven Eintrag (samt Name) in die Mitte des Scroll-Bereichs holen, wenn die Leiste nicht ganz passt.
+    // Mit den Maßen aus dem Layout (ohne transforms); Pille und Buttons scrollen als Inhalt einfach mit
+    // Weicher Rand nur dort, wo noch mehr zum Scrollen ist
+    _edges() {
+      const d = this._dock;
+      if (!d) return;
+      const v = !!this._side, x = v ? d.scrollTop : d.scrollLeft, max = v ? d.scrollHeight - d.clientHeight : d.scrollWidth - d.clientWidth;
+      d.classList.toggle("fs", x > 1);
+      d.classList.toggle("fe", x < max - 1);
+    }
+    _reveal(i, smooth, l) {
+      this._edges();
+      const dock = this._dock, d = this._btns[i];
+      if (!dock || !d || dock.scrollWidth <= dock.clientWidth && dock.scrollHeight <= dock.clientHeight) return;
+      const o = this._origin(), b = l || d.getBoundingClientRect(), nm = d._nm.classList.contains("on") ? d._nm.offsetWidth : 0;
+      const left = b.left - o.x + (b.width + nm) / 2 - dock.clientWidth / 2, top = b.top - o.y + b.height / 2 - dock.clientHeight / 2;
+      const x = this._side ? dock.scrollLeft : Math.max(0, left), y = this._side ? Math.max(0, top) : dock.scrollTop;
+      if (Math.abs(x - dock.scrollLeft) < 1 && Math.abs(y - dock.scrollTop) < 1) return;
+      dock.scrollTo({ left: x, top: y, behavior: smooth ? "smooth" : "auto" });
+      const rec = LAST.get(this._key);
+      if (rec) rec.sl = [x, y];
+    }
+    // Ursprung der absolut positionierten Ebenen (Innenkante der Leiste)
+    _origin() {
+      const r = this._dock.getBoundingClientRect();
+      return { x: r.left + this._dock.clientLeft - this._dock.scrollLeft, y: r.top + this._dock.clientTop - this._dock.scrollTop };
+    }
+    _pillTo(i, show) {
+      const d = this._btns[i], o = this._origin();
+      if (d) {
+        const b = d.getBoundingClientRect();
+        this._hl.style.transform = `translate(${b.left - o.x}px,${b.top - o.y}px)`;
+      }
+      this._hl.classList.toggle("on", !!show && i >= 0);
+    }
+    _stop() {
+      clearTimeout(this._ft);
+      this._ghost?.remove();
+      this._ghost = null;
+      this._dock.classList.remove("run");
+      this._dock.classList.add("hold");
+      [this._bg, ...this._btns, ...this._btns.map((d) => d._nm)].forEach((e) => {
+        e.style.transform = "";
+        e.style.opacity = "";
+      });
+    }
+    // Ohne Animation direkt in den Endzustand
+    _jump(cur2, lbl) {
+      this._stop();
+      this._apply(cur2, lbl);
+      this._pillTo(cur2, true);
+      this._release();
+    }
+    // Nach dem Zeichnen wieder normale Übergänge (z. B. Drücken)
+    _release() {
+      const dock = this._dock;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (dock === this._dock && !dock.classList.contains("run")) dock.classList.remove("hold");
+      }));
+    }
+    // FLIP: aktuelle (sichtbare) Lage merken, Endlage einmal messen, dann per transform/opacity vom Alten zum Neuen gleiten.
+    // Pro Frame wird nichts neu berechnet; bei schnellem Mehrfachwechsel startet die nächste Animation von der aktuellen Zwischenlage
+    _flip(cur2, lbl, sig) {
+      const dock = this._dock, btns = this._btns;
+      const rect = (e) => e.getBoundingClientRect();
+      const f = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
+      const oldNm = btns.map((d) => d._nm).find((n) => n.classList.contains("on") && !n.hidden);
+      const fn = oldNm && { r: rect(oldNm), t: oldNm.textContent, o: +getComputedStyle(oldNm).opacity };
+      this._stop();
+      this._apply(cur2, lbl, false);
+      const o = this._origin(), l = { bg: rect(this._bg), b: btns.map(rect) }, newNm = btns[cur2]?._nm.classList.contains("on") ? btns[cur2]._nm : null;
+      btns.forEach((d, k) => {
+        if (!d.hidden && f.b[k].width) d.style.transform = `translate(${f.b[k].left - l.b[k].left}px,${f.b[k].top - l.b[k].top}px)`;
+      });
+      if (l.bg.width) this._bg.style.transform = `translate(${f.bg.left - l.bg.left}px,${f.bg.top - l.bg.top}px) scale(${f.bg.width / l.bg.width},${f.bg.height / l.bg.height})`;
+      if (f.hlOn) this._hl.style.transform = `translate(${f.hl.left - o.x}px,${f.hl.top - o.y}px)`;
+      else this._pillTo(cur2, false);
+      if (newNm) {
+        newNm.style.opacity = "0";
+        newNm.style.transform = `translate(${f.b[cur2].left - l.b[cur2].left - 12}px,0)`;
+      }
+      if (fn) {
+        const g = this._ghost = document.createElement("span");
+        g.className = "ghost";
+        g.textContent = fn.t;
+        g.style.opacity = fn.o;
+        g.style.transform = `translate(${fn.r.left - o.x}px,${fn.r.top - o.y}px)`;
+        dock.appendChild(g);
+        g._dx = fn.r.left - o.x;
+        g._dy = fn.r.top - o.y;
+      }
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (this._shown !== sig) return;
+        const rec = LAST.get(this._key);
+        if (rec && rec.i === cur2 && this.isConnected) rec.played = true;
+        dock.classList.remove("hold");
+        dock.classList.add("run");
+        this._lit(cur2);
+        this._reveal(cur2, true, l.b[cur2]);
+        btns.forEach((d) => {
+          d.style.transform = "";
+        });
+        this._bg.style.transform = "";
+        if (l.b[cur2]) this._hl.style.transform = `translate(${l.b[cur2].left - o.x}px,${l.b[cur2].top - o.y}px)`;
+        this._hl.classList.toggle("on", cur2 >= 0);
+        if (newNm) {
+          newNm.style.opacity = "";
+          newNm.style.transform = "";
+        }
+        const g = this._ghost, ob = fn && btns.findIndex((d) => d._nm === oldNm);
+        if (g) {
+          g.style.opacity = "0";
+          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f.b[ob].left : 0) - 8}px,${g._dy}px)`;
+        }
+        this._ft = setTimeout(() => {
+          if (this._shown === sig) {
+            this._stop();
+            this._release();
+          }
+        }, this._dur + 60);
+      }));
+    }
+    // Punkt oder Zahl; Farbe als Farbrolle, bei erfüllter Bedingung eine zweite Farbrolle
+    _badge(d, it) {
+      const h = this._h, s = it.badge && h.states[it.badge];
+      let n = 0, dot = false;
+      if (it.badge_count_of) n = countOn(h, it.badge_count_of, it.badge_exclude);
+      else if (s && it.badge_show_number && NUMRE.test(s.state)) n = Math.round(+s.state);
+      else if (s) dot = isOn(s);
+      const showNum = n > 0 && it.badge_show_number;
+      d.classList.toggle("bd", dot || n > 0 && !showNum);
+      d.classList.toggle("bn", showNum);
+      if (showNum) d.querySelector(".num").textContent = n > 99 ? "99+" : n;
+      const cond = { state: it.badge_alert_state, state_not: it.badge_alert_state_not, above: it.badge_alert_above, below: it.badge_alert_below };
+      const alert = it.badge_alert_color && Object.values(cond).some((v) => v != null) && alertHit(cond, h.states[it.badge || it.badge_count_of]);
+      const role = alert ? it.badge_alert_color : it.badge_color;
+      if (role) {
+        const v = roleVars(role);
+        d.style.setProperty("--bc", v.c);
+        d.style.setProperty("--bfg", v.fg);
+      } else {
+        d.style.removeProperty("--bc");
+        d.style.removeProperty("--bfg");
+      }
+    }
+    // Media-Leiste: spielt ein Player, wird er gezeigt, sonst ein pausierter (oder auf Wunsch immer der erste)
+    _media() {
+      const mb = this._mb, ids = list(this._cfg.media_players ?? this._srcCfg?.media_players);
+      if (!mb) return;
+      const ss = ids.map((id) => this._h.states[id]).filter(Boolean);
+      const s = ss.find((x) => x.state === "playing") || ss.find((x) => MEDIA_ON.includes(x.state)) || (this._cfg.media_always ?? this._srcCfg?.media_always ? ss[0] : null);
+      mb.hidden = !s;
+      this.toggleAttribute("media", !!s && !this._side && !this._inline);
+      this._mp = s?.entity_id || null;
+      if (!s) return;
+      const a = s.attributes, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
+      if (art._pic !== pic) {
+        art._pic = pic;
+        art.style.backgroundImage = pic ? `url(${JSON.stringify(pic)})` : "";
+        art.classList.toggle("pic", !!pic);
+      }
+      mb.querySelector("b").textContent = a.media_title || a.friendly_name || s.entity_id;
+      mb.querySelector(".tx span").textContent = a.media_artist || a.app_name || (MEDIA_ON.includes(s.state) ? a.friendly_name || "" : fmtState(this._h, s));
+      mb.querySelector(".pp ha-icon").setAttribute("icon", s.state === "playing" ? "mdi:pause" : "mdi:play");
+    }
+    _run(i, kind) {
+      const it = this._items[i];
+      if (this._haptic) haptic();
+      if (kind !== "tap") return hassAction(this, { entity: it.entity, [`${kind}_action`]: it[`${kind}_action`] }, kind);
+      if (it.popup_hash) {
+        this._close();
+        return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
+      }
+      if (this._cur === i) return this._close();
+      this._close();
+      if (Array.isArray(it.menu) && it.menu.length) return this._openMenu(i, it);
+      if (Array.isArray(it.cards)) return this._openCards(i, it);
+      if (typeof it.popup === "string" && customElements.get("nz-popup")) return this._openLegacy(i, it);
+      this._act(it);
+    }
+    // Aktion eines Eintrags ohne eigenes Pop-up (auch für Einträge im Untermenü)
+    _act(it) {
+      if (it.popup_hash) return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
+      if (it.tap_action && it.tap_action.action !== "none") return hassAction(this, { entity: it.entity, tap_action: it.tap_action }, "tap");
+      if (it.navigation_path) return navigate(it.navigation_path);
+      if (it.entity) moreInfo(this, it.entity);
+    }
+    // Kleines Menü am Button mit weiteren Einträgen
+    _openMenu(i, it) {
+      const m = document.createElement("div");
+      m.className = "menu glass";
+      m.setAttribute("role", "menu");
+      it.menu.forEach((sub) => {
+        const e = document.createElement("div");
+        e.className = "mi";
+        e.tabIndex = 0;
+        e.setAttribute("role", "menuitem");
+        e._it = sub;
+        e.innerHTML = `<span class="ic">${icon(sub.icon || "mdi:circle-outline")}</span><span class="lb"></span>`;
+        e.querySelector(".lb").textContent = sub.label || pathOf(sub) || sub.popup_hash || sub.entity || "";
+        this._bind(e, sub, (kind) => {
+          if (this._haptic) haptic();
+          this._close();
+          if (kind === "tap") this._act(sub);
+          else hassAction(this, { entity: sub.entity, [`${kind}_action`]: sub[`${kind}_action`] }, kind);
+        });
+        m.appendChild(e);
+      });
+      this.shadowRoot.appendChild(m);
+      this._menu = m;
+      this._place(m, this._btns[i]);
+      this._opened(i, m);
+      this._out = (e) => {
+        const p = e.composedPath();
+        if (!p.includes(m) && !p.includes(this._btns[i])) this._close();
+      };
+      window.addEventListener("pointerdown", this._out, true);
+      m.querySelector(".mi:not([hidden])")?.focus({ preventScroll: true });
+    }
+    // Menü neben dem Button: über der Leiste unten, darunter oben, daneben als Seitenleiste
+    _place(m, b) {
+      const r = b.getBoundingClientRect(), W = innerWidth, H = innerHeight, g = 10, side = this._side;
+      const w = m.offsetWidth, ht = m.offsetHeight, clamp2 = (v, max) => Math.max(8, Math.min(v, max - 8));
+      if (side) {
+        m.style.left = `${side === "right" ? r.left - g - w : r.right + g}px`;
+        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H - ht)}px`;
+      } else {
+        m.style.left = `${clamp2(r.left + r.width / 2 - w / 2, W - w)}px`;
+        m.style.top = `${this._cfg.position === "top" ? r.bottom + g : r.top - g - ht}px`;
+      }
+    }
+    _openCards(i, it) {
+      const p = document.createElement(tag("navi-popup"));
+      p.onclose = () => this._close();
+      p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
+      p.hass = this._h;
+      this.shadowRoot.appendChild(p);
+      this._opened(i, p);
+    }
+    _openLegacy(i, it) {
+      const p = document.createElement("nz-popup");
+      p.host = this;
+      p.onclose = () => this._close();
+      p.cfg = { weather: this._srcCfg?.weather || this._cfg.weather, ...it, title: it.title || it.label };
+      document.body.appendChild(p);
+      p.hass = this._h;
+      this._opened(i, p);
+    }
+    _opened(i, p) {
+      this._pop = p;
+      this._cur = i;
+      this._update();
+      this._esc = (e) => {
+        if (e.key === "Escape") this._close();
+      };
+      window.addEventListener("keydown", this._esc);
+    }
+    _close() {
+      if (this._pop) {
+        this._pop.remove();
+        this._pop = null;
+      }
+      this._menu = null;
+      this._cur = -1;
+      if (this._esc) window.removeEventListener("keydown", this._esc);
+      if (this._out) {
+        window.removeEventListener("pointerdown", this._out, true);
+        this._out = null;
+      }
+      this._update();
+    }
+  };
+  define("navi-card", NovaNaviCard, { name: "Nova Navi", description: "Navigationsleiste unten, oben oder als Seitenleiste: navigieren, Aktionen, Untermenüs, Pop-ups, Badges und eine kleine Media-Leiste.", documentationURL: docUrl("nova-navi") });
+  define("dock-card", class NovaDockCard extends NovaNaviCard {
+  });
+  var GEN3 = [{ name: "source", selector: { text: {} } }];
+  var LOOK3 = (c) => [
+    g2(
+      { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
+      { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
+    ),
+    g2(
+      sel("sidebar", [["", "Nie"], ["left", "Links"], ["right", "Rechts"]]),
+      ...c.sidebar ? [{ name: "sidebar_min_width", selector: { number: { min: 480, max: 2560, step: 10, mode: "box", unit_of_measurement: "px" } } }] : []
+    ),
+    g2({ name: "active_label", selector: { boolean: {} } }, sel("compact", [["", "Automatisch (schmale Bildschirme)"], ["on", "Immer"], ["off", "Nie"]])),
+    g2({ name: "animation", selector: { boolean: {} } }, ...c.animation !== false ? [{ name: "animation_duration", selector: { number: { min: 100, max: 1500, step: 10, mode: "box", unit_of_measurement: "ms" } } }] : []),
+    { name: "haptic", selector: { boolean: {} } }
+  ];
+  var MEDIA = [{ name: "media_players", selector: { entity: { multiple: true, filter: { domain: "media_player" } } } }, { name: "media_always", selector: { boolean: {} } }];
+  var I_MAIN = [g2({ name: "icon", required: true, selector: { icon: {} } }, { name: "label", selector: { text: {} } })];
+  var I_TAP = (opts) => [
+    { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
+    { name: "tap_action", selector: { ui_action: {} } }
+  ];
+  var I_MORE = [{ name: "hold_action", selector: { ui_action: {} } }, { name: "double_tap_action", selector: { ui_action: {} } }];
+  var I_POP = [{ name: "popup_title", selector: { text: {} } }, { name: "cards", selector: { object: {} } }];
+  var COND = (p) => [
+    g2({ name: `${p}_state`, selector: { text: {} } }, { name: `${p}_state_not`, selector: { text: {} } }),
+    g2({ name: `${p}_above`, selector: { number: { mode: "box", step: "any" } } }, { name: `${p}_below`, selector: { number: { mode: "box", step: "any" } } })
+  ];
+  var I_VIS = (it, users) => [
+    { name: "visible_users", selector: { select: { multiple: true, mode: "list", options: users } } },
+    { name: "visible_entity", selector: { entity: {} } },
+    ...it.visible_entity ? COND("visible") : []
+  ];
+  var I_BADGE = (it) => [
+    g2({ name: "badge", selector: { entity: {} } }, { name: "badge_count_of", selector: { entity: {} } }),
+    ...it.badge || it.badge_count_of ? [{ name: "badge_show_number", selector: { boolean: {} } }] : [],
+    ...it.badge_count_of ? [{ name: "badge_exclude", selector: { entity: { multiple: true } } }] : [],
+    g2(ROLE("badge_color"), ROLE("badge_alert_color")),
+    ...it.badge_alert_color && (it.badge || it.badge_count_of) ? COND("badge_alert") : []
+  ];
+  var S_MAIN = (opts) => [...I_MAIN, ...I_TAP(opts)];
+  var LABELS = {
+    position: "Position (Handy, schmale Bildschirme)",
+    button_size: "Button-Größe",
+    source: "Einträge aus anderem Dashboard übernehmen",
+    sidebar: "Seitenleiste auf breiten Bildschirmen",
+    sidebar_min_width: "Seitenleiste ab Breite",
+    haptic: "Haptisches Feedback",
+    active_label: "Namen neben dem aktiven Icon zeigen",
+    compact: "Kompakte Leiste",
+    animation: "Wechsel animieren",
+    animation_duration: "Dauer der Animation",
+    media_players: "Media-Player",
+    media_always: "Auch zeigen, wenn nichts läuft",
+    icon: "Icon",
+    label: "Name",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken",
+    double_tap_action: "Aktion bei Doppeltippen",
+    popup_title: "Titel",
+    popup_hash: "Nova Pop-up öffnen",
+    cards: "Karten (YAML-Liste)",
+    visible_users: "Nur für diese Benutzer",
+    visible_entity: "Nur zeigen abhängig von Entität",
+    visible_state: "Zustand ist",
+    visible_state_not: "Zustand ist nicht",
+    visible_above: "Wert über",
+    visible_below: "Wert unter",
+    badge: "Badge-Entität",
+    badge_count_of: "Zähler: Gruppe",
+    badge_show_number: "Zahl statt Punkt",
+    badge_exclude: "Beim Zählen ignorieren",
+    badge_color: "Badge-Farbe",
+    badge_alert_color: "Farbe bei Bedingung",
+    badge_alert_state: "Zustand ist",
+    badge_alert_state_not: "Zustand ist nicht",
+    badge_alert_above: "Wert über",
+    badge_alert_below: "Wert unter"
+  };
+  var HELPERS = {
+    source: "Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Navi – praktisch für mehrere Ansichten oder Dashboards mit gleicher Leiste.",
+    sidebar: "Ab der eingestellten Breite steht die Leiste senkrecht am Rand, darunter unten bzw. oben.",
+    animation: "Markierung und Name gleiten beim Viewwechsel vom alten zum neuen Eintrag. Bei „Bewegung reduzieren“ im System immer aus.",
+    active_label: "Rechts neben dem runden Button der aktuellen Ansicht steht sein Name (nicht in der Seitenleiste).",
+    compact: "Kleinere Buttons und Abstände. Automatisch: auf Bildschirmen bis 600 px Breite.",
+    haptic: "Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk).",
+    media_players: "Zeigt über der Leiste den laufenden Player mit Play/Pause. Leer = keine Media-Leiste.",
+    popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion, dem Untermenü und dem einfachen Pop-up.",
+    cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
+    visible_users: "Leer = für alle sichtbar.",
+    visible_entity: "Ohne Bedingung: sichtbar, wenn die Entität an ist.",
+    badge: "Punkt, wenn die Entität an ist; mit „Zahl statt Punkt“ ihr Zahlenwert (z. B. Anzahl offener Fenster).",
+    badge_count_of: "Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)",
+    badge_color: "Leer = Akzentfarbe des Themes.",
+    badge_alert_color: "Gilt, wenn die Bedingung darunter auf die Badge-Entität zutrifft."
+  };
+  var NovaNaviCardEditor = class extends NovaEditorBase {
+    // Pop-ups des Dashboards und Benutzer für die Auswahllisten einmal laden
+    set hass(h) {
+      super.hass = h;
+      if (h && !this._hashes) {
+        this._hashes = [];
+        popupOptions(h).then((o) => {
+          this._hashes = o;
+          this._rebuild();
+        });
+      }
+      if (h && !this._users) {
+        const me = h.user ? [{ value: h.user.id, label: h.user.name }] : [];
+        this._users = me;
+        h.callWS({ type: "config/auth/list" }).then((us) => {
+          const l = us.filter((u) => !u.system_generated).map((u) => ({ value: u.id, label: u.name || u.username || u.id }));
+          if (l.length) {
+            this._users = l;
+            this._rebuild();
+          }
+        }).catch(() => {
+        });
+      }
+    }
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap");
+      const data = { position: "bottom", button_size: 48, sidebar: "", active_label: true, animation: true, animation_duration: 280, ...this._config, compact: { true: "on", false: "off" }[this._config.compact] || "" };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
+        if (c.position === "bottom") delete c.position;
+        if (c.button_size === 48) delete c.button_size;
+        if (!c.sidebar) {
+          delete c.sidebar;
+          delete c.sidebar_min_width;
+        }
+        if (!c.haptic) delete c.haptic;
+        if (c.active_label !== false) delete c.active_label;
+        if (c.compact === "on" || c.compact === "off") c.compact = c.compact === "on";
+        else delete c.compact;
+        if (c.animation !== false) delete c.animation;
+        if (c.animation === false || c.animation_duration === 280) delete c.animation_duration;
+        if (!c.media_always) delete c.media_always;
+        const re = !!this._config.source !== !!c.source || !!this._config.sidebar !== !!c.sidebar || this._config.animation !== false !== (c.animation !== false);
+        this._emit(c);
+        if (re) this._rebuild();
+      });
+      const items = this._config.items || [];
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
+          b.append(form(GEN3));
+          if (this._config.source && !items.length) b.append(this._hint("Einträge kommen aus dem anderen Dashboard. Eigene Buttons überschreiben das."));
+        }),
+        this._section("buttons", "mdi:dock-bottom", "Buttons", (b) => {
+          items.forEach((it, i) => b.append(this._item(it, i, items.length)));
+          b.append(this._add("Button hinzufügen", () => {
+            const n = [...items, { icon: "mdi:circle-outline" }];
+            this._open = /* @__PURE__ */ new Set([n.length - 1]);
+            this._emit({ ...this._config, items: n });
+            this._rebuild();
+          }));
+        }),
+        this._section("look", "mdi:palette-outline", "Layout und Aussehen", (b) => b.append(form(LOOK3(data)))),
+        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => b.append(form(MEDIA)))
+      );
+    }
+    get _opts() {
+      return this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
+    }
+    _popName(h) {
+      h = cleanHash(h);
+      return this._hashes?.find((o) => o.value === h)?.label || `#${h}`;
+    }
+    _label(it, i) {
+      return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (it.menu?.length ? "Untermenü" : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : pathOf(it)) || "Neuer Button"}`;
+    }
+    // Formular für einen Teil eines Eintrags; ändert sich dadurch das Schema (Felder ein-/ausblenden), wird neu aufgebaut
+    _part(get, set, schema, onChange) {
+      const cur2 = get();
+      return this._form(schema(cur2), cur2, (v) => {
+        const old = get(), was = JSON.stringify(schema(old));
+        const nx = merge(old, names(schema(old)), v);
+        if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
+        if (!nx.popup_hash) delete nx.popup_hash;
+        if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
+        if (!nx.badge_show_number) delete nx.badge_show_number;
+        set(nx);
+        onChange?.(nx);
+        if (JSON.stringify(schema(nx)) !== was) this._rebuild();
+      });
+    }
+    _setItem(i, nx) {
+      const list2 = [...this._config.items];
+      list2[i] = nx;
+      this._emit({ ...this._config, items: list2 });
+    }
+    _item(it, i, n) {
+      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => {
+        const get = () => this._config.items[i], set = (nx) => this._setItem(i, nx);
+        const part = (sch) => this._part(get, set, typeof sch === "function" ? sch : () => sch, (nx) => {
+          s.querySelector(".lbl").textContent = this._label(nx, i);
+          s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
+        });
+        b.append(
+          part(I_MAIN),
+          this._h4("Beim Antippen"),
+          part(I_TAP(this._opts)),
+          this._h4("Lange drücken und Doppeltippen"),
+          part(I_MORE),
+          this._h4("Untermenü"),
+          ...this._menuList(i),
+          this._h4("Einfaches Pop-up"),
+          part(I_POP),
+          this._h4("Sichtbarkeit"),
+          part((cur2) => I_VIS(cur2, this._users || [])),
+          this._h4("Badge"),
+          part(I_BADGE)
+        );
+      });
+      return d;
+    }
+    // Einträge des Untermenüs: Antippen des Buttons öffnet dann das Menü statt der Aktion
+    _menuList(i) {
+      const subs = this._config.items[i].menu || [], out = [];
+      const setSubs = (arr) => {
+        const it = { ...this._config.items[i] };
+        if (arr.length) it.menu = arr;
+        else delete it.menu;
+        this._setItem(i, it);
+      };
+      if (!subs.length) out.push(this._hint("Mit Einträgen öffnet der Button beim Antippen ein kleines Menü."));
+      subs.forEach((sub, j) => {
+        const key = `m${i}.${j}`, lbl = (x) => `${j + 1}. ${x.label || pathOf(x) || x.popup_hash || "Neuer Eintrag"}`;
+        const [d] = this._details(key, sub.icon || "mdi:circle-outline", lbl(sub), this._itemBtns(j, subs.length, (dir) => {
+          const arr = [...this._config.items[i].menu], t = j + dir;
+          [arr[j], arr[t]] = [arr[t], arr[j]];
+          this._open = /* @__PURE__ */ new Set([i, `m${i}.${t}`]);
+          setSubs(arr);
+          this._rebuild();
+        }, () => {
+          this._open = /* @__PURE__ */ new Set([i]);
+          setSubs(this._config.items[i].menu.filter((_, x) => x !== j));
+          this._rebuild();
+        }), (b, s) => {
+          const get = () => this._config.items[i].menu[j];
+          const set = (nx) => {
+            const arr = [...this._config.items[i].menu];
+            arr[j] = nx;
+            setSubs(arr);
+          };
+          const part = (sch) => this._part(get, set, sch, (nx) => {
+            s.querySelector(".lbl").textContent = lbl(nx);
+            s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
+          });
+          b.append(part(() => S_MAIN(this._opts)), part(() => I_MORE), part((cur2) => I_VIS(cur2, this._users || [])));
+        });
+        out.push(d);
+      });
+      out.push(this._add("Menü-Eintrag hinzufügen", () => {
+        const arr = [...this._config.items[i].menu || [], { icon: "mdi:circle-outline" }];
+        this._open = /* @__PURE__ */ new Set([i, `m${i}.${arr.length - 1}`]);
+        setSubs(arr);
+        this._rebuild();
+      }));
+      return out;
+    }
+    _move(i, dir) {
+      const j = i + dir, list2 = [...this._config.items];
+      [list2[i], list2[j]] = [list2[j], list2[i]];
+      this._open = /* @__PURE__ */ new Set([j]);
+      this._emit({ ...this._config, items: list2 });
+      this._rebuild();
+    }
+    _remove(i) {
+      this._open = /* @__PURE__ */ new Set();
+      const list2 = this._config.items.filter((_, k) => k !== i);
+      const c = { ...this._config };
+      if (list2.length) c.items = list2;
+      else delete c.items;
+      if (!c.items && !c.source) c.items = [];
+      this._emit(c);
+      this._rebuild();
+    }
+  };
+  __publicField(NovaNaviCardEditor, "labels", LABELS);
+  __publicField(NovaNaviCardEditor, "helpers", HELPERS);
+  __publicField(NovaNaviCardEditor, "openSections", ["buttons"]);
+  define("navi-card-editor", NovaNaviCardEditor);
+
+  // src/modular.js
   var duration = (m) => m >= 60 ? `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, "0")} h` : `${m} min`;
   var ITEMS = { info: "entities", entities: "entities", sliders: "entities", buttons: "buttons", alerts: "alerts" };
   var normBlock = (b) => {
@@ -2476,6 +3073,8 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}</style><div class="g"></div>`;
       this._g = r.querySelector(".g");
+      const z = +this._c.size;
+      if (z > 0 && z !== 100) this._g.style.zoom = z / 100;
       this._ups = this._c.blocks.map((b) => {
         const w = document.createElement("div");
         w.className = `blk ${b.type}`;
@@ -2567,7 +3166,9 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       ]
     }
   };
+  var MLOOK = [{ name: "size", selector: { number: { min: 50, max: 250, step: 10, mode: "slider", unit_of_measurement: "%" } } }];
   var MHELPERS = {
+    size: "Skaliert die ganze Karte, z. B. 150 % für Wandpanels. Standard 100 %",
     status: "Text unter dem Namen. Aus/Standby/Idle = inaktiv",
     active: "Optional: bestimmt, ob das Icon leuchtet (statt Status-Entität)",
     button_icon: "Button erscheint, sobald Icon oder Aktion gesetzt ist",
@@ -2591,7 +3192,14 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
     _build() {
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      r.querySelector(".wrap").append(this._section("blocks", "mdi:view-dashboard-outline", "Bausteine", (w) => this._blockList(w)));
+      r.querySelector(".wrap").append(
+        this._section("blocks", "mdi:view-dashboard-outline", "Bausteine", (w) => this._blockList(w)),
+        this._section("look", "mdi:palette-outline", "Aussehen", (w) => w.append(this._form(MLOOK, { size: 100, ...this._config }, (v) => {
+          const n = merge(this._config, ["size"], v);
+          if (n.size === 100) delete n.size;
+          this._emit(n);
+        })))
+      );
     }
     _blockList(w) {
       const bl = this._blocks();
@@ -2700,7 +3308,7 @@ box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:7;max-width:calc(100vw - 24px);ove
       this._rebuild();
     }
   };
-  __publicField(NovaModularCardEditor, "labels", BASE_LABELS);
+  __publicField(NovaModularCardEditor, "labels", { ...BASE_LABELS, size: "Größe" });
   __publicField(NovaModularCardEditor, "helpers", MHELPERS);
   __publicField(NovaModularCardEditor, "openSections", ["blocks"]);
   define("modular-card-editor", NovaModularCardEditor);
@@ -3810,6 +4418,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
 .vc.run .hd .ic ha-icon{animation:nv-vc 2.4s ease-in-out infinite}
 @keyframes nv-vc{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 .vc .hd small.er{color:var(--nv-error);opacity:1}
+.erb .pill{background:color-mix(in srgb,var(--nv-error) 30%,transparent);border-color:color-mix(in srgb,var(--nv-error) 50%,transparent)}
 .bat{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:var(--nv-chip);font-size:12.5px;font-weight:600;flex:none}
 .bat ha-icon{--mdc-icon-size:17px}
 .bat.low{background:color-mix(in srgb,var(--nv-error) 30%,transparent)}
@@ -3951,6 +4560,7 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
     show_locate: true,
     show_spot: false,
     show_fan_speed: true,
+    show_error_reset: true,
     map_aspect_ratio: "auto",
     map_refresh: 5,
     map_action: "more-info",
@@ -3994,6 +4604,79 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
     const dev = h.entities?.[id]?.device_id;
     if (!dev) return null;
     return Object.values(h.entities).find((e) => e.device_id === dev && dom(e.entity_id) === "sensor" && h.states[e.entity_id]?.attributes.device_class === "battery")?.entity_id || null;
+  };
+  var VERR = {
+    lidar_blocked: "Lasersensor blockiert",
+    bumper_stuck: "Stoßfänger klemmt",
+    wheels_suspended: "Räder hängen in der Luft",
+    cliff_sensor_error: "Absturzsensor verschmutzt",
+    main_brush_jammed: "Hauptbürste blockiert",
+    side_brush_jammed: "Seitenbürste blockiert",
+    wheels_jammed: "Räder blockiert",
+    robot_trapped: "Roboter steckt fest",
+    no_dustbin: "Staubbehälter fehlt",
+    strainer_error: "Filter verschmutzt oder nass",
+    compass_error: "Magnetfeld erkannt",
+    low_battery: "Akku fast leer",
+    charging_error: "Ladefehler",
+    battery_error: "Akkufehler",
+    wall_sensor_dirty: "Wandsensor verschmutzt",
+    robot_tilted: "Roboter steht schräg",
+    side_brush_error: "Seitenbürste defekt",
+    fan_error: "Gebläsefehler",
+    dock: "Problem mit der Station",
+    optical_flow_sensor_dirt: "Bodensensor verschmutzt",
+    vertical_bumper_pressed: "Oberer Stoßfänger gedrückt",
+    dock_locator_error: "Station nicht gefunden",
+    return_to_dock_fail: "Rückkehr zur Station fehlgeschlagen",
+    nogo_zone_detected: "In Sperrzone",
+    visual_sensor: "Kamera verschmutzt",
+    light_touch: "Wandsensor gestört",
+    vibrarise_jammed: "Wischmodul blockiert",
+    robot_on_carpet: "Roboter steht auf Teppich",
+    filter_blocked: "Filter verstopft",
+    invisible_wall_detected: "Unsichtbare Wand erkannt",
+    cannot_cross_carpet: "Kommt nicht über den Teppich",
+    internal_error: "Interner Fehler",
+    collect_dust_error_3: "Absaugen fehlgeschlagen",
+    collect_dust_error_4: "Absaugen fehlgeschlagen",
+    mopping_roller_1: "Wischrolle blockiert",
+    mopping_roller_error_2: "Wischrolle defekt",
+    clear_water_box_hoare: "Frischwassertank prüfen",
+    dirty_water_box_hoare: "Schmutzwassertank prüfen",
+    sink_strainer_hoare: "Sieb der Station reinigen",
+    clear_water_box_exception: "Frischwassertank fehlt oder leer",
+    clear_brush_exception: "Reinigungsbürste prüfen",
+    clear_brush_exception_2: "Reinigungsbürste prüfen",
+    filter_screen_exception: "Filtersieb prüfen",
+    up_water_exception: "Wasserzufuhr gestört",
+    drain_water_exception: "Wasserablauf gestört",
+    temperature_protection: "Temperaturschutz aktiv",
+    clean_carousel_exception: "Waschwanne prüfen",
+    clean_carousel_water_full: "Waschwanne voll",
+    water_carriage_drop: "Wischmodul abgefallen",
+    check_clean_carouse: "Waschwanne prüfen",
+    audio_error: "Lautsprecherfehler",
+    // Station
+    no_dustbin_or_filter: "Staubbehälter oder Filter fehlt",
+    auto_empty_dock_fan_error: "Absauggebläse der Station defekt",
+    duct_blockage: "Absaugkanal verstopft",
+    auto_empty_dock_voltage_error: "Spannungsfehler der Station",
+    water_empty: "Frischwassertank leer",
+    waste_water_tank_full: "Schmutzwassertank voll",
+    maintenance_brush_jammed: "Wartungsbürste blockiert",
+    dirty_tank_latch_open: "Schmutzwassertank nicht eingerastet",
+    cleaning_tank_full_or_blocked: "Reinigungstank voll oder verstopft"
+  };
+  var VNOERR = ["", "ok", "none", "no_error", "unknown", "unavailable", "0"];
+  var verrText = (h, s) => {
+    const v = String(s?.state ?? "").trim();
+    if (VNOERR.includes(v.toLowerCase())) return null;
+    if (VERR[v]) return VERR[v];
+    const t = fmtState(h, s);
+    if (t && t !== v) return t;
+    const r = v.replace(/_/g, " ");
+    return r.charAt(0).toUpperCase() + r.slice(1);
   };
   var VSCENE = `<div class="scene sc"><svg viewBox="0 8 320 102" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
 <defs><linearGradient id="vgr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,var(--rc) 75%,#fff)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--rc) 70%,#000)"/></linearGradient>
@@ -4056,6 +4739,9 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
     out.charging = find(["binary_sensor"], /charg|ladestatus/);
     out.emptying = find(["binary_sensor"], /empty|entleer|absaug/);
     out.washing = find(["binary_sensor"], /wash|wasch|wäsch/);
+    out.dock_error_entity = find(["sensor"], /(dock|station|base)\w*_(error|fehler)|(error|fehler)\w*_(dock|station)/);
+    out.error_entity = find(["sensor"], /(^|_)(error|fehler|fault)(_?code)?( |$)|^error /, /dock|station|base/);
+    out.error_reset_entity = ents.find((e) => ["button", "input_button", "script"].includes(dom(e.entity_id)) && /(reset|clear|quittier|zur(ü|ue)cksetz|behebe?n?)\w*_(error|fehler)|(error|fehler)\w*_(reset|clear|quittier|zur(ü|ue)cksetz)/.test(txt(e)))?.entity_id;
     return Object.fromEntries(Object.entries(out).filter(([, v]) => v));
   }
   var VBAG = /empty|entleer|absaug|evacuat|dust_?(bag|bin|collect)|staubbeutel/;
@@ -4150,6 +4836,7 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${VCSS}</style><div class="g vc ${lay}"><div class="main">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${c.all ? '<div class="pill all"><span class="i"></span><span class="t"></span></div>' : ""}<div class="bat" hidden><ha-icon></ha-icon><span></span></div></div>
 ${c.scene !== false ? VSCENE : ""}
+<div class="pills erb" hidden><div class="pill"><ha-icon icon="mdi:wrench-check-outline"></ha-icon><span class="t"></span></div></div>
 ${pills ? `<div class="ctl pl pills">${Object.entries(VCTL).map(([k, [ic, t]]) => `<div class="pill c-${k}"><ha-icon icon="${ic}"></ha-icon><span>${t}</span></div>`).join("")}</div>` : '<div class="ctl"><div class="cb sp" title="Spot"><ha-icon icon="mdi:target-variant"></ha-icon></div><div class="cb st" title="Stopp"><ha-icon icon="mdi:stop"></ha-icon></div><div class="cb pp" title="Start/Pause"><ha-icon icon="mdi:play"></ha-icon></div><div class="cb hm" title="Zur Station"><ha-icon icon="mdi:home-import-outline"></ha-icon></div><div class="cb lo" title="Suchen"><ha-icon icon="mdi:map-marker-question-outline"></ha-icon></div></div>'}
 ${c.show_fan_speed !== false ? '<div class="pills fs"></div>' : ""}
 ${c.rooms.length ? `<div class="blk rooms">${rt ? `<div class="bt">${esc(rt)}</div>` : ""}<div class="pills"></div></div>` : ""}
@@ -4179,6 +4866,14 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
       this._allEl = q(".hd .all");
       if (this._allEl) press(this._allEl, { tap: () => this._act({ entity: c.all, confirm: c.all_confirm }, "tap"), hold: () => this._act({ entity: c.all }, "hold") });
       press(e.bat, { tap: () => this._bat && moreInfo(this, this._bat) });
+      e.erb = q(".erb");
+      press(e.erb.firstChild, {
+        tap: () => this._act({ entity: this._ek("error_reset_entity"), confirm: c.error_reset_confirm }, "tap"),
+        hold: () => {
+          const id = this._ek("error_entity") || this._ek("dock_error_entity");
+          id && moreInfo(this, id);
+        }
+      });
       const start = () => {
         const p = this._picked();
         p.length && this._st()?.state !== "paused" ? this._clean(p) : svc("start");
@@ -4255,6 +4950,11 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     _st() {
       return this._h?.states[this._c.entity];
     }
+    // Fehler-Entitäten: konfiguriert, sonst am Gerät gefunden; false = aus
+    _ek(k) {
+      const v = this._c[k];
+      return v === false ? null : v || this._auto?.[k] || null;
+    }
     // Eingeplant: angetippt oder Raum-Entität an – nur Räume mit Bereich oder Segmenten; „Überall“ an = nichts (alles)
     _picked() {
       const c = this._c, h = this._h;
@@ -4266,8 +4966,8 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     }
     // Bereiche über vacuum.clean_area (HA-Bereiche, herstellerunabhängig), sonst Segmente je Integration
     _clean(idx) {
-      const c = this._c, rooms = idx.map((i) => c.rooms[i]), ok2 = hasF(this._st(), VF.AREA);
-      const byArea = (o) => ok2 && o.area;
+      const c = this._c, rooms = idx.map((i) => c.rooms[i]), ok3 = hasF(this._st(), VF.AREA);
+      const byArea = (o) => ok3 && o.area;
       const areas = [...new Set(rooms.filter(byArea).map((o) => o.area))];
       const seg = rooms.filter((o) => !byArea(o)).flatMap((o) => list(o.segments)), fn = SEG[c.segment_mode];
       if (areas.length) this._h.callService("vacuum", "clean_area", { cleaning_area_id: areas }, { entity_id: c.entity });
@@ -4298,12 +4998,12 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
       const dry = home && !empty2 && !wash && (vact(S("drying")) || VPAT.dry.test(txt));
       const chg = home && !empty2 && !wash && !dry && (vact(S("charging")) || VPAT.chg.test(txt) || st === "docked" && bv < 100);
       const wet = attached && (mopping ?? true);
-      const tank = (el2, x, ok2, bad) => {
+      const tank = (el2, x, ok3, bad) => {
         let p = 0.55, low = false;
         if (x && NUMRE.test(x.state)) p = Math.max(0, Math.min(100, +x.state)) / 100;
         else if (x && !["unavailable", "unknown"].includes(x.state)) {
           low = dom(x.entity_id) === "binary_sensor" ? x.state === "on" : /low|empty|leer|full|voll|lack|short|knapp|problem/i.test(x.state);
-          p = low ? bad : ok2;
+          p = low ? bad : ok3;
         }
         el2.setAttribute("y", 22 + 30 * (1 - p));
         el2.setAttribute("height", 30 * p);
@@ -4336,8 +5036,14 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
       const ss = c.status && h.states[c.status];
       const bs = this._bat && h.states[this._bat], bv = parseFloat(bs ? bs.state : a.battery_level), chg = st === "docked" && bv < 100;
       const bd = c.battery_display, btxt = bd === "status" && !isNaN(bv) ? `Akku ${Math.round(bv)} %` : null;
-      e.sub.textContent = !s ? "nicht gefunden" : [ss ? fmtState(h, ss) : fmtState(h, s), !ss && a.fan_speed && run ? fanName(h, s, a.fan_speed) : null, btxt].filter(Boolean).join(" · ");
-      e.sub.classList.toggle("er", err);
+      const es = this._ek("error_entity"), ds = this._ek("dock_error_entity");
+      const et = es ? verrText(h, h.states[es]) : null, dt = ds ? verrText(h, h.states[ds]) : null;
+      const stxt = et || (ss ? fmtState(h, ss) : fmtState(h, s));
+      e.sub.textContent = !s ? "nicht gefunden" : [stxt, !ss && !et && a.fan_speed && run ? fanName(h, s, a.fan_speed) : null, dt && dt !== et ? `Station: ${dt}` : null, btxt].filter(Boolean).join(" · ");
+      e.sub.classList.toggle("er", err || !!et || !!dt);
+      const rid = (et || dt || err) && this._ek("error_reset_entity");
+      e.erb.hidden = !rid || c.show_error_reset === false;
+      if (!e.erb.hidden) e.erb.querySelector(".t").textContent = c.error_reset_name ?? "Fehler beheben";
       setIcon(e.ic, c.icon || a.icon || "mdi:robot-vacuum");
       e.ic.parentElement.classList.toggle("on", run);
       e.bat.hidden = isNaN(bv) || bd !== "chip";
@@ -4408,7 +5114,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
       e.g.classList.toggle("err", err && c.glow !== false);
       this._bv = bv;
       if (this._scene()) warn = true;
-      e.g.classList.toggle("warn", !err && warn && c.glow !== false);
+      e.g.classList.toggle("warn", !err && (warn || !!et || !!dt) && c.glow !== false);
       this._mapSync();
       this._tick();
     }
@@ -4475,6 +5181,12 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     g2({ name: "show_stop", selector: { boolean: {} } }, { name: "show_return", selector: { boolean: {} } }),
     g2({ name: "show_locate", selector: { boolean: {} } }, { name: "show_spot", selector: { boolean: {} } })
   ];
+  var VERRF = [
+    g2({ name: "error_entity", selector: { entity: { domain: ["sensor"] } } }, { name: "dock_error_entity", selector: { entity: { domain: ["sensor"] } } }),
+    g2({ name: "error_reset_entity", selector: { entity: { domain: ["button", "input_button", "script"] } } }, { name: "show_error_reset", selector: { boolean: {} } }),
+    g2({ name: "error_reset_name", selector: T }, { name: "error_reset_confirm", selector: T })
+  ];
+  var VERRK = ["error_entity", "dock_error_entity", "error_reset_entity"];
   var VLOOK = [sel("layout", [["auto", "Automatisch"], ["side", "Karte daneben"], ["stack", "Karte darüber"]]), { name: "glow", selector: { boolean: {} } }];
   var VACT = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
   var VSCN = (c) => c.scene === false ? [{ name: "scene", selector: { boolean: {} } }] : [
@@ -4502,7 +5214,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
       { name: "map_max_height", selector: { number: { min: 0, max: 800, step: 10, mode: "box", unit_of_measurement: "px" } } }
     )
   ];
-  var vvis = (c) => `${c.scene === false}|${c.show_fan_speed === false}|${!!c.map}`;
+  var vvis = (c) => `${c.scene === false}|${c.show_fan_speed === false}|${!!c.map}|${c.entity}`;
   var VSEG = [
     { name: "rooms_title", selector: T },
     g2({ name: "room_sensor", selector: { entity: { domain: ["sensor", "select", "input_select"] } } }, { name: "all", selector: { entity: {} } }),
@@ -4530,6 +5242,12 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     emptying: "Absaugen aktiv",
     washing: "Moppwäsche aktiv",
     drying: "Trocknung aktiv",
+    error_entity: "Fehler-Sensor Roboter",
+    dock_error_entity: "Fehler-Sensor Station",
+    error_reset_entity: "Fehler beheben: Entität",
+    show_error_reset: "Fehler-beheben-Button",
+    error_reset_name: "Fehler beheben: Text",
+    error_reset_confirm: "Fehler beheben: Rückfrage",
     charging: "Lädt",
     station: "Stations-Status",
     battery: "Akku-Sensor",
@@ -4577,6 +5295,10 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     drying: "An oder Zahl > 0 (z. B. Rest-Trocknungszeit) = trocknet",
     station: "Text-Sensor der Station; wird wie der Status nach Absaugen/Waschen/Trocknen durchsucht",
     battery: "Leer = Akku-Sensor am Gerät des Roboters automatisch",
+    error_entity: "Leer = automatisch am Gerät (z. B. sensor.robbi_staubsauger_fehler). Zeigt z. B. „Hauptbürste blockiert“ statt „Fehler“",
+    dock_error_entity: "Leer = automatisch an der Station (z. B. sensor.robbi_dock_fehler)",
+    error_reset_entity: "Button/Skript, das den Fehler quittiert. Leer = automatisch, falls es so einen Button gibt. Erscheint nur bei einem Fehler",
+    error_reset_name: "Standard: Fehler beheben",
     status: "Text unter dem Namen, z. B. sensor.robbi_status. Leer = Zustand des Roboters",
     tap_action: "Standard: Details des Roboters",
     fan_speeds: "Leer = alle Stufen des Roboters. Genaue Namen wie in fan_speed_list",
@@ -4618,10 +5340,15 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
         this._section("scene", "mdi:robot-vacuum", "Animation", (b) => {
           b.append(form(VSCN(data)));
           if (c0.scene !== false && this._hass) {
-            const auto = vauto(this._hass, c0.entity), au = Object.entries(auto);
+            const auto = vauto(this._hass, c0.entity), au = Object.entries(auto).filter(([k]) => !VERRK.includes(k));
             const ST2 = { dock: "Nur Ladestation", empty: "Absaugstation", wash: "Waschstation", full: "Komplett" };
             b.append(this._hint(`Station: ${ST2[vstation(this._hass, c0.entity, data, auto)]}` + (au.length && c0.scene_auto !== false ? ` · Automatisch gefunden: ${au.map(([k, v]) => `${VLABELS[k] || k} = ${v}`).join(", ")}` : "")));
           }
+        }),
+        this._section("errors", "mdi:alert-circle-outline", "Fehler", (b) => {
+          b.append(form(VERRF));
+          const auto = this._hass ? vauto(this._hass, c0.entity) : {}, au = VERRK.filter((k) => !c0[k] && c0[k] !== false && auto[k]);
+          b.append(this._hint(au.length ? `Automatisch gefunden: ${au.map((k) => `${VLABELS[k]} = ${auto[k]}`).join(", ")}` : "Nichts automatisch gefunden – Fehler-Sensoren oben wählen. In YAML mit false abschalten."));
         }),
         this._section("rooms", "mdi:floor-plan", "Räume", (b) => {
           b.append(this._hint("Je Raum einen HA-Bereich wählen: antippen plant ein, Start reinigt die eingeplanten Räume (vacuum.clean_area). Nichts eingeplant = alles."));
@@ -4798,9 +5525,9 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const qs = `?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
       const res = await Promise.allSettled(cals.map((cal) => h.callApi("GET", `calendars/${cal}${qs}`)));
       if (id !== this._fid) return;
-      const ok2 = [], failed = [];
+      const ok3 = [], failed = [];
       res.forEach((x, i) => {
-        if (x.status === "fulfilled" && Array.isArray(x.value)) ok2.push(...x.value.map((ev) => parseEvent(ev, cals[i], tz)).filter(Boolean));
+        if (x.status === "fulfilled" && Array.isArray(x.value)) ok3.push(...x.value.map((ev) => parseEvent(ev, cals[i], tz)).filter(Boolean));
         else {
           failed.push(cals[i]);
           console.warn("[nova-cards] Müllkalender: Termine nicht geladen", cals[i], x.reason);
@@ -4810,7 +5537,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       if (failed.length === cals.length) this._err = res[0].reason?.body?.message || res[0].reason?.message || "Verbindung fehlgeschlagen";
       else {
         this._err = null;
-        this._events = ok2;
+        this._events = ok3;
       }
       this._render();
     }
@@ -5437,8 +6164,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
     _fmsg(m) {
       return `<div class="fmsg${m.err ? " err" : ""}"><ha-icon icon="${esc(m.msg[0])}"></ha-icon><span>${esc(m.msg[1])}</span></div>`;
     }
-    _wi(icon, role) {
-      return `<ha-icon class="wi" icon="${esc(icon)}" style="--c:${roleVars(role).c}"></ha-icon>`;
+    _wi(icon2, role) {
+      return `<ha-icon class="wi" icon="${esc(icon2)}" style="--c:${roleVars(role).c}"></ha-icon>`;
     }
     _dailyHtml(v) {
       const c = this._c;
@@ -6291,12 +7018,12 @@ hui-card-picker{flex:1;min-height:0}`;
       ta.value = JSON.stringify(cfg || { type: "" }, null, 2);
       ta.spellcheck = false;
       ta.addEventListener("input", () => {
-        let ok2 = false;
+        let ok3 = false;
         try {
-          ok2 = take(JSON.parse(ta.value));
+          ok3 = take(JSON.parse(ta.value));
         } catch {
         }
-        ta.classList.toggle("bad", !ok2);
+        ta.classList.toggle("bad", !ok3);
       });
       box.append(this._hint("JSON-Format, „type“ ist Pflicht."), ta);
     }
@@ -6591,11 +7318,11 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     // Nach unten wischen (Handy): auf Griff/Kopfzeile immer, im Inhalt nur, wenn er ganz oben steht
     _swipe() {
       const sh = this._sh;
-      let y0 = 0, x0 = 0, dy = 0, t0 = 0, ok2 = false, drag = false;
+      let y0 = 0, x0 = 0, dy = 0, t0 = 0, ok3 = false, drag = false;
       const mobile = () => matchMedia("(max-width:600px)").matches;
       sh.addEventListener("touchstart", (e) => {
-        ok2 = this._isOpen && mobile() && e.touches.length === 1 && (!e.composedPath().includes(this._body) || this._body.scrollTop <= 0);
-        if (!ok2) return;
+        ok3 = this._isOpen && mobile() && e.touches.length === 1 && (!e.composedPath().includes(this._body) || this._body.scrollTop <= 0);
+        if (!ok3) return;
         y0 = e.touches[0].clientY;
         x0 = e.touches[0].clientX;
         dy = 0;
@@ -6603,12 +7330,12 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
         drag = false;
       }, { passive: true });
       sh.addEventListener("touchmove", (e) => {
-        if (!ok2) return;
+        if (!ok3) return;
         const d = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
         if (!drag) {
           if (Math.abs(d) < 8 && Math.abs(dx) < 8) return;
           if (d <= 0 || Math.abs(dx) > d) {
-            ok2 = false;
+            ok3 = false;
             return;
           }
           drag = true;
@@ -6620,11 +7347,11 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       }, { passive: false });
       const end = () => {
         if (!drag) {
-          ok2 = false;
+          ok3 = false;
           return;
         }
         drag = false;
-        ok2 = false;
+        ok3 = false;
         sh.style.transition = "";
         if (dy > 120 || dy / Math.max(1, Date.now() - t0) > 0.6) this.close();
         else sh.style.transform = "";
@@ -6705,7 +7432,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     }
   };
   __publicField(NovaPopupCard, "gridKind", "popup");
-  define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – vom Dock oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
+  define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – von Nova Navi oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
   var GENERAL = [
     { name: "hash", required: true, selector: T },
     g2({ name: "title", selector: T }, { name: "icon", selector: I }),
@@ -6746,7 +7473,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
   var HELPERS2 = {
     ...GRID_HELPERS,
     hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
-    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.",
+    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Nova Navi und Raum-Karte.",
     stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
     state: "Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.",
     color: "Leer = neutral.",
@@ -6765,8 +7492,8 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       this._secs.forEach((k) => this._open.add(k));
       w.append(this._secGeneral(), this._secHead(), this._secLayout(), this._secContent());
     }
-    _sec(key, icon, label) {
-      const [d, , b] = this._details(key, icon, label, []);
+    _sec(key, icon2, label) {
+      const [d, , b] = this._details(key, icon2, label, []);
       d.addEventListener("toggle", () => {
         if (d.open) this._secs.add(key);
         else this._secs.delete(key);
@@ -7052,9 +7779,9 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   };
   __publicField(NovaAreaCard, "gridKind", "area");
   define("area-card", NovaAreaCard, { name: "Nova Bereich Card", description: "Raumansicht als Glasrahmen: Kopfzeile mit Zurück, Icon, Raumname und Chips, darunter beliebige Karten in Zeilen und Spalten.", documentationURL: docUrl("nova-bereich-card") });
-  var S_GEN3 = (icon) => [
+  var S_GEN3 = (icon2) => [
     { name: "area", selector: { area: {} } },
-    g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon ? { placeholder: icon } : {} } }),
+    g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon2 ? { placeholder: icon2 } : {} } }),
     { name: "back_action", selector: A },
     g2(ROLE("tint"), { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } })
   ];
@@ -7200,26 +7927,82 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   __publicField(NovaChipsCardEditor, "openSections", ["chips"]);
   define("chips-card-editor", NovaChipsCardEditor);
 
+  // src/shared/scene.js
+  var PAL = {
+    bodyLight: "#3a4252",
+    body: "#191d26",
+    // Gehäuse oben/unten (Theme: --nova-device-color-light / --nova-device-color)
+    part: "#3b4252",
+    partDark: "#20252f",
+    // Anbauteile: Schublade, Kopf, Display-Rahmen
+    inner: "#2c3344",
+    innerDark: "#10141b",
+    // Innenraum
+    screen: "#0a0e14",
+    // Display, Dichtung
+    chrome: "#a3adbf",
+    chromeMid: "#566074",
+    chromeDark: "#232833",
+    glass: "#a9c6ff",
+    glassMid: "#5d7397",
+    glassDark: "#0c111c",
+    line: "rgba(255,255,255,.18)"
+    // Kanten
+  };
+  var sceneDefs = (p) => `<linearGradient id="${p}-bd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="s-sb1"/><stop offset="1" class="s-sb2"/></linearGradient>
+<linearGradient id="${p}-sh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".14"/></linearGradient>
+<linearGradient id="${p}-gl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${PAL.glass}" stop-opacity=".11"/><stop offset=".55" stop-color="${PAL.glassMid}" stop-opacity=".05"/><stop offset="1" stop-color="${PAL.glassDark}" stop-opacity=".38"/></linearGradient>
+<linearGradient id="${p}-in" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${PAL.inner}"/><stop offset="1" stop-color="${PAL.innerDark}"/></linearGradient>
+<linearGradient id="${p}-pt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${PAL.part}"/><stop offset="1" stop-color="${PAL.partDark}"/></linearGradient>
+<linearGradient id="${p}-cr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${PAL.chrome}"/><stop offset=".5" stop-color="${PAL.chromeMid}"/><stop offset="1" stop-color="${PAL.chromeDark}"/></linearGradient>
+<linearGradient id="${p}-gs" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
+  var SCENE_CSS = `
+.scene{--sb1:var(--nova-device-color-light,${PAL.bodyLight});--sb2:var(--nova-device-color,${PAL.body})}
+.scene .s-sb1{stop-color:var(--sb1)}.scene .s-sb2{stop-color:var(--sb2)}
+.scene .s-shd{fill:#000;opacity:.35}
+.scene .s-body{stroke:${PAL.line};stroke-width:.6;transition:stroke .4s}.scene .s-sheen{opacity:.4}.scene .s-edge{fill:#fff;opacity:.12}
+.scene .s-part{stroke:rgba(255,255,255,.15);stroke-width:.5}
+.scene .s-glass{stroke:rgba(255,255,255,.22);stroke-width:.7}.scene .s-refl{fill:#fff;opacity:.035}
+.scene .s-gls{opacity:0;transform-box:view-box}
+.sweep .scene .s-gls{animation:nv-glare .9s .1s ease-in-out both}
+.scene .s-scr{fill:${PAL.screen};stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .s-tgl{fill:#fff;opacity:.05}
+.still .scene .s-gls{animation-play-state:paused!important}
+@keyframes nv-glare{0%{opacity:0;transform:translateX(0)}15%{opacity:.7}85%{opacity:.7}100%{opacity:0;transform:translateX(var(--gx,70px))}}
+@media (prefers-reduced-motion:reduce){.sweep .scene .s-gls{animation:none}}`;
+  var frameGlow = (sel2) => `${sel2}{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}`;
+  function sweep(el2) {
+    if (!el2) return;
+    el2.classList.remove("sweep");
+    void el2.getBoundingClientRect();
+    el2.classList.add("sweep");
+  }
+  var badgeAt = (right, bottom, u = 1) => ({ x: right - 20 * u, y: bottom - 38 * u, r: 11.5 * u });
+
   // src/appliance.js
-  var TYPES = {
+  var TYPES2 = {
     washer: { label: "Waschmaschine", icon: "mdi:washing-machine", color: "accent-1", run: "Wäscht", alt: "Schleudert", door: "Tür offen", phase: ["spin", "spinning", "schleudern"], anims: ["detergent", "softener"], dview: true },
-    dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", door: "Tür offen", phase: [], dview: true },
-    airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-2", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
-    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-3", run: "Läuft", alt: "Brüht", door: "Tür offen", phase: ["brew", "brewing", "brühen"], anims: ["tank", "beans", "descale"] },
+    dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", alt: "Trocknet", door: "Tür offen", phase: ["drying", "dry", "trocknen", "ending"], dview: true },
+    airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-1", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
+    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-1", run: "Brüht", door: "Tür offen", phase: [], anims: ["tank", "beans", "descale"], drink: true },
+    feeder: { label: "Futterautomat", icon: "mdi:bowl-mix-outline", color: "accent-1", run: "Füttert", door: "Deckel offen", phase: [], anims: ["food"], level: true, feed: true, mode: true, lvl: ["Füllstand", "Futter ausreichend", "Wenig Futter"], pick: "Portion" },
+    fountain: { label: "Trinkbrunnen", icon: "mdi:fountain", color: "accent-1", run: "Läuft", door: "Deckel offen", phase: [], anims: ["water", "filter"], level: true, nodone: true, mode: true, lvl: ["Wasserstand", "Wasser ok", "Wasser fehlt"], binEmpty: true, filter: true },
     generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
   };
-  var typeOf = (c) => TYPES[c.device_type] ? c.device_type : "generic";
+  var typeOf = (c) => TYPES2[c.device_type] ? c.device_type : "generic";
   var HANIM = {
     tank: ["Wassertank", "Wassertank leer", "mdi:cup-water"],
     beans: ["Bohnen", "Bohnen nachfüllen", "mdi:coffee-outline"],
     descale: ["Entkalken", "Entkalken", "mdi:water-alert-outline"],
     detergent: ["Waschmittel", "Waschmittel leer", "mdi:bottle-tonic-outline"],
     softener: ["Weichspüler", "Weichspüler leer", "mdi:bottle-tonic-plus-outline"],
+    food: ["Futter leer", "Futter nachfüllen", "mdi:food-off"],
+    water: ["Wasser niedrig", "Wasser nachfüllen", "mdi:water-alert-outline"],
+    filter: ["Filter", "Filter wechseln", "mdi:air-filter"],
     warning: ["Allgemeine Warnung", "", "mdi:alert-outline"]
   };
-  var animsOf = (t) => [...TYPES[t].anims || [], "warning"];
+  var animsOf = (t) => [...TYPES2[t].anims || [], "warning"];
   var STATES = {
-    run: ["run", "running", "on", "cooking", "brewing", "starting", "ending", "anti_wrinkle", "washing", "rinsing", "spinning", "drying", "aborting", "in_use", "programmed_running"],
+    run: ["run", "running", "on", "cooking", "brewing", "feeding", "dispensing", "starting", "ending", "anti_wrinkle", "washing", "rinsing", "spinning", "drying", "aborting", "in_use", "programmed_running"],
     pause: ["pause", "paused", "user_paused"],
     wait: ["delayedstart", "delayed_start", "delay_wait", "scheduled", "waiting_to_start"],
     done: ["finished", "finish", "done", "complete", "completed", "clean", "end", "programme_ended"],
@@ -7227,7 +8010,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     prep: ["setting", "programming", "selecting", "adjusting"],
     heat: ["heating", "preheating", "preheat", "heat_up"],
     warm: ["maintain", "keep_warm", "keepwarm", "warming"],
-    ready: ["ready", "idle", "standby", "mainmenu"]
+    ready: ["ready", "idle", "standby", "mainmenu", "online"]
   };
   var SORDER = ["err", "pause", "wait", "done", "prep", "heat", "warm", "run", "ready"];
   var ACT = ["run", "pause", "wait", "heat", "warm"];
@@ -7269,63 +8052,312 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     return m < 1 ? "< 1 min" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h`;
   };
   var SA = '<div class="ct sa"><div class="kv"><ha-icon icon="mdi:clock-start"></ha-icon><span class="k">Starten um</span><input type="time" aria-label="Startzeit"><div class="pill now">Sofort</div></div><div class="sah"></div></div>';
+  var PICK = '<div class="ct pk"><div class="kv"><ha-icon icon="mdi:tune-variant"></ha-icon><span class="k"></span><div class="stp"><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div><span class="v"></span><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div></div></div></div>';
   var IC = { start: "mdi:play", pause: "mdi:pause", resume: "mdi:play-pause", stop: "mdi:stop" };
-  var WARN = '<g class="wn"><path class="wt3" d="M14 3 l10 17 h-20 Z"/><line class="wx" x1="14" y1="9" x2="14" y2="14"/><circle class="wx2" cx="14" cy="17" r="1.1"/></g>';
+  function levelOf(s, empty2) {
+    if (!ok(s)) return null;
+    const v = String(s.state).toLowerCase();
+    if (NUMRE.test(v)) return Math.max(0, Math.min(1, +v / 100));
+    return ["on", "low", "niedrig"].includes(v) ? empty2 ? 0 : 0.12 : ["empty", "leer"].includes(v) ? 0 : null;
+  }
+  function levelText(s, L) {
+    if (!ok(s)) return null;
+    const v = String(s.state).toLowerCase();
+    if (NUMRE.test(v)) return `${Math.round(+v)} %`;
+    return ["on", "low", "niedrig", "empty", "leer"].includes(v) ? L[2] : ["off", "ok", "normal", "full", "voll"].includes(v) ? L[1] : null;
+  }
+  var DRINKS = [
+    ["water", /hot water|hei(ß|ss)wasser|\btee\b|\btea\b/, "Wasser"],
+    ["lm", /latte macchiato/, "Latte M."],
+    ["latte", /latte|milchkaffee|caf(e|é) au lait|con leche/, "Latte"],
+    ["cappu", /cappuccino|flat white|cortado|macchiato/, "Cappuccino"],
+    ["milk", /milk|milch/, "Milch"],
+    ["espresso", /espresso|ristretto|doppio/, "Espresso"],
+    ["coffee", /^/, "Kaffee"]
+  ];
+  var drinkOf = (txt) => DRINKS.find((d) => d[1].test(txt.toLowerCase().replace(/_/g, " ")));
+  var MILK = /* @__PURE__ */ new Set(["cappu", "latte", "lm", "milk"]);
+  var CK = {
+    espresso: ["#2e1a10", "#9a6436", "#d9c4a4"],
+    coffee: ["#4a2c19", "#b07a48", "#e8dccb"],
+    cappu: ["#6b4329", "#b07a48", "#efe6d8"],
+    latte: ["#9a6c47", "#c49a6c", "#f1e9dd"],
+    lm: ["#7a4e2e", "#c49a6c", "#f3ece2"],
+    milk: ["#ece3d4", "#f3ece2", "#f6f1ea"],
+    water: ["#a9c6e8", "#a9c6e8", "#a9c6e8"]
+  };
+  var FEED_MS = 8e3;
+  var WARN = '<g class="wn"><circle class="wt3" cx="22" cy="20" r="11.5"/><rect class="wx" x="20.5" y="12.6" width="3" height="9.6" rx="1.5"/><circle class="wx2" cx="22" cy="26.4" r="1.8"/></g>';
   var DONE = '<g class="done"><circle class="dr" cx="80" cy="82" r="10"/><circle class="dc" cx="80" cy="82" r="10"/><path class="dk" d="M75.5 82 l3 3 l6 -6.5"/></g>';
+  var doneAt = (right, bottom) => {
+    const b = badgeAt(right, bottom), s = b.r / 10;
+    return `<g transform="translate(${+(b.x - 80 * s).toFixed(2)} ${+(b.y - 82 * s).toFixed(2)}) scale(${s})">${DONE}</g>`;
+  };
+  var AX = (y) => 47.5 - (y - 27) / 127 * 9;
+  var ABODY = "M55 20 H145 Q152 20 152.5 27 L161.5 154 Q163 172 143 172 H57 Q37 172 38.5 154 L47.5 27 Q48 20 55 20 Z";
+  var ADRW = `M${AX(93).toFixed(2)} 93 H${(200 - AX(93)).toFixed(2)} L${(200 - AX(158)).toFixed(2)} 158 Q${(200 - AX(158)).toFixed(2)} 162 157 162 H43 Q${AX(158).toFixed(2)} 162 ${AX(158).toFixed(2)} 158 Z`;
+  var ACOIL = `M66 104.5 ${Array.from({ length: 11 }, () => "q1.6 -2.6 3.2 0 t3.2 0").join(" ")}`;
+  var WDOOR = `<circle class="rng" cx="100" cy="114" r="44" stroke="url(#w-cr)"/><circle class="rgo" cx="100" cy="114" r="46"/><circle class="blk" cx="100" cy="114" r="39"/>
+<circle class="s-glass" cx="100" cy="114" r="36" fill="url(#w-gl)"/>
+<g clip-path="url(#w-ci)"><path class="s-refl" d="M80 78 h22 l-40 62 v-32 z"/><path class="s-refl" d="M112 78 h6 l-56 86 v-12 z"/>
+<g transform="rotate(22 100 114)"><rect class="s-gls" x="38" y="56" width="16" height="116" fill="url(#w-gs)"/></g></g>
+<path class="sh" d="M71 102 a30 30 0 0 1 17 -18"/><rect class="hdl" x="140.6" y="106" width="3.6" height="16" rx="1.8"/>`;
+  var QTILT = "M31 64 H169 L166 176.4 H34 Z M44 84 H156 L154 166 H46 Z";
+  var QDOOR = "M34 40 H166 V176.4 H34 Z M50 64 H150 a4 4 0 0 1 4 4 V160 a4 4 0 0 1 -4 4 H50 a4 4 0 0 1 -4 -4 V68 a4 4 0 0 1 4 -4 Z";
+  var qWine = (x) => `<path class="qgl" d="M${x - 5} 104 Q${x - 5.4} 94 ${x - 0.8} 91.5 V85.4 h1.6 V91.5 Q${x + 5.4} 94 ${x + 5} 104 Z"/><rect class="qgl" x="${x - 4.4}" y="84.4" width="8.8" height="1.2" rx=".6"/><path class="qgh" d="M${x - 3.6} 101.6 Q${x - 3.9} 96 ${x - 1.8} 93.6"/>`;
+  var qTumb = (x) => `<path class="qgl" d="M${x - 4} 104 L${x - 3.2} 91 h6.4 L${x + 4} 104 Z"/><path class="qgh" d="M${x - 2.6} 102 L${x - 2} 93"/>`;
+  var qCup = (x, c) => `<path class="qcup${c ? " c2" : ""}" d="M${x - 5} 104 v-9.5 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v9.5 Z"/><path class="qcuh" d="M${x + 5} 95.6 h1.4 a2.5 2.5 0 0 1 0 5 h-1.4"/><path class="qgh" d="M${x - 3.4} 102 v-7"/>`;
+  var qWire = (y1, y2) => `<path class="qwire" d="${Array.from({ length: 19 }, (_, i) => `M${46 + i * 6} ${y1} V${y2}`).join(" ")}"/><rect class="qrl" x="45" y="${y2 - 0.6}" width="110" height="1.4" rx=".7"/><rect class="qrl t" x="45" y="${y1 - 0.4}" width="110" height=".9" rx=".45"/><circle class="qrol" cx="47" cy="${y2 + 1.6}" r="1.6"/><circle class="qrol" cx="153" cy="${y2 + 1.6}" r="1.6"/>`;
+  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f) => `<circle class="qnz" cx="${100 + f * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
+  var qJets = (y, xs) => `<g class="qjet">${xs.map((x, i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1 : 1.3}" style="--dx:${x < 100 ? -4 : 4}px;animation-delay:${(i * 0.27).toFixed(2)}s"/>`).join("")}</g>`;
+  var QIN = `<g class="qtop"><path class="qcut" d="M58 37.4 h18 M82 36.6 h16 M118 37.4 h20"/><ellipse class="qcuts" cx="76.6" cy="37.4" rx="2.2" ry="1.2"/><path class="qcutk" d="M98 36.6 h6 q-1 1.4 -6 1.2 Z"/>${qWire(33, 40.5)}</g>
+<g class="qup">${[58, 70].map(qWine).join("")}${qTumb(82)}${qCup(96)}${qCup(110, 1)}${qTumb(124)}${[136, 146].map(qWine).join("")}${qWire(88, 104.5)}</g>
+${qJets(108, [74, 84, 92, 108, 116, 126])}${qArm(109, 30)}
+<g class="qlo">${[56, 61.5, 67, 72.5, 78, 83.5].map((x, i) => `<ellipse class="qpl${i === 2 ? " c2" : ""}" cx="${x}" cy="140" rx="2.4" ry="${i % 3 === 1 ? 16 : 15}" transform="rotate(-9 ${x} 140)"/><path class="qph" d="M${x - 0.9} 128 v9" transform="rotate(-9 ${x} 140)"/>`).join("")}
+${[94, 100.5].map((x) => `<ellipse class="qpl" cx="${x}" cy="138" rx="2.8" ry="18" transform="rotate(-6 ${x} 138)"/><path class="qph" d="M${x - 1} 124 v10" transform="rotate(-6 ${x} 138)"/>`).join("")}
+<path class="qcut" d="M127 125 v13 M130.5 124 v14 M134 126 v12 M140 125 v13 M143.5 123.6 v14.4 M147 125 v13"/>
+<ellipse class="qcuts" cx="127" cy="124" rx="1.4" ry="2.2"/><ellipse class="qcuts" cx="140" cy="124" rx="1.4" ry="2.2"/><path class="qcutf" d="M129.6 121 v3 M130.5 120.6 v3.4 M131.4 121 v3 M142.6 120.4 v3.2 M143.5 120 v3.6 M144.4 120.4 v3.2"/>
+<path class="qcutk" d="M134 126 v-6.4 q1.4 1.6 1.2 6.4 Z M147 125 v-6.4 q1.4 1.6 1.2 6.4 Z"/>
+<rect class="s-part" x="122" y="134" width="30" height="21" rx="1.6" fill="url(#d-pt)"/><rect x="123" y="135" width="28" height="19" rx="1.2" fill="url(#d-pf)"/>
+${qWire(138, 156.5)}</g>
+${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" cx="100" cy="171" rx="9" ry="2"/>
+<g class="qstm">${[66, 90, 112, 136].map((x, i) => `<path d="M${x} 150 q3 -6 0 -12 q-3 -6 0 -12 q3 -6 0 -12" style="animation-delay:${(i * 0.8).toFixed(1)}s"/>`).join("")}</g>`;
+  var QFOG = Array.from({ length: 46 }, (_, i) => {
+    const x = 49 + i * 37 % 103, y = 67 + i * 53 % 94;
+    return `<circle cx="${x}" cy="${y}" r="${(0.35 + i % 4 * 0.18).toFixed(2)}"/>`;
+  }).join("");
+  function kibble(x0, x1, y1, top, rMin, rMax, seed) {
+    let q = seed;
+    const rnd = () => (q = q * 16807 % 2147483647) / 2147483647, out = [];
+    for (let y = Math.min(...[x0, (x0 + x1) / 2, x1].map(top)) - 2; y < y1 + 3; y += 2.6 + rMax * 0.55) {
+      for (let x = x0 - 1 + rnd() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd() * rMax * 0.6) {
+        const r = rMin + rnd() * (rMax - rMin), cx = x + (rnd() - 0.5) * 1.6, cy = y + (rnd() - 0.5) * 1.8;
+        if (cy < top(cx) + r * 0.2 || rnd() < 0.1) continue;
+        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f = (n) => n.toFixed(1);
+        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f(cx)} ${f(cy)})"><path d="M${f(cx - a[0])} ${f(cy)}Q${f(cx - a[0])} ${f(cy - a[1])} ${f(cx)} ${f(cy - a[1])}Q${f(cx + a[2])} ${f(cy - a[1])} ${f(cx + a[2])} ${f(cy)}Q${f(cx + a[2])} ${f(cy + a[3])} ${f(cx)} ${f(cy + a[3])}Q${f(cx - a[0])} ${f(cy + a[3])} ${f(cx - a[0])} ${f(cy)}Z"/><ellipse cx="${f(cx - r * 0.3)}" cy="${f(cy - r * 0.38)}" rx="${f(r * 0.38)}" ry="${f(r * 0.24)}"/></g>`);
+      }
+    }
+    return out.join("");
+  }
+  var KIB_BIN = kibble(64, 136, 124, (x) => 45 + 2.4 * Math.sin((x - 64) / 9), 2.2, 3.6, 7);
+  var KIB_BOWL = kibble(62, 138, 178, (x) => 174.5 - 15 * Math.max(0, 1 - ((x - 100) / 38) ** 2), 1.7, 2.7, 11);
   var SV = {
-    washer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvw"><circle cx="50" cy="58" r="21"/></clipPath></defs>
-<rect class="bd" x="12" y="6" width="76" height="88" rx="10"/><line class="sep" x1="12" y1="22" x2="88" y2="22"/>
-<rect class="dw" x="19" y="11" width="18" height="6" rx="2"/><circle class="kn" cx="64" cy="14" r="3.6"/><circle class="led" cx="78" cy="14" r="2"/>
-<circle class="door" cx="50" cy="58" r="27"/><circle class="gl" cx="50" cy="58" r="21"/>
-<g clip-path="url(#nvw)"><g class="wl"><g class="wv"><path class="wt" d="M0 64 q6.25 -3 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V100 H0 Z"/></g></g>
-<g class="drum"><circle class="dm" cx="50" cy="58" r="17"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(120 50 58)"/><rect class="lf" x="48.5" y="41" width="3" height="5" rx="1.2" transform="rotate(240 50 58)"/>
-<path class="cl" d="M40 64 q5 -6 10 -1 q4 4 9 -1 q2 6 -5 8 q-8 2 -14 -6 Z"/><path class="cl c2" d="M44 48 q6 -3 10 1 q-2 5 -7 4 q-4 -1 -3 -5 Z"/></g></g>
-<g class="pd"><circle class="pdr" cx="50" cy="58" r="23"/><path class="sh" d="M35 47 a19 19 0 0 1 11 -8"/></g>
-<g class="lk"><rect x="67" y="35" width="8" height="6.5" rx="1.4"/><path d="M68.8 35 v-2 a2.2 2.2 0 0 1 4.4 0 v2"/></g>${DONE}${WARN}</svg>`,
-    dishwasher: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvd"><rect x="22" y="26" width="56" height="60" rx="5"/></clipPath></defs>
-<rect class="bd" x="14" y="6" width="72" height="88" rx="9"/><line class="sep" x1="14" y1="20" x2="86" y2="20"/>
-<rect class="hd2" x="38" y="11" width="24" height="3.5" rx="1.75"/><circle class="led" cx="78" cy="13" r="2"/>
-<rect class="gl" x="22" y="26" width="56" height="60" rx="5"/>
-<g class="dd"><g clip-path="url(#nvd)"><rect class="mist" x="22" y="26" width="56" height="60"/>
-<line class="rk" x1="24" y1="50" x2="76" y2="50"/><line class="rk" x1="24" y1="76" x2="76" y2="76"/>
-<rect class="pl" x="30" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="38" y="34" width="5" height="16" rx="2.5"/><rect class="pl" x="46" y="36" width="5" height="14" rx="2.5"/><rect class="pl" x="58" y="40" width="12" height="10" rx="3"/>
-<rect class="pl" x="30" y="60" width="5" height="16" rx="2.5"/><rect class="pl" x="38" y="58" width="5" height="18" rx="2.5"/><rect class="pl" x="56" y="62" width="14" height="14" rx="3"/>
-<g class="drops"><circle cx="34" cy="80" r="1.3"/><circle cx="44" cy="80" r="1.1"/><circle cx="50" cy="80" r="1.4"/><circle cx="57" cy="80" r="1.1"/><circle cx="66" cy="80" r="1.3"/><circle cx="40" cy="80" r="1"/></g>
-<g class="arm"><rect x="30" y="81" width="40" height="2.4" rx="1.2"/><circle cx="50" cy="82.2" r="2.4"/></g></g></g>${DONE}${WARN}</svg>`,
-    // Airfryer: weiches Gehäuse, rundes Display mit Restzeit und Ring (Eieruhr), Schublade mit Fuge, Griff und Sichtfenster (abschaltbar)
-    airfryer: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nva"><path d="M39 55 h22 a5 5 0 0 1 5 5 a7 7 0 0 1 -7 7 h-18 a7 7 0 0 1 -7 -7 a5 5 0 0 1 5 -5 Z"/></clipPath></defs>
-<g class="heat"><path d="M38 8 q3 -4 0 -7"/><path d="M50 8 q3 -4 0 -7"/><path d="M62 8 q3 -4 0 -7"/></g>
-<g class="puff"><path d="M38 9 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 9 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M62 9 q3 -4 0 -8 q-3 -4 0 -8"/></g>
-<g class="afb"><ellipse class="ash" cx="50" cy="96.5" rx="32" ry="2.6"/><rect class="bd" x="17" y="10" width="66" height="85" rx="24"/>
-<rect class="pnl" x="25" y="16" width="50" height="26" rx="13"/><circle class="kbn" cx="33" cy="29" r="2.6"/><circle class="kbn" cx="67" cy="29" r="2.6"/>
-<circle class="kr" cx="50" cy="29" r="10"/><circle class="kp" cx="50" cy="29" r="10" pathLength="100" transform="rotate(-90 50 29)"/>
-<circle class="kd" cx="50" cy="29" r="7.5"/><text class="kt" x="50" y="31.2"></text>
-<rect class="opn" x="23" y="49" width="54" height="42" rx="17"/></g>
-<g class="drw"><ellipse class="ash dsh" cx="50" cy="94" rx="30" ry="3.5"/><rect class="gap" x="22" y="48" width="56" height="44" rx="18"/>
-<rect class="dw" x="23.5" y="49" width="53" height="41" rx="16.5"/><path class="dhl" d="M34 50.5 h32"/>
-<g class="win"><path class="wg" d="M39 55 h22 a5 5 0 0 1 5 5 a7 7 0 0 1 -7 7 h-18 a7 7 0 0 1 -7 -7 a5 5 0 0 1 5 -5 Z"/><g clip-path="url(#nva)"><rect class="glo" x="34" y="55" width="32" height="12"/>
-<g class="fr"><line x1="39" y1="64.5" x2="45" y2="60"/><line x1="48.5" y1="65" x2="56" y2="61.5"/><line x1="59.5" y1="64.5" x2="62" y2="60.5"/></g></g></g>
-<path class="ahs" d="M36 84 q14 6 28 0 v-2 h-28 Z"/><path class="ahd" d="M36 74 h28 a4 4 0 0 1 4 4 a5 5 0 0 1 -5 5 h-26 a5 5 0 0 1 -5 -5 a4 4 0 0 1 4 -4 Z"/></g>${DONE}${WARN}</svg>`,
-    // Kaffeevollautomat (Vorbild Siemens EQ): Bohnenfach oben, Bedienfeld, mittiger Auslauf mit Tasse, Wassertank seitlich
-    coffee: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="nvc"><path d="M41 66 h18 v10 a6 6 0 0 1 -6 6 h-6 a6 6 0 0 1 -6 -6 Z"/></clipPath><clipPath id="nvt"><rect x="80" y="26" width="7" height="50" rx="2.5"/></clipPath></defs>
-<path class="bn" d="M28 12.5 q11 -9 22 0 Z"/>
-<rect class="bd" x="16" y="12" width="64" height="82" rx="9"/>
-<rect class="tk" x="80" y="26" width="7" height="50" rx="2.5"/><g clip-path="url(#nvt)"><rect class="tw" x="80" y="38" width="7" height="40"/></g>
-<rect class="pnl" x="23" y="18" width="50" height="11" rx="3"/><circle class="led" cx="29" cy="23.5" r="1.8"/><rect class="kx" x="34" y="21.5" width="18" height="4" rx="2"/>
-<path class="dp" d="M65 19.5 c2 3 3 4.5 3 6 a3 3 0 0 1 -6 0 c0 -1.5 1 -3 3 -6 Z"/>
-<rect class="sp" x="38" y="34" width="24" height="7" rx="2.5"/><rect class="sp" x="43.5" y="41" width="4" height="3" rx="1"/><rect class="sp" x="52.5" y="41" width="4" height="3" rx="1"/>
-<line class="flow" x1="45.5" y1="44" x2="45.5" y2="80"/><line class="flow" x1="54.5" y1="44" x2="54.5" y2="80"/>
-<g clip-path="url(#nvc)"><rect class="cf" x="39" y="66" width="22" height="18"/></g>
-<path class="cup" d="M41 66 h18 v10 a6 6 0 0 1 -6 6 h-6 a6 6 0 0 1 -6 -6 Z"/><path class="cup" d="M59 69 h2.5 a3.5 3.5 0 0 1 0 7 h-2.5"/>
-<rect class="tray" x="28" y="85" width="44" height="4" rx="2"/>
-<g class="steam"><path d="M45 63 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M50 63 q3 -4 0 -8 q-3 -4 0 -8"/><path d="M55 63 q3 -4 0 -8 q-3 -4 0 -8"/></g>${DONE}${WARN}</svg>`,
+    washer: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("w")}
+<radialGradient id="w-dr" cx=".42" cy=".35" r=".75"><stop offset="0" stop-color="#5a6479"/><stop offset=".6" stop-color="#2c3342"/><stop offset="1" stop-color="#141821"/></radialGradient>
+<linearGradient id="w-pd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8d98ac"/><stop offset="1" stop-color="#3a4252"/></linearGradient>
+<radialGradient id="w-vg"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></radialGradient>
+<radialGradient id="w-lt" cx=".5" cy="0" r=".9"><stop offset="0" class="w-lc" stop-opacity=".5"/><stop offset="1" class="w-lc" stop-opacity="0"/></radialGradient>
+<linearGradient id="w-wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="w-lc" stop-opacity=".6"/><stop offset="1" class="w-lc" stop-opacity=".25"/></linearGradient>
+<pattern id="w-pf" width="4.5" height="4.5" patternUnits="userSpaceOnUse"><circle cx="2.25" cy="2.25" r=".7" fill="#000" fill-opacity=".35"/></pattern>
+<radialGradient id="w-gb" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#fff" stop-opacity=".03"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></radialGradient>
+<clipPath id="w-ci"><circle cx="100" cy="114" r="36"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="193" rx="74" ry="4.5"/><rect class="ft" x="40" y="186" width="14" height="5" rx="1.5"/><rect class="ft" x="146" y="186" width="14" height="5" rx="1.5"/>
+<rect class="s-body" x="30" y="12" width="140" height="177" rx="9" fill="url(#w-bd)"/><rect class="s-sheen" x="30" y="12" width="140" height="177" rx="9" fill="url(#w-sh)"/>
+<rect class="s-edge" x="35" y="13" width="130" height="1.2" rx=".6"/>
+<rect class="psep" x="30" y="47.5" width="140" height=".8"/><rect class="psh" x="30" y="48.3" width="140" height=".6"/><rect class="psep" x="30" y="181" width="140" height=".8"/>
+<rect class="dw s-part" x="37" y="19" width="40" height="22" rx="3" fill="url(#w-pt)"/><rect class="dwh" x="39" y="19.8" width="36" height=".9" rx=".45"/>
+<rect class="lbl" x="42" y="23.5" width="8" height="1.3" rx=".65"/><rect class="lbl" x="53" y="23.5" width="8" height="1.3" rx=".65"/><rect class="lbl" x="64" y="23.5" width="6" height="1.3" rx=".65"/><rect class="dwg" x="43" y="34.5" width="28" height="2.6" rx="1.3"/>
+<g class="pdots">${[-135, -108, -81, -54, -27, 0, 27, 54, 81, 108, 135].map((a) => `<circle${a === -54 ? ' class="on"' : ""} cx="${(99 + 13 * Math.sin(a * Math.PI / 180)).toFixed(2)}" cy="${(30 - 13 * Math.cos(a * Math.PI / 180)).toFixed(2)}" r=".95"/>`).join("")}</g>
+<circle class="kr" cx="99" cy="30" r="9" fill="url(#w-cr)"/><circle class="s-part" cx="99" cy="30" r="7.2" fill="url(#w-pt)"/><rect class="ki" x="98.4" y="23.6" width="1.2" height="4.2" rx=".6" transform="rotate(-54 99 30)"/>
+<rect class="s-part" x="121" y="19" width="41" height="22" rx="3" fill="url(#w-pt)"/><rect class="s-scr" x="123.5" y="21.5" width="36" height="13" rx="1.8"/>
+<text class="wdt" x="144" y="31.4"></text><g class="lk"><rect x="126.6" y="26.6" width="4.6" height="3.8" rx=".8"/><path d="M127.7 26.6 v-1.1 a1.2 1.2 0 0 1 2.4 0 v1.1"/></g>
+<path class="s-tgl" d="M125 22 h9 l-4 12 h-6 z"/><g class="tb"><rect x="124" y="37" width="6" height="1.8" rx=".9"/><rect x="133" y="37" width="6" height="1.8" rx=".9"/><rect x="142" y="37" width="6" height="1.8" rx=".9"/><rect x="151" y="37" width="8" height="1.8" rx=".9"/></g>
+<circle class="led" cx="166" cy="30" r="1.3"/>
+<rect class="s-part" x="49" y="96" width="7" height="9" rx="1.5" fill="url(#w-pt)"/><rect class="s-part" x="49" y="123" width="7" height="9" rx="1.5" fill="url(#w-pt)"/>
+<circle class="fl" cx="148" cy="168" r="9.5"/><path class="flh" d="M139.6 163.5 a9.5 9.5 0 0 1 8.4 -5"/><rect class="dwg" x="145" y="160.5" width="6" height="1.4" rx=".7"/>
+<circle class="gsk" cx="100" cy="114" r="41"/><circle class="gsm" cx="100" cy="114" r="38.6"/><circle class="gsf" cx="100" cy="114" r="37.4"/><circle class="gsh" cx="100" cy="114" r="40.2"/>
+<g clip-path="url(#w-ci)"><circle cx="100" cy="114" r="36" fill="url(#w-dr)"/>
+<g class="drum"><circle cx="100" cy="114" r="34" fill="url(#w-pf)"/><circle class="drm" cx="100" cy="114" r="22"/>
+${[0, 120, 240].map((a) => `<g class="pdl" transform="rotate(${a} 100 114)"><path d="M93 78.6 Q100 77.6 107 78.6 L103.2 93 Q100 94.6 96.8 93 Z" fill="url(#w-pd)"/><path class="pdh" d="M94.6 79.4 L97.6 92 h-.9 L93.6 79.6 Z"/></g>`).join("")}
+<path class="cl" d="M76 128 q8 -10 18 -3 q8 5 16 -2 q5 10 -8 14 q-14 4 -26 -9 Z"/><path class="cl c2" d="M90 100 q8 -5 15 1 q-3 7 -10 6 q-6 -1 -5 -7 Z"/>
+<circle class="hub" cx="100" cy="114" r="6" fill="url(#w-cr)"/><circle class="hbc" cx="100" cy="114" r="2.4"/><circle class="spn" cx="100" cy="114" r="27"/></g>
+<rect class="dlt" x="64" y="78" width="72" height="50" fill="url(#w-lt)"/>
+<g class="wl"><g class="wv2"><path d="M25 121 q6.25 -2.5 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V160 H25 Z" fill="url(#w-wa)" opacity=".5"/></g>
+<g class="wv"><path d="M50 124 q6.25 -3.5 12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 t12.5 0 V160 H50 Z" fill="url(#w-wa)"/></g></g>
+<circle cx="100" cy="114" r="36" fill="url(#w-vg)"/></g>
+<rect class="hng s-part" x="45" y="101" width="13" height="26" rx="3" fill="url(#w-pt)"/><g class="pd"><circle class="pdt" cx="105" cy="114" r="44"/>${WDOOR}<circle class="pgb" cx="100" cy="114" r="36" fill="url(#w-gb)"/></g>
+
+${doneAt(170, 189)}${WARN}</svg>`,
+    // Spülmaschine (Vorbild Siemens Unterbau): Bedienleiste mit Display, Edelstahlfront mit Rauchglas-Fenster, Körbe mit
+    // Gläsern, Tassen, Tellern und Besteck, zwei Sprüharme; Tür offen = Klappe nach unten, Körbe frei
+    dishwasher: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("d")}
+<linearGradient id="d-pn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c212b"/><stop offset="1" stop-color="#0a0d12"/></linearGradient>
+<linearGradient id="d-bb" x1="0" y1="0" x2="1" y2="0"><stop offset=".18" stop-color="#fff" stop-opacity="0"/><stop offset=".34" stop-color="#fff" stop-opacity=".05"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#fff" stop-opacity=".03"/><stop offset=".86" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<radialGradient id="d-vg" cx=".5" cy=".45" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<radialGradient id="d-lt" cx=".5" cy="0" r="1"><stop offset="0" class="q-lc" stop-opacity=".36"/><stop offset="1" class="q-lc" stop-opacity="0"/></radialGradient>
+<pattern id="d-pf" width="3.4" height="3.4" patternUnits="userSpaceOnUse"><circle cx="1.7" cy="1.7" r=".75" fill="#000" fill-opacity=".45"/></pattern>
+<clipPath id="d-tc"><rect x="40" y="18" width="120" height="158"/></clipPath><clipPath id="d-tw"><path d="M44 84 H156 L154 166 H46 Z"/></clipPath><filter id="d-bl" x="-60%" y="-120%" width="220%" height="340%"><feGaussianBlur stdDeviation="2.4"/></filter><clipPath id="d-wc"><rect x="46" y="64" width="108" height="100" rx="4"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="192" rx="72" ry="4.5"/>
+<rect class="s-body" x="34" y="14" width="132" height="175" rx="9" fill="url(#d-bd)"/><rect class="s-sheen" x="34" y="14" width="132" height="175" rx="9" fill="url(#d-sh)"/>
+<rect class="qplin" x="38" y="177" width="124" height="11" rx="1.5"/>${[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => `<rect class="qvent" x="${70 + i * 7}" y="181" width="4" height="3" rx="1"/>`).join("")}
+<g clip-path="url(#d-tc)"><rect x="40" y="18" width="120" height="158" fill="url(#d-in)"/>
+<path class="qrail" d="M44.5 20 V172 M155.5 20 V172"/><rect class="s-part" x="95" y="19" width="10" height="3.6" rx="1.2" fill="url(#d-pt)"/>
+${QIN}<rect class="qdlt" x="40" y="18" width="120" height="158" fill="url(#d-lt)"/><rect x="40" y="18" width="120" height="158" fill="url(#d-vg)"/></g>
+<g class="qgap"><rect x="40" y="40" width="120" height="24" fill="url(#d-lt)" opacity=".55"/><path class="qwire" d="${Array.from({ length: 19 }, (_, i) => `M${46 + i * 6} 50 V56.6`).join(" ")}"/><rect class="qrl" x="45" y="56" width="110" height="1.4" rx=".7"/>
+<rect class="qgl" x="54" y="51.6" width="8.8" height="1.2" rx=".6"/><rect class="qgl" x="66" y="51.6" width="8.8" height="1.2" rx=".6"/><path class="qcup" d="M92 60 v-6 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v6 Z"/><path class="qcup c2" d="M106 60 v-6 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v6 Z"/><rect class="qgl" x="132" y="51.6" width="8.8" height="1.2" rx=".6"/></g>
+<g class="qfront"><path class="s-body" fill-rule="evenodd" fill="url(#d-bd)" d="${QDOOR}"/><path class="s-sheen" fill-rule="evenodd" fill="url(#d-sh)" d="${QDOOR}"/><path fill-rule="evenodd" fill="url(#d-bb)" d="${QDOOR}"/>
+<rect class="s-part" x="66" y="46" width="4" height="5" rx="1" fill="url(#d-pt)"/><rect class="s-part" x="130" y="46" width="4" height="5" rx="1" fill="url(#d-pt)"/>
+<rect class="qhdl" x="62" y="48" width="76" height="3.4" rx="1.7" fill="url(#d-cr)"/><rect class="qhdh" x="64" y="48.4" width="72" height=".8" rx=".4"/>
+<rect class="qwin" x="44.6" y="62.6" width="110.8" height="102.8" rx="5"/>
+<rect class="qtint" x="46" y="64" width="108" height="100" rx="4"/>
+<g clip-path="url(#d-wc)"><rect class="qmist" x="46" y="64" width="108" height="100"/><g class="qfog">${QFOG}</g>
+<path class="s-refl" d="M60 64 h26 l-40 70 v-38 z"/><path class="s-refl" d="M98 64 h7 l-59 100 v-12 z"/>
+<g transform="rotate(18 100 114)"><rect class="s-gls" x="20" y="40" width="18" height="150" fill="url(#d-gs)"/></g></g>
+<rect class="s-glass" x="46" y="64" width="108" height="100" rx="4" fill="url(#d-gl)"/></g>
+<g class="qtilt"><path class="qtop" d="M32.6 61.2 H167.4 L169 64 H31 Z"/><path class="s-body" fill-rule="evenodd" fill="url(#d-bd)" d="${QTILT}"/><path class="s-sheen" fill-rule="evenodd" fill="url(#d-sh)" d="${QTILT}"/><path fill-rule="evenodd" fill="url(#d-bb)" d="${QTILT}"/>
+<rect class="s-part" x="65.6" y="67" width="4" height="4.2" rx="1" fill="url(#d-pt)"/><rect class="s-part" x="130.4" y="67" width="4" height="4.2" rx="1" fill="url(#d-pt)"/>
+<rect class="qhdl" x="61.4" y="68.6" width="77.2" height="3" rx="1.5" fill="url(#d-cr)"/><rect class="qhdh" x="63.4" y="69" width="73.2" height=".7" rx=".35"/>
+<path class="qwin" d="M42.6 82.6 H157.4 L155.4 167.4 H44.6 Z"/><path class="qtint" d="M44 84 H156 L154 166 H46 Z"/>
+<g clip-path="url(#d-tw)"><path class="s-refl" d="M58 84 h26 l-38 62 v-34 z"/><path class="s-refl" d="M96 84 h7 l-57 82 v-11 z"/></g>
+<path class="s-glass" d="M44 84 H156 L154 166 H46 Z" fill="url(#d-gl)"/></g>
+<g class="qsteam" filter="url(#d-bl)"><ellipse cx="44" cy="60" rx="7" ry="3.6" style="--sx:-18px;--sy:-16px"/><ellipse cx="100" cy="61" rx="9" ry="3.4" style="--sx:4px;--sy:-9px;animation-delay:.9s"/><ellipse cx="156" cy="60" rx="7" ry="3.6" style="--sx:18px;--sy:-16px;animation-delay:1.8s"/></g>
+<g class="qpanel"><path class="qpan" d="M43 14 H157 a9 9 0 0 1 9 9 V40 H34 V23 a9 9 0 0 1 9 -9 Z" fill="url(#d-pn)"/><rect class="s-edge" x="40" y="15" width="120" height="1.2" rx=".6"/>
+<rect class="qsep" x="34" y="40" width="132" height=".8"/><rect class="qsh" x="34" y="40.8" width="132" height=".6"/>
+<circle class="qpw" cx="44" cy="25" r="2.2"/><path class="qpwl" d="M44 21.8 v2.4"/>
+${[52, 59, 66, 73].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width="${i % 2 ? 4 : 5}" height="1.2" rx=".6"/><rect class="qsel${i === 0 ? " on" : ""}" x="${x - 0.5}" y="31" width="6" height="1.1" rx=".55"/>`).join("")}
+${[124, 131, 138, 145].map((x, i) => `<rect class="qlbl" x="${x}" y="24.2" width="${i % 2 ? 5 : 4}" height="1.2" rx=".6"/><rect class="qsel" x="${x - 0.5}" y="31" width="6" height="1.1" rx=".55"/>`).join("")}
+<circle class="led" cx="157" cy="25" r="1.4"/>
+<rect class="s-part" x="80" y="16.5" width="40" height="28" rx="2.5" fill="url(#d-pt)"/><rect class="s-scr" x="83.5" y="19.5" width="33" height="13" rx="1.6"/>
+<text class="wdt" x="102.6" y="29.2"></text><g class="lk"><rect x="86.2" y="25.2" width="4.2" height="3.4" rx=".7"/><path d="M87.2 25.2 v-1 a1.1 1.1 0 0 1 2.2 0 v1"/></g>
+<path class="s-tgl" d="M85 20 h8 l-4 12 h-5 z"/><g class="qtb"><rect x="85" y="36.5" width="6" height="1.6" rx=".8"/><rect x="94" y="36.5" width="6" height="1.6" rx=".8"/><rect x="103" y="36.5" width="6" height="1.6" rx=".8"/><rect x="112" y="36.5" width="4" height="1.6" rx=".8"/></g></g>
+${doneAt(170, 189)}${WARN}</svg>`,
+    // Airfryer im Nova-Zeichenstil (Vorbild Philips Essential): nach unten breiter werdendes Gehäuse, oben Touchfeld mit rundem
+    // Display (Restzeit-Ring wie eine Eieruhr, Haken bei fertig), Fuge, Schublade mit Rauchglas-Fenster (Heizspirale, Korb,
+    // Pommes) und senkrechtem Griff
+    airfryer: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("a")}
+<radialGradient id="a-vg" cx=".5" cy=".4" r=".8"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></radialGradient>
+<radialGradient id="a-lt" cx=".5" cy="0" r="1"><stop offset="0" class="a-lc" stop-opacity=".7"/><stop offset="1" class="a-lc" stop-opacity="0"/></radialGradient>
+<filter id="a-bl" x="-60%" y="-120%" width="220%" height="340%"><feGaussianBlur stdDeviation="2.4"/></filter>
+<filter id="a-hb" x="-100%" y="-40%" width="300%" height="180%"><feGaussianBlur stdDeviation="1.3"/></filter>
+<filter id="a-cb" x="-20%" y="-300%" width="140%" height="700%"><feGaussianBlur stdDeviation="1.6"/></filter>
+<clipPath id="a-wc"><rect x="64" y="99" width="72" height="32" rx="6"/></clipPath><clipPath id="a-pc"><rect x="68" y="32" width="64" height="44" rx="5"/></clipPath><clipPath id="a-bc"><path d="${ABODY}"/></clipPath>
+<linearGradient id="a-gb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+<g class="ahz" filter="url(#a-hb)"><path d="M84 19 c-3 -4 3 -7 0 -11 c-2 -3 1 -5 0 -8"/><path d="M100 19 c3 -4 -3 -7 0 -11 c2 -3 -1 -5 0 -8"/><path d="M116 19 c-3 -4 3 -7 0 -11 c-2 -3 1 -5 0 -8"/></g>
+<g class="afb"><ellipse class="s-shd" cx="100" cy="177" rx="66" ry="4.5"/><rect class="aft" x="52" y="171" width="14" height="5" rx="1.5"/><rect class="aft" x="134" y="171" width="14" height="5" rx="1.5"/>
+<path class="s-body" d="${ABODY}" fill="url(#a-bd)"/><path class="s-sheen" d="${ABODY}" fill="url(#a-sh)"/>
+<g clip-path="url(#a-bc)"><rect class="agb" x="52" y="20" width="14" height="152" fill="url(#a-gb)" transform="skewX(-4)"/><path class="s-refl" d="M118 20 h12 l-34 72 h-12 z"/><path class="s-refl" d="M136 20 h5 l-34 72 h-5 z"/></g>
+<rect class="s-edge" x="58" y="21" width="84" height="1.2" rx=".6"/><rect class="abase" x="40" y="162" width="120" height=".8"/><rect class="ahl" x="41" y="162.8" width="118" height=".6"/>
+<rect class="apn" x="68" y="32" width="64" height="44" rx="5"/><rect x="68" y="32" width="64" height="44" rx="5" fill="url(#a-gl)"/>
+<g class="atc"><path d="M76.6 42.2 a3.2 3.2 0 1 0 2.8 0 M78 40.6 v3"/><path d="M75 64 h6"/><path d="M119 64 h6 M122 61 v6"/><path d="M122 40.4 v4.6 M120.7 45.6 a1.8 1.8 0 1 0 2.6 0"/></g>
+<circle class="adr" cx="100" cy="54" r="15"/><circle class="kr" cx="100" cy="54" r="11.5"/><circle class="kp" cx="100" cy="54" r="11.5" pathLength="100" transform="rotate(-90 100 54)"/>
+<text class="kt" x="100" y="57.4"></text><path class="akc" d="M94.6 54.4 l3.6 3.6 l7 -7.4"/>
+<g clip-path="url(#a-pc)"><path class="s-tgl" d="M70 32 h30 l-14 44 h-16 z"/><path class="s-refl" d="M106 32 h6 l-14 44 h-6 z"/><rect class="apnh" x="70" y="32.6" width="60" height=".7" rx=".35"/></g>
+<rect class="psep" x="${AX(92) + 0.5}" y="91.6" width="${200 - 2 * AX(92) - 1}" height=".8"/>
+<path class="aop" d="${ADRW}"/><path class="aol" d="${ADRW}" fill="url(#a-lt)"/>
+<rect class="asg" x="${AX(92) + 4}" y="91" width="${200 - 2 * AX(92) - 8}" height="2" rx="1"/></g>
+<g class="drw"><ellipse class="adsh" cx="100" cy="167" rx="58" ry="3.4"/>
+<path class="s-body" d="${ADRW}" fill="url(#a-bd)"/><path class="s-sheen" d="${ADRW}" fill="url(#a-sh)"/>
+<rect class="ade" x="${AX(93) + 3}" y="93.6" width="${200 - 2 * AX(93) - 6}" height=".8" rx=".4"/>
+<g class="awin"><rect class="awf" x="61.6" y="96.6" width="76.8" height="36.8" rx="8"/>
+<g clip-path="url(#a-wc)"><rect x="64" y="99" width="72" height="32" fill="url(#a-in)"/><rect class="aglo" x="64" y="99" width="72" height="32" fill="url(#a-lt)"/>
+<path class="acl" d="${ACOIL}"/><path class="acg" filter="url(#a-cb)" d="${ACOIL}"/>
+<rect class="abr" x="65" y="114" width="70" height="1.6" rx=".8"/><path class="amsh" d="${Array.from({ length: 17 }, (_, i) => `M${68 + i * 4} 116 V131`).join(" ")}"/>
+<g class="fr"><line x1="70" y1="129" x2="79" y2="122"/><line x1="81" y1="130" x2="92" y2="124"/><line x1="96" y1="128.5" x2="103" y2="120.5"/><line x1="107" y1="130" x2="119" y2="125"/><line x1="121" y1="129" x2="129" y2="122.5"/><line x1="86" y1="123" x2="95" y2="118.5"/></g>
+<rect x="64" y="99" width="72" height="32" fill="url(#a-vg)"/>
+<path class="s-refl" d="M74 99 h16 l-22 32 h-5 v-12 z"/><path class="s-refl" d="M98 99 h5 l-22 32 h-5 z"/>
+<g transform="rotate(18 100 115)"><rect class="s-gls" x="44" y="80" width="16" height="70" fill="url(#a-gs)"/></g></g>
+<rect class="s-glass" x="64" y="99" width="72" height="32" rx="6" fill="url(#a-gl)"/></g>
+<rect class="ahr" x="92.5" y="140" width="17" height="22" rx="6"/><rect class="s-part" x="91" y="138" width="18" height="22" rx="6" fill="url(#a-pt)"/><rect class="ahh" x="92.6" y="140" width="1.2" height="18" rx=".6"/></g>
+<g class="apuff" filter="url(#a-bl)"><ellipse cx="72" cy="94" rx="8" ry="3.6" style="--sx:-10px;--sy:-22px"/><ellipse cx="100" cy="92" rx="10" ry="3.8" style="--sx:2px;--sy:-26px;animation-delay:.25s"/><ellipse cx="128" cy="94" rx="8" ry="3.6" style="--sx:10px;--sy:-22px;animation-delay:.5s"/></g>
+${doneAt(162, 172)}${WARN}</svg>`,
+    // Kaffeevollautomat im Nova-Zeichenstil: oben Bohnenbehälter-Deckel, Bedienfeld mit Display und Status-LED, Nische mit
+    // Chrom-Auslauf, Glastasse (bei Latte Macchiato hohes Glas) auf der Tropfschale, Wassertank aus Glas seitlich rechts
+    coffee: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("c")}
+<radialGradient id="c-lt" cx=".5" cy="0" r="1"><stop offset="0" class="c-lc" stop-opacity=".55"/><stop offset="1" class="c-lc" stop-opacity="0"/></radialGradient>
+<radialGradient id="c-vg" cx=".5" cy=".4" r=".8"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<linearGradient id="c-wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="c-lc" stop-opacity=".55"/><stop offset="1" class="c-lc" stop-opacity=".28"/></linearGradient>
+<linearGradient id="c-lm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="c-f"/><stop offset=".18" class="c-f"/><stop offset=".26" class="c-c"/><stop offset=".4" class="c-c"/><stop offset=".56" class="c-m"/><stop offset="1" class="c-m"/></linearGradient>
+<filter id="c-bl" x="-100%" y="-40%" width="300%" height="180%"><feGaussianBlur stdDeviation="1.2"/></filter>
+<clipPath id="c-cc"><path d="M78.5 124 h31 v25 a8.5 8.5 0 0 1 -8.5 8.5 h-14 a8.5 8.5 0 0 1 -8.5 -8.5 Z"/></clipPath>
+<clipPath id="c-gc"><path d="M85 97 h22 l-1.5 57.5 a3 3 0 0 1 -3 3 h-13 a3 3 0 0 1 -3 -3 Z"/></clipPath>
+<clipPath id="c-tc"><rect x="151" y="44" width="16" height="131" rx="3"/></clipPath><clipPath id="c-nc"><path d="M58 76 q0 -8 8 -8 h56 q8 0 8 8 V178 H58 Z"/></clipPath></defs>
+<ellipse class="s-shd" cx="102" cy="193" rx="70" ry="4.5"/><rect class="cft" x="46" y="186" width="14" height="5" rx="1.5"/><rect class="cft" x="128" y="186" width="14" height="5" rx="1.5"/>
+<rect class="s-part" x="149" y="36" width="20" height="9" rx="3" fill="url(#c-pt)"/>
+<g clip-path="url(#c-tc)"><rect x="151" y="44" width="16" height="131" fill="url(#c-in)"/><g class="ctw"><rect x="151" y="84" width="16" height="96" fill="url(#c-wa)"/><rect class="ctws" x="151" y="84" width="16" height="1"/></g>
+<path class="s-refl" d="M152.5 44 h3 v131 h-3 z"/><g transform="rotate(12 159 110)"><rect class="s-gls" x="128" y="30" width="10" height="160" fill="url(#c-gs)"/></g></g>
+<rect class="tk s-glass" x="151" y="44" width="16" height="131" rx="3" fill="url(#c-gl)"/><path class="ctm" d="M163 70 h2.6 M163 100 h2.6 M163 130 h2.6 M163 160 h2.6"/>
+<rect class="s-part" x="149" y="173" width="20" height="7" rx="2.5" fill="url(#c-pt)"/>
+<path class="bn s-part" d="M50 23 v-5 a5 5 0 0 1 5 -5 h40 a5 5 0 0 1 5 5 v5 Z" fill="url(#c-pt)"/><rect class="cbh" x="54" y="14" width="42" height=".8" rx=".4"/>
+<rect class="s-body" x="36" y="22" width="114" height="166" rx="10" fill="url(#c-bd)"/><rect class="s-sheen" x="36" y="22" width="114" height="166" rx="10" fill="url(#c-sh)"/>
+<rect class="s-edge" x="42" y="23" width="102" height="1.2" rx=".6"/>
+<rect class="s-part" x="46" y="31" width="96" height="28" rx="4" fill="url(#c-pt)"/><rect class="s-scr cscr" x="50" y="35" width="68" height="16" rx="2"/>
+<text class="ctx" x="84" y="46"></text><path class="s-tgl" d="M52 35.5 h12 l-5 15 h-7 z"/>
+<g class="ctb"><rect x="52" y="54" width="7" height="1.8" rx=".9"/><rect x="62" y="54" width="7" height="1.8" rx=".9"/><rect x="72" y="54" width="7" height="1.8" rx=".9"/><rect x="82" y="54" width="7" height="1.8" rx=".9"/></g>
+<circle class="led" cx="130" cy="40" r="1.8"/><path class="dp" d="M130 45.6 c1.6 2.4 2.4 3.6 2.4 4.8 a2.4 2.4 0 0 1 -4.8 0 c0 -1.2 .8 -2.4 2.4 -4.8 Z"/>
+<path d="M58 76 q0 -8 8 -8 h56 q8 0 8 8 V178 H58 Z" fill="url(#c-in)"/><g clip-path="url(#c-nc)"><rect class="cnl" x="58" y="68" width="72" height="70" fill="url(#c-lt)"/><rect x="58" y="68" width="72" height="110" fill="url(#c-vg)"/></g>
+<path class="cnr" d="M58 76 q0 -8 8 -8 h56 q8 0 8 8 V178 H58 Z"/>
+<rect class="cspb" x="78" y="64" width="32" height="14" rx="3.5" fill="url(#c-cr)"/><rect class="csph" x="81" y="65" width="26" height=".8" rx=".4"/>
+<rect class="cnz" x="85" y="77" width="6" height="5" rx="1.6" fill="url(#c-cr)"/><rect class="cnz" x="97" y="77" width="6" height="5" rx="1.6" fill="url(#c-cr)"/>
+<rect class="s-part" x="56" y="160" width="76" height="20" rx="3.5" fill="url(#c-pt)"/><rect class="cgr" x="58" y="157.6" width="72" height="3.4" rx="1.2" fill="url(#c-cr)"/>
+<path class="cgs" d="M61 159.3 h66"/><rect class="cth" x="60" y="163.4" width="68" height=".7"/><rect class="ctf" x="88" y="171" width="12" height="3" rx="1.5"/>
+<g class="flow"><line x1="88" y1="82" x2="88" y2="157"/><line x1="100" y1="82" x2="100" y2="157"/></g>
+<g class="ccup"><g clip-path="url(#c-cc)"><g class="cfl"><rect class="cfc" x="76" y="124" width="36" height="36"/><rect class="cfr" x="76" y="124" width="36" height="2.2"/><rect class="cff" x="76" y="124" width="36" height="9"/></g></g>
+<path class="s-glass" d="M76 124 h36 v26 a10 10 0 0 1 -10 10 h-16 a10 10 0 0 1 -10 -10 Z" fill="url(#c-gl)"/><path class="chd" d="M112 130 h3 a6.5 6.5 0 0 1 0 13 h-3.4"/>
+<path class="s-refl" d="M79 126 h4 v23 h-4 z"/><ellipse class="crim" cx="94" cy="124" rx="18" ry="1.5"/></g>
+<g class="cgls"><g clip-path="url(#c-gc)"><g class="cfl g"><rect x="83" y="97" width="26" height="61" fill="url(#c-lm)"/><rect class="cff" x="83" y="97" width="26" height="11"/></g></g>
+<path class="s-glass" d="M83 96 h26 l-1.6 60 a4 4 0 0 1 -4 4 h-14.8 a4 4 0 0 1 -4 -4 Z" fill="url(#c-gl)"/><path class="s-refl" d="M86 98 h3 l-1 56 h-3 z"/><ellipse class="crim" cx="96" cy="96" rx="13" ry="1.2"/></g>
+<g class="csteam" filter="url(#c-bl)"><path d="M87 120 c-3 -5 3 -8 0 -13 c-2 -3 1 -6 0 -9"/><path d="M95 120 c3 -5 -3 -8 0 -13 c2 -3 -1 -6 0 -9"/><path d="M103 120 c-3 -5 3 -8 0 -13 c-2 -3 1 -6 0 -9"/></g>
+${doneAt(150, 188)}${WARN}</svg>`,
+    // Futterautomat im Nova-Zeichenstil: Säule mit Deckel, Sichtfenster mit Trockenfutter (Füllstand), Status-LED, Ausgabeschacht
+    // mit Chromlippe, davor ein Edelstahlnapf
+    feeder: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("f")}
+
+<linearGradient id="f-ps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".2" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
+<radialGradient id="f-vg" cx=".5" cy=".4" r=".8"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></radialGradient>
+<radialGradient id="f-lt" cx=".5" cy="0" r="1"><stop offset="0" class="f-lc" stop-opacity=".8"/><stop offset="1" class="f-lc" stop-opacity="0"/></radialGradient>
+<clipPath id="f-wc"><rect x="66" y="40" width="68" height="74" rx="8"/></clipPath><clipPath id="f-bc"><path d="M61 172 a39 5.2 0 0 0 78 0 V150 H61 Z"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="193" rx="66" ry="4.5"/><rect class="fft" x="62" y="176" width="12" height="4" rx="1.5"/><rect class="fft" x="126" y="176" width="12" height="4" rx="1.5"/>
+<rect class="s-body" x="54" y="24" width="92" height="154" rx="14" fill="url(#f-bd)"/><rect class="s-sheen" x="54" y="24" width="92" height="154" rx="14" fill="url(#f-sh)"/>
+<path class="s-part" d="M50 32 v-6 q0 -12 14 -12 h72 q14 0 14 12 v6 Z" fill="url(#f-pt)"/><rect class="s-edge" x="62" y="15" width="76" height="1.2" rx=".6"/><rect class="fsep" x="50" y="31.6" width="100" height=".8"/>
+<rect class="fwf" x="63.6" y="37.6" width="72.8" height="78.8" rx="10"/>
+<g clip-path="url(#f-wc)"><rect x="66" y="40" width="68" height="74" fill="url(#f-in)"/>
+<g class="fpl"><path class="fk0" d="M64 58 q9 -3 18 0 t18 0 t18 0 t18 0 V126 H64 Z"/>${KIB_BIN}</g>
+<rect x="66" y="40" width="68" height="74" fill="url(#f-vg)"/><path class="s-refl" d="M76 40 h16 l-26 50 v-24 z"/><path class="s-refl" d="M102 40 h5 l-41 74 v-10 z"/>
+<g transform="rotate(18 100 77)"><rect class="s-gls" x="40" y="20" width="14" height="120" fill="url(#f-gs)"/></g></g>
+<rect class="s-glass" x="66" y="40" width="68" height="74" rx="8" fill="url(#f-gl)"/><path class="fmk" d="M128 52 h3.6 M128 70 h3.6 M128 88 h3.6 M128 104 h3.6"/>
+<circle class="fring" cx="100" cy="128" r="5.4"/><circle class="led fled" cx="100" cy="128" r="2.4"/>
+<rect class="ftb" x="76" y="127" width="10" height="2" rx="1"/><rect class="ftb" x="114" y="127" width="10" height="2" rx="1"/>
+<path class="fch" d="M84 142 q0 -4 4 -4 h24 q4 0 4 4 v14 h-32 Z"/><rect class="fchl" x="86" y="139" width="28" height="16" fill="url(#f-lt)"/>
+<g class="fdrop">${[[97, 1, 0], [102.4, 2, 0.3], [99.2, 3, 0.55], [103.6, 1, 0.8], [96, 2, 1.05]].map(([x, k, d]) => `<ellipse class="fk${k}" cx="${x}" cy="160" rx="1.9" ry="1.7" style="animation-delay:${d}s"/>`).join("")}</g>
+<rect class="flip" x="80" y="155" width="40" height="4.4" rx="2" fill="url(#f-cr)"/>
+<path class="fbo" d="M58 172 L65 186 Q66.5 189 70 189 H130 Q133.5 189 135 186 L142 172 Z" fill="url(#f-cr)"/><ellipse class="fbi" cx="100" cy="172" rx="39.4" ry="5.4"/>
+<g clip-path="url(#f-bc)"><g class="fbw"><path class="fk0" d="M66 177 q6 -12 22 -14 q12 -1.4 24 0 q16 2 22 14 Z"/>${KIB_BOWL}</g></g>
+<ellipse class="fbr" cx="100" cy="172" rx="42" ry="6.5"/><path class="fbh" d="M64.5 178 l3.6 7.4"/>
+${doneAt(146, 189)}${WARN}</svg>`,
+    // Trinkbrunnen im Nova-Zeichenstil (Vorbild Petkit Eversweet): flacher runder Zylinder, oben breite Trinkschale mit kleinem
+    // Sprudel in der Mitte, vorne Sichtfenster für den Wasserstand (MAX/MIN), Sockel mit Status-LED und kleinem Filter-Symbol
+    fountain: `<svg viewBox="0 0 200 200" aria-hidden="true"><defs>${sceneDefs("b")}
+<linearGradient id="b-wa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="b-wc" stop-opacity=".85"/><stop offset="1" class="b-wc" stop-opacity=".5"/></linearGradient>
+<radialGradient id="b-ds" cx=".5" cy=".45" r=".55"><stop offset="0" class="b-wc" stop-opacity=".7"/><stop offset=".7" class="b-wc" stop-opacity=".38"/><stop offset="1" class="b-wc" stop-opacity=".2"/></radialGradient>
+<linearGradient id="b-cy" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset=".22" stop-color="#fff" stop-opacity=".1"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset=".85" stop-color="#000" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>
+<filter id="b-bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=".6"/></filter>
+<clipPath id="b-dc"><ellipse cx="100" cy="75" rx="51" ry="8"/></clipPath><clipPath id="b-wc"><rect x="95.5" y="100" width="9" height="42" rx="4.5"/></clipPath></defs>
+<ellipse class="s-shd" cx="100" cy="190" rx="72" ry="5"/><rect class="bft" x="56" y="181" width="14" height="5" rx="2"/><rect class="bft" x="130" y="181" width="14" height="5" rx="2"/>
+<path class="s-body" d="M34 72 V172 a66 11 0 0 0 132 0 V72 Z" fill="url(#b-bd)"/><path d="M34 72 V172 a66 11 0 0 0 132 0 V72 Z" fill="url(#b-cy)"/>
+<path class="s-part" d="M34 160 a66 11 0 0 0 132 0 V172 a66 11 0 0 1 -132 0 Z" fill="url(#b-pt)"/><path class="bsep" d="M34 160 a66 11 0 0 0 132 0"/><path class="bsh" d="M35 161.4 a65 11 0 0 0 130 0"/>
+<rect class="bwf" x="93.6" y="98" width="12.8" height="46" rx="6.4"/>
+<g clip-path="url(#b-wc)"><rect x="95.5" y="100" width="9" height="42" fill="url(#b-in)"/><g class="bwl"><rect x="95.5" y="100" width="9" height="44" fill="url(#b-wa)"/><rect class="bws" x="95.5" y="100" width="9" height=".9"/></g>
+<rect class="s-refl" x="96.4" y="100" width="2" height="42"/><g transform="rotate(14 100 127)"><rect class="s-gls" x="70" y="88" width="8" height="80" fill="url(#b-gs)"/></g></g>
+<rect class="s-glass" x="95.5" y="100" width="9" height="42" rx="4.5" fill="url(#b-gl)"/><path class="bmk" d="M106.8 104 h2.4 M106.8 138 h2.4"/>
+<ellipse class="btop" cx="100" cy="72" rx="66" ry="12" fill="url(#b-pt)"/><path class="s-edge" d="M44 66 a62 9 0 0 1 112 0 a62 10.4 0 0 0 -112 0 Z"/>
+<ellipse class="brec" cx="100" cy="74" rx="57" ry="9.6"/><ellipse class="bdish" cx="100" cy="75" rx="51" ry="8" fill="url(#b-ds)"/>
+<g clip-path="url(#b-dc)"><g class="brip"><ellipse cx="100" cy="75" rx="9" ry="1.4"/><ellipse cx="100" cy="75" rx="9" ry="1.4" style="animation-delay:1.1s"/><ellipse cx="100" cy="75" rx="9" ry="1.4" style="animation-delay:2.2s"/></g>
+<path class="s-refl" d="M62 70 q20 -3 34 -2 l-6 4 q-14 0 -28 3 z"/></g>
+<ellipse class="bflow" cx="100" cy="75" rx="51" ry="8"/><ellipse class="bdr" cx="100" cy="74" rx="57" ry="9.6"/>
+<rect class="s-part" x="146" y="64.6" width="9" height="3.4" rx="1.2" fill="url(#b-pt)"/>
+<ellipse class="bnz" cx="100" cy="75" rx="5" ry="1.8" fill="url(#b-cr)"/><path class="bdome" d="M95 75 q5 -6 10 0 Z"/><g class="bjet"><path d="M98.4 74 Q99.2 62 99.5 55 h1 Q100.8 62 101.6 74 Z"/><ellipse cx="100" cy="55" rx="2.2" ry="1.3"/></g><path class="bdhl" d="M99.4 72 q.2 -8 .5 -14"/>
+<g class="bdrop">${[[-9, 18, 0], [8, 18, 0.3], [-5, 19, 0.6], [11, 17, 0.9], [-12, 17, 1.2], [4, 19, 1.5]].map(([dx, dy, d]) => `<circle cx="100" cy="55.5" r="${dx % 2 ? 0.8 : 1}" style="--dx:${dx}px;--dy:${dy}px;animation-delay:${d}s"/>`).join("")}</g>
+<g class="bfi"><rect x="98.3" y="148.4" width="3.4" height="1.4" rx=".5"/><rect x="97.2" y="149.8" width="5.6" height="7.6" rx="1.4"/><path d="M97.2 152.3 h5.6 M97.2 154.9 h5.6"/></g><circle class="led" cx="100" cy="163.6" r="1.5"/>
+${WARN}</svg>`,
     generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
-<path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}${WARN}</svg>`
+<path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}<g transform="scale(.5)">${WARN}</g></svg>`
   };
   var scene = (t) => `<div class="scene">${SV[t]}</div>`;
   var DCSS2 = `
-.g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg)}
-.g.dv.glow.st-run,.g.dv.glow.st-heat{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--nova-filter-color,var(--nv-a2))}
+${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
+.g.dv.glow.t-feeder.st-ready{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 25%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.g.dv.glow.t-feeder.st-run{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 65%,transparent),0 0 22px color-mix(in srgb,var(--dc) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
 .dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
 .dv .hd small.er{color:var(--nv-error);opacity:1}
 .dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
@@ -7357,7 +8389,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .ab.dis{box-shadow:none}
 .ab:active{transform:scale(.95)}
 .als:empty{display:none}
-.dv .al[data-e]{cursor:pointer}.dv .al.hit{background:color-mix(in srgb,var(--c) 32%,transparent);font-weight:600}
+.dv .al[data-e]{cursor:pointer}.dv .al .alr{margin-left:auto;flex:none;padding:5px 12px;border-radius:12px;background:rgba(255,255,255,.16);font-weight:600;cursor:pointer}.dv .al .alr:active{transform:scale(.95)}
+.pk .hb.dis{opacity:.35;pointer-events:none}.dv .al.hit{background:color-mix(in srgb,var(--c) 32%,transparent);font-weight:600}
 /* Kompakt: eine Zeile */
 .g.dv.cmp{gap:8px;padding:10px 14px}
 .cmp .hd .ic{width:40px;height:40px;position:relative}
@@ -7376,7 +8409,6 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .st-off .scene>svg{opacity:.55;transition:opacity .4s}
 .scene .door{fill:currentColor;fill-opacity:.08;stroke:currentColor;stroke-opacity:.35;stroke-width:2}
 .scene .gl{fill:rgba(0,0,0,.28);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
-.scene .sh{fill:none;stroke:#fff;stroke-opacity:.25;stroke-width:1.6;stroke-linecap:round}
 .scene .wt{fill:var(--dc);fill-opacity:.45}
 .scene .wl{transition:transform .8s}
 .scene .dm{fill:none;stroke:currentColor;stroke-opacity:.3;stroke-width:1.2;stroke-dasharray:3 3}
@@ -7386,11 +8418,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .scene .drops circle{fill:var(--dc);opacity:0}
 .scene .arm{fill:currentColor;fill-opacity:.4;transform-box:view-box;transform-origin:50px 82px}
 .scene .drum{transform-box:view-box;transform-origin:50px 58px}
-.scene .heat path,.scene .steam path{fill:none;stroke:var(--dc);stroke-width:1.6;stroke-linecap:round;opacity:0}
-.scene .steam path{stroke:currentColor;stroke-opacity:.6}
-.scene .cup{fill:none;stroke:currentColor;stroke-opacity:.55;stroke-width:1.6;stroke-linejoin:round}
-.scene .cf{fill:var(--dc);fill-opacity:.75;transform-box:fill-box;transform-origin:center bottom;transform:scaleY(.15)}
-.scene .flow{stroke:var(--dc);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:4 3;opacity:0}
+.scene .heat path{fill:none;stroke:var(--dc);stroke-width:1.6;stroke-linecap:round;opacity:0}
 .scene .pulse{fill:none;stroke:var(--dc);stroke-width:2;opacity:0;transform-box:view-box;transform-origin:50px 50px}
 .scene .pw{fill:none;stroke:currentColor;stroke-opacity:.55;stroke-width:3;stroke-linecap:round}
 .st-run .scene .pw{stroke:var(--dc);stroke-opacity:1}
@@ -7403,11 +8431,12 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 /* Laufen */
 .anim.st-run .w-washer .drum{animation:dv-tumble 4s ease-in-out infinite}
 .anim.st-run .w-washer .wv{animation:dv-wave 2.4s linear infinite}
+.anim.st-run .w-washer .wv2{animation:dv-wave 3.4s linear infinite reverse}
 .anim.st-run.alt .w-washer .drum{animation:dv-spin .55s linear infinite}
-.st-run.alt .w-washer .wl{transform:translateY(12px)}
-.anim.st-run .w-dishwasher .arm{animation:dv-arm 1.6s ease-in-out infinite alternate}
-.anim.st-run .w-dishwasher .drops circle{animation:dv-drop 1.4s ease-out infinite}
-.anim.st-run .w-dishwasher .mist{animation:dv-mist 3.2s ease-in-out infinite}
+.st-run.alt .w-washer .wl{transform:translateY(22px)}
+.st-run.alt .w-washer .spn{stroke-opacity:.1}.st-run.alt .w-washer .pdl{opacity:.55}
+.st-run .w-washer .dlt,.st-pause .w-washer .dlt{opacity:1}
+.anim.st-pause .w-washer .wdt{animation:dv-blinko 1.4s ease-in-out infinite}
 .scene .fr line{stroke:color-mix(in srgb,var(--dc) var(--pp,0%),currentColor);stroke-opacity:calc(.35 + var(--pf,0) * .5);stroke-width:3.2;stroke-linecap:round}
 .scene .puff path{fill:none;stroke:currentColor;stroke-opacity:.6;stroke-width:1.6;stroke-linecap:round;opacity:0}
 /* Airfryer */
@@ -7420,7 +8449,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .scene .gap{fill:rgba(0,0,0,.42)}.scene .ahs{fill:rgba(0,0,0,.35)}
 .scene .dhl{fill:none;stroke:currentColor;stroke-opacity:.35;stroke-width:1.2;stroke-linecap:round}
 .scene .ahd{fill:currentColor;fill-opacity:.5;stroke:currentColor;stroke-opacity:.7;stroke-width:1}
-.scene .kd,.scene .pnl{fill:rgba(0,0,0,.3);stroke:currentColor;stroke-opacity:.18;stroke-width:1}
+.scene .kd{fill:rgba(0,0,0,.3);stroke:currentColor;stroke-opacity:.18;stroke-width:1}
 .scene .kb{fill:currentColor;fill-opacity:.14;stroke:currentColor;stroke-opacity:.32;stroke-width:1}
 .scene .opn{fill:rgba(0,0,0,.55);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
 .w-airfryer .dw{fill:currentColor;fill-opacity:.2;stroke:currentColor;stroke-opacity:.45;stroke-width:1.2}
@@ -7431,53 +8460,270 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .scene .wg{fill:rgba(0,0,0,.28);stroke:currentColor;stroke-opacity:.2;stroke-width:1}
 .scene .glo{fill:var(--dc);opacity:0;transition:opacity .6s}
 .scene .drw{transform-box:view-box;transform-origin:0 0;transition:transform .6s ease}
-/* Schublade offen: herausgenommen und verkleinert neben dem Gerät, im Gehäuse bleibt die leere Öffnung */
-.dopen .w-airfryer .afb{transform:translate(-5px,8px) scale(.82)}
-.dopen .w-airfryer .drw{transform:translate(50px,34px) scale(.66)}
-.nowin .w-airfryer .win{display:none}
+/* Airfryer im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
+.w-airfryer{--gx:90px}
+.w-airfryer .aft{fill:#0d1016}
+.w-airfryer .ahl,.w-airfryer .ade{fill:#fff;opacity:.12}.w-airfryer .abase{fill:#000;opacity:.35}
+.w-airfryer .apn{fill:#05070a;stroke:rgba(255,255,255,.14);stroke-width:.5}.w-airfryer .albl{fill:#fff;opacity:.16}
+.w-airfryer .adr{fill:${PAL.screen};stroke:rgba(255,255,255,.18);stroke-width:.6}
+.w-airfryer .kr{stroke:#fff;stroke-opacity:.1;stroke-width:1.8}.w-airfryer .kp{stroke-width:1.8}
+.w-airfryer .kt{fill:#fff;font:600 8px Roboto,system-ui,sans-serif}
+.w-airfryer .akc{fill:none;stroke:var(--dc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:16;opacity:0}
+.w-airfryer .atc path{fill:none;stroke:#fff;stroke-opacity:.12;stroke-width:1;stroke-linecap:round;transition:stroke .6s,stroke-opacity .6s}
+.w-airfryer .apnh{fill:#fff;opacity:.14}.w-airfryer .agb{opacity:1}
+.st-run .w-airfryer .atc path,.st-heat .w-airfryer .atc path,.st-warm .w-airfryer .atc path,.st-pause .w-airfryer .atc path,.st-prep .w-airfryer .atc path{stroke:var(--dc);stroke-opacity:.75;filter:drop-shadow(0 0 1.5px var(--dc))}
+.st-ready .w-airfryer .atc path,.st-done .w-airfryer .atc path{stroke-opacity:.3}
+.st-off .w-airfryer .atc path{stroke-opacity:.06}
+.w-airfryer .psep{fill:#000;opacity:.3}.w-airfryer .psh{fill:#fff;opacity:.06}
+.w-airfryer .aop{fill:#07090d}.w-airfryer .aol{opacity:0;transition:opacity .6s}.w-airfryer .a-lc{stop-color:var(--hc)}
+.w-airfryer .asg{fill:var(--hc);opacity:0;filter:blur(1px);transition:opacity .6s}
+.w-airfryer .drw,.w-airfryer .afb{transform-box:view-box;transform-origin:0 0;transition:transform .8s cubic-bezier(.3,.7,.3,1)}
+.w-airfryer .adsh{fill:#000;opacity:0;transition:opacity .6s}
+.w-airfryer .awf{fill:#0b0e13;stroke:rgba(255,255,255,.08);stroke-width:.5}
+.w-airfryer .aglo{opacity:0;transition:opacity .6s}
+.w-airfryer .acl{fill:none;stroke:#3a404c;stroke-width:1.4;stroke-linecap:round}
+.w-airfryer .acg{fill:none;stroke:var(--hc);stroke-width:2.4;stroke-linecap:round;opacity:0;transition:opacity .8s}
+.w-airfryer .abr{fill:#fff;opacity:.14}.w-airfryer .amsh{fill:none;stroke:#000;stroke-opacity:.3;stroke-width:.5}
+.w-airfryer .fr line{stroke:color-mix(in srgb,var(--hc) var(--pp,0%),currentColor);stroke-width:3.4;stroke-opacity:calc(.55 + var(--pf,0) * .4)}
+.w-airfryer .ahr{fill:#000;opacity:.35}.w-airfryer .ahh{fill:#fff;opacity:.16}
+.w-airfryer .ahz path{fill:none;stroke:#d7dfec;stroke-width:2.2;stroke-linecap:round;opacity:0;transform-box:fill-box;transform-origin:center bottom}
+.w-airfryer .apuff ellipse{fill:#c9d4e3;opacity:0;transform-box:fill-box;transform-origin:center}
+/* Gart/heizt/hält warm: Heizspirale glüht in der Kartenfarbe, Fenster leicht beleuchtet, Hitzefahnen aus dem Luftauslass */
+.st-run .w-airfryer .acg{opacity:.9}.st-run .w-airfryer .acl{stroke:color-mix(in srgb,var(--hc) 70%,#3a404c)}
+.st-heat .w-airfryer .acg{opacity:.6}.st-warm .w-airfryer .acg{opacity:.3}.st-pause .w-airfryer .acg{opacity:.15}
+.st-run .w-airfryer .aglo{opacity:.4}.st-heat .w-airfryer .aglo{opacity:.22}.st-warm .w-airfryer .aglo{opacity:.16}.st-pause .w-airfryer .aglo{opacity:.12}
+.st-run .w-airfryer .asg{opacity:.65}.nowin.st-heat .w-airfryer .asg,.nowin.st-warm .w-airfryer .asg{opacity:.3}
+.anim.st-run .w-airfryer .acg{animation:dv-coil 3.2s ease-in-out infinite}
+.anim.st-run .w-airfryer .aglo{animation:dv-wglo 3.2s ease-in-out infinite}
+.anim.st-heat .w-airfryer .acg{animation:dv-coil 2.6s ease-in-out infinite}
+.anim.st-run .w-airfryer .ahz path{animation:dv-hz 3.6s ease-out infinite}
+.anim.st-run .w-airfryer .ahz path:nth-child(2){animation-delay:1.2s}.anim.st-run .w-airfryer .ahz path:nth-child(3){animation-delay:2.4s}
+.anim.st-run.last .w-airfryer .acg,.anim.st-run.last .w-airfryer .kp{animation:dv-glo .8s ease-in-out infinite}
+.nowin .w-airfryer .awin{display:none}
 .st-heat .w-airfryer .kr{stroke:var(--dc);stroke-opacity:.8}
 .anim.st-heat .w-airfryer .kr{animation:dv-stk 2.6s ease-in-out infinite}
-.st-run .w-airfryer .glo{opacity:.32}.st-warm .w-airfryer .glo{opacity:.13}
-.anim.st-run .w-airfryer .glo{animation:dv-glo 3s ease-in-out infinite}
-.anim.st-run.last .w-airfryer .glo,.anim.st-run.last .w-airfryer .kp{animation:dv-glo .8s ease-in-out infinite}
-.anim.st-run.nowin .w-airfryer .heat path{animation:dv-heat 2.2s ease-out infinite}
-.st-warm.nowin .w-airfryer .kr{stroke:var(--dc);stroke-opacity:.35}
 .anim.st-prep .scene .kx,.anim.st-prep .w-airfryer .kt,.anim.st-pause .w-airfryer .kp,.anim.st-pause .w-airfryer .kt{animation:dv-blinko 1.4s ease-in-out infinite}
-.anim.st-done.fx .w-airfryer .puff path{animation:dv-steam 1.8s ease-out 2 both}
-.anim.st-done.fx .w-airfryer .drw{animation:dv-jolt .6s .1s ease-out}
+/* Fertig: Schublade gleitet ein Stück nach vorne und bleibt dort, Haken im Display, beim Wechsel ein Dampfstoß aus dem Korb */
+.st-done .w-airfryer .drw{transform:translate(-6px,-1px) scale(1.06)}
+.st-done .w-airfryer .adsh{opacity:.35}.st-done .w-airfryer .aol{opacity:.25}
+.st-off .w-airfryer .kt,.st-off .w-airfryer .kp{display:none}
+.st-done .w-airfryer .kt{display:none}.st-done .w-airfryer .akc{opacity:1}
+.anim.st-done.fx .w-airfryer .akc{animation:dv-check .5s .3s ease-out both}
+.anim.st-done.fx .w-airfryer .apuff ellipse{animation:dv-apuff 2.4s .5s ease-out 1 both}
+/* Schublade offen (Sensor): herausgenommen und verkleinert neben dem Gerät, im Gehäuse bleibt die leere Öffnung */
+.dopen .w-airfryer .afb{transform:translate(-8px,32px) scale(.8)}
+.dopen .w-airfryer .drw{transform:translate(92px,74px) scale(.62)}
+.dopen .w-airfryer .adsh{opacity:.4}.dopen .w-airfryer .apuff,.dopen .w-airfryer .ahz{display:none}
+@media (prefers-reduced-motion:reduce){.w-airfryer .drw,.w-airfryer .afb{transition:none}}
+/* Waschmaschine im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
+.w-washer{--gx:100px}
+.w-washer .ft,.w-washer .dwg{fill:#0d1016}
+.w-washer .psep{fill:#000;opacity:.3}.w-washer .psh{fill:#fff;opacity:.06}
+.w-washer .dwh{fill:#fff;opacity:.14}.w-washer .lbl{fill:#fff;opacity:.18}
+.w-washer .pdots circle{fill:#fff;opacity:.25}.w-washer .pdots .on{fill:var(--dc);opacity:1}
+.w-washer .kr{stroke:rgba(0,0,0,.4);stroke-width:.5}.w-washer .ki{fill:#fff;opacity:.85}
+.w-washer .wdt{font:600 9px Roboto,system-ui,sans-serif;fill:#fff;text-anchor:middle}
+.w-washer .tb rect{fill:#fff;opacity:.14}
+.w-washer .gsk{fill:#07090d;stroke:rgba(255,255,255,.08);stroke-width:.6}
+.w-washer .drum{transform-origin:100px 114px}
+.w-washer .drm{fill:none;stroke:#000;stroke-opacity:.25;stroke-width:1}
+.w-washer .pdl path{stroke:rgba(0,0,0,.35);stroke-width:.4}.w-washer .pdl .pdh{fill:#fff;opacity:.2;stroke:none}
+.w-washer .cl{fill:#8f99ad;fill-opacity:.55}.w-washer .cl.c2{fill:color-mix(in srgb,var(--dc) 55%,#c9d1de);fill-opacity:.5}
+.w-washer .hub{stroke:rgba(0,0,0,.4);stroke-width:.4}.w-washer .hbc{fill:#141821}
+.w-washer .spn{fill:none;stroke:#cfd8e8;stroke-opacity:0;stroke-width:12;transition:stroke-opacity .4s}
+.w-washer .w-lc{stop-color:var(--dc)}.w-washer .dlt{opacity:0;transition:opacity .6s}
+.w-washer .rng{fill:none;stroke-width:4}.w-washer .rgo{fill:none;stroke:rgba(255,255,255,.25);stroke-width:.6}
+.w-washer .blk{fill:none;stroke:#0b0e13;stroke-width:6}
+.w-washer .sh{fill:none;stroke:#fff;stroke-opacity:.16;stroke-width:1.6;stroke-linecap:round}
+.w-washer .hdl{fill:#0b0e13;opacity:.7}
+.w-washer .fl{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:.8}.w-washer .flh{fill:none;stroke:#fff;stroke-opacity:.08;stroke-width:.8}
+.w-washer .pd{transform-box:view-box;transform-origin:54px 114px;transition:transform .6s ease}
+.w-washer .scene .lk{stroke:#fff;stroke-opacity:.85;stroke-width:.7}.w-washer .scene .lk rect{fill:#fff}
+.st-off .w-washer .wdt,.st-off .w-washer .pdots .on{display:none}
+/* Spülmaschine im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
+.w-dishwasher{--gx:150px}
+.w-dishwasher .qplin{fill:#0d1016}.w-dishwasher .qvent{fill:#000;opacity:.45}
+.w-dishwasher .qrail{fill:none;stroke:#fff;stroke-opacity:.07;stroke-width:1.2}
+.w-dishwasher .qgl{fill:${PAL.glass};fill-opacity:.1;stroke:#fff;stroke-opacity:.38;stroke-width:.5}
+.w-dishwasher .qgh{fill:none;stroke:#fff;stroke-opacity:.42;stroke-width:.6;stroke-linecap:round}
+.w-dishwasher .qcup{fill:#8f99ad;fill-opacity:.55;stroke:rgba(0,0,0,.35);stroke-width:.4}
+.w-dishwasher .qcup.c2,.w-dishwasher .qpl.c2{fill:color-mix(in srgb,var(--dc) 55%,#c9d1de);fill-opacity:.5}
+.w-dishwasher .qcuh{fill:none;stroke:#8f99ad;stroke-opacity:.55;stroke-width:1}
+.w-dishwasher .qpl{fill:#c9d1de;fill-opacity:.42;stroke:#fff;stroke-opacity:.22;stroke-width:.4}
+.w-dishwasher .qph{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.5;stroke-linecap:round}
+.w-dishwasher .qcut{fill:none;stroke:${PAL.chrome};stroke-width:1;stroke-linecap:round}
+.w-dishwasher .qcuts{fill:${PAL.chrome}}.w-dishwasher .qcutf{fill:none;stroke:${PAL.chrome};stroke-width:.45;stroke-linecap:round}.w-dishwasher .qcutk{fill:${PAL.chromeMid}}
+.w-dishwasher .qwire{fill:none;stroke:#fff;stroke-opacity:.2;stroke-width:.45}
+.w-dishwasher .qrl{fill:${PAL.chromeMid}}.w-dishwasher .qrl.t{opacity:.7}.w-dishwasher .qrol{fill:#0b0e13;stroke:#fff;stroke-opacity:.18;stroke-width:.4}
+.w-dishwasher .qarm{transform-box:view-box}.w-dishwasher .qnz{fill:#0b0e13}.w-dishwasher .qhub{stroke:rgba(0,0,0,.4);stroke-width:.4}
+.w-dishwasher .qsmp{fill:#0b0e13;stroke:#fff;stroke-opacity:.12;stroke-width:.4}
+.w-dishwasher .qjet circle{fill:var(--dc);opacity:0}
+.w-dishwasher .qstm path{fill:none;stroke:#fff;stroke-opacity:.5;stroke-width:1.4;stroke-linecap:round;opacity:0}
+.w-dishwasher .q-lc{stop-color:var(--dc)}.w-dishwasher .qdlt{opacity:0;transition:opacity .6s}
+.w-dishwasher .qmist{fill:var(--dc);opacity:0;transition:opacity .6s}
+.w-dishwasher .qfog circle{fill:#fff;opacity:0;transition:opacity 1.2s}
+.w-dishwasher .qtint{fill:#05070b;opacity:.42;transition:opacity .6s}
+.w-dishwasher .qwin{fill:none;stroke:#07090d;stroke-width:2.4}
+.w-dishwasher .qpan{stroke:rgba(255,255,255,.1);stroke-width:.5}
+.w-dishwasher .qsep{fill:#000;opacity:.3}.w-dishwasher .qsh{fill:#fff;opacity:.06}
+.w-dishwasher .qlbl{fill:#fff;opacity:.2}.w-dishwasher .qsel{fill:#fff;opacity:.12}.w-dishwasher .qsel.on{fill:var(--dc);opacity:.9}
+.w-dishwasher .qpw{fill:none;stroke:#fff;stroke-opacity:.25;stroke-width:.6}.w-dishwasher .qpwl{stroke:#fff;stroke-opacity:.25;stroke-width:.6;stroke-linecap:round}
+.w-dishwasher .qtb rect{fill:#fff;opacity:.14}
+.w-dishwasher .qhdl{stroke:rgba(0,0,0,.4);stroke-width:.4}.w-dishwasher .qhdh{fill:#fff;opacity:.35}
+.w-dishwasher .wdt{font:600 8.4px Roboto,system-ui,sans-serif;fill:#fff;text-anchor:middle}
+.w-dishwasher .scene .lk{stroke:#fff;stroke-opacity:.85;stroke-width:.65}.w-dishwasher .scene .lk rect{fill:#fff}
+.dlock .w-dishwasher .lk,.st-run .w-dishwasher .lk,.st-pause .w-dishwasher .lk{display:inline}
+.st-off .w-dishwasher .wdt,.st-off .w-dishwasher .qsel.on{display:none}
+.st-off .w-dishwasher .qtint{opacity:.62}
+.w-dishwasher .qfront{transition:opacity .4s}.w-dishwasher .qtilt,.w-dishwasher .qgap,.w-dishwasher .qsteam{opacity:0;transition:opacity .4s}
+.w-dishwasher .qtop{fill:#5d6779;opacity:.85}.w-dishwasher .qtilt path{stroke-linejoin:round}
+.w-dishwasher .qsteam ellipse{fill:#c9d4e3;opacity:0;transform-box:fill-box;transform-origin:center}
+/* Läuft: Innenlicht, Sprüharme drehen, Wasserstrahlen und Nebel hinter der Scheibe, Beschlag */
+.st-run .w-dishwasher .qdlt,.st-pause .w-dishwasher .qdlt{opacity:1}
+.st-run .w-dishwasher .qtint,.st-pause .w-dishwasher .qtint{opacity:.28}
+.st-run .w-dishwasher .qfog circle{opacity:.22}.st-run.alt .w-dishwasher .qfog circle{opacity:.3}
+.anim.st-run:not(.alt) .w-dishwasher .qarm{animation:dv-sarm 1.4s linear infinite}
+.anim.st-run:not(.alt) .w-dishwasher .qjet circle{animation:dv-jet 1.1s ease-out infinite}
+.anim.st-run:not(.alt) .w-dishwasher .qmist{animation:dv-mist 3.2s ease-in-out infinite}
+.anim.st-pause .w-dishwasher .wdt{animation:dv-blinko 1.4s ease-in-out infinite}
+/* Trocknet: Arme stehen, Dampf steigt langsam auf */
+.st-run.alt .w-dishwasher .qdlt{opacity:.45}
+.anim.st-run.alt .w-dishwasher .qstm path{animation:dv-steam 3.2s ease-out infinite}
+/* Tür offen: nur angekippt, oben ein Spalt mit Korb und leichtem Innenlicht, Dampf steigt aus dem Spalt, Bedienleiste bleibt */
+.dopen .w-dishwasher .qfront{opacity:0}
+.dopen .w-dishwasher .qtilt,.dopen .w-dishwasher .qgap,.dopen .w-dishwasher .qsteam{opacity:1}
+.dopen .w-dishwasher .qdlt{opacity:.35}.dopen .w-dishwasher .qjet,.dopen .w-dishwasher .qstm,.dopen .w-dishwasher .qmist{opacity:0}
+.dopen .w-dishwasher .qarm{animation:none!important}
+.dopen .w-dishwasher .wdt,.dopen .w-dishwasher .lk{display:none}
+.anim.dopen .w-dishwasher .qsteam ellipse{animation:dv-puff 2.8s ease-in-out infinite}
 /* Hinweise im Bild (Farben aus dem Theme: --nova-warning-color / --nova-error-color) */
 .scene .wn{display:none;transform-box:fill-box;transform-origin:center}
-.scene .wn{--wc:var(--nv-warn)}.st-err .scene .wn{--wc:var(--nv-error)}
-.scene .wt3{fill:var(--wc);fill-opacity:.25;stroke:var(--wc);stroke-width:1.8;stroke-linejoin:round}.scene .wx{stroke:var(--wc);stroke-width:2.2;stroke-linecap:round}.scene .wx2{fill:var(--wc)}
+.scene .wn{--wc:var(--nv-error)}
+.scene .wt3{fill:var(--wc);stroke:rgba(0,0,0,.25);stroke-width:.5;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--wc) 50%,transparent))}.scene .wx,.scene .wx2{fill:#fff}
 .h-warning .scene .wn,.st-err .scene .wn{display:inline}
 .anim.h-warning .scene .wn,.anim.st-err .scene .wn{animation:dv-pop2 1.6s ease-in-out infinite}
-.scene .pd{transform-box:view-box;transform-origin:27px 58px;transition:transform .6s ease}
-.scene .pdr{fill:currentColor;fill-opacity:.05;stroke:currentColor;stroke-opacity:.45;stroke-width:1.6}
-.dopen .w-washer .pd{transform:scaleX(.28)}
+/* Tür offen: Bullauge ca. 30° angelehnt (verkürzt, Seitenkante, gewölbtes Glas), Scharnierblock, Manschette, Trommel ohne Wasser */
+.w-washer .pdt{fill:none;stroke:#1a1e27;stroke-width:4.4;opacity:0;transition:opacity .3s}
+.w-washer .pgb{opacity:0;transition:opacity .4s}.w-washer .hng{opacity:0;transition:opacity .3s}
+.w-washer .gsm{fill:none;stroke:#5d6573;stroke-width:4.6}.w-washer .gsf{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:.6}.w-washer .gsh{fill:none;stroke:#fff;stroke-opacity:.12;stroke-width:.6}
+.dopen .w-washer .pd{transform:scale(.8,1.03)}
+.dopen .w-washer .pdt,.dopen .w-washer .pgb,.dopen .w-washer .hng{opacity:1}
+.dopen .w-washer .wl,.dopen .w-washer .dlt{opacity:0}
+.w-washer .wl{transition:transform .8s,opacity .5s}
 .scene .lk{display:none;fill:none;stroke:currentColor;stroke-opacity:.8;stroke-width:1.4}.scene .lk rect{fill:currentColor;fill-opacity:.8;stroke:none}
 .dlock .w-washer .lk{display:inline}
 .scene .dd{transform-box:view-box;transition:transform .5s ease}
-.dopen .w-dishwasher .dd{transform:translateY(8px)}
-.h-detergent .w-washer .dw,.h-softener .w-washer .dw,.h-beans .w-coffee .bn,.h-descale .w-coffee .dp{fill:var(--nv-warn);fill-opacity:.95}
-.h-tank .w-coffee .tw{transform:translateY(40px)}.h-tank .w-coffee .tk{stroke:var(--nv-warn);stroke-opacity:1;stroke-width:1.4}
-.anim.h-detergent .w-washer .dw,.anim.h-softener .w-washer .dw,.anim.h-tank .w-coffee .tk,.anim.h-beans .w-coffee .bn,.anim.h-descale .w-coffee .dp{animation:dv-blinko 1.3s ease-in-out infinite}
-/* Kaffeevollautomat */
-.scene .bn{fill:currentColor;fill-opacity:.16;stroke:currentColor;stroke-opacity:.28;stroke-width:1.2}
-.scene .tk{fill:rgba(0,0,0,.22);stroke:currentColor;stroke-opacity:.3;stroke-width:1}
-.scene .tw{fill:currentColor;fill-opacity:.3;transform-box:view-box;transition:transform .8s}
-.scene .dp{fill:currentColor;fill-opacity:.15}
-.scene .sp,.scene .tray{fill:currentColor;fill-opacity:.24}
-.st-heat .w-coffee .pnl{stroke:var(--dc);stroke-opacity:.8}
-.anim.st-heat .w-coffee .pnl{animation:dv-stk 2.6s ease-in-out infinite}
-.anim.st-run .w-coffee .steam path,.anim.st-done.fx .w-coffee .steam path{animation:dv-steam 3s ease-out infinite}
-.anim.st-done.fx .w-coffee .steam path{animation-iteration-count:2}
-.st-run.alt .w-coffee .flow{opacity:.9}
-.anim.st-run.alt .w-coffee .flow{animation:dv-flow .5s linear infinite}
-.anim.st-run.alt .w-coffee .cf{animation:dv-fill 9s ease-out both}
-.st-run:not(.alt) .w-coffee .cf,.st-done .w-coffee .cf{transform:none}
+.h-detergent .w-washer .dw,.h-softener .w-washer .dw{fill:var(--nv-warn);fill-opacity:.95}
+.anim.h-detergent .w-washer .dw,.anim.h-softener .w-washer .dw{animation:dv-blinko 1.3s ease-in-out infinite}
+/* Kaffeevollautomat im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js); Getränkefarben --cc/--cr/--cm aus der Karte */
+.w-coffee{--gx:70px}
+.w-coffee .cft{fill:#0d1016}.w-coffee .c-lc{stop-color:var(--dc)}
+.w-coffee .c-f{stop-color:var(--cm,#f3ece2)}.w-coffee .c-c{stop-color:var(--cc,#7a4e2e)}.w-coffee .c-m{stop-color:color-mix(in srgb,var(--cm,#f3ece2) 82%,var(--cc,#7a4e2e))}
+.w-coffee .ctw{transform-box:view-box;transition:transform .8s}.w-coffee .ctws{fill:#fff;opacity:.35}
+.w-coffee .tk{transition:stroke .3s}.w-coffee .ctm{fill:none;stroke:#fff;stroke-opacity:.25;stroke-width:.6}
+.w-coffee .cbh{fill:#fff;opacity:.14}.w-coffee .ctb rect{fill:#fff;opacity:.14}
+.w-coffee .cscr{transition:fill .6s}
+.w-coffee .ctx{font:600 8.4px Roboto,system-ui,sans-serif;fill:#fff;text-anchor:middle}
+.w-coffee .dp{fill:#fff;opacity:.2}
+.w-coffee .cnr{fill:none;stroke:#000;stroke-opacity:.45;stroke-width:1}.w-coffee .cnl{opacity:0;transition:opacity .6s}
+.w-coffee .cspb,.w-coffee .cnz{stroke:rgba(0,0,0,.4);stroke-width:.4}.w-coffee .csph{fill:#fff;opacity:.35}
+.w-coffee .cgr{stroke:rgba(0,0,0,.35);stroke-width:.4}.w-coffee .cgs{fill:none;stroke:#0b0e13;stroke-width:1.2;stroke-dasharray:3 1.6}
+.w-coffee .cth{fill:#fff;opacity:.1}.w-coffee .ctf{fill:#0b0e13}
+.w-coffee .flow line{stroke:var(--cc,#4a2c19);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:5 2.5;opacity:0;transition:opacity .3s}
+.w-coffee .cfc{fill:var(--cc,#4a2c19)}.w-coffee .cfr{fill:var(--cr,#b07a48)}
+.w-coffee .cff{fill:var(--cm,#efe6d8);transform-box:fill-box;transform-origin:center top;transform:scaleY(var(--mf,0))}
+.w-coffee .cfl{--ch:34px;transform:translateY(calc((1 - var(--cl,0)) * var(--ch)));transition:transform 1s}.w-coffee .cfl.g{--ch:61px}
+.k-water .w-coffee .cfc{opacity:.45}.k-water .w-coffee .cfr{display:none}.k-milk .w-coffee .cfr{opacity:.4}
+.w-coffee .chd{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:1.6}.w-coffee .crim{fill:none;stroke:#fff;stroke-opacity:.28;stroke-width:.6}
+.w-coffee .cgls{display:none}.k-lm .w-coffee .cgls{display:inline}.k-lm .w-coffee .ccup,.k-lm .w-coffee .csteam{display:none}
+.w-coffee .csteam path{fill:none;stroke:#d7dfec;stroke-width:2;stroke-linecap:round;opacity:0;transform-box:fill-box;transform-origin:center bottom}
+.st-off .w-coffee .ctx{display:none}
+.st-ready .w-coffee .cscr,.st-done .w-coffee .cscr,.st-prep .w-coffee .cscr{fill:color-mix(in srgb,var(--dc) 12%,${PAL.screen})}
+.st-run .w-coffee .cscr,.st-heat .w-coffee .cscr,.st-pause .w-coffee .cscr,.st-warm .w-coffee .cscr{fill:color-mix(in srgb,var(--dc) 20%,${PAL.screen})}
+.st-ready .w-coffee .cnl{opacity:.22}.st-run .w-coffee .cnl{opacity:.85}.st-done .w-coffee .cnl,.st-pause .w-coffee .cnl{opacity:.4}
+.st-heat .w-coffee .cscr{stroke:var(--dc);stroke-opacity:.8}.anim.st-heat .w-coffee .cscr{animation:dv-stk 2.6s ease-in-out infinite}
+.anim.st-pause .w-coffee .ctx{animation:dv-blinko 1.4s ease-in-out infinite}
+/* Brüht: zwei Strahlen, Tasse füllt sich (nach Fortschritt, sonst in 9 s), bei Milchgetränken wächst der Schaum, Dampf steigt */
+.st-run .w-coffee .flow line{opacity:.95}
+.anim.st-run .w-coffee .flow line{animation:dv-flow .5s linear infinite}
+.anim.st-run:not(.cprog) .w-coffee .cfl{animation:dv-cfill 9s ease-out both}
+.anim.st-run.milk:not(.cprog) .w-coffee .cff{animation:dv-foam 9s ease-out both}
+.anim.st-run .w-coffee .csteam path,.anim.st-done .w-coffee .csteam path{animation:dv-hz 3.6s ease-out infinite}
+.anim.st-done .w-coffee .csteam path{animation-duration:4.4s}
+.w-coffee .csteam path:nth-child(2){animation-delay:1.2s}.w-coffee .csteam path:nth-child(3){animation-delay:2.4s}
+/* Störung: Display rot; Wassertank leer: Tank leer und blinkt rot; Bohnen/Entkalken: Deckel bzw. Tropfen in der Warnfarbe */
+.st-err .w-coffee .cscr{stroke:var(--nv-error);stroke-opacity:.9}.st-err .w-coffee .ctx{fill:var(--nv-error)}
+.h-tank .w-coffee .ctw{transform:translateY(86px)}.h-tank .w-coffee .tk{stroke:var(--nv-error);stroke-opacity:1;stroke-width:1.2}
+.h-beans .w-coffee .bn{fill:var(--nv-warn)}.h-descale .w-coffee .dp{fill:var(--nv-warn);opacity:1}
+.anim.h-tank .w-coffee .tk,.anim.h-beans .w-coffee .bn,.anim.h-descale .w-coffee .dp{animation:dv-blinko 1.3s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.st-run:not(.cprog) .w-coffee .cfl{--cl:.6}.st-run.milk:not(.cprog) .w-coffee .cff{--mf:.5}}
+/* Futterautomat im Nova-Zeichenstil: Vorrat im Fenster --fl, Napf --fb */
+.w-feeder{--gx:80px}
+.w-feeder .fft{fill:#0d1016}.w-feeder .fsep{fill:#000;opacity:.3}
+.w-feeder .fk0{fill:#1d120a;opacity:.6}
+.w-feeder .kbl path{stroke:#000;stroke-opacity:.45;stroke-width:.45}.w-feeder .kbl ellipse{fill:#fff;opacity:.18}
+.w-feeder .k1 path,.w-feeder .fk1{fill:#c4844a}.w-feeder .k2 path,.w-feeder .fk2{fill:#9c6232}.w-feeder .k3 path,.w-feeder .fk3{fill:#dba468}.w-feeder .k4 path{fill:#b0723e}.w-feeder .k5 path{fill:#7e4f28}
+.w-feeder .fwf{fill:#0b0e13;stroke:rgba(255,255,255,.08);stroke-width:.5}
+.w-feeder .fpl{transform:translateY(calc((1 - var(--fl,.7)) * 80px));transition:transform .8s}
+.h-food .w-feeder .fpl,.empty .w-feeder .fpl{--fl:0}
+.w-feeder .fmk{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.7}
+.w-feeder .fring{fill:#07090d;stroke:rgba(255,255,255,.15);stroke-width:.5}.w-feeder .ftb{fill:#fff;opacity:.14}
+.w-feeder .fch{fill:#05070a;stroke:rgba(255,255,255,.08);stroke-width:.5}
+.w-feeder .f-lc{stop-color:var(--dc)}.w-feeder .fchl{opacity:0;transition:opacity .6s}
+.w-feeder .flip,.w-feeder .fbo{stroke:rgba(0,0,0,.4);stroke-width:.4}
+.w-feeder .fdrop ellipse{opacity:0}
+.w-feeder .fbi{fill:#151921}.w-feeder .fbr{fill:none;stroke:#fff;stroke-opacity:.35;stroke-width:.8}
+.w-feeder .fbh{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:1.4;stroke-linecap:round}
+.w-feeder .fbw{transform:translateY(calc((1 - var(--fb,.2)) * 15px));transition:transform 1s}
+/* Füttert: Licht im Schacht, Brocken fallen in den Napf, der Napf füllt sich; fertig = voller Napf */
+.st-run .w-feeder .fchl{opacity:.75}
+.anim.st-run .w-feeder .fdrop ellipse{animation:dv-kib .9s ease-in infinite}
+.st-run .w-feeder .fbw,.st-done .w-feeder .fbw{--fb:1}
+.anim.st-run .w-feeder .fbw{animation:dv-fbowl 8s ease-out both}
+.anim.st-run .w-feeder .fled{animation:dv-blinko 1.4s ease-in-out infinite}
+/* Futter leer / Störung: Fenster leer, LED blinkt rot */
+.g.dv.empty .w-feeder .fled,.g.dv.h-food .w-feeder .fled,.g.dv.st-err .w-feeder .fled{fill:var(--nv-error);fill-opacity:1}
+.anim.empty .w-feeder .fled,.anim.h-food .w-feeder .fled,.anim.st-err .w-feeder .fled{animation:dv-blinko 1s ease-in-out infinite}
+.empty .scene .wn,.low .scene .wn{display:inline}
+/* Trinkbrunnen im Nova-Zeichenstil: Wasserstand im Sichtfenster --wl, läuft nie „fertig“ */
+.w-fountain{--gx:40px}
+.w-fountain .b-wc{stop-color:var(--dc)}
+.w-fountain .bft{fill:#0d1016}.w-fountain .bsep{fill:none;stroke:#000;stroke-opacity:.45;stroke-width:.8}.w-fountain .bsh{fill:none;stroke:#fff;stroke-opacity:.08;stroke-width:.6}
+.w-fountain .bwf{fill:#07090d;stroke:rgba(255,255,255,.1);stroke-width:.5}.w-fountain .bmk{fill:none;stroke:#fff;stroke-opacity:.35;stroke-width:.6}
+.w-fountain .bwl{transform:translateY(calc((1 - var(--wl,.8)) * 40px));transition:transform .8s}.h-water .w-fountain .bwl{--wl:.12}
+.w-fountain .bws{fill:#fff;opacity:.5}
+.w-fountain .btop{stroke:rgba(255,255,255,.18);stroke-width:.5}.w-fountain .brec{fill:#0b0e13}
+.w-fountain .bdr{fill:none;stroke:#fff;stroke-opacity:.14;stroke-width:.6}
+.w-fountain .bdish{transition:opacity .6s}.st-off .w-fountain .bdish,.st-pause .w-fountain .bdish{opacity:.6}
+.w-fountain .bnz{stroke:rgba(0,0,0,.4);stroke-width:.3}
+.w-fountain .brip ellipse{fill:none;stroke:#fff;stroke-opacity:.45;stroke-width:.5;opacity:0;transform-box:fill-box;transform-origin:center}
+.w-fountain .bflow{fill:none;stroke:#fff;stroke-opacity:0;stroke-width:.7;stroke-dasharray:3 5;transition:stroke-opacity .6s}
+.w-fountain .bdome{fill:var(--dc);fill-opacity:.65;opacity:0;transform-box:fill-box;transform-origin:center bottom;transition:opacity .4s}
+.w-fountain .bdhl{fill:none;stroke:#fff;stroke-opacity:.35;stroke-width:.6;stroke-linecap:round;opacity:0;transition:opacity .4s}
+.w-fountain .bdrop circle{fill:var(--dc);opacity:0}
+.w-fountain .bjet{fill:var(--dc);fill-opacity:.7;opacity:0;transform-box:fill-box;transform-origin:center bottom;transition:opacity .4s}
+.w-fountain .bfi{transform-box:fill-box;transform-origin:center}
+/* Modus-LED: ruhiges Leuchten in der Modusfarbe, kein Blinken */
+.dv .w-fountain .led{fill:#5b6372;fill-opacity:.5;transition:fill .4s,fill-opacity .4s}
+.m-normal.dv .w-fountain .led,.m-smart.dv .w-fountain .led{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
+.m-normal{--mc:var(--nova-mode-normal-color,var(--nv-a1))}.m-smart{--mc:var(--nova-mode-smart-color,var(--nv-a4))}
+.m-normal.dv .w-feeder .fled,.m-smart.dv .w-feeder .fled{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
+.w-fountain .bfi rect,.w-fountain .bfi path{fill:none;stroke:#fff;stroke-opacity:.3;stroke-width:.8;stroke-linejoin:round}
+/* Läuft: kleiner Sprudel wippt, Ringe laufen über die Schale, das Wasser fließt sanft über den Rand ab; aus/Pause = Wasser steht */
+.st-run .w-fountain .bdome,.st-run .w-fountain .bdhl,.st-run .w-fountain .bjet{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
+.anim.st-run .w-fountain .bdome{animation:dv-bob 2.4s ease-in-out infinite}
+.anim.st-run .w-fountain .bjet{animation:dv-jet2 1.8s ease-in-out infinite}
+.anim.st-run .w-fountain .brip ellipse{animation:dv-rip 3.3s ease-out infinite}
+.anim.st-run .w-fountain .bdrop circle{animation:dv-bdrop 1.8s cubic-bezier(.3,.1,.6,1) infinite}
+.anim.st-run .w-fountain .bflow{animation:dv-bflow 6s linear infinite}
+/* Wasser niedrig: Stand im Fenster sinkt, Ausrufezeichen; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
+.h-water .scene .wn{display:inline}
+.st-err .w-fountain .bdome,.st-err .w-fountain .bdhl{opacity:0}
+.h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px var(--fc))}
+.anim.h-filter .w-fountain .bfi{animation:dv-fpulse 1.6s ease-in-out infinite}
 .anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
-.scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .steam path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}
-.scene .drops circle:nth-child(3),.scene .heat path:nth-child(3),.scene .steam path:nth-child(3),.scene .puff path:nth-child(3){animation-delay:1s}
+.scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}
+.scene .drops circle:nth-child(3),.scene .heat path:nth-child(3),.scene .puff path:nth-child(3){animation-delay:1s}
 .scene .drops circle:nth-child(4){animation-delay:.25s}.scene .drops circle:nth-child(5){animation-delay:.75s}.scene .drops circle:nth-child(6){animation-delay:1.15s}
 .scene .drops circle:nth-child(odd){--dx:-6px}.scene .drops circle:nth-child(even){--dx:6px}
 /* Unsichtbar (außerhalb des Bildschirms, Tab im Hintergrund, Kartenauswahl): alles steht */
@@ -7486,6 +8732,9 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important}}
 @keyframes dv-tumble{0%{transform:rotate(0)}40%{transform:rotate(220deg)}50%{transform:rotate(220deg)}90%,100%{transform:rotate(0)}}
 @keyframes dv-spin{to{transform:rotate(360deg)}}
+@keyframes dv-sarm{0%{transform:scaleX(1)}25%{transform:scaleX(.08)}50%{transform:scaleX(-1)}75%{transform:scaleX(.08)}100%{transform:scaleX(1)}}
+@keyframes dv-puff{0%{opacity:0;transform:translate(0,0) scale(.6) rotate(0)}30%{opacity:.32}70%{opacity:.18}100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(1.5) rotate(14deg)}}
+@keyframes dv-jet{0%{opacity:0;transform:translate(0,0)}20%{opacity:.85}100%{opacity:0;transform:translate(var(--dx,0),-20px)}}
 @keyframes dv-wave{to{transform:translateX(-25px)}}
 @keyframes dv-arm{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
 @keyframes dv-drop{0%{opacity:0;transform:translate(0,0)}20%{opacity:.9}100%{opacity:0;transform:translate(var(--dx,0),-46px)}}
@@ -7493,6 +8742,10 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 @keyframes dv-heat{0%{opacity:0;transform:translateY(4px)}40%{opacity:.85}100%{opacity:0;transform:translateY(-8px)}}
 @keyframes dv-glow{0%,100%{opacity:.25}50%{opacity:.8}}
 @keyframes dv-stk{0%,100%{stroke-opacity:.25}50%{stroke-opacity:.95}}
+@keyframes dv-coil{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes dv-wglo{0%,100%{opacity:.3}50%{opacity:.5}}
+@keyframes dv-hz{0%{opacity:0;transform:translateY(4px) scaleY(.6)}30%{opacity:.45}100%{opacity:0;transform:translateY(-10px) scaleY(1.2)}}
+@keyframes dv-apuff{0%{opacity:0;transform:translate(0,0) scale(.6)}25%{opacity:.6}100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(1.8)}}
 @keyframes dv-glo{0%,100%{opacity:.18}50%{opacity:.5}}
 @keyframes dv-blinko{0%,100%{opacity:1}50%{opacity:.2}}
 @keyframes dv-pop2{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
@@ -7500,7 +8753,16 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 @keyframes dv-jolt{0%,100%{transform:translateY(0)}35%{transform:translateY(6px)}65%{transform:translateY(-1px)}}
 @keyframes dv-steam{0%{opacity:0;transform:translateY(4px)}35%{opacity:.6}100%{opacity:0;transform:translateY(-12px)}}
 @keyframes dv-flow{to{stroke-dashoffset:-7}}
-@keyframes dv-fill{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+@keyframes dv-cfill{from{transform:translateY(var(--ch))}to{transform:translateY(0)}}
+@keyframes dv-foam{0%,45%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+@keyframes dv-kib{0%{opacity:0;transform:translateY(-2px)}15%,80%{opacity:1}100%{opacity:0;transform:translateY(12px)}}
+@keyframes dv-fbowl{from{transform:translateY(15px)}to{transform:translateY(0)}}
+@keyframes dv-bob{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.2)}}
+@keyframes dv-rip{0%{opacity:.6;transform:scale(.4)}100%{opacity:0;transform:scale(4.2)}}
+@keyframes dv-bdrop{0%{opacity:0;transform:translate(0,0)}15%{opacity:.95}35%{transform:translate(calc(var(--dx,0) * .4),-4px)}90%{opacity:.8}100%{opacity:0;transform:translate(var(--dx,0),var(--dy,6px))}}
+@keyframes dv-jet2{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.86)}}
+@keyframes dv-bflow{to{stroke-dashoffset:-64}}
+@keyframes dv-fpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.18)}}
 @keyframes dv-pulse{0%{opacity:.7;transform:scale(.85)}100%{opacity:0;transform:scale(1.25)}}
 @keyframes dv-pop{0%{opacity:0;transform:scale(.4)}70%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes dv-check{from{stroke-dashoffset:16}to{stroke-dashoffset:0}}
@@ -7516,7 +8778,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      if (c.device_type && !TYPES[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee oder generic sein");
+      if (c.device_type && !TYPES2[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee, feeder, fountain oder generic sein");
       this._c = { ...GDEF, ...c, controls: [].concat(c.controls || []).map(toObj).filter((o) => o.entity), hints: [].concat(c.hints || []).map(toObj).filter((o) => o.entity) };
       this._ids = entityIds(this._c);
       this._built = false;
@@ -7567,6 +8829,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
         this._io.observe(this);
       } else this._inView = true;
       this._tick();
+      if (this._fat && this._e) this._update();
     }
     disconnectedCallback() {
       document.removeEventListener("visibilitychange", this._onVis);
@@ -7575,32 +8838,57 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       this._tick();
       Object.values(this._pend || {}).forEach((p) => clearTimeout(p.t));
       clearTimeout(this._ft);
+      clearTimeout(this._fdt);
     }
     _S(id) {
       return id ? this._h?.states[id] : null;
     }
     // Zustandsgruppe (SORDER) oder off
     _cls() {
-      const c = this._c, s = this._S(c.entity);
+      const k = this._cls0(), c = this._c, pw = this._S(c.power);
+      return k === "off" && TYPES2[typeOf(c)].nodone && pw?.state === "on" ? "run" : k;
+    }
+    _cls0() {
+      const c = this._c, s = this._S(c.entity), fd = this._feed();
+      if (fd) return fd;
       if (!s) return "off";
       const v = String(s.state).toLowerCase();
       if (["binary_sensor", "switch", "input_boolean"].includes(dom(c.entity)) && !c.running_states) return v === "on" ? "run" : "off";
       for (const k of SORDER) {
         const own = c[SKEY[k]] != null ? list(c[SKEY[k]]).map((x) => x.toLowerCase()) : STATES[k];
-        if (own.includes(v)) return k;
+        if (own.includes(v)) return k === "done" && TYPES2[typeOf(c)].nodone ? "off" : k;
       }
       return "off";
+    }
+    // Futterautomat ohne „füttert“-Zustand: steigt der Zähler „Fütterungen“, kurz „läuft“ (Animation), danach eine Weile „fertig“
+    _feed() {
+      const c = this._c;
+      if (!TYPES2[typeOf(c)].feed || !c.feed_count) return null;
+      const s = this._S(c.feed_count), v = ok(s) && NUMRE.test(s.state) ? +s.state : null;
+      if (v != null) {
+        if (this._fc != null && v > this._fc) this._fat = Date.now();
+        this._fc = v;
+      }
+      if (!this._fat) return null;
+      const dt = Date.now() - this._fat, end = FEED_MS + Math.max(0, +(c.feed_done_minutes ?? 10) || 0) * 6e4;
+      clearTimeout(this._fdt);
+      if (dt >= end) {
+        this._fat = 0;
+        return null;
+      }
+      this._fdt = setTimeout(() => this._update(), (dt < FEED_MS ? FEED_MS : end) - dt + 50);
+      return dt < FEED_MS ? "run" : "done";
     }
     _build() {
       this._built = true;
       const c = this._c, t = typeOf(c), r = this.shadowRoot || this.attachShadow({ mode: "open" }), cmp = c.layout === "compact";
-      const rv = roleVars(c.color || TYPES[t].color);
+      const rv = roleVars(c.color || TYPES2[t].color);
       const anim = c.animation !== false && !cmp;
-      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${DCSS2}:host([hidden]){display:none}</style>
-<div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${SCENE_CSS}${DCSS2}:host([hidden]){display:none}</style>
+<div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--hc:${roleVars(c.heat_color || "accent-2").c}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ""}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
 ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
-<div class="ctls"></div>${c.start_at === "home_connect" && c.start ? SA : ""}<div class="acts"></div>`}<div class="als"></div></div>`;
+<div class="ctls"></div>${c.start_at === "home_connect" && c.start ? SA : ""}${["select", "input_select"].includes(dom(c.start)) && !c.start_option ? PICK : ""}<div class="acts"></div>`}<div class="als"></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
         g: q(".g"),
@@ -7615,6 +8903,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         rm: q(".rm") || q(".rmc"),
         kp: q(".kp"),
         kt: q(".kt"),
+        wd: q(".wdt"),
+        cx: q(".ctx"),
         en: q(".en"),
         ctls: q(".ctls"),
         acts: q(".acts"),
@@ -7622,12 +8912,20 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         sa: q(".sa"),
         sat: q(".sa input"),
         san: q(".sa .now"),
-        sah: q(".sa .sah")
+        sah: q(".sa .sah"),
+        pk: q(".pk"),
+        pkv: q(".pk .v"),
+        pkk: q(".pk .k")
       };
       const e = this._e;
       press(e.ic, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
       if (cmp) press(e.name.parentElement, { tap: () => this._act({ entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: c.entity, hold_action: c.hold_action }, "hold") });
       e.als.addEventListener("click", (ev) => {
+        const r2 = ev.target.closest?.(".alr");
+        if (r2) {
+          const id = r2.dataset.r, d = dom(id);
+          return this._call(d, ["button", "input_button"].includes(d) ? "press" : ["script", "scene"].includes(d) ? "turn_on" : "turn_off", id, {}, r2.textContent);
+        }
         const el2 = ev.target.closest?.(".al[data-e]");
         if (el2) this._act({ entity: el2.dataset.e }, "tap", true);
       });
@@ -7642,6 +8940,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           this._at = null;
           this._update();
         }, isolate: true });
+      }
+      if (e.pk) {
+        press(e.pk.querySelector(".mi"), { tap: () => this._pick(-1), isolate: true });
+        press(e.pk.querySelector(".pl"), { tap: () => this._pick(1), isolate: true });
       }
       if (e.acts) {
         this._ab = {};
@@ -7729,6 +9031,20 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._update();
     }
     // Start über ein Select (Home Connect: „Aktives Programm“ setzen) – taugt nicht zum Fortsetzen
+    // Optionen des Start-Selects ohne leere Einträge; gewählte Option (in der Karte gemerkt, sonst der aktuelle Wert bzw. die erste)
+    _pickOpts() {
+      return (this._S(this._c.start)?.attributes.options || []).filter((x) => x !== "" && x != null);
+    }
+    _picked() {
+      const o = this._pickOpts(), cur2 = this._S(this._c.start)?.state;
+      return o.includes(this._pk) ? this._pk : o.includes(cur2) ? cur2 : o[0];
+    }
+    _pick(d) {
+      const o = this._pickOpts(), i = o.indexOf(this._picked());
+      if (!o.length) return;
+      this._pk = o[Math.max(0, Math.min(o.length - 1, i + d))];
+      this._update();
+    }
     _selStart() {
       return ["select", "input_select"].includes(dom(this._c.start));
     }
@@ -7758,8 +9074,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       if (at && !this._h.entities?.[c.start]?.device_id) return "Starten um: Gerät der Start-Entität nicht gefunden";
       if (c.remote_start && rs && rs.state !== "on") return c.remote_start_text || "Fernstart ist aus – an der Maschine aktivieren";
       if (!s || s.state === "unavailable") return "Start gerade nicht möglich (Entität nicht verfügbar)";
+      if (this._selStart() && !c.start_option) return this._picked() ? null : "Start: keine Auswahl möglich";
       if (this._selStart()) {
-        if (!c.start_option) return "Start: Programm-Quelle fehlt (Editor → Bedienung)";
         const o = this._S(c.start_option);
         if (!ok(o)) return "Erst ein Programm wählen";
         if (!(s.attributes.options || []).includes(o.state)) return `Programm „${fmtOpt(this._h, o, o.state)}“ kann nicht gestartet werden`;
@@ -7779,7 +9095,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         this._at = null;
         return Promise.resolve(this._h.callService("home_connect", "start_selected_program", { device_id: this._h.entities[c.start].device_id, b_s_h_common_option_finish_in_relative: fin })).catch((err) => this._flash(`${what}: ${err?.message || err}`)).finally(() => this._update());
       }
-      if (d === "select" || d === "input_select") return this._call(d, "select_option", id, { option: this._S(c.start_option)?.state }, what);
+      if (d === "select" || d === "input_select") return this._call(d, "select_option", id, { option: c.start_option ? this._S(c.start_option)?.state : this._picked() }, what);
       if (d === "button" || d === "input_button") return this._call(d, "press", id, {}, what);
       if (d === "script" || d === "scene") return this._call(d, "turn_on", id, {}, what);
       if (d === "switch" || d === "input_boolean") return this._call(d, k === "stop" || k === "pause" ? "turn_off" : "turn_on", id, {}, what);
@@ -7813,7 +9129,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _update() {
       const h = this._h, c = this._c, e = this._e;
       if (!h || !e) return;
-      const t = typeOf(c), TY = TYPES[t], s = this._S(c.entity), cls = this._cls(), act = isAct(cls);
+      const t = typeOf(c), TY = TYPES2[t], s = this._S(c.entity), cls = this._cls(), act = isAct(cls);
       const na = !!c.entity && (!s || s.state === "unavailable");
       if (this._prev && this._prev !== cls) this._fx = cls === "done";
       if (cls !== "done") this._fx = false;
@@ -7836,7 +9152,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const raw = s ? fmtState(h, s) : "";
       const own = c[TKEY[cls]];
       const def = cls === "run" ? alt && TY.alt || TY.run : TY[cls] || TXT[cls];
-      const stx = !c.entity ? "Status-Entität im Editor wählen" : na ? "Nicht verfügbar" : own || (["ready", "heat", "warm"].includes(cls) || raw === s.state && def ? def : nice(s.state, raw));
+      const stx = !c.entity ? "Status-Entität im Editor wählen" : na ? "Nicht verfügbar" : own || (["ready", "heat", "warm"].includes(cls) || TY.nodone || raw === s.state && def ? def : nice(s.state, raw));
       e.sub.textContent = stx;
       e.sub.classList.toggle("er", cls === "err");
       if (e.pw) {
@@ -7860,14 +9176,36 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         e.kp.style.strokeDashoffset = String(100 - (f ?? 0) * 100);
         if (e.kt) e.kt.textContent = r > 0 ? fmtDisp(r) : "";
       }
+      if (e.wd) e.wd.textContent = cls === "done" ? "End" : cls === "off" ? "" : rem != null ? fmtDisp(rem) : "– –";
+      if (TY.drink) this._coffee(cls, p, TY);
+      if (TY.mode) {
+        const m = this._S(c.mode), v = ok(m) ? String(m.state).toLowerCase() : "";
+        const md = cls === "off" ? "off" : !ok(m) ? cls === "run" ? "normal" : "off" : /smart|intelligen|auto|eco|spar/.test(v) ? "smart" : ["off", "aus", "standby"].includes(v) ? "off" : "normal";
+        ["normal", "smart", "off"].forEach((k) => e.g.classList.toggle(`m-${k}`, k === md));
+      }
+      if (TY.level) {
+        const lv = levelOf(this._S(c.fill_level), TY.binEmpty);
+        e.g.style.setProperty(t === "feeder" ? "--fl" : "--wl", lv == null ? "" : lv.toFixed(2));
+        e.g.classList.toggle("empty", lv === 0);
+        e.g.classList.toggle("low", lv != null && lv > 0 && lv <= 0.2);
+      }
+      if (this._fx && !this._sw) {
+        this._sw = true;
+        sweep(e.g);
+      }
+      if (!this._fx) this._sw = false;
       if (p != null) e.bari.style.width = `${p}%`;
       if (c.layout === "compact") {
         e.ic.style.setProperty("--p", `${p ?? 0}%`);
         e.sub.textContent = [pg && act ? pg : stx, p != null && act ? `${Math.round(p)} %` : ""].filter(Boolean).join(" · ");
         e.rm.textContent = rem != null ? fmtDur(rem) : "";
       } else {
-        e.pg.textContent = pg || stx;
-        const phx = c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : "";
+        const md = TY.filter ? this._S(c.mode) : null;
+        const mt = ok(md) ? nice(md.state, fmtState(h, md)).replace(/^./, (x) => x.toUpperCase()) : null;
+        const lt = mt ?? (TY.lvl ? levelText(this._S(c.fill_level), TY.lvl) : null);
+        e.pg.textContent = TY.lvl ? lt ?? "" : pg || stx;
+        const pu = this._S(c.entity), pon = ok(pu) && pu.state === "on";
+        const phx = mt ? cls === "off" ? "" : pon ? "Pumpe läuft" : "Pumpe pausiert" : lt ? TY.lvl[0] : c.phase && ok(ph) ? nice(ph.state, fmtState(h, ph)) : "";
         e.ph.hidden = !phx;
         e.ph.textContent = phx;
         e.rm.textContent = rem != null && cls !== "wait" ? `noch ${fmtDur(rem)}` : p != null && act ? `${Math.round(p)} %` : "";
@@ -7948,6 +9286,15 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const at = this._atCalc();
       b.start.lastChild.textContent = at && !at.err ? `${c.start_name || "Start"} um ${this._clock(at.start.getTime())}` : c.start_name || "Start";
       const e = this._e;
+      if (e.pk) {
+        const v = this._picked(), o = this._pickOpts(), i = o.indexOf(v), s = this._S(c.start);
+        e.pk.hidden = act || !v;
+        e.pkk.textContent = c.start_option_name || TYPES2[typeOf(c)].pick || "Auswahl";
+        const g = v && /(\d+(?:[.,]\d+)?)\s*g\b/i.exec(v);
+        e.pkv.textContent = g ? `${g[1]} g` : v && s ? fmtOpt(this._h, s, v) : "";
+        e.pk.querySelector(".mi").classList.toggle("dis", i <= 0);
+        e.pk.querySelector(".pl").classList.toggle("dis", i >= o.length - 1);
+      }
       if (e.sa) {
         e.sa.hidden = act;
         if (e.sat !== this.shadowRoot.activeElement) e.sat.value = this._at || "";
@@ -7962,9 +9309,22 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       });
       this._e.acts.hidden = Object.values(b).every((x) => x.hidden);
     }
+    // Kaffee: Getränk aus „Getränk“, Programm oder Start-Programm → Farben, Tasse/Glas, Milchschaum, Füllung, Display-Text
+    _coffee(cls, p, TY) {
+      const c = this._c, g = this._e.g, src = [c.drink, c.program, c.start_option].map((x) => this._S(x)).find((x) => ok(x) && x.state !== "off");
+      const D = drinkOf(src ? `${src.state} ${fmtState(this._h, src)}` : ""), k = D[0], col = CK[k], milk = MILK.has(k);
+      DRINKS.forEach(([x]) => g.classList.toggle(`k-${x}`, x === k));
+      ["--cc", "--cr", "--cm"].forEach((v, i) => g.style.setProperty(v, col[i]));
+      g.classList.toggle("milk", milk);
+      const prog = cls === "run" && p != null, f = cls === "done" ? 1 : prog ? p / 100 : 0;
+      g.classList.toggle("cprog", prog);
+      g.style.setProperty("--cl", f.toFixed(2));
+      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f - 0.45) / 0.55)).toFixed(2) : "0");
+      if (this._e.cx) this._e.cx.textContent = { off: "", err: "Störung", done: "Fertig", heat: "Heizt auf", warm: "Warm", wait: "Später" }[cls] ?? (src ? D[2] : cls === "run" ? TY.run : "Bereit");
+    }
     _alerts(cls, stx) {
-      const c = this._c, h = this._h, t = typeOf(c), TY = TYPES[t], g = this._e.g, out = [], on = /* @__PURE__ */ new Set();
-      const add = (lvl, ic, msg, e, hit) => out.push(`<div class="al ${lvl}${hit ? " hit" : ""}"${e ? ` data-e="${esc(e)}"` : ""}><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span></div>`);
+      const c = this._c, h = this._h, t = typeOf(c), TY = TYPES2[t], g = this._e.g, out = [], on = /* @__PURE__ */ new Set();
+      const add = (lvl, ic, msg, e, hit, r) => out.push(`<div class="al ${lvl}${hit ? " hit" : ""}"${e ? ` data-e="${esc(e)}"` : ""}><ha-icon icon="${esc(ic)}"></ha-icon><span>${esc(msg)}</span>${r && ok(this._S(r.id)) || r && dom(r.id) === "button" ? `<span class="alr" data-r="${esc(r.id)}">${esc(r.name)}</span>` : ""}</div>`);
       if (this._msg) add("error", "mdi:alert-circle-outline", this._msg);
       if (cls === "err") add("error", "mdi:alert-circle-outline", stx, c.entity, true);
       const cn = this._S(c.connection);
@@ -7982,12 +9342,15 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         if (!alertHit(a, s)) return;
         const an = can.includes(a.anim) ? a.anim : null, H = HANIM[an];
         if (an) on.add(an);
+        const fd = an === "filter" ? this._S(c.filter_days) : null, fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
+        const fx = fdn != null ? `noch ${fdn} ${fdn === 1 ? "Tag" : "Tage"}` : "";
         add(
           ["error", "info"].includes(a.level) ? a.level : "warning",
           a.icon || (H && an !== "warning" ? H[2] : s?.attributes.icon) || "mdi:information-outline",
-          a.message || H && H[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`,
+          [a.message || H && H[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
           a.entity,
-          !!an
+          !!an,
+          a.reset && { id: a.reset, name: a.reset_name || "Zurücksetzen" }
         );
       });
       Object.keys(HANIM).forEach((k) => g.classList.toggle(`h-${k}`, on.has(k)));
@@ -8002,6 +9365,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _tick() {
       const vis3 = !!this._inView && !document.hidden && !this._quiet && this.isConnected;
       this._e?.g.classList.toggle("still", !vis3);
+      if (vis3 && !this._vis && this._c.animation !== false) sweep(this._e?.g);
+      this._vis = vis3;
       const run = vis3 && this._e && ["run", "wait"].includes(this._prev) && (this._c.end_time || this._c.remaining);
       if (run && !this._tm) this._tm = setInterval(() => this._update(), 3e4);
       if (!run && this._tm) {
@@ -8013,21 +9378,26 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       return runAction(this, o, kind, info);
     }
   };
-  define("geraet-card", NovaApplianceCard, { name: "Nova Gerät Card", description: "Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.", documentationURL: docUrl("nova-gerät-card") });
+  define("geraet-card", NovaApplianceCard, { name: "Nova Gerät Card", description: "Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.", documentationURL: docUrl("nova-gerät-card") });
   var ST = { entity: {} };
   var BTN = { entity: { domain: ["button", "input_button", "script", "scene", "switch", "input_boolean"] } };
   var GGEN = [
-    sel("device_type", Object.entries(TYPES).map(([k, v]) => [k, k === "generic" ? "Allgemein" : v.label])),
+    sel("device_type", Object.entries(TYPES2).map(([k, v]) => [k, k === "generic" ? "Allgemein" : v.label])),
     g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
     { name: "entity", selector: ST },
     { name: "power", selector: { entity: { domain: ["switch", "input_boolean"] } } }
   ];
   var GPROG = (t) => [
     { name: "program", selector: ST },
+    ...TYPES2[t].drink ? [{ name: "drink", selector: ST }] : [],
+    ...TYPES2[t].level ? [{ name: "fill_level", selector: { entity: { domain: ["sensor", "binary_sensor", "number", "input_number"] } } }] : [],
+    ...TYPES2[t].filter ? [g2({ name: "filter", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "filter_days", selector: { entity: { domain: ["sensor", "number", "input_number"] } } })] : [],
+    ...TYPES2[t].mode ? [{ name: "mode", selector: { entity: { domain: ["select", "input_select", "sensor", "switch", "input_boolean"] } } }] : [],
+    ...TYPES2[t].feed ? [g2({ name: "feed_count", selector: { entity: { domain: ["sensor", "counter", "number", "input_number"] } } }, NUM("feed_done_minutes"))] : [],
     g2({ name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } }, { name: "duration", selector: ST }),
     g2({ name: "remaining", selector: ST }, { name: "end_time", selector: ST }),
     { name: "phase", selector: ST },
-    ...TYPES[t].alt ? [{ name: "phase_states", selector: { text: { multiple: true } }, context: { t } }] : []
+    ...TYPES2[t].alt ? [{ name: "phase_states", selector: { text: { multiple: true } }, context: { t } }] : []
   ];
   var GCTL = (it) => {
     const d = dom(it.entity);
@@ -8051,7 +9421,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var GINFO = (t) => [
     g2({ name: "remote_start", selector: ST }, { name: "remote_start_text", selector: T }),
     g2({ name: "door", selector: ST }, { name: "door_text", selector: T }),
-    ...TYPES[t].dview ? [{ name: "door_anim", selector: { boolean: {} } }] : [],
+    ...TYPES2[t].dview ? [{ name: "door_anim", selector: { boolean: {} } }] : [],
     g2({ name: "connection", selector: ST }, { name: "connection_text", selector: T })
   ];
   var GHINT = (t) => [
@@ -8060,7 +9430,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     g2({ name: "message", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
     g2({ name: "state", selector: T }, { name: "state_not", selector: T }),
     g2(NUM("above"), NUM("below")),
-    sel("level", [["warning", "Warnung"], ["error", "Fehler"], ["info", "Info"]])
+    sel("level", [["warning", "Warnung"], ["error", "Fehler"], ["info", "Info"]]),
+    g2({ name: "reset", selector: BTN }, { name: "reset_name", selector: T })
   ];
   var GSTATE = [
     { name: "running_states", selector: { text: { multiple: true } } },
@@ -8080,10 +9451,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     sel("layout", [["full", "Voll"], ["compact", "Kompakt (läuft gerade)"]]),
     g2({ name: "hide_when_off", selector: { boolean: {} } }, { name: "animation", selector: { boolean: {} } }),
     g2(ROLE("color"), { name: "glow", selector: { boolean: {} } }),
-    ...t === "airfryer" ? [{ name: "window", selector: { boolean: {} } }] : []
+    ...t === "airfryer" ? [g2(ROLE("heat_color"), { name: "window", selector: { boolean: {} } })] : []
   ];
   var GACTS = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
-  var PHASE_LBL = { washer: "Zustände „schleudert“ (schnelle Trommel)", coffee: "Zustände „brüht“ (Kaffee läuft in die Tasse)" };
+  var PHASE_LBL = { dishwasher: "Zustände „trocknet“ (Dampf statt Sprüharm)", washer: "Zustände „schleudert“ (schnelle Trommel)" };
   var GLABELS = {
     ...BASE_LABELS,
     device_type: "Gerätetyp",
@@ -8094,6 +9465,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     duration: "Gesamtdauer",
     remaining: "Restzeit",
     end_time: "Endzeit",
+    drink: "Getränk (optional)",
+    fill_level: "Füllstand",
+    feed_count: "Fütterungen (Zähler)",
+    mode: "Modus (LED)",
+    filter: "Filter (%)",
+    filter_days: "Filter: Resttage",
+    feed_done_minutes: "„Fertig“ zeigen (Minuten)",
     phase: "Phase (optional)",
     phase_states: "Sonder-Zustände",
     display: "Darstellung",
@@ -8119,6 +9497,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     connection_text: "Hinweis ohne Verbindung",
     message: "Meldung",
     level: "Stufe",
+    reset: "Reset-Knopf im Hinweis",
+    reset_name: "Text auf dem Reset-Knopf",
+    start_option_name: "Name der Auswahl",
     running_states: "Zustände „läuft“",
     paused_states: "Zustände „pausiert“",
     waiting_states: "Zustände „startet später“",
@@ -8143,7 +9524,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     animation: "Animation (aus = Standbild)",
     color: "Farbe",
     glow: "Rahmen leuchtet beim Laufen",
-    window: "Sichtfenster"
+    window: "Sichtfenster",
+    heat_color: "Glühfarbe (Heizspirale)"
   };
   var GHELPERS = {
     device_type: "Bestimmt nur Symbol, Texte, Standardfarbe und Animation",
@@ -8151,6 +9533,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     power: "Optional: runder Knopf oben rechts",
     program: "Laufendes Programm (Select oder Sensor). Leer bzw. ohne Wert = Programm für den Start",
     progress: "Leer = aus Restzeit und Gesamtdauer berechnet",
+    drink: "Leer = Programm. Erkennt Espresso, Kaffee, Cappuccino, Latte (Macchiato), Milch, Heißwasser – Kaffeefarbe, Milchschaum und Glas passen sich an",
+    fill_level: "Prozent-Sensor (Vorrat bzw. Wasser im Bild) oder binary_sensor „niedrig“ (an = niedrig). 0 % = leer",
+    filter: "Erscheint im Hinweis „Filter wechseln“, z. B. sensor.…_filter_percent",
+    filter_days: "„noch N Tage“ im Hinweis „Filter wechseln“, z. B. sensor.…_filter_days_remaining",
+    mode: "z. B. select.trinkbrunnen_modus. LED: Smart grün, aus grau, sonst (Normal) blau. Leer = LED folgt dem Zustand. Farben per Theme: --nova-mode-normal-color / --nova-mode-smart-color",
+    feed_count: "Für Geräte ohne Zustand „füttert“, z. B. sensor.futterautomat_times_dispensed: steigt der Wert, zeigt die Karte die Fütterung",
+    feed_done_minutes: "So lange bleibt nach einer Fütterung „Fertig“ mit vollem Napf stehen. Leer = 10",
     duration: "Für den Fortschritt ohne Fortschritts-Sensor und für „Starten um“ (Programmdauer vor dem Start)",
     remaining: "Sensor mit s/min/h oder H:MM. Endzeit wird daraus berechnet",
     end_time: "Zeitpunkt-Sensor. Restzeit wird daraus berechnet",
@@ -8175,11 +9564,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     heat_states: "Leer = heating, preheating, preheat. Ruhiges Glühen statt Lauf-Animation",
     warm_states: "Leer = maintain (Philips), keep_warm, warming. Schwaches Glühen",
     text_running: "Leer = Übersetzung von HA, sonst Text zum Gerätetyp",
+    heat_color: "Farbe von Heizspirale, Fenster-Licht und Fuge beim Garen (Standard: Akzent 2)",
     window: "Aus = Gerät ohne Fenster: Hitze steigt oben auf, der Knopfring zeigt alles an",
     hide_when_off: "Gut für die Startseite: Karte nur, solange etwas läuft. Im Bearbeitungsmodus bleibt sie sichtbar",
     color: "Farbrolle aus dem Theme (Fortschritt, Start-Knopf, Animation)",
     message: "Leer = Name: Zustand",
     state: "Hinweis bei diesem Zustand (mehrere mit Komma)",
+    reset: "z. B. button.…_reset_filter – erscheint rechts im Hinweis. Schalter werden ausgeschaltet",
+    start_option_name: "Leer = „Portion“ (Futterautomat) bzw. „Auswahl“",
     state_not: "Hinweis bei jedem Zustand außer diesem, z. B. 0 bei einem Fehlercode"
   };
   var gvis = (c) => `${typeOf(c)}|${["select", "input_select"].includes(dom(c.start))}|${!c.resume}`;
@@ -8191,10 +9583,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const w = r.querySelector(".wrap");
       const strip2 = (c) => {
         Object.entries(GDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
-        if (c.color === TYPES[typeOf(c)].color) delete c.color;
+        if (c.color === TYPES2[typeOf(c)].color) delete c.color;
         return c;
       };
-      const data = { ...GDEF, color: TYPES[t].color, ...c0 };
+      const data = { ...GDEF, color: TYPES2[t].color, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
         const c = strip2(merge(this._config, names(schema), v));
         this._emit(c);
@@ -8229,6 +9621,1913 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   __publicField(NovaApplianceCardEditor, "openSections", ["general"]);
   define("geraet-card-editor", NovaApplianceCardEditor);
 
+  // src/printer-messages.js
+  var MSG = {
+    heat: { label: "Aufheizen", icon: "mdi:fire", lvl: "info", text: "Heizt auf", fx: "heat" },
+    cool: { label: "Abkühlen", icon: "mdi:snowflake-thermometer", lvl: "info", text: "Kühlt ab", fx: "cool" },
+    level: { label: "Bett leveln", icon: "mdi:grid", lvl: "info", text: "Bett wird vermessen", fx: "level" },
+    wipe: { label: "Düse reinigen / wischen", icon: "mdi:broom", lvl: "info", text: "Düse wird gereinigt", fx: "wipe" },
+    calib: { label: "Kalibrieren (Extrusion, Flow, Genauigkeit)", icon: "mdi:tune-vertical", lvl: "info", text: "Kalibriert", fx: "calib" },
+    scan: { label: "Prüfen / Scannen (Erste Schicht, Druckplatte, Kamera)", icon: "mdi:radar", lvl: "info", text: "Prüft", fx: "scan" },
+    home: { label: "Referenzfahrt / Achsen", icon: "mdi:axis-arrow", lvl: "info", text: "Referenzfahrt", fx: "home" },
+    change: { label: "Filament- und AMS-Wechsel", icon: "mdi:swap-horizontal", lvl: "info", text: "Filament wird gewechselt", fx: "change" },
+    empty: { label: "Filament leer", icon: "mdi:printer-3d-nozzle-alert-outline", lvl: "warning", text: "Filament ist leer", fx: "empty" },
+    tangle: { label: "Filament verheddert / klemmt", icon: "mdi:printer-3d-nozzle-alert-outline", lvl: "warning", text: "Filament klemmt oder ist verheddert", fx: "tangle" },
+    ams: { label: "AMS-Fehler", icon: "mdi:tray-alert", lvl: "warning", text: "Problem mit dem AMS", fx: "ams" },
+    spaghetti: { label: "Spaghetti / Erste Schicht fehlerhaft", icon: "mdi:alert-octagon-outline", lvl: "error", text: "Spaghetti erkannt", fx: "spaghetti" },
+    shift: { label: "Objekt verrutscht / Schritte verloren", icon: "mdi:arrow-left-right-bold-outline", lvl: "error", text: "Objekt verrutscht", fx: "shift" },
+    clog: { label: "Düse verstopft", icon: "mdi:printer-3d-nozzle-alert", lvl: "error", text: "Düse verstopft", fx: "clog" },
+    door: { label: "Tür offen", icon: "mdi:door-open", lvl: "warning", text: "Tür ist offen", fx: "door" },
+    lid: { label: "Deckel offen", icon: "mdi:arrow-collapse-up", lvl: "warning", text: "Deckel ist offen", fx: "lid" },
+    fan: { label: "Lüfterfehler", icon: "mdi:fan-alert", lvl: "error", text: "Lüfter dreht nicht richtig", fx: "fan" },
+    temp: { label: "Temperaturfehler", icon: "mdi:thermometer-alert", lvl: "error", text: "Temperatur außerhalb des Bereichs", fx: "temp" },
+    warn: { label: "Unbekannte Meldungen", icon: "mdi:alert-outline", lvl: "warning", text: "Meldung vom Drucker", fx: "warn" }
+  };
+  var STAGES = {
+    heatbed_preheating: "heat",
+    heating_hotend: "heat",
+    waiting_for_heatbed_temperature: "heat",
+    heating_chamber: "heat",
+    preparing_hotend: "heat",
+    thermal_preconditioning: "heat",
+    checking_extruder_temperature: "heat",
+    waiting_chamber_temperature_equalize: "heat",
+    bed_level_high_temperature: "level",
+    cooling_chamber: "cool",
+    heated_bedcooling: "cool",
+    cooling_nozzle: "cool",
+    auto_bed_leveling: "level",
+    bed_level_phase_1: "level",
+    bed_level_phase_2: "level",
+    measuring_surface: "level",
+    scanning_bed_surface: "scan",
+    cleaning_nozzle_tip: "wipe",
+    moving_toolhead_above_purge_chute: "wipe",
+    pre_extrusion_before_printing: "wipe",
+    calibrating_extrusion: "calib",
+    calibrating_extrusion_flow: "calib",
+    print_calibration_lines: "calib",
+    calibrate_nozzle_offset: "calib",
+    absolute_accuracy_calibration: "calib",
+    check_absolute_accuracy_before_calibration: "calib",
+    check_absolute_accuracy_after_calibration: "calib",
+    calibrating_motor_noise: "home",
+    motor_noise_showoff: "home",
+    sweeping_xy_mech_mode: "home",
+    homing_toolhead: "home",
+    moving_toolhead_to_center_of_heatbed: "home",
+    calibrating_cutter_model_offset: "calib",
+    homing_blade_holder: "home",
+    calibrating_blade_holder_position: "calib",
+    hotend_pick_place_test: "home",
+    inspecting_first_layer: "scan",
+    identifying_build_plate_type: "scan",
+    calibrating_micro_lidar: "scan",
+    calibrating_live_view_camera: "scan",
+    calibrate_birdeye_camera: "scan",
+    check_birdeye_camera_position: "scan",
+    calibrating_camera_offset: "scan",
+    build_plate_alignment_detection: "scan",
+    heatbed_surface_foreign_object_detection: "scan",
+    heatbed_underside_foreign_object_detection: "scan",
+    check_plaform: "scan",
+    hotend_type_detection: "scan",
+    calibrating_detection_nozzle_clumping: "scan",
+    check_quick_release: "scan",
+    measuring_rotary_attachment: "scan",
+    laser_calibration: "calib",
+    changing_filament: "change",
+    filament_loading: "change",
+    filament_unloading: "change",
+    preparing_ams: "change",
+    check_material: "change",
+    check_material_position: "change",
+    check_door_and_cover: "door",
+    // Pausen mit Grund
+    paused_filament_runout: ["empty", 1],
+    paused_ams_lost: ["ams", 1],
+    paused_skipped_step: ["shift", 1],
+    paused_first_layer_error: ["spaghetti", 1],
+    paused_nozzle_clog: ["clog", 1],
+    paused_nozzle_filament_covered_detected: ["clog", 1],
+    paused_low_fan_speed_heat_break: ["fan", 1],
+    paused_nozzle_temperature_malfunction: ["temp", 1],
+    paused_heat_bed_temperature_malfunction: ["temp", 1],
+    paused_chamber_temperature_control_error: ["temp", 1],
+    paused_front_cover_falling: ["warn", 1],
+    paused_cutter_error: ["warn", 1]
+  };
+  var PAUSE_STAGES = ["paused_user", "paused_user_gcode", "m400_pause"];
+  var QUIET_STAGES = ["printing", "idle", "offline", "unknown", "active_arc_fitting", "purifying_chamber_air"];
+  var CODES = {
+    "0700": "ams",
+    "0701": "ams",
+    "0702": "ams",
+    "0703": "ams",
+    "1200": "ams",
+    "1201": "ams",
+    "1800": "ams",
+    "1801": "ams"
+  };
+  var WORDS = [
+    ["spaghetti", /spaghetti|first layer|erste[nr]? schicht|foreign object|fremdkörper|fremdobjekt/i],
+    ["shift", /layer shift|verschoben|verrutscht|skipped step|schritte? (verloren|übersprungen)|step loss|position.*(lost|verloren)/i],
+    ["clog", /clog|verstopf|nozzle.*(wrapped|covered|clump)|düse.*(umwickelt|bedeckt|verklumpt)|extrusion.*(abnormal|anomal)/i],
+    ["empty", /run(s)? out|runout|aufgebraucht|ist leer|\bleer\b|no filament|kein filament/i],
+    ["tangle", /tangl|verheddert|verwickelt|klemmt|feed.*(fail|resistance)|zuführ.*(fehl|widerstand)|fehler beim einziehen|failed to (feed|pull|extrude)/i],
+    ["door", /\bdoor\b|\btür\b/i],
+    ["lid", /\blid\b|top cover|deckel/i],
+    ["fan", /\bfan\b|lüfter|luefter/i],
+    ["temp", /temperat|thermistor|heater|heizung|overheat|überhitz/i],
+    ["ams", /\bams\b/i],
+    ["level", /level|nivellier/i],
+    ["wipe", /purge|wipe|abstreif|nozzle.*clean|düse.*reinig/i],
+    ["calib", /calibrat|kalibr/i],
+    ["home", /homing|referenzfahrt/i]
+  ];
+  var CRE = /(?:HMS_)?([0-9A-F]{4})[_-]?([0-9A-F]{4})(?:[_-]?([0-9A-F]{4})[_-]?([0-9A-F]{4}))?/i;
+  var codeOf = (v) => {
+    const m = String(v ?? "").match(CRE);
+    return m ? [m[1], m[2], m[3], m[4]].filter(Boolean).join("_").toUpperCase() : null;
+  };
+  function classify(code, text) {
+    let hit = null;
+    if (code) {
+      for (const k of Object.keys(CODES)) if (code.startsWith(k) && (!hit || k.length > hit.length)) hit = k;
+    }
+    const w = text ? WORDS.find(([, re]) => re.test(text)) : null;
+    if (hit && (hit.length > 4 || !w)) return CODES[hit];
+    return w ? w[0] : hit ? CODES[hit] : "warn";
+  }
+  function parseErrors(s, lvl) {
+    if (!s || !["on", "problem"].includes(s.state)) return [];
+    const a = s.attributes || {}, groups = {};
+    for (const [k, v] of Object.entries(a)) {
+      if (["friendly_name", "device_class", "icon", "Count", "count"].includes(k) || v == null || typeof v === "object") continue;
+      const m = k.match(/^(\d+)[-_ ](.+)$/), n = m ? m[1] : "0", f = (m ? m[2] : k).toLowerCase();
+      (groups[n] ||= {})[f] = String(v);
+    }
+    const out = Object.values(groups).map((g) => {
+      const raw = g.error || g.message || g.text || g.description || g.desc || "";
+      const code = codeOf(g.code || g.hms_code || g.error_code || raw);
+      const text = raw.replace(/^\s*(?:HMS_)?[0-9A-F_-]{9,}\s*[:–-]?\s*/i, "").trim();
+      const sev = String(g.severity || "").toLowerCase();
+      const l = /fatal|serious|error/.test(sev) ? "error" : /info|common|warn/.test(sev) ? "warning" : lvl;
+      return { key: classify(code, text), text, code, lvl: l };
+    }).filter((x) => x.text || x.code);
+    return out.length ? out : [{ key: "warn", text: "", code: null, lvl }];
+  }
+
+  // src/printer.js
+  var ENTS = {
+    status: ["sensor", ["print_status", "druckstatus"]],
+    stage: ["sensor", ["stage", "current_stage", "aktueller_arbeitsschritt"]],
+    progress: ["sensor", ["print_progress", "druckfortschritt"]],
+    remaining: ["sensor", ["remaining_time", "verbleibende_zeit"]],
+    end_time: ["sensor", ["end_time", "endzeit"]],
+    layer: ["sensor", ["current_layer", "aktuelle_schicht"]],
+    layers: ["sensor", ["total_layers", "gesamtzahl_der_schichten"]],
+    nozzle_target: ["sensor", ["target_nozzle_temp", "target_nozzle_temperature", "zieltemperatur_der_duse"]],
+    nozzle: ["sensor", ["nozzle_temp", "nozzle_temperature", "temperatur_der_duse"]],
+    bed_target: ["sensor", ["target_bed_temp", "target_bed_temperature", "zieltemperatur_vom_druckbett"]],
+    bed: ["sensor", ["bed_temp", "bed_temperature", "druckbetttemperatur"]],
+    file: ["sensor", ["subtask_name", "task_name", "name_der_aufgabe", "gcode_file", "gcode_dateiname"]],
+    hms: ["binary_sensor", ["hms", "hms_errors", "hms_fehler"]],
+    print_error: ["binary_sensor", ["print_error", "druckfehler"]],
+    door: ["binary_sensor", ["door_open", "door", "tur_offen", "tuer_offen"]],
+    online: ["binary_sensor", ["online"]],
+    light: ["light", ["chamber_light", "druckraumbeleuchtung"]],
+    pause: ["button", ["pause", "druckvorgang_anhalten"]],
+    resume: ["button", ["resume", "druckvorgang_fortsetzen"]],
+    stop: ["button", ["stop", "druckvorgang_beenden"]]
+  };
+  var EKEYS = Object.keys(ENTS);
+  var isTray = (s) => !!s && s.attributes && "color" in s.attributes && "type" in s.attributes && "remain" in s.attributes;
+  var isExt = (h, id) => /external|extern/i.test(`${id} ${h.devices?.[h.entities?.[id]?.device_id]?.name || ""}`);
+  var printerDev = (h, c) => c.device || EKEYS.map((k) => h?.entities?.[c[k]]?.device_id).find(Boolean) || null;
+  function detect(h, dev) {
+    const out = {};
+    if (!h?.entities || !dev) return out;
+    const ents = Object.values(h.entities).filter((e) => e.device_id === dev), used = /* @__PURE__ */ new Set();
+    for (const k of EKEYS) {
+      const [d, keys] = ENTS[k];
+      const cand = ents.filter((e) => dom(e.entity_id) === d && !used.has(e.entity_id));
+      let hit = null;
+      for (const key of keys) {
+        hit = cand.find((e) => e.translation_key === key) || cand.find((e) => {
+          const o = e.entity_id.split(".")[1];
+          return o === key || o.endsWith(`_${key}`);
+        });
+        if (hit) break;
+      }
+      if (hit) {
+        out[k] = hit.entity_id;
+        used.add(hit.entity_id);
+      }
+    }
+    const fans = ents.filter((e) => dom(e.entity_id) === "fan").map((e) => e.entity_id).sort();
+    if (fans.length) out.fans = fans;
+    const cam = ents.find((e) => ["image", "camera"].includes(dom(e.entity_id)) && (/(kamera|camera)$/.test(e.entity_id) || /camera/.test(e.translation_key || "")));
+    if (cam) out.camera = cam.entity_id;
+    return out;
+  }
+  function trays(h, c, dev) {
+    const units = /* @__PURE__ */ new Map();
+    let ext = c.external_spool || null;
+    const add = (id) => {
+      const s = h.states[id];
+      if (!isTray(s)) return;
+      if (isExt(h, id)) {
+        ext ||= id;
+        return;
+      }
+      const d = h.entities?.[id]?.device_id || "x";
+      if (!units.has(d)) units.set(d, []);
+      units.get(d).push(id);
+    };
+    if (c.ams_trays?.length) c.ams_trays.forEach(add);
+    else if (dev && h.devices && h.entities) {
+      const subs = new Set(Object.values(h.devices).filter((d) => d.via_device_id === dev).map((d) => d.id));
+      Object.values(h.entities).filter((e) => subs.has(e.device_id) && dom(e.entity_id) === "sensor").map((e) => e.entity_id).sort().forEach(add);
+    }
+    const nm = (d) => {
+      const x = h.devices?.[d];
+      return x?.name_by_user || x?.name || "AMS";
+    };
+    return { units: [...units].map(([d, ids]) => ({ name: nm(d), slots: ids.slice(0, 4).map((id) => slotOf(h.states[id], id)) })).sort((a, b) => a.name.localeCompare(b.name)), ext: ext && h.states[ext] ? slotOf(h.states[ext], ext) : null };
+  }
+  function slotOf(s, id) {
+    const a = s?.attributes || {}, col = typeof a.color === "string" && /^#[0-9a-f]{6}/i.test(a.color) ? a.color.slice(0, 7) : null;
+    const r = Number(a.remain);
+    return { id, c: col, mat: a.type || "", name: a.name || s?.state || "", rem: isNaN(r) || r < 0 ? null : Math.min(100, r), act: !!a.active, empty: !!a.empty || s?.state === "empty" };
+  }
+  var PDEF = {
+    ams: "auto",
+    animation: true,
+    glow: true,
+    color: "accent-1",
+    show_progress: true,
+    show_remaining: true,
+    show_end_time: true,
+    show_layer: true,
+    show_nozzle: true,
+    show_bed: true,
+    show_file: true,
+    show_stage: true,
+    show_message: true,
+    show_ams_list: true,
+    show_controls: true,
+    show_light: true,
+    show_display: true,
+    show_fans: true,
+    camera_mode: "always",
+    show_switches: true,
+    stop_confirm: "Druck wirklich abbrechen?"
+  };
+  var CLS = ["off", "idle", "heat", "prep", "print", "pause", "done", "error", "cool"];
+  var CTXT = { off: "Aus", idle: "Bereit", heat: "Heizt auf", prep: "Bereitet vor", print: "Druckt", pause: "Pausiert", done: "Fertig", error: "Fehler", cool: "Kühlt ab" };
+  var BAD2 = /* @__PURE__ */ new Set(["unavailable", "unknown", "none", ""]);
+  var ok2 = (s) => !!s && !BAD2.has(s.state);
+  var num = (s) => ok2(s) && NUMRE.test(s.state) ? +s.state : null;
+  var SECS2 = { s: 1, sec: 1, min: 60, m: 60, h: 3600, d: 86400 };
+  var fmtDur2 = (sec) => {
+    const m = Math.max(0, Math.round(sec / 60));
+    return m < 1 ? "< 1 min" : m < 60 ? `${m} min` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h`;
+  };
+  var fmtShort = (sec) => {
+    const m = Math.max(0, Math.round(sec / 60));
+    return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+  };
+  var OBJ_H = 44;
+  var PLATE = 232;
+  var DEMO_STATES = [["print", "Druckt"], ["heat", "Heizt auf"], ["prep", "Bereitet vor"], ["pause", "Pausiert"], ["done", "Fertig"], ["error", "Fehler"], ["cool", "Kühlt ab"], ["idle", "Leerlauf"], ["off", "Aus"]];
+  var DEMO_AMS = [
+    { name: "AMS A", slots: [
+      { c: "#3d8bf5", mat: "PLA", name: "PLA Basic Blau", rem: 82, act: true },
+      { c: "#f5f5f0", mat: "PETG", name: "PETG Weiß", rem: 55 },
+      { c: "#4caf6a", mat: "PLA", name: "PLA Matt Grün", rem: 23 },
+      { c: "#e5533d", mat: "TPU", name: "TPU Rot", rem: 8 }
+    ] },
+    { name: "AMS B", slots: [{ c: "#222428", mat: "PLA", name: "PLA Schwarz", rem: 90 }, { c: "#f5b83d", mat: "PLA", name: "PLA Gelb", rem: 40 }, { c: null, mat: "", name: "", rem: null, empty: true }, { c: "#9b6bd6", mat: "PETG", name: "PETG Lila", rem: 67 }] }
+  ];
+  var SLOTX = [72, 108, 144, 180];
+  var SPOOL = SLOTX.map((x, i) => `<g class="sl s${i}"><clipPath id="psc${i}"><rect class="fcl" x="${x - 11.8}" y="59" width="23.6" height="32" rx="3"/></clipPath>
+<rect class="fg" x="${x - 15}" y="57" width="3.2" height="34" rx="1.4"/><rect class="fg" x="${x + 11.8}" y="57" width="3.2" height="34" rx="1.4"/>
+<rect class="fg" x="${x - 12}" y="71" width="24" height="8" rx="2"/><rect class="fl" x="${x - 11.8}" y="59" width="23.6" height="32" rx="3"/>
+<g clip-path="url(#psc${i})"><rect class="cy" x="${x - 12}" y="55" width="24" height="40"/><rect class="wnd" x="${x - 12}" y="55" width="24" height="40"/><rect class="rot" x="${x - 12}" y="50" width="24" height="6"/></g>
+<g class="sw"><path d="M${x} 62 l6 10.5 h-12 z"/><rect x="${x - 0.6}" y="65.5" width="1.2" height="3.6" rx=".6"/><circle cx="${x}" cy="70.4" r=".7"/></g></g>`).join("");
+  var FEED = SLOTX.map((x, i) => `<g class="sl s${i}"><rect class="fd" x="${x - 4}" y="91" width="8" height="2.4" rx="1.2"/><text class="mt" x="${x}" y="100.5"></text>
+<rect class="sled" x="${x - 7}" y="104.5" width="14" height="2" rx="1"/></g>`).join("");
+  var SCENE = `<svg viewBox="0 0 260 300" aria-hidden="true"><defs>
+<linearGradient id="pbd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="sb1"/><stop offset="1" class="sb2"/></linearGradient>
+<linearGradient id="psh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".14"/></linearGradient>
+<linearGradient id="pgl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a9c6ff" stop-opacity=".11"/><stop offset=".55" stop-color="#5d7397" stop-opacity=".05"/><stop offset="1" stop-color="#0c111c" stop-opacity=".38"/></linearGradient>
+<linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3344"/><stop offset="1" stop-color="#10141b"/></linearGradient>
+<radialGradient id="plt" cx=".5" cy="0" r=".9"><stop offset="0" stop-color="#fff6e4" stop-opacity=".5"/><stop offset="1" stop-color="#fff6e4" stop-opacity="0"/></radialGradient>
+<radialGradient id="pgw"><stop offset="0" stop-color="#ffc061" stop-opacity=".95"/><stop offset=".4" stop-color="#ff8a2a" stop-opacity=".5"/><stop offset="1" stop-color="#ff7a1a" stop-opacity="0"/></radialGradient>
+<linearGradient id="pdm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb6d8" stop-opacity=".3"/><stop offset=".6" stop-color="#3a4660" stop-opacity=".35"/><stop offset="1" stop-color="#141821" stop-opacity=".55"/></linearGradient>
+<linearGradient id="pcy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".4"/><stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset=".75" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
+<linearGradient id="prt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="pob" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset=".38" stop-color="#fff" stop-opacity=".28"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient>
+<linearGradient id="pgs" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="phd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b4252"/><stop offset="1" stop-color="#20252f"/></linearGradient>
+<pattern id="pwn" width="3" height="60" patternUnits="userSpaceOnUse"><rect width=".6" height="60" fill="#000" fill-opacity=".12"/></pattern><pattern id="ply" width="6" height="2" patternUnits="userSpaceOnUse"><rect width="6" height=".9" fill="#000" fill-opacity=".2"/></pattern>
+<clipPath id="pci"><rect x="46" y="136" width="160" height="146" rx="4"/></clipPath>
+<clipPath id="poc"><rect class="ocr" x="90" y="${PLATE - OBJ_H}" width="70" height="${OBJ_H}"/></clipPath>
+<clipPath id="pvs"><path d="M107 232 C 103 218, 116 208, 113 198 L113 188 L133 188 L133 198 C 130 208, 143 218, 139 232 Z"/></clipPath>
+</defs>
+<ellipse class="shd" cx="128" cy="294" rx="104" ry="5"/>
+<g class="xsp"><path class="tube" d="M196 116 C 210 104, 228 128, 228 152"/><path class="fil" d="M196 116 C 210 104, 228 128, 228 152"/>
+<circle class="xf" cx="228" cy="190" r="32"/><circle class="xw" cx="228" cy="190" r="26"/><circle class="xc" cx="228" cy="190" r="26"/><circle class="xh" cx="228" cy="190" r="9"/></g>
+<g class="ams"><path class="tube" d="M204 95 C 230 95, 232 119, 210 129"/><path class="fil" d="M204 95 C 230 95, 232 119, 210 129"/></g>
+<rect class="body" x="36" y="116" width="180" height="176" rx="8"/><rect class="sheen" x="36" y="116" width="180" height="176" rx="8"/>
+<rect class="edge" x="40" y="117" width="172" height="1.2" rx=".6"/>
+<g class="vents"><rect x="182" y="285" width="2.4" height="4" rx="1"/><rect x="187" y="285" width="2.4" height="4" rx="1"/><rect x="192" y="285" width="2.4" height="4" rx="1"/><rect x="197" y="285" width="2.4" height="4" rx="1"/></g>
+<g clip-path="url(#pci)">
+<rect class="inner" x="46" y="136" width="160" height="146"/><rect class="lightc" x="46" y="136" width="160" height="120"/>
+<rect class="zrod" x="56" y="138" width="2.6" height="144"/><rect class="zrod" x="193.4" y="138" width="2.6" height="144"/>
+<rect class="chute" x="48" y="194" width="9" height="20" rx="1.5"/>
+<g class="bed"><rect class="carr" x="66" y="236" width="120" height="7" rx="2"/><rect class="plate" x="60" y="232" width="132" height="4.5" rx="1.2"/>
+<rect class="pheat" x="60" y="232" width="132" height="4.5" rx="1.2"/><rect class="plateh" x="60" y="232" width="132" height=".9"/>
+<g class="obj"><g clip-path="url(#poc)"><path class="ob" d="M107 232 C 103 218, 116 208, 113 198 L113 188 L133 188 L133 198 C 130 208, 143 218, 139 232 Z"/>
+<path class="oly" d="M107 232 C 103 218, 116 208, 113 198 L113 188 L133 188 L133 198 C 130 208, 143 218, 139 232 Z"/>
+<path class="osh" d="M107 232 C 103 218, 116 208, 113 198 L113 188 L133 188 L133 198 C 130 208, 143 218, 139 232 Z"/>
+<g clip-path="url(#pvs)"><rect class="gls" x="88" y="184" width="14" height="52"/></g></g></g>
+<g class="cal"><rect x="70" y="230.4" width="16" height="1.6" rx=".8"/><rect x="90" y="230.4" width="16" height="1.6" rx=".8"/><rect x="110" y="230.4" width="16" height="1.6" rx=".8"/><rect x="130" y="230.4" width="16" height="1.6" rx=".8"/><rect x="150" y="230.4" width="16" height="1.6" rx=".8"/></g>
+<g class="dots"><circle cx="72" cy="231" r="1.7"/><circle cx="96" cy="231" r="1.7"/><circle cx="120" cy="231" r="1.7"/><circle cx="144" cy="231" r="1.7"/><circle cx="168" cy="231" r="1.7"/></g>
+<path class="spag" d="M96 231 c4 -14 10 6 14 -8 s-12 -10 -4 -16 s14 12 18 2 s-6 -18 6 -12 s4 16 12 6 s-2 -14 8 -8 M104 228 c6 -6 2 -16 12 -12 s10 10 16 0 s4 -12 10 -4"/></g>
+<rect class="fresh" x="113" y="187.3" width="20" height="1.4" rx=".7"/>
+<rect class="rail" x="48" y="155" width="156" height="5" rx="2"/><rect class="railh" x="48" y="155" width="156" height="1"/>
+<rect class="blk" x="47" y="151" width="9" height="13" rx="2"/><rect class="blk" x="196" y="151" width="9" height="13" rx="2"/>
+<g class="head"><g class="hz"><path class="tube" d="M131 148 C 131 138, 110 140, 100 128"/><path class="fil" d="M131 148 C 131 138, 110 140, 100 128"/>
+<rect class="hd" x="106" y="147" width="34" height="33" rx="4"/><rect class="hdt" x="108.5" y="148.6" width="29" height="1.3" rx=".65"/>
+<circle class="fan" cx="123" cy="163" r="9.5"/><g class="bl"><ellipse cx="123" cy="158.6" rx="2.1" ry="4"/><ellipse cx="123" cy="158.6" rx="2.1" ry="4" transform="rotate(72 123 163)"/><ellipse cx="123" cy="158.6" rx="2.1" ry="4" transform="rotate(144 123 163)"/><ellipse cx="123" cy="158.6" rx="2.1" ry="4" transform="rotate(216 123 163)"/><ellipse cx="123" cy="158.6" rx="2.1" ry="4" transform="rotate(288 123 163)"/></g>
+<circle class="hub" cx="123" cy="163" r="2.2"/>
+<rect class="heater" x="118" y="180" width="10" height="4.5" rx="1"/><path class="nz" d="M120 184.5 h6 l-2 3.4 h-2 z"/>
+<circle class="glow" cx="123" cy="189" r="7.5"/><rect class="beam" x="122.4" y="189" width="1.2" height="43"/></g></g>
+<g class="wisp"><path d="M78 226 q4 -6 0 -12 q-4 -6 0 -12"/><path d="M123 216 q4 -6 0 -12 q-4 -6 0 -12"/><path d="M168 226 q4 -6 0 -12 q-4 -6 0 -12"/></g>
+<rect class="led" x="64" y="137.6" width="124" height="1.8" rx=".9"/>
+<rect class="tint" x="46" y="136" width="160" height="146"/><rect class="dim" x="46" y="136" width="160" height="146"/></g>
+<g class="door"><rect class="dedge" x="46" y="136" width="4" height="146" rx="1.5"/><rect class="glass" x="46" y="136" width="160" height="146" rx="4"/>
+<g clip-path="url(#pci)"><path class="refl" d="M70 136 h26 l-50 104 v-52 z"/><path class="refl" d="M104 136 h7 l-65 135 v-14 z"/></g>
+<rect class="handle" x="196" y="192" width="3" height="34" rx="1.5"/></g>
+<circle class="stled" cx="203" cy="126" r="1.5"/>
+<g class="top"><rect class="lid" x="38" y="112" width="176" height="5" rx="2.5"/>
+<g class="ams">${SPOOL}<rect class="dome" x="48" y="51" width="156" height="42" rx="16"/><path class="dhl" d="M64 53 h40 l-30 36 h-14 z"/>
+<rect class="abase" x="46" y="87" width="160" height="24" rx="7"/>${FEED}<text class="unit" x="201" y="108"></text></g></g>
+<g class="tab"><ellipse class="dsh" cx="70" cy="146" rx="28" ry="2.4"/>
+<path class="tbz" d="M42 116 h56 a4 4 0 0 1 4 4 l-1.5 20 a4 4 0 0 1 -4 3.6 h-53 a4 4 0 0 1 -4 -3.6 l-1.5 -20 a4 4 0 0 1 4 -4 z"/>
+<rect class="tbh" x="44" y="116.8" width="52" height="1" rx=".5"/><rect class="tsc" x="45" y="119.5" width="50" height="20" rx="2.5"/>
+<text class="tt" x="48.5" y="132.5"></text><rect class="tbar" x="70" y="125" width="22.5" height="2" rx="1"/><rect class="tfill" x="70" y="125" width="0" height="2" rx="1"/>
+<text class="ts" x="70" y="133.5"></text><path class="tgl" d="M47 120 h14 l-6 19 h-8 z"/></g>
+<g class="bpos"><g class="bdg"><circle class="bc" r="9.5"/>
+<path class="b-ok" d="M-4.2 0.2 l2.9 2.9 l5.6 -6"/>
+<g class="b-wn"><path d="M0 -5.6 l5.6 9.7 h-11.2 z"/><rect x="-.65" y="-2.4" width="1.3" height="3.6" rx=".65"/><circle cx="0" cy="2.6" r=".8"/></g>
+<g class="b-tp"><rect x="-1.6" y="-6" width="3.2" height="8" rx="1.6"/><circle cx="0" cy="3.4" r="2.8"/></g>
+<g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g></g>
+</svg>`;
+  var PCSS3 = `
+.g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
+--sb1:var(--nova-printer-color-light,#3a4252);--sb2:var(--nova-printer-color,#191d26)}
+.g.pr.glow.on{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.pr .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 55%,transparent)}
+.pr .hd small.er{color:var(--nv-error);opacity:1}
+.pr .hb.li.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 50%,transparent)}
+.pr .demo{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--nv-chip);opacity:.75}
+.mid{display:flex;gap:14px;align-items:center;min-width:0}
+.scene{flex:none;width:48%;max-width:300px;min-width:150px;color:var(--nv-fg)}
+.scene svg{display:block;width:100%;height:auto;overflow:visible}
+.inf{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.big{display:flex;align-items:baseline;gap:8px;min-width:0}
+.pc{font-size:28px;font-weight:600;line-height:1;letter-spacing:-.01em}.pc small{font-size:15px;font-weight:500;opacity:.7;margin-left:2px}
+.ph{font-size:12.5px;opacity:.7;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--dc);border-radius:4px;transition:width 1s}
+.tm{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;flex-wrap:wrap}.tm .rm{font-weight:600}.tm .en{opacity:.7}.tm:empty{display:none}
+.kvs .kv{padding:6px 0}.kvs .kv:first-child{border-top:none}
+.kvs .v b{font-weight:600;opacity:1}
+.kvs .fi .k{flex:none}.kvs .fi .v{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.xtra{display:flex;flex-direction:column;gap:10px}.xtra:empty{display:none}
+.xtra .fans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}
+.xtra .row{cursor:pointer}.xtra .row .ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);flex:none}
+.xtra .row.on .ic{background:var(--dc);color:var(--dc-fg)}.xtra .row .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.xtra .row b,.xtra .row small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xtra .row b{font-weight:600;font-size:13px}.xtra .row small{opacity:.65;font-size:11.5px}
+.xtra .na{opacity:.45}
+@container (max-width:340px){.xtra .fans{grid-template-columns:1fr}}
+.cam{border-radius:16px;overflow:hidden;background:rgba(0,0,0,.3);cursor:pointer}.cam[hidden]{display:none}
+.cam img{display:block;width:100%;height:auto}
+.amsl{display:flex;flex-direction:column;gap:8px}.amsl:empty{display:none}
+.au{display:flex;align-items:center;gap:8px;min-width:0}
+.au .an{font-size:11px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;width:54px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.au .ss{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
+.au.x .ss{grid-template-columns:minmax(0,1fr)}
+.slot{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:12px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.06);min-width:0;font-size:11.5px}
+.slot .sc{--r:0%;width:20px;height:20px;border-radius:50%;flex:none;position:relative;background:conic-gradient(var(--c,#777) var(--r),rgba(255,255,255,.15) 0)}
+.slot .sc::after{content:'';position:absolute;inset:4px;border-radius:50%;background:var(--c,#777);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.slot.emp .sc{background:repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 2px,transparent 2px 5px)}.slot.emp .sc::after{display:none}
+.slot .st{min-width:0;display:flex;flex-direction:column;line-height:1.2}.slot b,.slot small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot b{font-weight:600}.slot small{opacity:.65;font-size:10.5px}
+.slot.act{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 20%,transparent)}
+.slot.wn{border-color:color-mix(in srgb,var(--nv-warn) 70%,transparent)}
+.als:empty{display:none}.pr .al[data-e]{cursor:pointer}.pr .al small{opacity:.7;margin-left:auto;font-size:11px;white-space:nowrap}
+.acts{display:flex;gap:8px}.acts:empty,.acts[hidden]{display:none}
+.ab{flex:1;min-width:0;height:44px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);font-size:14px;font-weight:600;transition:background-color .2s,opacity .2s,transform .2s}
+.ab ha-icon{--mdc-icon-size:22px}.ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--dc) 40%,transparent)}
+.ab.na{opacity:.4;pointer-events:none}.ab:active{transform:scale(.95)}
+@container (max-width:380px){.mid{flex-direction:column;align-items:stretch}.scene{width:100%;max-width:240px;align-self:center}.au .ss{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Zeichnung */
+.scene .sb1{stop-color:var(--sb1)}.scene .sb2{stop-color:var(--sb2)}
+.scene .shd{fill:#000;opacity:.35}
+.scene .body{fill:url(#pbd);stroke:rgba(255,255,255,.18);stroke-width:.6;transition:stroke .4s}.scene .sheen{fill:url(#psh);opacity:.4}.scene .edge{fill:#fff;opacity:.12}
+.scene .vents rect{fill:rgba(0,0,0,.35)}
+.scene .inner{fill:url(#pin)}.scene .lightc{fill:url(#plt);opacity:0;transition:opacity .5s}.scene .led{fill:#fff6e4;opacity:0;transition:opacity .5s}
+.scene .dim{fill:#05070a;opacity:.4;transition:opacity .5s}
+.lit .scene .lightc,.lit .scene .led{opacity:1}.lit .scene .dim{opacity:0}
+.scene .zrod{fill:#4a5265}.scene .chute{fill:#3a4152}
+.scene .carr{fill:#2f3644}.scene .plate{fill:#b38c52}.scene .plateh{fill:#e2c08b}
+.scene .pheat{fill:#ff7a1a;opacity:0}
+.scene .ob{fill:var(--fc)}.scene .oly{fill:url(#ply)}.scene .osh{fill:url(#pob)}.scene .gls{fill:url(#pgs);opacity:0}
+.scene .obj{display:none;transform-box:view-box;transform-origin:123px 232px;transition:transform .6s}.has-obj .scene .obj{display:inline}
+.scene .bed{transition:transform 1.2s ease}
+.scene .fresh{fill:color-mix(in srgb,var(--fc) 50%,#fff);opacity:0}
+.scene .cal rect{fill:var(--fc);opacity:0;transform-box:fill-box;transform-origin:left center}
+.scene .dots circle{fill:var(--dc);opacity:0}
+.scene .spag{fill:none;stroke:var(--fc);stroke-width:1.3;stroke-linecap:round;opacity:0;stroke-dasharray:240;stroke-dashoffset:240}
+.scene .rail{fill:#59627a}.scene .railh{fill:rgba(255,255,255,.25)}.scene .blk{fill:#3a4252}
+.scene .tube{fill:none;stroke:rgba(235,240,250,.4);stroke-width:2.6;stroke-linecap:round}
+.scene .fil{fill:none;stroke:var(--fc);stroke-width:1.1;stroke-linecap:round;stroke-dasharray:4 3;opacity:.9}
+.scene .head{transform-box:view-box;transition:transform 1s ease}.scene .hz{transform-box:view-box}
+.scene .hd{fill:url(#phd);stroke:rgba(255,255,255,.15);stroke-width:.5}.scene .hdt{fill:rgba(255,255,255,.14)}
+.scene .fan{fill:#161a22;stroke:rgba(255,255,255,.12);stroke-width:.5}.scene .bl ellipse{fill:#4a5366}.scene .hub{fill:#2b313e}
+.scene .bl{transform-box:view-box;transform-origin:123px 163px}
+.scene .heater{fill:#8e949c}.scene .nz{fill:#d0a24f;transition:fill .3s}
+.scene .glow{fill:url(#pgw);opacity:0;transition:opacity .6s}
+.scene .beam{fill:var(--nv-error);opacity:0}
+.scene .wisp path{fill:none;stroke:#bfe3ff;stroke-width:1.3;stroke-linecap:round;opacity:0}
+.scene .tint{fill:var(--nv-error);opacity:0;transition:opacity .5s}
+.scene .door{transform-box:view-box;transform-origin:46px 209px;transition:transform .8s ease}
+.scene .glass{fill:url(#pgl);stroke:rgba(255,255,255,.22);stroke-width:.7}.scene .refl{fill:#fff;opacity:.035}
+.scene .dedge{fill:#5a5f67;opacity:0}
+.scene .handle{fill:rgba(255,255,255,.3)}
+.scene .stled{fill:#4caf6a;opacity:.3}
+.scene .top{transform-box:view-box;transform-origin:216px 116px;transition:transform .8s ease}
+.scene .lid{fill:url(#pgl);stroke:rgba(255,255,255,.25);stroke-width:.6}
+.scene .dome{fill:url(#pdm);stroke:rgba(255,255,255,.22);stroke-width:.6}.scene .dhl{fill:#fff;opacity:.08}
+
+.scene .abase{fill:url(#pbd);stroke:rgba(255,255,255,.14);stroke-width:.6}
+.scene .fg{fill:#1a1e27;stroke:rgba(255,255,255,.12);stroke-width:.4}
+
+.scene .fl{fill:var(--sc,#777);transition:opacity .4s}.scene .wnd{fill:url(#pwn)}.scene .cy{fill:url(#pcy)}.scene .rot{fill:url(#prt);opacity:0;transform-box:view-box}
+.scene .sl.emp .fl,.scene .sl.emp .cy{opacity:0}
+.scene .sw{display:none}.scene .sw path{fill:var(--nv-warn);stroke:#000;stroke-opacity:.3;stroke-width:.4}.scene .sw rect,.scene .sw circle{fill:#1b1d20}
+.scene .sl.wn .sw{display:inline}
+.scene .mt{font:500 5px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.75);text-anchor:middle}
+.scene .sled{fill:rgba(255,255,255,.18)}.scene .sl.act .sled{fill:var(--dc)}
+.scene .fd{fill:#0d1016}
+.scene .unit{font:600 6px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.55);text-anchor:end}
+.scene .xf{fill:#1d2025}.scene .xw{fill:var(--fc)}.scene .xc{fill:url(#pcy);opacity:.6}.scene .xh{fill:#3a3f47}
+.scene .tbz{fill:url(#phd);stroke:rgba(255,255,255,.18);stroke-width:.6}.scene .tbh{fill:rgba(255,255,255,.18)}.scene .tsc{fill:#0a0e14;stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .dsh{fill:#000;opacity:.35}
+.scene .tt{font:600 8px Roboto,system-ui,sans-serif;fill:#fff}.scene .ts{font:400 4px Roboto,system-ui,sans-serif;fill:rgba(255,255,255,.65)}
+.scene .tbar{fill:rgba(255,255,255,.15)}.scene .tfill{fill:var(--dc)}.scene .tgl{fill:#fff;opacity:.05}
+.nodisp .scene .tab{display:none}
+.scene .bdg{opacity:0;transition:opacity .3s}.scene .bdg>*{display:none}
+.scene .bc{fill:var(--bc,var(--dc));stroke:rgba(0,0,0,.25);stroke-width:.5}
+.scene .b-ok{fill:none;stroke:var(--dc-fg);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14}
+.scene .b-wn path{fill:#fff}.scene .b-wn rect,.scene .b-wn circle{fill:var(--bc)}
+.scene .b-tp,.scene .b-fn{fill:#fff}
+.scene .bdg{transform-box:fill-box;transform-origin:center}
+/* Badge-Stelle: Warnungen oben links im Innenraum, Fertig-Haken unten rechts nach der gemeinsamen Regel badgeAt() aus
+   shared/scene.js (Gehäuseecke 216/292, u = 1,3 → Mitte 190/242,6, Radius 15). Eigene Kopie, solange die Drucker-Card scene.js nicht nutzt. */
+.scene .bpos{transform:translate(74px,172px)}.b-ok .scene .bpos{transform:translate(190px,242.6px) scale(1.574)}
+.b-ok .scene .bdg,.b-wn .scene .bdg,.b-tp .scene .bdg,.b-fn .scene .bdg{opacity:1}
+.b-ok .scene .bc,.b-ok .scene .b-ok,.b-wn .scene .bc,.b-wn .scene .b-wn,.b-tp .scene .bc,.b-tp .scene .b-tp,.b-fn .scene .bc,.b-fn .scene .b-fn{display:inline}
+.b-wn .scene,.b-tp .scene,.b-fn .scene{--bc:var(--nv-warn)}.bad .scene{--bc:var(--nv-error)}
+.noams .scene .ams{display:none}.scene .xsp{display:none}.noams.xs .scene .xsp{display:inline}
+/* Grundzustände */
+.st-off .scene>svg{opacity:.55;transition:opacity .4s}.st-off .scene .tab .tsc{fill:#08090b}.st-off .scene .tab text,.st-off .scene .tbar,.st-off .scene .tfill{display:none}
+.st-off .scene .stled{opacity:0}
+.st-print .scene .stled,.st-prep .scene .stled,.st-heat .scene .stled,.st-pause .scene .stled,.st-cool .scene .stled{opacity:1}
+.st-print .scene .glow,.st-prep .scene .glow{opacity:.65}
+.st-heat .scene .glow{opacity:.8}.st-heat .scene .pheat{opacity:.5}
+.st-print .scene .fresh{opacity:.9}
+.st-idle .scene .head,.st-done .scene .head,.st-off .scene .head,.st-error .scene .head,.st-cool .scene .head{transform:translateX(56px)}
+.bad .scene .tint{opacity:.16}.bad .scene .body{stroke:var(--nv-error)}
+/* Bewegung nur mit .anim und sichtbar */
+.anim.st-print .scene .head{animation:pr-x 2.4s ease-in-out infinite alternate}
+.anim.st-print .scene .hz{animation:pr-buzz .32s linear infinite}
+.anim:is(.st-print,.st-prep,.st-heat) .scene .fil{animation:pr-flow .9s linear infinite}
+.anim:is(.st-print,.st-cool,.st-prep) .scene .bl{animation:pr-spin .45s linear infinite}
+.anim:is(.st-print,.st-prep) .scene .sl.act .rot{opacity:1;animation:pr-rot 1.4s linear infinite}
+.anim.st-heat .scene .glow,.anim.st-heat .scene .pheat{animation:pr-pulse 1.8s ease-in-out infinite}
+.anim.st-pause .scene .stled,.anim.st-pause .scene .tt,.anim.st-pause .scene .sl.act .sled{animation:pr-blink 2s ease-in-out infinite}
+.st-pause .scene .glow{opacity:.25}
+.anim.st-cool .scene .wisp path{animation:pr-wisp 2.6s ease-out infinite}
+.anim.st-cool .scene .glow{animation:pr-fade 8s ease-out both}
+.st-done .scene .gls{opacity:.7}.anim.st-done .scene .gls{animation:pr-glare .9s .1s ease-in-out both}
+.st-done .scene .gls{transform:translateX(70px)}
+.anim.st-done .scene .b-ok{animation:pr-check .5s .2s ease-out both}.anim.st-done .scene .bdg{animation:pr-pop .5s ease-out both}
+.anim.bad .scene .bdg,.anim.b-wn .scene .bdg{animation:pr-throb 1.6s ease-in-out infinite}
+/* Meldungen */
+.anim.m-level .scene .head{animation:pr-lvl 6s ease-in-out infinite}
+.anim.m-level .scene .hz{animation:pr-tap 1.2s ease-in-out infinite}
+.m-level .scene .dots circle{opacity:.9}.anim.m-level .scene .dots circle{animation:pr-dot 6s steps(1) infinite}
+.anim.m-level .scene .dots circle:nth-child(2){animation-delay:1.2s}.anim.m-level .scene .dots circle:nth-child(3){animation-delay:2.4s}.anim.m-level .scene .dots circle:nth-child(4){animation-delay:3.6s}.anim.m-level .scene .dots circle:nth-child(5){animation-delay:4.8s}
+.m-wipe .scene .head{transform:translateX(-62px)}.anim.m-wipe .scene .head{animation:pr-wipe .5s ease-in-out infinite alternate}
+.m-calib .scene .cal rect{opacity:.9}.anim.m-calib .scene .cal rect{animation:pr-line 5s ease-out infinite}
+.anim.m-calib .scene .cal rect:nth-child(2){animation-delay:1s}.anim.m-calib .scene .cal rect:nth-child(3){animation-delay:2s}.anim.m-calib .scene .cal rect:nth-child(4){animation-delay:3s}.anim.m-calib .scene .cal rect:nth-child(5){animation-delay:4s}
+.anim.m-calib .scene .head{animation:pr-cal 5s linear infinite}
+.m-scan .scene .beam{opacity:.6}.anim.m-scan .scene .head{animation:pr-scan 3.2s ease-in-out infinite alternate}.anim.m-scan .scene .beam{animation:pr-pulse 1s ease-in-out infinite}
+.anim.m-home .scene .head{animation:pr-home 3s ease-in-out infinite}
+.m-change .scene .head{transform:translateX(-62px)}
+.anim.m-change .scene .fil{animation:pr-chg 3s ease-in-out infinite}.anim.m-change .scene .sl.act .sled{animation:pr-blink .8s ease-in-out infinite}
+.anim.m-change .scene .sl.act .rot{opacity:1;animation:pr-rot .6s linear infinite reverse}
+.m-empty .scene .sl.act .fl,.m-empty .scene .sl.act .cy{opacity:.12}.m-empty .scene .fil{animation:none!important;opacity:.25}
+.anim:is(.m-empty,.m-tangle,.m-ams) .scene .sl.wn .sw{animation:pr-blink 1s ease-in-out infinite}
+.anim.m-tangle .scene .sl.act{animation:pr-jit .12s linear infinite}.m-tangle .scene .fil{animation:none!important}
+.m-ams .scene .sled{fill:var(--nv-warn)}.anim.m-ams .scene .sled{animation:pr-blink 1s ease-in-out infinite}
+.m-spaghetti .scene .spag{opacity:1;stroke-dashoffset:0}.anim.m-spaghetti .scene .spag{animation:pr-draw 3s ease-out infinite}
+.m-shift .scene .obj{transform:translateX(7px) skewX(-8deg)}
+.m-clog .scene .nz{fill:var(--nv-error)}.anim.m-clog .scene .nz{animation:pr-blink .7s ease-in-out infinite}.m-clog .scene .fil{animation:none!important}
+.m-door .scene .door{transform:scaleX(.1)}.m-door .scene .dedge{opacity:1}
+.m-lid .scene .top{transform:translateY(-9px) rotate(-5deg)}
+.m-fan .scene .bl{animation:none!important}.m-fan .scene .fan{stroke:var(--nv-error);stroke-width:1.2}
+.m-temp .scene .glow{opacity:.9}.m-temp .scene .pheat{fill:var(--nv-error);opacity:.6}.anim.m-temp .scene .pheat,.anim.m-temp .scene .glow{animation:pr-pulse 1s ease-in-out infinite}
+.still .scene *{animation-play-state:paused!important}
+.anim:not(.still) .scene>svg{will-change:transform}
+@media (prefers-reduced-motion:reduce){.scene *{animation:none!important;transition:none!important}}
+@keyframes pr-x{from{transform:translateX(-11px)}to{transform:translateX(11px)}}
+@keyframes pr-buzz{0%,100%{transform:translateY(0)}50%{transform:translateY(-.3px)}}
+@keyframes pr-flow{to{stroke-dashoffset:-7}}
+@keyframes pr-chg{0%,40%{stroke-dashoffset:0}20%{stroke-dashoffset:21}60%,100%{stroke-dashoffset:-21}}
+@keyframes pr-spin{to{transform:rotate(360deg)}}
+@keyframes pr-rot{from{transform:translateY(0)}to{transform:translateY(56px)}}
+@keyframes pr-pulse{0%,100%{opacity:.2}50%{opacity:.85}}
+@keyframes pr-blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes pr-fade{from{opacity:.8}to{opacity:0}}
+@keyframes pr-wisp{0%{opacity:0;transform:translateY(6px)}40%{opacity:.7}100%{opacity:0;transform:translateY(-14px)}}
+@keyframes pr-glare{from{transform:translateX(0)}to{transform:translateX(70px)}}
+@keyframes pr-check{from{stroke-dashoffset:14}to{stroke-dashoffset:0}}
+@keyframes pr-pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes pr-throb{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes pr-lvl{0%,100%{transform:translateX(-51px)}20%{transform:translateX(-27px)}40%{transform:translateX(-3px)}60%{transform:translateX(21px)}80%{transform:translateX(45px)}}
+@keyframes pr-tap{0%,60%,100%{transform:translateY(0)}75%{transform:translateY(4px)}}
+@keyframes pr-dot{0%{opacity:.15}100%{opacity:.9}}
+@keyframes pr-wipe{from{transform:translateX(-66px)}to{transform:translateX(-58px)}}
+@keyframes pr-line{0%{opacity:0;transform:scaleX(0)}20%{opacity:.9;transform:scaleX(1)}90%{opacity:.9}100%{opacity:0}}
+@keyframes pr-cal{0%{transform:translateX(-45px)}100%{transform:translateX(43px)}}
+@keyframes pr-scan{from{transform:translateX(-56px)}to{transform:translateX(56px)}}
+@keyframes pr-home{0%,100%{transform:translateX(0)}35%,55%{transform:translateX(-62px)}}
+@keyframes pr-jit{0%,100%{transform:translateX(0)}50%{transform:translateX(.8px)}}
+@keyframes pr-draw{0%{stroke-dashoffset:240}60%,100%{stroke-dashoffset:0}}`;
+  var NovaPrinterCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("drucker-card-editor"));
+    }
+    static getStubConfig(h) {
+      const e = Object.values(h?.entities || {}).find((x) => x.platform === "bambu_lab" && x.device_id && /print_status|druckstatus/.test(`${x.translation_key} ${x.entity_id}`));
+      return e ? { device: e.device_id } : { demo: "print" };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._c = { ...PDEF, ...c, ams_trays: [].concat(c.ams_trays || []).filter(Boolean), hide_messages: [].concat(c.hide_messages || []) };
+      this._built = false;
+      this._ids = /* @__PURE__ */ new Set();
+      if (this._h) {
+        this._build();
+        this._update();
+      }
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
+      this._update();
+    }
+    getCardSize() {
+      return 6;
+    }
+    getGridOptions() {
+      return { columns: 12, rows: "auto", min_columns: 6 };
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      this._onVis ||= () => this._tick();
+      document.addEventListener("visibilitychange", this._onVis);
+      if ("IntersectionObserver" in window) {
+        this._io ||= new IntersectionObserver((es) => {
+          this._inView = es[es.length - 1].isIntersecting;
+          this._tick();
+        }, { rootMargin: "100px" });
+        this._io.observe(this);
+      } else this._inView = true;
+      this._tick();
+    }
+    disconnectedCallback() {
+      document.removeEventListener("visibilitychange", this._onVis);
+      this._io?.disconnect();
+      this._inView = false;
+      this._tick();
+      clearTimeout(this._ft);
+    }
+    _S(id) {
+      return id ? this._h?.states[id] : null;
+    }
+    // Eingetragene Entitäten, fehlende vom Gerät
+    _ents() {
+      const h = this._h, c = this._c, dev = printerDev(h, c);
+      if (this._detKey !== `${dev}|${Object.keys(h.entities || {}).length}`) {
+        this._detKey = `${dev}|${Object.keys(h.entities || {}).length}`;
+        this._det = detect(h, dev);
+      }
+      const out = {};
+      EKEYS.forEach((k) => {
+        out[k] = c[k] || this._det[k] || null;
+      });
+      this._fans = c.show_fans === false ? [] : [].concat(c.fans?.length ? c.fans : this._det.fans || []);
+      this._sws = c.show_switches === false ? [] : [].concat(c.switches || []);
+      return { e: out, dev };
+    }
+    _build() {
+      this._built = true;
+      const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" }), rv = roleVars(c.color);
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${PCSS3}</style>
+<div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}${c.show_display === false ? " nodisp" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
+<div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
+<div class="tm"><span class="rm"></span><span class="en"></span></div><div class="kvs"></div></div></div>
+<div class="cam" hidden><img alt=""></div><div class="amsl"></div><div class="als"></div><div class="acts"></div><div class="xtra"></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = {
+        g: q(".g"),
+        ic: q(".hd .ic"),
+        name: q(".hd b"),
+        sub: q(".hd small"),
+        demo: q(".demo"),
+        li: q(".li"),
+        pc: q(".pc"),
+        ph: q(".ph"),
+        bar: q(".bar"),
+        bari: q(".bar i"),
+        rm: q(".rm"),
+        en: q(".en"),
+        kvs: q(".kvs"),
+        amsl: q(".amsl"),
+        xtra: q(".xtra"),
+        als: q(".als"),
+        acts: q(".acts"),
+        svg: q(".scene svg"),
+        bed: q(".bed"),
+        ocr: q(".ocr"),
+        tt: q(".tt"),
+        ts: q(".ts"),
+        tfill: q(".tfill"),
+        unit: q(".unit"),
+        cam: q(".cam"),
+        img: q(".cam img"),
+        sl: [0, 1, 2, 3].map((i) => ({ g: r.querySelectorAll(`.sl.s${i}`), fl: q(`.s${i} .fl`), fcl: q(`.s${i} .fcl`), mt: q(`.s${i} .mt`) }))
+      };
+      const e = this._e;
+      press(e.ic, { tap: () => this._act({ entity: this._en?.status, tap_action: c.tap_action }, "tap", true), hold: () => this._act({ entity: this._en?.status, hold_action: c.hold_action }, "hold") });
+      press(e.li, { tap: () => this._light(), isolate: true });
+      press(e.cam, { tap: () => this._act({ entity: c.camera }, "tap", true) });
+      e.img.addEventListener("error", () => {
+        e.cam.hidden = true;
+        this._camErr = e.img.getAttribute("src");
+      });
+      e.img.addEventListener("load", () => {
+        if (this._camSrc === e.img.getAttribute("src")) e.cam.hidden = false;
+      });
+      e.als.addEventListener("click", (ev) => {
+        const el2 = ev.target.closest?.(".al[data-e]");
+        if (el2) this._act({ entity: el2.dataset.e }, "tap", true);
+      });
+      this._ab = {};
+      [["pause", "mdi:pause", "Pause"], ["resume", "mdi:play", "Fortsetzen"], ["stop", "mdi:stop", "Stopp"]].forEach(([k, ic, t]) => {
+        const el2 = document.createElement("div");
+        el2.className = `ab a-${k}${k === "resume" ? " pri" : ""}`;
+        el2.innerHTML = `<ha-icon icon="${ic}"></ha-icon><span>${t}</span>`;
+        el2.hidden = true;
+        press(el2, { tap: () => this._do(k) });
+        e.acts.append(el2);
+        this._ab[k] = el2;
+      });
+      this._prev = null;
+      this._tick();
+    }
+    // Ansichtsmodell aus HA (oder Demo)
+    _model() {
+      const c = this._c, h = this._h;
+      if (c.demo) return this._demo();
+      const { e: en, dev } = this._ents();
+      this._en = en;
+      this._ids = new Set([...entityIds(c), ...Object.values(en).filter(Boolean), ...this._fans, ...this._sws, c.camera].filter(Boolean));
+      const S = (k) => this._S(en[k]);
+      const st = S("status"), raw = String(st?.state || "").toLowerCase(), stg = S("stage"), sv = ok2(stg) ? stg.state : null;
+      const on = S("online"), p0 = num(S("progress"));
+      const hide = new Set(c.hide_messages);
+      const smap = sv && STAGES[sv], skey = smap ? [].concat(smap)[0] : null, spause = Array.isArray(smap);
+      let cls;
+      if (!st || raw === "unavailable" || raw === "offline" || on && on.state === "off") cls = "off";
+      else if (raw === "failed") cls = "error";
+      else if (raw === "pause" || PAUSE_STAGES.includes(sv) || spause) cls = "pause";
+      else if (raw === "finish") cls = skey === "cool" ? "cool" : "done";
+      else if (raw === "running" || raw === "prepare" || raw === "slicing" || raw === "init") cls = skey === "heat" ? "heat" : skey === "cool" ? "cool" : sv === "printing" || raw === "running" && !skey ? "print" : "prep";
+      else cls = skey === "cool" ? "cool" : "idle";
+      const msgs = [];
+      const lvlOrd = { error: 0, warning: 1, info: 2 };
+      parseErrors(S("print_error"), "error").forEach((m) => msgs.push({ ...m, ent: en.print_error }));
+      parseErrors(S("hms"), "warning").forEach((m) => msgs.push({ ...m, ent: en.hms }));
+      if (spause) msgs.push({ key: skey, text: fmtState(h, stg), lvl: MSG[skey].lvl === "info" ? "warning" : MSG[skey].lvl, ent: en.stage });
+      const dr = S("door");
+      if (dr && dr.state === "on") msgs.push({ key: "door", text: MSG.door.text, lvl: "warning", ent: en.door });
+      const shown = msgs.filter((m) => !hide.has(m.key)).sort((a, b) => lvlOrd[a.lvl] - lvlOrd[b.lvl]);
+      let fx = shown.find((m) => MSG[m.key])?.key || null;
+      if (!fx && skey && !spause && !hide.has(skey) && cls !== "off") fx = skey;
+      const rs = S("remaining"), es = S("end_time");
+      let rem = null, end = null;
+      const r0 = num(rs);
+      if (r0 != null) rem = r0 * (SECS2[rs.attributes.unit_of_measurement] ?? 60);
+      if (ok2(es)) {
+        const t = Date.parse(es.state);
+        if (!isNaN(t)) end = t;
+      }
+      if (end == null && rem != null && cls !== "pause") end = Date.now() + rem * 1e3;
+      const tr = trays(h, c, dev);
+      const lt = S("light");
+      const nT = num(S("nozzle_target")), bT = num(S("bed_target"));
+      return {
+        cls,
+        fx,
+        msgs: shown,
+        p: cls === "done" || cls === "cool" && raw === "finish" ? 100 : p0,
+        rem,
+        end,
+        layer: num(S("layer")),
+        layers: num(S("layers")),
+        noz: num(S("nozzle")),
+        nozT: nT,
+        bed: num(S("bed")),
+        bedT: bT,
+        file: ok2(S("file")) ? S("file").state : "",
+        status: st ? cls === "off" && !ok2(st) ? "Nicht verfügbar" : fmtState(h, st) : "Drucker im Editor wählen",
+        stage: sv && !QUIET_STAGES.includes(sv) ? fmtState(h, stg) : "",
+        units: tr.units,
+        ext: tr.ext,
+        light: lt ? lt.state === "on" : null,
+        lightEnt: en.light,
+        name: h.devices?.[dev]?.name_by_user || h.devices?.[dev]?.name || ""
+      };
+    }
+    _demo() {
+      const c = this._c, cls = CLS.includes(c.demo) ? c.demo : "print", mk = MSG[c.demo_message] ? c.demo_message : null;
+      this._ids = /* @__PURE__ */ new Set();
+      const act = ["print", "pause", "prep", "heat"].includes(cls), p = cls === "done" || cls === "cool" ? 100 : ["print", "pause", "error"].includes(cls) ? 42 : act ? 0 : null;
+      const msgs = mk && MSG[mk].lvl !== "info" ? [{ key: mk, text: MSG[mk].text, lvl: MSG[mk].lvl }] : [];
+      if (cls === "error" && !msgs.length) msgs.push({ key: "warn", text: "Druck fehlgeschlagen", lvl: "error" });
+      const units = c.demo_ams === false ? [] : JSON.parse(JSON.stringify(DEMO_AMS));
+      if (mk === "change") {
+        units[0].slots[0].act = false;
+        units[0].slots[1].act = true;
+      }
+      if (["empty", "tangle"].includes(mk) && units[0]) {
+        units[0].slots[0].rem = mk === "empty" ? 0 : 82;
+      }
+      return {
+        cls,
+        fx: mk,
+        msgs,
+        p,
+        rem: act ? 4320 : null,
+        end: act ? Date.now() + 432e4 : null,
+        layer: act ? 84 : null,
+        layers: act ? 200 : null,
+        noz: cls === "heat" ? 187 : act ? 220 : cls === "cool" ? 96 : 26,
+        nozT: act ? 220 : 0,
+        bed: cls === "heat" ? 48 : act ? 60 : cls === "cool" ? 41 : 24,
+        bedT: act ? 60 : 0,
+        file: cls === "idle" || cls === "off" ? "" : "Benchy_0.2mm_PLA.3mf",
+        status: CTXT[cls],
+        stage: mk ? MSG[mk].text : "",
+        units,
+        ext: c.demo_ams === false ? { c: "#3d8bf5", mat: "PLA", name: "PLA Basic", rem: null, act: true } : null,
+        light: this._dl ?? true,
+        demo: true,
+        name: "3D-Drucker"
+      };
+    }
+    _update() {
+      const h = this._h, c = this._c, e = this._e;
+      if (!h || !e) return;
+      const m = this._m = this._model(), g = e.g, cls = m.cls;
+      if (this._prev && this._prev !== cls && cls === "done") {
+        g.classList.remove("st-done");
+        void g.offsetWidth;
+      }
+      this._prev = cls;
+      CLS.forEach((k) => g.classList.toggle(`st-${k}`, k === cls));
+      Object.keys(MSG).forEach((k) => g.classList.toggle(`m-${k}`, m.fx === k));
+      const act = ["print", "pause", "prep", "heat"].includes(cls);
+      const bad = cls === "error" || m.msgs.some((x) => x.lvl === "error");
+      g.classList.toggle("bad", bad);
+      g.classList.toggle("on", act && c.glow !== false);
+      g.classList.toggle("lit", m.light !== false);
+      this.classList.toggle("nv-na", cls === "off" && !m.demo && !this._S(this._en?.status));
+      const badge = m.fx === "temp" ? "tp" : m.fx === "fan" ? "fn" : bad || m.fx && MSG[m.fx].lvl !== "info" ? "wn" : cls === "done" ? "ok" : null;
+      ["ok", "wn", "tp", "fn"].forEach((k) => g.classList.toggle(`b-${k}`, badge === k));
+      e.name.textContent = c.name ?? m.name ?? "3D-Drucker";
+      setIcon(e.ic, c.icon || "mdi:printer-3d");
+      e.ic.classList.toggle("on", act);
+      e.sub.textContent = m.status;
+      e.sub.classList.toggle("er", bad);
+      e.demo.hidden = !m.demo;
+      e.li.hidden = c.show_light === false || m.light == null && !m.demo;
+      e.li.classList.toggle("on", !!m.light);
+      const units = m.units || [], aU = units.find((u) => u.slots.some((s) => s.act)) || units[0];
+      const actSlot = aU?.slots.find((s) => s.act) || (m.ext?.act ? m.ext : null) || m.ext;
+      const ams = c.ams === "show" || c.ams === "auto" && units.length > 0;
+      g.classList.toggle("noams", !ams);
+      g.classList.toggle("xs", !ams && !!m.ext);
+      g.style.setProperty("--fc", actSlot?.c || "var(--dc)");
+      e.svg.setAttribute("viewBox", ams ? "0 44 260 256" : "0 106 260 194");
+      const wnSlot = ["empty", "tangle"].includes(m.fx);
+      e.sl.forEach((x, i) => {
+        const s = aU?.slots[i];
+        const f = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f, y = 75 - hh / 2;
+        [x.fl, x.fcl].forEach((r) => {
+          r.setAttribute("y", y.toFixed(1));
+          r.setAttribute("height", hh.toFixed(1));
+        });
+        x.g.forEach((n) => {
+          n.classList.toggle("act", !!s?.act);
+          n.classList.toggle("emp", !s || !!s.empty);
+          n.classList.toggle("wn", !!s?.act && wnSlot);
+          n.style.setProperty("--sc", s?.c || "#777");
+        });
+        x.mt.textContent = s && !s.empty ? s.mat : "–";
+      });
+      e.unit.textContent = units.length > 1 ? aU.name.replace(/^AMS\s*/i, "") : "";
+      const p = m.p != null ? Math.max(0, Math.min(100, m.p)) / 100 : 0;
+      const showObj = ["print", "pause", "done", "cool", "error", "prep", "heat"].includes(cls) && (p > 0 || cls === "done");
+      const pp = cls === "done" || cls === "cool" ? Math.max(p, showObj ? 1 : 0) : p;
+      g.classList.toggle("has-obj", showObj && pp > 0);
+      e.ocr.setAttribute("y", (PLATE - OBJ_H * pp).toFixed(1));
+      e.ocr.setAttribute("height", (OBJ_H * pp).toFixed(1));
+      const bedDown = ["idle", "off"].includes(cls) || ["done", "cool", "error"].includes(cls) && !showObj;
+      e.bed.style.transform = bedDown ? "translateY(0)" : `translateY(${(-(1 - pp) * OBJ_H).toFixed(1)}px)`;
+      const pct = m.p != null && (act || cls === "done") ? `${Math.round(m.p)}%` : "";
+      e.tt.textContent = act ? cls === "heat" && m.noz != null ? `${Math.round(m.noz)}°` : pct || CTXT[cls] : cls === "done" ? "Fertig" : cls === "error" ? "Fehler" : cls === "cool" ? `${Math.round(m.noz ?? 0)}°` : cls === "off" ? "" : "Bereit";
+      e.tt.style.fontSize = /^\d/.test(e.tt.textContent) ? "" : "7px";
+      e.ts.textContent = act && m.rem != null ? `${fmtShort(m.rem)}${m.layer != null ? ` · ${m.layer}/${m.layers ?? "?"}` : ""}` : m.file ? m.file.slice(0, 15) : "";
+      e.tfill.setAttribute("width", (26 * (act || cls === "done" ? p : 0)).toFixed(1));
+      this._cam(cls);
+      const sp = c.show_progress !== false && m.p != null && (act || cls === "done");
+      e.pc.innerHTML = sp ? `${Math.round(m.p)}<small>%</small>` : "";
+      e.pc.hidden = !sp;
+      e.ph.textContent = c.show_stage !== false && m.stage ? m.stage : "";
+      e.bar.hidden = !sp;
+      if (sp) e.bari.style.width = `${m.p}%`;
+      e.rm.textContent = c.show_remaining !== false && act && m.rem != null ? `noch ${fmtDur2(m.rem)}` : "";
+      e.en.textContent = c.show_end_time !== false && act && m.end != null && cls !== "pause" ? `fertig um ${this._clock(m.end)}` : "";
+      const rows = [];
+      const row = (ic, k, v, x = "") => rows.push(`<div class="kv${x}"><ha-icon icon="${ic}"></ha-icon><span class="k">${esc(k)}</span><span class="v">${v}</span></div>`);
+      const tmp = (v, t) => v == null ? "–" : `<b>${Math.round(v)}</b>${t ? ` / ${Math.round(t)}` : ""} °C`;
+      if (c.show_layer !== false && m.layer != null && (act || cls === "done")) row("mdi:layers-triple-outline", "Schicht", `<b>${m.layer}</b> / ${m.layers ?? "?"}`);
+      if (c.show_nozzle !== false && m.noz != null) row("mdi:printer-3d-nozzle-heat-outline", "Düse", tmp(m.noz, m.nozT));
+      if (c.show_bed !== false && m.bed != null) row("mdi:radiator", "Bett", tmp(m.bed, m.bedT));
+      if (c.show_file !== false && m.file) row("mdi:file-outline", "Datei", esc(m.file), " fi");
+      const kh = rows.join("");
+      if (this._kk !== kh) {
+        this._kk = kh;
+        e.kvs.innerHTML = kh;
+      }
+      this._amsList(m, ams);
+      this._alerts(m);
+      this._acts(m);
+      this._xtra();
+      this._tick();
+    }
+    // Kamerabild unter der Zeichnung: immer oder nur beim Drucken, nicht verfügbar = ausgeblendet
+    _cam(cls) {
+      const c = this._c, e = this._e, s = this._S(c.camera), pic = s?.attributes.entity_picture;
+      const want = !!c.camera && !c.demo && ok2(s) && !!pic && (c.camera_mode !== "printing" || ["print", "prep", "heat", "pause"].includes(cls));
+      const live = want && dom(c.camera) === "camera";
+      if (!want) {
+        e.cam.hidden = true;
+        e.img.removeAttribute("src");
+        this._camSrc = null;
+      } else {
+        const src = `${pic}${pic.includes("?") ? "&" : "?"}_=${live ? this._camT || 0 : encodeURIComponent(s.state)}`;
+        if (src !== this._camSrc) {
+          this._camSrc = src;
+          e.img.src = src;
+        }
+        if (this._camErr === src) e.cam.hidden = true;
+      }
+      this._camLive = live;
+    }
+    _amsList(m, ams) {
+      const c = this._c, us = [...ams ? m.units : [], ...m.ext ? [{ name: "Extern", slots: [m.ext], x: true }] : []];
+      const wn = ["empty", "tangle"].includes(m.fx);
+      const html = c.show_ams_list === false ? "" : us.map((u) => `<div class="au${u.x ? " x" : ""}"><span class="an">${esc(u.name)}</span><div class="ss">${u.slots.map((s) => {
+        const r = s.empty ? 0 : s.rem;
+        return `<div class="slot${s.act ? " act" : ""}${s.empty ? " emp" : ""}${s.act && wn ? " wn" : ""}" title="${esc(s.name)}" style="--c:${s.c || "#777"};--r:${r == null ? 100 : r}%"${s.id ? ` data-e="${esc(s.id)}"` : ""}>
+<span class="sc"></span><span class="st"><b>${esc(s.empty ? "Leer" : s.mat || "–")}</b><small>${s.empty ? "" : r == null ? esc(s.name !== s.mat ? s.name : "") : `${Math.round(r)} %`}</small></span></div>`;
+      }).join("")}</div></div>`).join("");
+      if (this._ak !== html) {
+        this._ak = html;
+        this._e.amsl.innerHTML = html;
+        this._e.amsl.querySelectorAll(".slot[data-e]").forEach((el2) => press(el2, { tap: () => this._act({ entity: el2.dataset.e }, "tap", true) }));
+      }
+    }
+    // Lüfter (Regler) und weitere Schalter unter der Zeichnung
+    _xtra() {
+      const short = (h2, id) => {
+        const n = nameOf(h2, { entity: id }), d = h2.devices?.[h2.entities?.[id]?.device_id], dn = d?.name_by_user || d?.name;
+        return dn && n.startsWith(`${dn} `) ? n.slice(dn.length + 1) : n;
+      };
+      const h = this._h, fans = this._c.demo ? [] : this._fans || [], sws = this._c.demo ? [] : this._sws || [], key = `${fans}|${sws}`;
+      if (this._xk !== key) {
+        this._xk = key;
+        const box = this._e.xtra;
+        box.textContent = "";
+        this._xu = [];
+        if (fans.length) {
+          const sec = document.createElement("div");
+          sec.innerHTML = '<div class="bt">Lüfter</div><div class="fans"></div>';
+          fans.forEach((id) => {
+            const el2 = document.createElement("div");
+            el2.className = "sl";
+            el2.innerHTML = '<div class="kv"><ha-icon></ha-icon><span class="k"></span><span class="v"></span></div><input type="range" min="0" max="100">';
+            const inp = el2.lastChild, v = el2.querySelector(".v"), D = SLIDE.fan;
+            press(el2.firstChild, { tap: () => this._act({ entity: id }, "tap", true) });
+            const paint = () => {
+              inp.style.setProperty("--p", `${+inp.value}%`);
+              v.textContent = `${Math.round(+inp.value)} %`;
+            };
+            inp.addEventListener("input", () => {
+              el2._drag = true;
+              paint();
+            });
+            inp.addEventListener("change", () => {
+              D.set(this._h, id, +inp.value);
+              clearTimeout(el2._t);
+              el2._t = setTimeout(() => {
+                el2._drag = false;
+              }, 1500);
+            });
+            sec.lastChild.append(el2);
+            this._xu.push((h2) => {
+              const s = h2.states[id], na = !s || s.state === "unavailable";
+              el2.classList.toggle("na", na);
+              inp.disabled = na;
+              el2.querySelector("ha-icon").icon = iconOf(h2, { entity: id }, "mdi:fan");
+              el2.querySelector(".k").textContent = short(h2, id);
+              if (!s) {
+                v.textContent = "–";
+                return;
+              }
+              inp.step = D.r(s.attributes)[2];
+              if (!el2._drag) inp.value = D.v(s);
+              paint();
+            });
+          });
+          box.append(sec);
+        }
+        if (sws.length) {
+          const sec = document.createElement("div");
+          sec.innerHTML = '<div class="bt">Schalter</div><div class="list" style="--cols:2"></div>';
+          sws.forEach((id) => {
+            const el2 = document.createElement("div");
+            el2.className = "row";
+            el2.innerHTML = `<div class="ic"><ha-icon></ha-icon></div><div class="nm"><b></b><small></small></div>${TOGGLE.includes(dom(id)) ? '<div class="sw"></div>' : ""}`;
+            press(el2, { tap: () => this._act({ entity: id }, "tap"), hold: () => this._act({ entity: id }, "hold") });
+            sec.lastChild.append(el2);
+            this._xu.push((h2) => {
+              const s = h2.states[id];
+              el2.classList.toggle("na", !s || s.state === "unavailable");
+              el2.classList.toggle("on", isOn(s));
+              el2.querySelector("ha-icon").icon = iconOf(h2, { entity: id }, "mdi:toggle-switch-outline");
+              el2.querySelector("b").textContent = short(h2, id);
+              el2.querySelector("small").textContent = s ? valueOf(h2, s, { entity: id }) : "nicht gefunden";
+            });
+          });
+          box.append(sec);
+        }
+      }
+      this._xu.forEach((u) => u(h));
+    }
+    _alerts(m) {
+      const c = this._c;
+      const html = c.show_message === false ? "" : m.msgs.map((x) => {
+        const M = MSG[x.key] || MSG.warn;
+        return `<div class="al ${x.lvl}"${x.ent ? ` data-e="${esc(x.ent)}"` : ""}><ha-icon icon="${M.icon}"></ha-icon><span>${esc(x.text || M.text)}</span>${x.code ? `<small>${esc(x.code)}</small>` : ""}</div>`;
+      }).join("");
+      if (this._alk !== html) {
+        this._alk = html;
+        this._e.als.innerHTML = html;
+      }
+      this._e.g.classList.toggle("err", m.msgs.some((x) => x.lvl === "error") && c.glow !== false);
+    }
+    _acts(m) {
+      const c = this._c, b = this._ab, en = this._en || {}, cls = m.cls;
+      const av = (k) => m.demo || !!en[k] && this._S(en[k]) && this._S(en[k]).state !== "unavailable";
+      const run = ["print", "prep", "heat"].includes(cls);
+      b.pause.hidden = !run || !av("pause");
+      b.resume.hidden = cls !== "pause" || !av("resume");
+      b.stop.hidden = !(run || cls === "pause") || !av("stop");
+      this._e.acts.hidden = c.show_controls === false || Object.values(b).every((x) => x.hidden);
+    }
+    _do(k) {
+      const c = this._c, id = this._en?.[k];
+      if (k === "stop" && c.stop_confirm && !window.confirm(c.stop_confirm)) return;
+      if (this._m?.demo) return;
+      if (!id) return;
+      Promise.resolve(this._h.callService(dom(id) === "button" ? "button" : dom(id), dom(id) === "button" ? "press" : "turn_on", { entity_id: id })).catch((err) => this._flash(`${{ pause: "Pause", resume: "Fortsetzen", stop: "Stopp" }[k]}: ${err?.message || err}`));
+    }
+    _light() {
+      if (this._m?.demo) {
+        this._dl = !(this._dl ?? true);
+        this._update();
+        return;
+      }
+      const id = this._m?.lightEnt;
+      if (id) Promise.resolve(this._h.callService("light", "toggle", { entity_id: id })).catch((err) => this._flash(`Licht: ${err?.message || err}`));
+    }
+    _flash(msg) {
+      clearTimeout(this._ft);
+      const el2 = document.createElement("div");
+      el2.className = "al error";
+      el2.innerHTML = `<ha-icon icon="mdi:alert-circle-outline"></ha-icon><span>${esc(msg)}</span>`;
+      this._e.als.prepend(el2);
+      this._alk = null;
+      this._ft = setTimeout(() => this._update(), 8e3);
+    }
+    _clock(ms) {
+      const h = this._h, d = new Date(ms), far = ms - Date.now() > 20 * 36e5;
+      try {
+        return new Intl.DateTimeFormat(langOf(h), { hour: "2-digit", minute: "2-digit", ...far ? { weekday: "short" } : {}, timeZone: tzOf(h) }).format(d);
+      } catch {
+        return d.toLocaleTimeString().slice(0, 5);
+      }
+    }
+    // Animation nur, wenn sichtbar; Restzeit/Endzeit jede Minute neu
+    _tick() {
+      const vis3 = !!this._inView && !document.hidden && !this._quiet && this.isConnected;
+      this._e?.g.classList.toggle("still", !vis3);
+      const run = vis3 && this._e && ["print", "prep", "heat"].includes(this._prev);
+      if (run && !this._tm) this._tm = setInterval(() => this._update(), 6e4);
+      if (!run && this._tm) {
+        clearInterval(this._tm);
+        this._tm = null;
+      }
+      const cam = vis3 && this._e && this._camLive;
+      if (cam && !this._ct) this._ct = setInterval(() => {
+        this._camT = Date.now();
+        this._cam(this._prev);
+      }, 1e4);
+      if (!cam && this._ct) {
+        clearInterval(this._ct);
+        this._ct = null;
+      }
+    }
+    _act(o, kind, info) {
+      return runAction(this, o, kind, info);
+    }
+  };
+  define("drucker-card", NovaPrinterCard, { name: "Nova 3D-Drucker Card", description: "3D-Drucker (Bambu Lab) mit animierter Druckerzeichnung, AMS, Fortschritt, Temperaturen, Meldungen und Pause/Fortsetzen/Stopp.", documentationURL: docUrl("nova-3d-drucker-card") });
+  var SE = (d) => ({ entity: { domain: d } });
+  var PGEN = [{ name: "device", selector: { device: { filter: { integration: "bambu_lab" } } } }, g2({ name: "name", selector: T }, { name: "icon", selector: I })];
+  var PENT = [
+    g2({ name: "status", selector: SE("sensor") }, { name: "stage", selector: SE("sensor") }),
+    g2({ name: "progress", selector: SE("sensor") }, { name: "file", selector: SE("sensor") }),
+    g2({ name: "remaining", selector: SE("sensor") }, { name: "end_time", selector: SE("sensor") }),
+    g2({ name: "layer", selector: SE("sensor") }, { name: "layers", selector: SE("sensor") }),
+    g2({ name: "nozzle", selector: SE("sensor") }, { name: "nozzle_target", selector: SE("sensor") }),
+    g2({ name: "bed", selector: SE("sensor") }, { name: "bed_target", selector: SE("sensor") }),
+    g2({ name: "hms", selector: SE("binary_sensor") }, { name: "print_error", selector: SE("binary_sensor") }),
+    g2({ name: "door", selector: SE("binary_sensor") }, { name: "online", selector: SE("binary_sensor") })
+  ];
+  var PCTL = [
+    g2({ name: "pause", selector: SE(["button", "script"]) }, { name: "resume", selector: SE(["button", "script"]) }),
+    g2({ name: "stop", selector: SE(["button", "script"]) }, { name: "light", selector: SE(["light", "switch"]) }),
+    { name: "stop_confirm", selector: T }
+  ];
+  var PAMS = [
+    sel("ams", [["auto", "Automatisch (nur wenn ein AMS gefunden wird)"], ["show", "Mit AMS"], ["hide", "Ohne AMS"]]),
+    { name: "ams_trays", selector: { entity: { domain: "sensor", multiple: true } } },
+    { name: "external_spool", selector: SE("sensor") }
+  ];
+  var PCAM = [{ name: "camera", selector: { entity: { domain: ["camera", "image"] } } }, sel("camera_mode", [["always", "Kamera immer"], ["printing", "Kamera nur beim Drucken"]])];
+  var PXTRA = [{ name: "fans", selector: { entity: { domain: "fan", multiple: true } } }, { name: "switches", selector: { entity: { multiple: true } } }];
+  var PSHOW = [
+    g2(...["progress", "remaining"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
+    g2(...["end_time", "layer"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
+    g2(...["nozzle", "bed"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
+    g2(...["file", "stage"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
+    g2(...["message", "ams_list"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
+    g2(...["controls", "light"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
+    g2(...["fans", "switches"].map((k) => ({ name: `show_${k}`, selector: { boolean: {} } }))),
+    { name: "show_display", selector: { boolean: {} } }
+  ];
+  var MKEYS = Object.keys(MSG);
+  var PMSG = [];
+  for (let i = 0; i < MKEYS.length; i += 2) PMSG.push(g2(...MKEYS.slice(i, i + 2).map((k) => ({ name: `msg_${k}`, selector: { boolean: {} } }))));
+  var PLOOK = [g2(ROLE("color"), { name: "glow", selector: { boolean: {} } }), { name: "animation", selector: { boolean: {} } }];
+  var PDEMO = [sel("demo", [["", "Aus"], ...DEMO_STATES]), sel("demo_message", [["", "Keine"], ...MKEYS.map((k) => [k, MSG[k].label])]), { name: "demo_ams", selector: { boolean: {} } }];
+  var PACTS = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
+  var PLABELS = {
+    ...BASE_LABELS,
+    device: "Drucker (Bambu-Lab-Gerät)",
+    status: "Druckstatus",
+    stage: "Druckphase (Arbeitsschritt)",
+    progress: "Fortschritt (%)",
+    file: "Dateiname / Auftrag",
+    remaining: "Restzeit",
+    end_time: "Endzeit",
+    layer: "Aktuelle Schicht",
+    layers: "Schichten gesamt",
+    nozzle: "Düse",
+    nozzle_target: "Düse Ziel",
+    bed: "Bett",
+    bed_target: "Bett Ziel",
+    hms: "HMS-Fehler",
+    print_error: "Druckfehler",
+    door: "Tür (falls vorhanden)",
+    online: "Online",
+    pause: "Pause",
+    resume: "Fortsetzen",
+    stop: "Stopp",
+    light: "Kammerlicht",
+    stop_confirm: "Rückfrage vor dem Stopp",
+    ams: "AMS",
+    ams_trays: "AMS-Slots",
+    external_spool: "Externe Spule",
+    color: "Farbe",
+    glow: "Rahmen leuchtet beim Drucken",
+    animation: "Animation (aus = Standbild)",
+    demo: "Demo-Zustand",
+    demo_message: "Demo-Meldung",
+    demo_ams: "Demo mit AMS",
+    show_progress: "Fortschritt",
+    show_remaining: "Restzeit",
+    show_end_time: "Endzeit",
+    show_layer: "Schicht",
+    show_nozzle: "Düsentemperatur",
+    show_bed: "Betttemperatur",
+    show_file: "Dateiname",
+    show_stage: "Druckphase",
+    show_message: "Meldungen",
+    show_ams_list: "AMS-Slots als Liste",
+    show_controls: "Knöpfe",
+    show_light: "Licht-Knopf",
+    show_display: "Display am Drucker",
+    show_fans: "Lüfter",
+    show_switches: "Schalter",
+    camera: "Kamera",
+    camera_mode: "Kamerabild zeigen",
+    fans: "Lüfter (Regler)",
+    switches: "Weitere Schalter und Werte",
+    ...Object.fromEntries(MKEYS.map((k) => [`msg_${k}`, MSG[k].label]))
+  };
+  var PHELPERS = {
+    device: "Füllt alle Entitäten unten automatisch aus. Leere Felder sucht die Karte selbst am Gerät",
+    stage: "Steuert die Animationen der Druckphasen (Leveln, Wischen, Kalibrieren …)",
+    ams_trays: "Leer = alle AMS-Einheiten am Drucker automatisch. Bis zu 4 Slots pro Einheit",
+    ams: "Ohne AMS zeigt die Zeichnung die Spule am Drucker (externe Spule)",
+    external_spool: "Leer = automatisch",
+    camera: "Kamera- oder Bild-Entität. Das Bild steht unter der Zeichnung, antippen öffnet es groß. Nicht verfügbar = ausgeblendet",
+    fans: "Leer = alle Lüfter des Druckers automatisch",
+    switches: "Z. B. Kamera, Zeitraffer oder WLAN-Signal. Schalter lassen sich antippen, andere Werte öffnen die Details",
+    stop_confirm: "Leer = ohne Rückfrage",
+    door: "Nur Drucker mit Türsensor. Offen = Tür klappt in der Zeichnung auf",
+    color: "Farbrolle aus dem Theme (Fortschritt, Knöpfe; das Objekt hat die Farbe des aktiven Filaments)",
+    demo: "Zeigt Beispielwerte statt der echten Daten – zum Ausprobieren. Vor dem Speichern wieder auf „Aus“"
+  };
+  var NovaPrinterCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot, c0 = this._config;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}.demo-btns{display:flex;gap:8px;flex-wrap:wrap}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap");
+      const strip2 = (c) => {
+        Object.entries(PDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
+        ["demo", "demo_message"].forEach((k) => !c[k] && delete c[k]);
+        if (c.demo_ams === true) delete c.demo_ams;
+        return c;
+      };
+      const hide = new Set([].concat(c0.hide_messages || []));
+      const data = { ...PDEF, demo_ams: true, ...c0, ...Object.fromEntries(MKEYS.map((k) => [`msg_${k}`, !hide.has(k)])) };
+      const form = (schema) => this._form(schema, data, (v) => {
+        let c = merge(this._config, names(schema).filter((n) => !n.startsWith("msg_")), v);
+        if (names(schema).some((n) => n.startsWith("msg_"))) {
+          const hm = MKEYS.filter((k) => v[`msg_${k}`] === false);
+          if (hm.length) c.hide_messages = hm;
+          else delete c.hide_messages;
+        }
+        if (v.device !== void 0 && v.device !== this._config.device) {
+          [...EKEYS, "fans", "camera"].forEach((k) => delete c[k]);
+          Object.assign(c, detect(this._hass, v.device));
+          c = strip2(c);
+          this._emit(c);
+          this._rebuild();
+          return;
+        }
+        this._emit(strip2(c));
+      });
+      const step = (k, list2, dir) => {
+        const cur2 = this._config[k] || "", i = list2.indexOf(cur2), n = list2[(i + dir + list2.length) % list2.length];
+        const c = { ...this._config };
+        if (n) c[k] = n;
+        else delete c[k];
+        if (k === "demo_message" && n && !c.demo) c.demo = "print";
+        this._emit(c);
+        this._rebuild();
+      };
+      const btn = (t, fn) => {
+        const b = this._add(t, fn);
+        b.querySelector("ha-icon").remove();
+        return b;
+      };
+      w.append(
+        this._section("general", "mdi:printer-3d", "Allgemein", (b) => b.append(form(PGEN))),
+        this._section("entities", "mdi:format-list-bulleted", "Entitäten", (b) => {
+          b.append(this._hint("Leer = automatisch vom gewählten Drucker. Nur ändern, wenn etwas falsch erkannt wird."), form(PENT), this._h4("Bedienung"), form(PCTL));
+        }),
+        this._section("ams", "mdi:tray-full", "AMS und Spulen", (b) => b.append(form(PAMS))),
+        this._section("cam", "mdi:cctv", "Kamera", (b) => b.append(form(PCAM))),
+        this._section("xtra", "mdi:fan", "Lüfter und Schalter", (b) => b.append(form(PXTRA))),
+        this._section("show", "mdi:eye-outline", "Anzeigen", (b) => b.append(form(PSHOW))),
+        this._section("messages", "mdi:alert-circle-outline", "Meldungen", (b) => {
+          b.append(this._hint("Ausgeschaltete Meldungen erscheinen weder als Hinweis noch als Animation. HMS-Fehler, Druckfehler und Druckphasen werden über die Liste in printer-messages.js zugeordnet; Unbekanntes landet bei „Unbekannte Meldungen“."), form(PMSG));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(PLOOK))),
+        this._section("demo", "mdi:play-box-outline", "Demo", (b) => {
+          b.append(this._hint("Zum Durchklicken aller Zustände und Meldungen in der Vorschau. Vor dem Speichern wieder auf „Aus“ stellen."), form(PDEMO));
+          const row = document.createElement("div");
+          row.className = "demo-btns";
+          const S = ["", ...DEMO_STATES.map((x) => x[0])], M = ["", ...MKEYS];
+          row.append(btn("‹ Zustand", () => step("demo", S, -1)), btn("Zustand ›", () => step("demo", S, 1)), btn("‹ Meldung", () => step("demo_message", M, -1)), btn("Meldung ›", () => step("demo_message", M, 1)));
+          b.append(row);
+        }),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(PACTS)))
+      );
+    }
+  };
+  __publicField(NovaPrinterCardEditor, "labels", PLABELS);
+  __publicField(NovaPrinterCardEditor, "helpers", PHELPERS);
+  __publicField(NovaPrinterCardEditor, "openSections", ["general"]);
+  define("drucker-card-editor", NovaPrinterCardEditor);
+
+  // src/remote.js
+  var RCSS = `
+.g.rc{gap:14px;align-items:stretch}
+.rc .ic img{border-radius:6px}
+.hb.on{background:var(--nv-accent);color:var(--nv-accent-fg)}
+.cb{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .15s,transform .15s}
+.cb ha-icon{--mdc-icon-size:22px}
+.cb:active,.cb.hit{transform:scale(.9);background:color-mix(in srgb,var(--nv-active) 40%,var(--nv-chip))}
+.row3{display:flex;justify-content:space-around;align-items:center;gap:10px}
+.pad{position:relative;width:min(230px,72cqw);aspect-ratio:1;margin:2px auto;border-radius:50%;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 18px rgba(0,0,0,.18)}
+.pad .k{position:absolute;width:32%;height:32%;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background-color .15s,transform .15s}
+.pad .k ha-icon{--mdc-icon-size:30px;opacity:.85}
+.pad .k:active,.pad .k.hit{background:rgba(255,255,255,.12)}
+.pad .up{top:2%;left:34%}.pad .down{bottom:2%;left:34%}.pad .left{left:2%;top:34%}.pad .right{right:2%;top:34%}
+.pad .ok{left:29%;top:29%;width:42%;height:42%;background:var(--nv-accent);color:var(--nv-accent-fg);font-weight:700;font-size:15px;letter-spacing:.04em;box-shadow:0 0 18px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.pad .ok:active,.pad .ok.hit{transform:scale(.93);background:var(--nv-accent)}
+.tp{position:relative;height:min(230px,62cqw);border-radius:22px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
+.tp>ha-icon{--mdc-icon-size:42px;opacity:.25;transition:opacity .2s,transform .2s}
+.tp.hit>ha-icon{opacity:.6;transform:scale(1.15)}
+.tp .ok{position:absolute;inset:0;background:radial-gradient(circle,color-mix(in srgb,var(--nv-accent) 35%,transparent),transparent 60%);opacity:0;transition:opacity .25s;pointer-events:none}
+.tp.ok-hit .ok{opacity:1}
+.apps .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.rc.off .pad,.rc.off .tp{opacity:.55}
+.vol{display:flex;align-items:center;gap:12px}
+.vol input{flex:1;height:30px;border-radius:15px;touch-action:none}
+.vol input::-webkit-slider-thumb{width:30px;height:30px}.vol input::-moz-range-thumb{width:30px;height:30px}
+.vol .v{min-width:40px;text-align:right;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.vol .cb.on{background:var(--nv-error);color:#fff}
+.vs{position:relative;height:64px;border-radius:20px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
+.vs ha-icon{--mdc-icon-size:24px;opacity:.6;transition:opacity .15s,transform .15s}
+.vs .mid{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;opacity:.7}
+.vs .mid b{font-size:15px;font-variant-numeric:tabular-nums}
+.vs.up .pl,.vs.down .mi{opacity:1;transform:scale(1.25)}
+.vs.muted .mid{color:var(--nv-error);opacity:1}
+@container (max-width:280px){.cb{width:40px;height:40px}}`;
+  var KEYS = ["up", "down", "left", "right", "ok", "back", "home", "menu", "play_pause", "rewind", "forward", "vol_down", "mute", "vol_up", "ch_down", "input", "ch_up", "power"];
+  var KEYLABELS = {
+    up: "Hoch",
+    down: "Runter",
+    left: "Links",
+    right: "Rechts",
+    ok: "OK",
+    back: "Zurück",
+    home: "Home",
+    menu: "Menü",
+    play_pause: "Play/Pause",
+    rewind: "Zurückspulen",
+    forward: "Vorspulen",
+    vol_down: "Leiser",
+    mute: "Stumm",
+    vol_up: "Lauter",
+    ch_down: "Kanal runter",
+    input: "Eingang",
+    ch_up: "Kanal hoch",
+    power: "Ein/Aus"
+  };
+  var KEYICONS = {
+    up: "mdi:chevron-up",
+    down: "mdi:chevron-down",
+    left: "mdi:chevron-left",
+    right: "mdi:chevron-right",
+    back: "mdi:arrow-left",
+    home: "mdi:home-outline",
+    menu: "mdi:menu",
+    play_pause: "mdi:play-pause",
+    rewind: "mdi:rewind",
+    forward: "mdi:fast-forward",
+    vol_down: "mdi:volume-minus",
+    mute: "mdi:volume-off",
+    vol_up: "mdi:volume-plus",
+    ch_down: "mdi:minus",
+    input: "mdi:import",
+    ch_up: "mdi:plus"
+  };
+  var REPEAT = /* @__PURE__ */ new Set(["up", "down", "left", "right", "vol_down", "vol_up", "ch_down", "ch_up", "rewind", "forward"]);
+  var KEYMAPS = {
+    androidtv_remote: {
+      up: "DPAD_UP",
+      down: "DPAD_DOWN",
+      left: "DPAD_LEFT",
+      right: "DPAD_RIGHT",
+      ok: "DPAD_CENTER",
+      back: "BACK",
+      home: "HOME",
+      menu: "MENU",
+      play_pause: "MEDIA_PLAY_PAUSE",
+      rewind: "MEDIA_REWIND",
+      forward: "MEDIA_FAST_FORWARD",
+      vol_up: "VOLUME_UP",
+      vol_down: "VOLUME_DOWN",
+      mute: "VOLUME_MUTE",
+      ch_up: "CHANNEL_UP",
+      ch_down: "CHANNEL_DOWN",
+      input: "TV_INPUT"
+    },
+    androidtv: {
+      up: "UP",
+      down: "DOWN",
+      left: "LEFT",
+      right: "RIGHT",
+      ok: "CENTER",
+      back: "BACK",
+      home: "HOME",
+      menu: "MENU",
+      play_pause: "input keyevent 85",
+      rewind: "input keyevent 89",
+      forward: "input keyevent 90",
+      vol_up: "input keyevent 24",
+      vol_down: "input keyevent 25",
+      mute: "input keyevent 164",
+      ch_up: "input keyevent 166",
+      ch_down: "input keyevent 167",
+      input: "input keyevent 178"
+    },
+    philips_js: {
+      up: "CursorUp",
+      down: "CursorDown",
+      left: "CursorLeft",
+      right: "CursorRight",
+      ok: "Confirm",
+      back: "Back",
+      home: "Home",
+      menu: "Options",
+      play_pause: "Pause|Play",
+      rewind: "Rewind",
+      forward: "FastForward",
+      vol_up: "VolumeUp",
+      vol_down: "VolumeDown",
+      mute: "Mute",
+      ch_up: "ChannelStepUp",
+      ch_down: "ChannelStepDown",
+      input: "Source"
+    },
+    apple_tv: {
+      up: "up",
+      down: "down",
+      left: "left",
+      right: "right",
+      ok: "select",
+      back: "menu",
+      home: "home",
+      menu: "top_menu",
+      play_pause: "play_pause",
+      rewind: "skip_backward",
+      forward: "skip_forward",
+      vol_up: "volume_up",
+      vol_down: "volume_down"
+    },
+    roku: {
+      up: "up",
+      down: "down",
+      left: "left",
+      right: "right",
+      ok: "select",
+      back: "back",
+      home: "home",
+      menu: "info",
+      play_pause: "play",
+      rewind: "reverse",
+      forward: "forward",
+      vol_up: "volume_up",
+      vol_down: "volume_down",
+      mute: "volume_mute",
+      ch_up: "channel_up",
+      ch_down: "channel_down"
+    },
+    samsungtv: {
+      up: "KEY_UP",
+      down: "KEY_DOWN",
+      left: "KEY_LEFT",
+      right: "KEY_RIGHT",
+      ok: "KEY_ENTER",
+      back: "KEY_RETURN",
+      home: "KEY_HOME",
+      menu: "KEY_MENU",
+      play_pause: "KEY_PLAY",
+      rewind: "KEY_REWIND",
+      forward: "KEY_FF",
+      vol_up: "KEY_VOLUP",
+      vol_down: "KEY_VOLDOWN",
+      mute: "KEY_MUTE",
+      ch_up: "KEY_CHUP",
+      ch_down: "KEY_CHDOWN",
+      input: "KEY_SOURCE"
+    }
+  };
+  var PLATFORMS = [
+    ["androidtv_remote", "Android TV / Google TV (Android TV Remote)"],
+    ["androidtv", "Fire TV / Android TV (ADB)"],
+    ["philips_js", "Philips TV"],
+    ["apple_tv", "Apple TV"],
+    ["roku", "Roku"],
+    ["samsungtv", "Samsung TV"]
+  ];
+  var APPS = {
+    netflix: ["Netflix", "mdi:netflix", "com.netflix.ninja", "https://www.netflix.com/title"],
+    youtube: ["YouTube", "mdi:youtube", "com.google.android.youtube.tv", "https://www.youtube.com"],
+    prime: ["Prime Video", "mdi:filmstrip-box-multiple", "com.amazon.amazonvideo.livingroom", "https://app.primevideo.com"],
+    disney: ["Disney+", "mdi:castle", "com.disney.disneyplus", "https://www.disneyplus.com"],
+    appletv: ["Apple TV", "mdi:apple", "com.apple.atve.androidtv.appletv", "https://tv.apple.com"],
+    spotify: ["Spotify", "mdi:spotify", "com.spotify.tv.android", "spotify://"],
+    ytmusic: ["YouTube Music", "mdi:music-circle", "com.google.android.youtube.tvmusic", "https://music.youtube.com"],
+    plex: ["Plex", "mdi:plex", "com.plexapp.android", "plex://"],
+    kodi: ["Kodi", "mdi:kodi", "org.xbmc.kodi"],
+    twitch: ["Twitch", "mdi:twitch", "tv.twitch.android.app", "twitch://home"],
+    dazn: ["DAZN", "mdi:soccer", "com.dazn", "https://www.dazn.com"],
+    playstore: ["Play Store", "mdi:google-play", "com.android.vending"],
+    settings: ["Einstellungen", "mdi:cog-outline", "com.android.tv.settings"]
+  };
+  var appOf = (a) => {
+    const p = APPS[a.preset] || [];
+    return { ...a, name: a.name ?? p[0], icon: a.icon || p[1] || "mdi:application-outline", pkg: a.package || p[2], link: p[3] };
+  };
+  var isApp = (a, cur2) => same(a.app, cur2) || same(a.pkg, cur2) || same(a.name, cur2);
+  var RDEF = { layout: "dpad", show_power: true, show_nav: true, show_media: true, show_volume: true, volume_mode: "buttons", show_channels: false };
+  var platformOf = (h, c) => c.platform && c.platform !== "auto" ? c.platform : h?.entities?.[c.entity]?.platform in KEYMAPS ? h.entities[c.entity].platform : dom(c.entity) === "media_player" ? "androidtv" : "androidtv_remote";
+  var playerOf = (h, c) => {
+    if (c.media_player) return c.media_player;
+    if (dom(c.entity) === "media_player") return c.entity;
+    const dev = h?.entities?.[c.entity]?.device_id;
+    return dev && Object.values(h.entities).find((e) => e.device_id === dev && dom(e.entity_id) === "media_player" && h.states[e.entity_id])?.entity_id || null;
+  };
+  var volOf = (h, c, mp) => [c.volume_entity, mp].find((id) => id && h?.states[id]?.attributes.supported_features & 4) || null;
+  var currentApp = (h, c, mp) => {
+    const r = h.states[c.entity]?.attributes || {}, m = mp && h.states[mp]?.attributes || {};
+    return r.current_activity || m.app_id || m.app_name || m.source || null;
+  };
+  var same = (a, b) => !!a && !!b && String(a).toLowerCase() === String(b).toLowerCase();
+  var NovaRemoteCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("remote-card-editor"));
+    }
+    static getStubConfig(h) {
+      const ids = Object.keys(h.states).filter((i) => dom(i) === "remote");
+      const id = ids.find((i) => h.entities?.[i]?.platform === "androidtv_remote" && h.states[i].state === "on") || ids.find((i) => h.entities?.[i]?.platform === "androidtv_remote") || ids[0] || Object.keys(h.states).find((i) => h.entities?.[i]?.platform === "androidtv") || "remote.";
+      return { entity: id, apps: [{ preset: "netflix" }, { preset: "youtube" }, { preset: "prime" }, { preset: "disney" }] };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (!["remote", "media_player"].includes(dom(c.entity))) throw new Error("entity muss eine remote.* oder media_player.* Entität sein");
+      this._c = { ...RDEF, ...c };
+      this._ids = entityIds(this._c);
+      this._built = false;
+      if (this._h) {
+        this._build();
+        this._update();
+      }
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._built || old?.entities !== h.entities && (platformOf(h, this._c) !== this._plat || playerOf(h, this._c) !== this._mp) || this._c.volume_mode === "slider" && !this._vp && volOf(h, this._c, this._mp)) this._build();
+      else if (!hassChanged(old, h, [...this._ids, this._mp].filter(Boolean))) return;
+      this._update();
+    }
+    getCardSize() {
+      return 7;
+    }
+    getGridOptions() {
+      return { columns: 6, rows: "auto", min_columns: 4 };
+    }
+    disconnectedCallback() {
+      this._stops?.forEach((f) => f());
+    }
+    _build() {
+      this._built = true;
+      this._stops?.forEach((f) => f());
+      const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      this._plat = platformOf(this._h, c);
+      this._mp = playerOf(this._h, c);
+      this._stops = /* @__PURE__ */ new Set();
+      this._vp = c.volume_mode === "slider" ? volOf(this._h, c, this._mp) : null;
+      this._vi = c.volume_entity || this._mp;
+      const k = (id) => this._has(id) ? `<div class="cb" data-k="${id}" title="${KEYLABELS[id]}"><ha-icon icon="${KEYICONS[id]}"></ha-icon></div>` : "";
+      const row = (ids) => {
+        const h = ids.map(k).join("");
+        return h ? `<div class="row3">${h}</div>` : "";
+      };
+      const pad = c.layout === "touchpad" ? '<div class="tp" title="Wischen = Richtung, Tippen = OK"><span class="ok"></span><ha-icon icon="mdi:gesture-swipe"></ha-icon></div>' : `<div class="pad">${["up", "left", "right", "down"].map((x) => `<div class="k ${x}" data-k="${x}" title="${KEYLABELS[x]}"><ha-icon icon="${KEYICONS[x]}"></ha-icon></div>`).join("")}<div class="k ok" data-k="ok" title="OK">OK</div></div>`;
+      this._apps = [].concat(c.apps || []).map(appOf);
+      const btns = [].concat(c.buttons || []);
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${RCSS}</style><div class="g rc">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${c.show_power !== false ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
+${pad}
+${c.show_nav !== false ? row(["back", "home", "menu"]) : ""}
+${c.show_media !== false ? row(["rewind", "play_pause", "forward"]) : ""}
+${c.show_volume === false ? "" : c.volume_mode === "swipe" ? '<div class="vs" title="Wischen: rechts/oben lauter, links/unten leiser · Tippen: stumm"><ha-icon class="mi" icon="mdi:volume-minus"></ha-icon><div class="mid"><b></b><span>Lautstärke</span></div><ha-icon class="pl" icon="mdi:volume-plus"></ha-icon></div>' : this._vp ? `<div class="vol">${k("mute")}<input type="range" min="0" max="100" step="1" aria-label="Lautstärke"><span class="v"></span></div>` : row(["vol_down", "mute", "vol_up"])}
+${c.show_channels ? row(["ch_down", "input", "ch_up"]) : ""}
+${btns.length ? '<div class="pills grid btns"></div>' : ""}
+${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = { g: q(".g"), ic: q(".hd .ic"), name: q(".hd b"), sub: q(".hd small"), pw: q(".pw") };
+      press(this._e.ic, { tap: () => runAction(this, { entity: c.entity, tap_action: c.tap_action }, "tap", true), hold: () => runAction(this, { entity: c.entity, hold_action: c.hold_action }, "hold") });
+      if (this._e.pw) press(this._e.pw, { tap: () => this._key("power") });
+      r.querySelectorAll("[data-k]").forEach((el2) => this._rep(el2, el2.dataset.k));
+      const vol = q(".vol input");
+      if (vol) {
+        const show = () => {
+          vol.style.setProperty("--p", `${vol.value}%`);
+          q(".vol .v").textContent = `${vol.value} %`;
+        };
+        vol.addEventListener("pointerdown", () => {
+          this._drag = true;
+        });
+        vol.addEventListener("input", () => {
+          this._drag = true;
+          show();
+        });
+        vol.addEventListener("change", () => {
+          this._drag = false;
+          show();
+          this._h.callService("media_player", "volume_set", { entity_id: this._vp, volume_level: +vol.value / 100 });
+        });
+        this._e.vol = vol;
+        this._e.vv = q(".vol .v");
+        this._e.mu = q(".vol [data-k=mute]");
+      }
+      const vs = q(".vs");
+      if (vs) this._swipeVol(vs);
+      const tp = q(".tp");
+      if (tp) this._touch(tp);
+      const pill = (o, fn) => {
+        const el2 = document.createElement("div");
+        el2.className = "pill";
+        el2.innerHTML = '<span class="i"></span><span class="t"></span>';
+        setIcon(el2.firstChild, o.icon || "mdi:gesture-tap-button");
+        el2.lastChild.textContent = o.name ?? "";
+        press(el2, { tap: fn });
+        return el2;
+      };
+      q(".btns")?.append(...btns.map((b) => pill(b, () => this._button(b))));
+      this._pills = this._apps.map((a) => pill(a, () => this._launch(a)));
+      q(".apps")?.append(...this._pills);
+    }
+    // Befehl einer Taste: eigene Belegung vor Standard der Integration
+    _cmd(k) {
+      return this._c.keys?.[k] || KEYMAPS[this._plat]?.[k];
+    }
+    _has(k) {
+      return !!this._cmd(k) || this._c.volume_entity && ["vol_up", "vol_down", "mute"].includes(k);
+    }
+    // Taste sofort beim Drücken senden, beim Festhalten wiederholen
+    _rep(el2, k) {
+      let t, iv;
+      const stop = () => {
+        clearTimeout(t);
+        clearInterval(iv);
+        t = iv = null;
+        el2.classList.remove("hit");
+      };
+      this._stops.add(stop);
+      el2.tabIndex = 0;
+      el2.setAttribute("role", "button");
+      el2.classList.add("tap");
+      el2.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        stop();
+        el2.classList.add("hit");
+        this._key(k);
+        if (REPEAT.has(k)) t = setTimeout(() => {
+          iv = setInterval(() => this._key(k, true), 160);
+        }, 450);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach((x) => el2.addEventListener(x, stop));
+      el2.addEventListener("contextmenu", (e) => e.preventDefault());
+      el2.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this._key(k);
+        }
+      });
+    }
+    // Touchpad: Wischen = Richtung (alle 40 px ein Schritt), Tippen = OK
+    _touch(tp) {
+      let sx = null, sy, moved, ft;
+      const flash = (cls) => {
+        tp.classList.add(cls);
+        clearTimeout(ft);
+        ft = setTimeout(() => tp.classList.remove("hit", "ok-hit"), 180);
+      };
+      this._stops.add(() => clearTimeout(ft));
+      tp.tabIndex = 0;
+      tp.addEventListener("pointerdown", (e) => {
+        sx = e.clientX;
+        sy = e.clientY;
+        moved = false;
+        tp.setPointerCapture?.(e.pointerId);
+      });
+      tp.addEventListener("pointermove", (e) => {
+        if (sx == null) return;
+        const dx = e.clientX - sx, dy = e.clientY - sy;
+        if (Math.hypot(dx, dy) < 40) return;
+        this._key(Math.abs(dx) > Math.abs(dy) ? dx > 0 ? "right" : "left" : dy > 0 ? "down" : "up");
+        flash("hit");
+        sx = e.clientX;
+        sy = e.clientY;
+        moved = true;
+      });
+      tp.addEventListener("pointerup", () => {
+        if (sx != null && !moved) {
+          this._key("ok");
+          flash("ok-hit");
+        }
+        sx = null;
+      });
+      tp.addEventListener("pointercancel", () => {
+        sx = null;
+      });
+      tp.addEventListener("keydown", (e) => {
+        const k = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Enter: "ok", " ": "ok" }[e.key];
+        if (k) {
+          e.preventDefault();
+          this._key(k);
+        }
+      });
+    }
+    // Wischfläche Lautstärke: alle 22 px ein Schritt (rechts/oben lauter), Tippen = stumm
+    _swipeVol(el2) {
+      let sx = null, sy, moved, ft;
+      this._stops.add(() => clearTimeout(ft));
+      this._e.vs = el2;
+      this._e.vsv = el2.querySelector(".mid b");
+      el2.tabIndex = 0;
+      el2.addEventListener("pointerdown", (e) => {
+        sx = e.clientX;
+        sy = e.clientY;
+        moved = false;
+        el2.setPointerCapture?.(e.pointerId);
+      });
+      el2.addEventListener("pointermove", (e) => {
+        if (sx == null) return;
+        const d = e.clientX - sx - (e.clientY - sy);
+        if (Math.abs(d) < 22) return;
+        const up = d > 0;
+        this._key(up ? "vol_up" : "vol_down", moved);
+        el2.classList.remove("up", "down");
+        el2.classList.add(up ? "up" : "down");
+        clearTimeout(ft);
+        ft = setTimeout(() => el2.classList.remove("up", "down"), 200);
+        sx = e.clientX;
+        sy = e.clientY;
+        moved = true;
+      });
+      el2.addEventListener("pointerup", () => {
+        if (sx != null && !moved) this._key("mute");
+        sx = null;
+      });
+      el2.addEventListener("pointercancel", () => {
+        sx = null;
+      });
+      el2.addEventListener("contextmenu", (e) => e.preventDefault());
+      el2.addEventListener("keydown", (e) => {
+        const k = { ArrowUp: "vol_up", ArrowRight: "vol_up", ArrowDown: "vol_down", ArrowLeft: "vol_down", Enter: "mute", " ": "mute" }[e.key];
+        if (k) {
+          e.preventDefault();
+          this._key(k);
+        }
+      });
+    }
+    _send(cmd) {
+      const c = this._c, cmds = list(cmd);
+      if (!cmds.length) return;
+      if (this._plat === "androidtv" && dom(c.entity) === "media_player") cmds.forEach((x) => this._h.callService("androidtv", "adb_command", { entity_id: c.entity, command: x }));
+      else this._h.callService("remote", "send_command", { entity_id: c.entity, command: cmds });
+    }
+    _key(k, quiet) {
+      const c = this._c, h = this._h;
+      if (!h) return;
+      if (!quiet) fire(this, "haptic", "light");
+      if (k === "power" && !c.keys?.power) {
+        const s = h.states[c.entity], on = s && !["off", "standby", "unavailable", "unknown"].includes(s.state);
+        return h.callService(dom(c.entity), on ? "turn_off" : "turn_on", { entity_id: c.entity });
+      }
+      const v = c.volume_entity;
+      if (v && !c.keys?.[k] && ["vol_up", "vol_down", "mute"].includes(k)) {
+        return k === "mute" ? h.callService("media_player", "volume_mute", { entity_id: v, is_volume_muted: !h.states[v]?.attributes.is_volume_muted }) : h.callService("media_player", k === "vol_up" ? "volume_up" : "volume_down", { entity_id: v });
+      }
+      this._send(this._alt(k, this._cmd(k)));
+    }
+    // „A|B“: abwechselnd A und B senden (z. B. Philips kennt kein PlayPause, nur Pause und Play)
+    _alt(k, cmd) {
+      const p = String(cmd || "").split("|");
+      if (p.length < 2) return cmd;
+      const alt = this._altIdx ||= {}, i = alt[k] || 0;
+      alt[k] = (i + 1) % p.length;
+      return p[i].trim();
+    }
+    _button(b) {
+      fire(this, "haptic", "light");
+      if (b.tap_action?.action && b.tap_action.action !== "default") return runAction(this, { tap_action: b.tap_action }, "tap");
+      this._send(this._alt(`b:${b.name}:${b.command}`, b.command));
+    }
+    // App öffnen: Android TV Remote über Paketname/Deep-Link, sonst über die Quelle des Players
+    _launch(a) {
+      const c = this._c, h = this._h;
+      fire(this, "haptic", "light");
+      if (a.tap_action?.action && a.tap_action.action !== "default") return runAction(this, { tap_action: a.tap_action }, "tap");
+      if (dom(c.entity) === "remote" && (this._plat === "androidtv_remote" || !this._mp)) {
+        const id2 = a.app || a.link || a.pkg;
+        return id2 && h.callService("remote", "turn_on", { entity_id: c.entity, activity: id2 });
+      }
+      const id = a.app || (this._plat === "androidtv" ? a.pkg : null) || a.name;
+      if (id) h.callService("media_player", "select_source", { entity_id: this._mp || c.entity, source: id });
+    }
+    _update() {
+      const h = this._h, c = this._c, e = this._e;
+      if (!h || !e) return;
+      const s = h.states[c.entity], m = this._mp && h.states[this._mp];
+      const na = !s || s.state === "unavailable";
+      const off2 = na || ["off", "standby"].includes(s.state) || m && ["off", "standby"].includes(m.state);
+      this.classList.toggle("nv-na", na);
+      e.g.classList.toggle("na", na);
+      e.g.classList.toggle("off", !!off2);
+      const cur2 = currentApp(h, c, this._mp), hit = this._apps.find((a) => isApp(a, cur2) || same(a.name, m?.attributes.app_name));
+      e.name.textContent = c.name ?? s?.attributes.friendly_name ?? m?.attributes.friendly_name ?? c.entity;
+      e.sub.textContent = !s ? "nicht gefunden" : off2 ? fmtState(h, m && !na ? m : s) : hit?.name || m?.attributes.app_name || cur2 || fmtState(h, s);
+      setIcon(e.ic, c.icon || !off2 && hit?.icon || (m?.attributes.device_class === "tv" ? "mdi:television" : "mdi:remote-tv"));
+      e.ic.parentElement.classList.toggle("on", !off2);
+      e.pw?.classList.toggle("on", !off2);
+      this._pills.forEach((el2, i) => el2.classList.toggle("on", !off2 && this._apps[i] === hit));
+      if (e.vs) {
+        const a = this._vi && h.states[this._vi]?.attributes || {};
+        e.vsv.textContent = a.volume_level != null ? `${Math.round(a.volume_level * 100)} %` : "";
+        e.vs.classList.toggle("muted", !!a.is_volume_muted);
+      }
+      const va = this._vp && h.states[this._vp]?.attributes;
+      if (e.vol && va) {
+        if (!this._drag && va.volume_level != null) {
+          const v = Math.round(va.volume_level * 100);
+          e.vol.value = v;
+          e.vol.style.setProperty("--p", `${v}%`);
+          e.vv.textContent = `${v} %`;
+        }
+        e.mu?.classList.toggle("on", !!va.is_volume_muted);
+      }
+    }
+  };
+  define("remote-card", NovaRemoteCard, { name: "Nova Fernbedienung", description: "Fernbedienung für Fernseher und Streaming-Boxen (Android TV/Google TV, Fire TV, Philips, Apple TV, Roku, Samsung): Steuerkreuz oder Touchpad, Medien, Lautstärke und Apps.", documentationURL: docUrl("nova-fernbedienung") });
+  var RGEN = [
+    { name: "entity", required: true, selector: { entity: { domain: ["remote", "media_player"] } } },
+    g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
+    g2(sel("platform", [["auto", "Automatisch"], ...PLATFORMS]), { name: "media_player", selector: { entity: { domain: "media_player" } } })
+  ];
+  var RCTRL = [
+    sel("layout", [["dpad", "Steuerkreuz"], ["touchpad", "Touchpad (wischen)"]]),
+    g2({ name: "show_power", selector: { boolean: {} } }, { name: "show_nav", selector: { boolean: {} } }),
+    g2({ name: "show_media", selector: { boolean: {} } }, { name: "show_volume", selector: { boolean: {} } }),
+    sel("volume_mode", [["buttons", "Tasten (− / +)"], ["swipe", "Wischen (in Schritten)"], ["slider", "Schieberegler"]]),
+    { name: "show_channels", selector: { boolean: {} } },
+    { name: "volume_entity", selector: { entity: { domain: "media_player" } } }
+  ];
+  var RACT = [g2({ name: "tap_action", selector: A }, { name: "hold_action", selector: A })];
+  var RAPP = [
+    sel("preset", [["", "Eigene App"], ...Object.entries(APPS).map(([k, [n]]) => [k, n])]),
+    g2({ name: "name", selector: T }, { name: "icon", selector: I }),
+    { name: "app", selector: T },
+    { name: "package", selector: T },
+    { name: "tap_action", selector: A }
+  ];
+  var RBTN = [g2({ name: "name", selector: T }, { name: "icon", selector: I }), { name: "command", selector: T }, { name: "tap_action", selector: A }];
+  var RKEYS = [g2(...KEYS.map((k) => ({ name: k, selector: T })))];
+  var RLABELS = {
+    ...BASE_LABELS,
+    ...KEYLABELS,
+    entity: "Fernbedienung (remote.* oder ADB-Player)",
+    platform: "Gerätetyp",
+    media_player: "Media-Player (optional)",
+    layout: "Bedienfeld",
+    show_power: "Ein/Aus-Button",
+    show_nav: "Zurück / Home / Menü",
+    show_media: "Medientasten",
+    show_volume: "Lautstärke",
+    volume_mode: "Lautstärke als",
+    show_channels: "Kanäle und Eingang",
+    volume_entity: "Lautstärke über anderen Player (optional)",
+    preset: "Vorlage",
+    app: "App-Link oder Quelle",
+    package: "Paketname",
+    command: "Befehl",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken"
+  };
+  var RHELPERS = {
+    platform: "Bestimmt die Tastenbefehle. Automatisch = nach Integration der Entität",
+    media_player: "Leer = automatisch (Player am selben Gerät). Liefert Zustand und laufende App",
+    volume_mode: "Schieberegler braucht einen Player mit einstellbarer Lautstärke (hier oder unter „Lautstärke über anderen Player“), sonst bleibt es bei den Tasten",
+    volume_entity: "z. B. Fernseher oder AV-Receiver, wenn die Box die Lautstärke nicht selbst regelt",
+    app: "Android TV: Link, mit dem die App startet (z. B. https://www.youtube.com). Andere Geräte: Name der Quelle. Leer = aus der Vorlage",
+    package: "Erkennt die laufende App (z. B. com.netflix.ninja). Ohne Link wird damit gestartet – das lehnen manche Boxen ab",
+    command: "Befehl für remote.send_command, mehrere nacheinander mit Komma (z. B. DPAD_DOWN, DPAD_CENTER), abwechselnd mit | (z. B. Pause|Play)",
+    tap_action: "Optional statt App bzw. Befehl, z. B. ein Skript"
+  };
+  var NovaRemoteCardEditor = class extends NovaEditorBase {
+    _ilabel(it, j, m) {
+      return `${j + 1}. ${it.name || APPS[it.preset]?.[0] || it.app || it.package || it.command || `Neu: ${m.item}`}`;
+    }
+    _build() {
+      const r = this.shadowRoot, c0 = this._config;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), strip2 = (c) => {
+        Object.entries(RDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
+        if (c.platform === "auto") delete c.platform;
+        return c;
+      };
+      const data = { ...RDEF, platform: "auto", ...c0 };
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip2(merge(this._config, names(schema), v))));
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(RGEN))),
+        this._section("controls", "mdi:remote-tv", "Bedienung", (b) => b.append(form(RCTRL))),
+        this._section("apps", "mdi:apps", "Apps", (b) => this._appList(b)),
+        this._section("buttons", "mdi:gesture-tap-button", "Eigene Tasten", (b) => this._itemList(b, "buttons", RBTN, { item: "Taste", icon: "mdi:gesture-tap-button" }, "Taste hinzufügen")),
+        this._section("keys", "mdi:keyboard-outline", "Tastenbelegung", (b) => this._keys(b)),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(RACT)))
+      );
+    }
+    _appList(b) {
+      const h = this._hass, c = this._config, cur2 = h && c.entity && currentApp(h, c, playerOf(h, c));
+      const apps = this._items("apps").map(appOf);
+      if (cur2 && cur2.includes(".") && !apps.some((a) => isApp(a, cur2))) {
+        b.append(this._hint(`Gerade läuft: ${cur2}. Startet die App danach nicht, unter „App-Link“ einen Link eintragen.`), this._add("Laufende App übernehmen", () => {
+          const preset = Object.keys(APPS).find((k) => same(APPS[k][2], cur2) || same(APPS[k][0], cur2));
+          const n = [...this._items("apps"), preset ? { preset } : { name: cur2.split(".").pop(), package: cur2 }];
+          this._open = new Set([...this._open].filter((x) => x.startsWith("sec.")).concat(`apps.${n.length - 1}`));
+          this._setItems("apps", n);
+          this._rebuild();
+        }));
+      }
+      this._itemList(b, "apps", RAPP, { item: "App", icon: "mdi:application-outline" }, "App hinzufügen", (it) => ({ preset: "", ...it }));
+    }
+    // Eigene Tastenbelegung: leer = Standard der Integration (steht als Hilfetext darunter)
+    _keys(b) {
+      const plat = platformOf(this._hass, this._config), map = KEYMAPS[plat] || {};
+      b.append(this._hint("Nur ausfüllen, wenn eine Taste anders belegt sein soll. Mehrere Befehle nacheinander mit Komma, abwechselnd bei jedem Druck mit | (z. B. Pause|Play)."));
+      const f = this._form(RKEYS, { ...this._config.keys }, (v) => {
+        const keys = Object.fromEntries(KEYS.filter((k) => v[k]).map((k) => [k, v[k]])), c = { ...this._config };
+        if (Object.keys(keys).length) c.keys = keys;
+        else delete c.keys;
+        this._emit(c);
+      });
+      f.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
+      b.append(f);
+    }
+  };
+  __publicField(NovaRemoteCardEditor, "labels", RLABELS);
+  __publicField(NovaRemoteCardEditor, "helpers", RHELPERS);
+  __publicField(NovaRemoteCardEditor, "openSections", ["general"]);
+  define("remote-card-editor", NovaRemoteCardEditor);
+
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.10.1b1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.11.0"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();

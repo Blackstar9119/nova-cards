@@ -1,6 +1,6 @@
 import {define, docUrl, tag} from './shared/define.js';
 import {dom, setIcon} from './shared/utils.js';
-import {isOn, TOGGLE, PRESS, fmtState, unitJoin, decOf, nameOf, iconOf, valueOf, alertHit} from './shared/state.js';
+import {isOn, TOGGLE, PRESS, SLIDE, fmtState, unitJoin, decOf, nameOf, iconOf, valueOf, alertHit} from './shared/state.js';
 import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS} from './shared/styles.js';
@@ -10,18 +10,6 @@ import {g2, T, I, A, ENT, TITLE, COLS, NUM, sel, NAMEICON, BASE_LABELS} from './
 
 /* ---------- Nova Modular Card ---------- */
 
-// Schieberegler je Domain: v = aktueller Wert, r = [min, max, step], u = Einheit, set = Service
-const SLIDE = {
-  number: {v: s => +s.state, r: a => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService('number', 'set_value', {entity_id: id, value: v})},
-  input_number: {v: s => +s.state, r: a => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService('input_number', 'set_value', {entity_id: id, value: v})},
-  light: {v: s => s.state === 'on' ? Math.max(1, Math.round((s.attributes.brightness || 0) / 2.55)) : 0, r: () => [0, 100, 1], u: '%',
-    set: (h, id, v) => v > 0 ? h.callService('light', 'turn_on', {entity_id: id, brightness_pct: v}) : h.callService('light', 'turn_off', {entity_id: id})},
-  fan: {v: s => s.state === 'on' ? s.attributes.percentage ?? 0 : 0, r: a => [0, 100, a.percentage_step || 1], u: '%', set: (h, id, v) => h.callService('fan', 'set_percentage', {entity_id: id, percentage: Math.round(v)})},
-  cover: {v: s => s.attributes.current_position ?? 0, r: () => [0, 100, 1], u: '%', set: (h, id, v) => h.callService('cover', 'set_cover_position', {entity_id: id, position: v})},
-  media_player: {v: s => Math.round((s.attributes.volume_level ?? 0) * 100), r: () => [0, 100, 1], u: '%', set: (h, id, v) => h.callService('media_player', 'volume_set', {entity_id: id, volume_level: v / 100})},
-  climate: {v: s => s.attributes.temperature ?? 0, r: a => [a.min_temp ?? 7, a.max_temp ?? 35, a.target_temp_step ?? .5], u: '°', set: (h, id, v) => h.callService('climate', 'set_temperature', {entity_id: id, temperature: v})},
-  water_heater: {v: s => s.attributes.temperature ?? 0, r: a => [a.min_temp ?? 30, a.max_temp ?? 70, a.target_temp_step ?? 1], u: '°', set: (h, id, v) => h.callService('water_heater', 'set_temperature', {entity_id: id, temperature: v})},
-};
 const duration = m => m >= 60 ? `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')} h` : `${m} min`;
 
 const ITEMS = {info: 'entities', entities: 'entities', sliders: 'entities', buttons: 'buttons', alerts: 'alerts'};
@@ -217,6 +205,9 @@ class NovaModularCard extends HTMLElement {
     const r = this.shadowRoot || this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}</style><div class="g"></div>`;
     this._g = r.querySelector('.g');
+    // Größe in Prozent: skaliert die ganze Karte (Schrift, Icons, Abstände)
+    const z = +this._c.size;
+    if (z > 0 && z !== 100) this._g.style.zoom = z / 100;
     this._ups = this._c.blocks.map(b => {
       const w = document.createElement('div');
       w.className = `blk ${b.type}`;
@@ -265,7 +256,10 @@ const BM = {
       {name: 'message', selector: T}, g2({name: 'icon', selector: I}, sel('level', [['warning', 'Warnung'], ['error', 'Fehler'], ['info', 'Hinweis']]))]},
 };
 
+const MLOOK = [{name: 'size', selector: {number: {min: 50, max: 250, step: 10, mode: 'slider', unit_of_measurement: '%'}}}];
+
 const MHELPERS = {
+  size: 'Skaliert die ganze Karte, z. B. 150 % für Wandpanels. Standard 100 %',
   status: 'Text unter dem Namen. Aus/Standby/Idle = inaktiv',
   active: 'Optional: bestimmt, ob das Icon leuchtet (statt Status-Entität)',
   button_icon: 'Button erscheint, sobald Icon oder Aktion gesetzt ist',
@@ -280,7 +274,7 @@ const MHELPERS = {
 const normItems = b => { const k = ITEMS[b.type]; return k && Array.isArray(b[k]) ? {...b, [k]: b[k].map(x => typeof x === 'string' ? {entity: x} : x)} : {...b}; };
 
 class NovaModularCardEditor extends NovaEditorBase {
-  static labels = BASE_LABELS;
+  static labels = {...BASE_LABELS, size: 'Größe'};
   static helpers = MHELPERS;
   _blocks() { return (this._config.blocks || []).map(normItems); }
   _set(bl) { this._emit({...this._config, blocks: bl}); }
@@ -288,7 +282,12 @@ class NovaModularCardEditor extends NovaEditorBase {
   _build() {
     const r = this.shadowRoot;
     r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-    r.querySelector('.wrap').append(this._section('blocks', 'mdi:view-dashboard-outline', 'Bausteine', w => this._blockList(w)));
+    r.querySelector('.wrap').append(this._section('blocks', 'mdi:view-dashboard-outline', 'Bausteine', w => this._blockList(w)),
+      this._section('look', 'mdi:palette-outline', 'Aussehen', w => w.append(this._form(MLOOK, {size: 100, ...this._config}, v => {
+        const n = merge(this._config, ['size'], v);
+        if (n.size === 100) delete n.size;
+        this._emit(n);
+      }))));
   }
   _blockList(w) {
     const bl = this._blocks();
