@@ -41,6 +41,27 @@ export const lockScroll = on => {
   if (!on && locks > 0 && --locks === 0) els.forEach((e, i) => { e.style.overflow = saved?.[i] || ''; });
 };
 
+// Pop-ups decken nur den Inhaltsbereich ab, nicht die Seitenleiste von HA. Setzt --nv-pop-l/--nv-pop-r auf el und folgt
+// Größenänderungen (Seitenleiste ein-/ausgeklappt, Fenster). Gibt eine Funktion zum Beenden zurück.
+// HA-INTERN: home-assistant → home-assistant-main → partial-panel-resolver ist der Bereich neben der Seitenleiste.
+// Fehlt er, bleibt der Abstand 0 und das Pop-up deckt wie bisher das ganze Fenster ab.
+const panelEl = () => document.querySelector('home-assistant')?.shadowRoot?.querySelector('home-assistant-main')
+  ?.shadowRoot?.querySelector('partial-panel-resolver');
+export const followContent = el => {
+  const p = panelEl();
+  const set = () => {
+    const b = p?.isConnected ? p.getBoundingClientRect() : null;
+    const l = b ? Math.max(0, Math.round(b.left)) : 0, r = b ? Math.max(0, Math.round(innerWidth - b.right)) : 0;
+    el.style.setProperty('--nv-pop-l', `${l}px`);
+    el.style.setProperty('--nv-pop-r', `${r}px`);
+  };
+  set();
+  const ro = p ? new ResizeObserver(set) : null;
+  ro?.observe(p);
+  addEventListener('resize', set);
+  return () => { ro?.disconnect(); removeEventListener('resize', set); };
+};
+
 // Pop-up-Konfigurationen im Dashboard suchen (für Nova Navi und ihren Editor)
 export const findPopups = (o, out = []) => {
   if (!o || typeof o !== 'object') return out;

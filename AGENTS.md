@@ -143,6 +143,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | Elementname `hui-card-picker` (Vorschau in der Kartenauswahl erkennen) | `lifecycle.js` (`inPicker`) | Karte läuft wie normal eingebunden |
 | WebSocket `config/auth/list` (Benutzerliste, nur Admins) | `navi.js` (Editor, Sichtbarkeit) | nur der eigene Benutzer in der Auswahl |
 | Event `card-visibility-changed` + `element.hidden` (Karte ausblenden) | `appliance.js` | Karte ist leer (`:host([hidden])`), Platz im Raster bleibt |
+| `home-assistant` → `home-assistant-main` → `partial-panel-resolver` (Inhaltsbereich neben der Seitenleiste) | `popup-hub.js` (`followContent`, Pop-up Card und Navi-Pop-up) | Pop-up deckt das ganze Fenster ab |
 
 ## Dev-Workflow
 

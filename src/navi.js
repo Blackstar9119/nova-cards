@@ -6,15 +6,15 @@ import {NAVI_VARS, SECTION_EDITOR_CSS, roleVars} from './shared/styles.js';
 import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, sel, ROLE} from './shared/editor-schema.js';
-import {cleanHash, curHash, togglePopup, popupOptions} from './shared/popup-hub.js';
+import {cleanHash, curHash, togglePopup, popupOptions, followContent} from './shared/popup-hub.js';
 
 // Wie viele Mitglieder einer Gruppe sind an (ohne ex)
 const countOn = (h, group, ex) => ((h.states[group]?.attributes.entity_id) || []).filter(id => !(ex || []).includes(id) && isOn(h.states[id])).length;
 
 /* ---------- Popup mit beliebigen Karten ---------- */
 const PCSS = `
-:host{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
-.root{width:min(var(--nova-popup-width,1180px),96vw);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
+:host{position:fixed;inset:0 var(--nv-pop-r,0px) 0 var(--nv-pop-l,0px);z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
+.root{width:min(var(--nova-popup-width,1180px),96%);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
 background:linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9));border:1px solid var(--nv-border);box-shadow:0 20px 60px rgba(0,0,0,.45);color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:up .28s cubic-bezier(.2,.8,.2,1)}
 .hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(60,72,100,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -23,7 +23,7 @@ ha-icon{--mdc-icon-size:20px;display:flex}
 .body{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-popup-min-col,300px),1fr));gap:12px;align-items:start}
 .body.one{grid-template-columns:1fr}
 .empty{opacity:.6;font-size:13px;padding:8px}
-@media(max-width:600px){:host{align-items:flex-end}.root{width:100vw;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
+@media(max-width:600px){:host{align-items:flex-end}.root{width:100%;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
 @keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fi{from{opacity:0}}`;
 
 class NovaNaviPopup extends HTMLElement {
@@ -36,6 +36,8 @@ class NovaNaviPopup extends HTMLElement {
     r.querySelector('.x').addEventListener('click', () => this.onclose?.());
     this.addEventListener('click', e => { if (e.composedPath()[0] === this) this.onclose?.(); });
   }
+  connectedCallback() { this._unfollow?.(); this._unfollow = followContent(this); }
+  disconnectedCallback() { this._unfollow?.(); this._unfollow = null; }
   set cfg(c) {
     this._cfg = c;
     const r = this.shadowRoot;
