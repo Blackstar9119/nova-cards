@@ -162,7 +162,7 @@ class NovaPopupCard extends GridCard(HTMLElement) {
     else if (!want && this._isOpen) this._hide();
   }
   _show() {
-    // Die Ersatzkarte des Docks hält sich zurück, wenn die echte Karte in dieser Ansicht liegt
+    // Die Ersatzkarte von Nova Navi hält sich zurück, wenn die echte Karte in dieser Ansicht liegt
     if (this._fallback && hasPopup(this._cfg.hash)) return;
     this._isOpen = true;
     this._back = cameByNav();
@@ -277,7 +277,7 @@ class NovaPopupCard extends GridCard(HTMLElement) {
   /* --- Raster (GridCard) --- */
   _handoff() { return this._mode === 'preview'; }
 }
-define('popup-card', NovaPopupCard, {name: 'Nova Pop-up Card', description: 'Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – vom Dock oder jeder Karte mit Navigations-Aktion.', documentationURL: docUrl('nova-pop-up-card')});
+define('popup-card', NovaPopupCard, {name: 'Nova Pop-up Card', description: 'Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – von Nova Navi oder jeder Karte mit Navigations-Aktion.', documentationURL: docUrl('nova-pop-up-card')});
 
 /* ---------- Editor ---------- */
 const GENERAL = [
@@ -302,7 +302,7 @@ const LABELS = {
 const HELPERS = {
   ...GRID_HELPERS,
   hash: 'Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.',
-  title: 'Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Dock und Raum-Karte.',
+  title: 'Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Nova Navi und Raum-Karte.',
   stack_below: 'Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).',
   state: 'Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.',
   color: 'Leer = neutral.',
