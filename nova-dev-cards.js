@@ -1415,9 +1415,9 @@ hui-card-picker{flex:1;min-height:0}`;
   };
 
   // src/swipe.js
-  var DEF = { dots: true, reset_after: 0, fill: false, fit_screen: false, stack_below: 500 };
+  var DEF = { dots: true, reset_after: 0, fill: false, fit_screen: false, margin: 0, stack_below: 500 };
   var SCSS = `${NOVA_VARS}${GRID_CSS}
-:host{display:block}
+:host{display:block;box-sizing:border-box}
 :host(.fill){height:100%}
 .w{display:flex;flex-direction:column;gap:6px;min-height:0;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 .w.fill{height:100%}
@@ -1582,6 +1582,9 @@ hui-card-picker{flex:1;min-height:0}`;
       const fill = !!c.fill || !!c.fit_screen;
       this.classList.toggle("fill", fill);
       this._w.classList.toggle("fill", fill);
+      const m = Math.max(0, +c.margin || 0);
+      if (m) this.style.padding = `${m}px`;
+      else this.style.removeProperty("padding");
       this._fit();
       const old = this._pages;
       if (this._prev) old.slice(list2.length).forEach((p) => p._handOffCells());
@@ -1621,7 +1624,8 @@ hui-card-picker{flex:1;min-height:0}`;
         this.go(this._i, false);
       });
     }
-    // Bis zum unteren Bildschirmrand: Höhe = sichtbares Fenster minus Abstand oben, minus 8 px unten.
+    // Bis zum unteren Bildschirmrand: Höhe = sichtbares Fenster minus Abstand oben, minus 8 px unten
+    // (mit Rand steckt der Abstand unten schon im Rand).
     // Unabhängig davon, ob der Browser 100vh/100dvh richtig kennt (z. B. Silk auf dem Echo Show) – innerHeight stimmt immer.
     _fit() {
       if (!this._cfg?.fit_screen) {
@@ -1632,7 +1636,7 @@ hui-card-picker{flex:1;min-height:0}`;
         return;
       }
       const top = this.getBoundingClientRect().top + (window.scrollY || 0);
-      const hgt = Math.max(160, Math.floor(window.innerHeight - Math.max(0, top) - 8));
+      const hgt = Math.max(160, Math.floor(window.innerHeight - Math.max(0, top) - (+this._cfg.margin > 0 ? 0 : 8)));
       if (hgt !== this._fitH) {
         this._fitH = hgt;
         this.style.height = `${hgt}px`;
@@ -1674,7 +1678,7 @@ hui-card-picker{flex:1;min-height:0}`;
   var S_PAGE = [g2({ name: "name", selector: T }, { name: "icon", selector: I })];
   var S_SWIPE = [
     g2({ name: "dots", selector: { boolean: {} } }, { name: "fill", selector: { boolean: {} } }),
-    { name: "fit_screen", selector: { boolean: {} } },
+    g2({ name: "fit_screen", selector: { boolean: {} } }, { name: "margin", selector: { number: { min: 0, max: 48, step: 2, mode: "box", unit_of_measurement: "px" } } }),
     g2(
       { name: "reset_after", selector: { number: { min: 0, max: 600, step: 5, mode: "box", unit_of_measurement: "s" } } },
       { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } }
@@ -1687,6 +1691,7 @@ hui-card-picker{flex:1;min-height:0}`;
     dots: "Seiten-Punkte",
     fill: "Ganze Höhe ausfüllen",
     fit_screen: "Bis zum unteren Bildschirmrand",
+    margin: "Rand",
     reset_after: "Zurück zu Seite 1 nach",
     stack_below: "Untereinander unter Breite"
   };
@@ -1694,6 +1699,7 @@ hui-card-picker{flex:1;min-height:0}`;
     ...GRID_HELPERS,
     name: "Nur für dich im Editor und als Hinweis an den Punkten.",
     fit_screen: "Für Wand-Displays wie den Echo Show: Die Karte endet genau am unteren Rand des sichtbaren Fensters, auch wenn der Browser die Höhe falsch meldet. Schließt „Ganze Höhe ausfüllen“ ein.",
+    margin: "Luft rundherum. In einer Panel-Ansicht reichen 8 px, damit die Karten nicht am Fensterrand kleben.",
     fill: "Für Wand-Displays: Die Karte ist so hoch wie ihr Platz, die Karten einer Seite teilen sich die Höhe.",
     reset_after: "Sekunden ohne Bedienung, danach springt die Karte zur ersten Seite. 0 = aus.",
     stack_below: "Ist die Karte schmaler als dieser Wert, stehen die Karten einer Seite untereinander (0 = nie)."
@@ -2496,21 +2502,36 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       }
     }
     // Stepper: läuft am Ende rundherum (59 → 0); Sekunden in 5er-Schritten, kompakt ohne Stunden bis 180 Minuten
-    // Einheiten der eigenen Zeit: auto = groß Std/Min/Sek, kompakt Min/Sek
+    // Einheiten der eigenen Zeit: auto = groß Std/Min/Sek, kompakt Min/Sek; sonst jede Kombination aus h, m, s (z. B. „hm“, „s“)
     _units() {
-      const u = this._c.custom_units;
-      return u === "m" ? ["m"] : u === "ms" ? ["m", "s"] : u === "hms" ? ["h", "m", "s"] : this._c.layout === "compact" ? ["m", "s"] : ["h", "m", "s"];
+      const u = String(this._c.custom_units || "auto"), l = u === "auto" ? "" : ["h", "m", "s"].filter((k) => u.includes(k)).join("");
+      return [...l || (this._c.layout === "compact" ? "ms" : "hms")];
+    }
+    // Größter Wert je Feld: die kleinste gewählte Einheit nimmt den Rest auf (nur Minuten → bis 180, nur Sekunden → bis 59:55)
+    _max(k) {
+      const u = this._units();
+      if (k === "h") return u.length === 1 ? 24 : 23;
+      if (k === "m") return u.includes("h") ? 59 : 180;
+      return u.includes("m") ? 55 : 3595;
     }
     _step(k, d) {
-      const c = this._cust, n = { h: 24, m: this._units().includes("h") ? 60 : 181, s: 60 }[k], st = k === "s" ? 5 : 1;
+      const c = this._cust, st = k === "s" ? 5 : 1, n = this._max(k) + st;
       c[k] = ((Math.round(c[k] / st) * st + d * st) % n + n) % n;
       this._custShow();
     }
-    // Auswahl beginnt mit der eingestellten Zeit (5:00 → 0 Std, 5 Min, 0 Sek); ohne Stunden-Feld zählen die Stunden als Minuten
+    // Auswahl beginnt mit der eingestellten Zeit (5:00 → 0 Std, 5 Min, 0 Sek); fehlt eine größere Einheit, zählt ihr Teil in der nächstkleineren
     _custFrom(sec) {
-      const t = Math.max(0, Math.round(sec)), u = this._units(), hh = u.includes("h");
-      this._cust = { h: hh ? Math.min(23, Math.floor(t / 3600)) : 0, m: hh ? Math.floor(t % 3600 / 60) : Math.min(180, Math.floor(t / 60)), s: u.includes("s") ? Math.round(t % 60 / 5) * 5 % 60 : 0 };
-      if (!this._cust.h && !this._cust.m && !this._cust.s) this._cust.m = 5;
+      const t = Math.max(0, Math.round(sec)), u = this._units(), H = u.includes("h"), M = u.includes("m"), S = u.includes("s");
+      const c = { h: 0, m: 0, s: 0 };
+      if (H) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
+      if (M) c.m = Math.min(this._max("m"), Math.floor((H ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
+      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H ? t % 3600 : t) / 5) * 5);
+      if (!c.h && !c.m && !c.s) {
+        if (M) c.m = 5;
+        else if (H) c.h = 1;
+        else c.s = 30;
+      }
+      this._cust = c;
     }
     // Knopf-Texte, die nicht passen, weglassen – der Knopf zeigt dann nur sein Icon (nie „Überne…“)
     _fitBtn() {
@@ -2582,7 +2603,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   var S_START = [
     { name: "show_presets", selector: { boolean: {} } },
     { name: "presets", selector: T },
-    g2({ name: "show_custom", selector: { boolean: {} } }, sel("custom_units", [["auto", "Automatisch"], ["m", "Nur Minuten"], ["ms", "Minuten und Sekunden"], ["hms", "Stunden, Minuten, Sekunden"]])),
+    g2({ name: "show_custom", selector: { boolean: {} } }, sel("custom_units", [["auto", "Automatisch"], ["h", "Nur Stunden"], ["m", "Nur Minuten"], ["s", "Nur Sekunden"], ["hm", "Stunden und Minuten"], ["ms", "Minuten und Sekunden"], ["hms", "Stunden, Minuten, Sekunden"]])),
     { name: "show_add", selector: { boolean: {} } }
   ];
   var S_ALARM = [
@@ -2616,7 +2637,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   var HELPERS2 = {
     entity: "Ein Timer-Helfer läuft in Home Assistant – alle Geräte zeigen dieselbe Zeit. Anlegen unter Einstellungen → Geräte & Dienste → Helfer → Timer.",
     presets: "z. B. „1, 5, 10, 15“. Auch „30s“ oder „1h“ geht. Höchstens 8.",
-    custom_units: "Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. „Nur Minuten“ geht bis 180.",
+    custom_units: "Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. Gibt es keine größere Einheit, geht die kleinere weiter: „Nur Minuten“ bis 180, „Nur Sekunden“ bis 59:55.",
     alarm_text: "Leer = „Zeit ist um!“",
     alarm_minutes: "So lange klingelt die Karte nach dem Ablauf, wenn niemand „OK“ drückt. 0 = bis jemand bestätigt.",
     tap_action: "Leer = Details des Timers öffnen. Die Stoppuhr selbst startet, pausiert und setzt fort."
@@ -2886,7 +2907,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     show_seconds: "Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.",
     color: "Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.",
     glass: "Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild.",
-    entities: "Optional: z. B. Temperatur und Luftfeuchte – erscheinen klein in einer Zeile unter der Uhrzeit."
+    entities: "Optional: z. B. Temperatur und Luftfeuchte – erscheinen in einer Zeile unter der Uhrzeit."
   };
   var NovaClockCardEditor = class extends NovaEditorBase {
     _build() {
@@ -3433,7 +3454,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
   var TXT = { pause: "Pausiert", wait: "Startet später", done: "Fertig", err: "Störung", prep: "Wird eingestellt", heat: "Heizt auf", warm: "Hält warm", ready: "Bereit", off: "Aus" };
   var BAD = /* @__PURE__ */ new Set(["unavailable", "unknown", "none", ""]);
   var ok = (s) => !!s && !BAD.has(s.state);
-  var GDEF = { controls_columns: "1", layout: "full", animation: true, glow: true, hide_when_off: false, start_at: "none", window: true, door_anim: true };
+  var GDEF = { controls_columns: "1", controls_labels: "auto", layout: "full", animation: true, glow: true, hide_when_off: false, start_at: "none", window: true, door_anim: true };
   var nice = (raw, t) => t === raw && /_/.test(raw) ? raw.replace(/_/g, " ").replace(/^./, (x) => x.toUpperCase()) : t;
   var fmtOpt = (h, s, o) => {
     let t = o;
@@ -4707,8 +4728,20 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._fitLbl();
     }
     // Regler-Namen, die nicht passen, ausblenden statt abschneiden (nur Icon + Wert)
+    // „Nur Icons“: Namen immer weg (stehen dann im Tooltip)
     _fitLbl() {
-      if (this._e?.ctls) fitLabels(this._e.ctls, ".ct .kv .k, .ct .row .k");
+      const box = this._e?.ctls;
+      if (!box) return;
+      if (this._c?.controls_labels === "icon") box.querySelectorAll(".ct .kv .k, .ct .row .k").forEach((k) => {
+        k.style.display = "none";
+        k.parentElement.title = k.textContent;
+      });
+      else {
+        box.querySelectorAll(".ct .kv .k, .ct .row .k").forEach((k) => {
+          if (k.style.display === "none") k.style.display = "";
+        });
+        fitLabels(box, ".ct .kv .k, .ct .row .k");
+      }
     }
     // Knöpfe nur mit eingetragener, verfügbarer Entität; Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen
     _actUp(cls) {
@@ -4843,7 +4876,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       sel("show", [["always", "Immer"], ["idle", "Nur vor dem Start"], ["running", "Nur während des Laufs"]])
     ];
   };
-  var GCOLS = [sel("controls_columns", [["1", "Untereinander"], ["2", "Zwei nebeneinander"]])];
+  var GCOLS = [g2(sel("controls_columns", [["1", "Untereinander"], ["2", "Zwei nebeneinander"]]), sel("controls_labels", [["auto", "Icon und Name"], ["icon", "Nur Icons"]]))];
   var GACT = (c) => [
     g2({ name: "start", selector: { entity: { domain: [...BTN.entity.domain, "select", "input_select"] } } }, { name: "start_name", selector: T }),
     ...["select", "input_select"].includes(dom(c.start)) ? [{ name: "start_option", selector: { entity: { domain: ["select", "input_select", "sensor", "input_text"] } } }] : [],
@@ -4955,6 +4988,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     text_error: "Text „Störung“",
     text_off: "Text „aus“",
     controls_columns: "Anordnung der Regler",
+    controls_labels: "Beschriftung der Regler",
     layout: "Darstellung",
     hide_when_off: "Ausblenden, wenn aus, bereit oder fertig",
     animation: "Animation (aus = Standbild)",
@@ -4981,6 +5015,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     end_time: "Zeitpunkt-Sensor. Restzeit wird daraus berechnet",
     phase: "Leer = Status. Steuert die Sonder-Animation und wird unter dem Programm angezeigt",
     phase_states: "Leer = Vorschlag zum Gerätetyp",
+    controls_labels: "Nur Icons spart Platz auf kleinen Displays. Bei „Icon und Name“ fällt der Name nur weg, wenn er nicht passt.",
     show: "z. B. Temperatur und Schleudern nur vor dem Start",
     step: "Leer = Schritt der Entität (bei „Fertig in“ in Sekunden z. B. 1800 = 30 min)",
     start: "Button, Skript, Schalter – oder ein Select wie „Aktives Programm“ bei Home Connect",

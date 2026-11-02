@@ -73,7 +73,7 @@ Aktion z. B. eine Benachrichtigung oder Ansage. So kommt der Ton genau einmal, e
 | `show_presets` | `true` | Schnellwahl-Knöpfe zeigen |
 | `presets` | `[1, 5, 10, 15]` | Schnellwahl in Minuten (`30s`, `1h` gehen auch), höchstens 8 |
 | `show_custom` | `true` | Knopf „Eigene Zeit“ |
-| `custom_units` | `auto` | Eigene Zeit in: `m` (nur Minuten, bis 180), `ms`, `hms`. `auto` = groß Std/Min/Sek, kompakt Min/Sek |
+| `custom_units` | `auto` | Eigene Zeit in: `h`, `m`, `s` oder kombiniert `hm`, `ms`, `hms`. Fehlt die größere Einheit, geht die kleinere weiter (nur Minuten bis 180, nur Sekunden bis 59:55). `auto` = groß Std/Min/Sek, kompakt Min/Sek |
 | `show_add` | `true` | Knopf „+1 Min“, solange der Timer läuft |
 | `alarm_text` | „Zeit ist um!“ | Text beim Ablauf |
 | `alarm_color` | `accent-2` | Farbrolle beim Ablauf (`neutral`, `accent-1` … `accent-4`) |

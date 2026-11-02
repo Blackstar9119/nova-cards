@@ -369,18 +369,32 @@ class NovaTimerCard extends HTMLElement {
     catch (err) { console.warn('[nova-cards] Timer: +1 Min per Neustart', err); if (v) this._start(Math.round(v.left + sec)); }
   }
   // Stepper: läuft am Ende rundherum (59 → 0); Sekunden in 5er-Schritten, kompakt ohne Stunden bis 180 Minuten
-  // Einheiten der eigenen Zeit: auto = groß Std/Min/Sek, kompakt Min/Sek
-  _units() { const u = this._c.custom_units; return u === 'm' ? ['m'] : u === 'ms' ? ['m', 's'] : u === 'hms' ? ['h', 'm', 's'] : this._c.layout === 'compact' ? ['m', 's'] : ['h', 'm', 's']; }
+  // Einheiten der eigenen Zeit: auto = groß Std/Min/Sek, kompakt Min/Sek; sonst jede Kombination aus h, m, s (z. B. „hm“, „s“)
+  _units() {
+    const u = String(this._c.custom_units || 'auto'), l = u === 'auto' ? '' : ['h', 'm', 's'].filter(k => u.includes(k)).join('');
+    return [...(l || (this._c.layout === 'compact' ? 'ms' : 'hms'))];
+  }
+  // Größter Wert je Feld: die kleinste gewählte Einheit nimmt den Rest auf (nur Minuten → bis 180, nur Sekunden → bis 59:55)
+  _max(k) {
+    const u = this._units();
+    if (k === 'h') return u.length === 1 ? 24 : 23;
+    if (k === 'm') return u.includes('h') ? 59 : 180;
+    return u.includes('m') ? 55 : 3595;
+  }
   _step(k, d) {
-    const c = this._cust, n = {h: 24, m: this._units().includes('h') ? 60 : 181, s: 60}[k], st = k === 's' ? 5 : 1;
+    const c = this._cust, st = k === 's' ? 5 : 1, n = this._max(k) + st;
     c[k] = ((Math.round(c[k] / st) * st + d * st) % n + n) % n;
     this._custShow();
   }
-  // Auswahl beginnt mit der eingestellten Zeit (5:00 → 0 Std, 5 Min, 0 Sek); ohne Stunden-Feld zählen die Stunden als Minuten
+  // Auswahl beginnt mit der eingestellten Zeit (5:00 → 0 Std, 5 Min, 0 Sek); fehlt eine größere Einheit, zählt ihr Teil in der nächstkleineren
   _custFrom(sec) {
-    const t = Math.max(0, Math.round(sec)), u = this._units(), hh = u.includes('h');
-    this._cust = {h: hh ? Math.min(23, Math.floor(t / 3600)) : 0, m: hh ? Math.floor(t % 3600 / 60) : Math.min(180, Math.floor(t / 60)), s: u.includes('s') ? Math.round(t % 60 / 5) * 5 % 60 : 0};
-    if (!this._cust.h && !this._cust.m && !this._cust.s) this._cust.m = 5;
+    const t = Math.max(0, Math.round(sec)), u = this._units(), H = u.includes('h'), M = u.includes('m'), S = u.includes('s');
+    const c = {h: 0, m: 0, s: 0};
+    if (H) c.h = Math.min(this._max('h'), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
+    if (M) c.m = Math.min(this._max('m'), Math.floor((H ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
+    if (S) c.s = Math.min(this._max('s'), Math.round((M ? t % 60 : H ? t % 3600 : t) / 5) * 5);
+    if (!c.h && !c.m && !c.s) { if (M) c.m = 5; else if (H) c.h = 1; else c.s = 30; }
+    this._cust = c;
   }
   // Knopf-Texte, die nicht passen, weglassen – der Knopf zeigt dann nur sein Icon (nie „Überne…“)
   _fitBtn() { if (this._e) fitLabels(this.shadowRoot, '.bt2 > span', true); }
@@ -422,7 +436,7 @@ const S_GEN = [
 const S_START = [
   {name: 'show_presets', selector: {boolean: {}}},
   {name: 'presets', selector: T},
-  g2({name: 'show_custom', selector: {boolean: {}}}, sel('custom_units', [['auto', 'Automatisch'], ['m', 'Nur Minuten'], ['ms', 'Minuten und Sekunden'], ['hms', 'Stunden, Minuten, Sekunden']])),
+  g2({name: 'show_custom', selector: {boolean: {}}}, sel('custom_units', [['auto', 'Automatisch'], ['h', 'Nur Stunden'], ['m', 'Nur Minuten'], ['s', 'Nur Sekunden'], ['hm', 'Stunden und Minuten'], ['ms', 'Minuten und Sekunden'], ['hms', 'Stunden, Minuten, Sekunden']])),
   {name: 'show_add', selector: {boolean: {}}},
 ];
 const S_ALARM = [
@@ -443,7 +457,7 @@ const LABELS = {
 const HELPERS = {
   entity: 'Ein Timer-Helfer läuft in Home Assistant – alle Geräte zeigen dieselbe Zeit. Anlegen unter Einstellungen → Geräte & Dienste → Helfer → Timer.',
   presets: 'z. B. „1, 5, 10, 15“. Auch „30s“ oder „1h“ geht. Höchstens 8.',
-  custom_units: 'Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. „Nur Minuten“ geht bis 180.',
+  custom_units: 'Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. Gibt es keine größere Einheit, geht die kleinere weiter: „Nur Minuten“ bis 180, „Nur Sekunden“ bis 59:55.',
   alarm_text: 'Leer = „Zeit ist um!“',
   alarm_minutes: 'So lange klingelt die Karte nach dem Ablauf, wenn niemand „OK“ drückt. 0 = bis jemand bestätigt.',
   tap_action: 'Leer = Details des Timers öffnen. Die Stoppuhr selbst startet, pausiert und setzt fort.',

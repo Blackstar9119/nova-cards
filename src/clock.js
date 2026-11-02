@@ -186,7 +186,7 @@ const HELPERS = {
   show_seconds: 'Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.',
   color: 'Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.',
   glass: 'Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild.',
-  entities: 'Optional: z. B. Temperatur und Luftfeuchte – erscheinen klein in einer Zeile unter der Uhrzeit.',
+  entities: 'Optional: z. B. Temperatur und Luftfeuchte – erscheinen in einer Zeile unter der Uhrzeit.',
 };
 
 class NovaClockCardEditor extends NovaEditorBase {

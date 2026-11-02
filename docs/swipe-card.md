@@ -49,6 +49,9 @@ pages: …
 
 ## Wenn unten etwas abgeschnitten wird (z. B. Echo Show), dann so
 
+Für ein Wand-Display reicht eine Ansicht vom Typ **„Panel“** und diese Karte – alles im grafischen Editor, ganz ohne YAML.
+„Rand“ (`margin`, z. B. 8 px) gibt rundherum etwas Luft, damit die Karten nicht am Fensterrand kleben.
+
 Manche Browser melden die Bildschirmhöhe falsch, dann ist „100vh“ höher als das, was man sieht. „Bis zum unteren
 Bildschirmrand“ (`fit_screen: true`) misst das sichtbare Fenster direkt und lässt die Karte genau dort enden. Das schließt
 „Ganze Höhe ausfüllen“ mit ein.
@@ -56,6 +59,7 @@ Bildschirmrand“ (`fit_screen: true`) misst das sichtbare Fenster direkt und l�
 ```yaml
 type: custom:nova-swipe-card
 fit_screen: true
+margin: 8
 pages: …
 ```
 
@@ -86,6 +90,7 @@ pages: …
 | `dots` | `true` | Seiten-Punkte unten (bei nur einer Seite immer aus) |
 | `fill` | `false` | Ganze Höhe des Platzes ausfüllen, Karten einer Seite teilen sich die Höhe |
 | `fit_screen` | `false` | Karte endet am unteren Rand des sichtbaren Fensters (für Wand-Displays, gegen Abschneiden) |
+| `margin` | `0` | Rand rundherum in px, z. B. 8 in einer Panel-Ansicht |
 | `reset_after` | `0` | Sekunden ohne Bedienung, danach zurück zu Seite 1. `0` = aus |
 | `stack_below` | `500` | Schmaler als so viele Pixel → Karten einer Seite untereinander (z. B. am Handy). `0` = nie |
 | `equal_height` | `false` | Karten einer Zeile gleich hoch |

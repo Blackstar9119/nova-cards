@@ -10,10 +10,10 @@ import {GridEditor, GRID_ED_CSS, GRID_LABELS, GRID_HELPERS} from './shared/card-
    Mehrere Seiten in einer Karte, zum Wischen nach links/rechts. Jede Seite ist ein Raster aus beliebigen Karten wie in der
    Pop-up Card (rows). Gewischt wird nativ (scroll-snap) – das läuft auch auf schwachen Geräten flüssig. Beginnt eine Berührung
    auf einem Schieberegler, ist das Wischen für diese Berührung aus. */
-const DEF = {dots: true, reset_after: 0, fill: false, fit_screen: false, stack_below: 500};
+const DEF = {dots: true, reset_after: 0, fill: false, fit_screen: false, margin: 0, stack_below: 500};
 
 const SCSS = `${NOVA_VARS}${GRID_CSS}
-:host{display:block}
+:host{display:block;box-sizing:border-box}
 :host(.fill){height:100%}
 .w{display:flex;flex-direction:column;gap:6px;min-height:0;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 .w.fill{height:100%}
@@ -148,6 +148,9 @@ class NovaSwipeCard extends HTMLElement {
     const fill = !!c.fill || !!c.fit_screen;
     this.classList.toggle('fill', fill);
     this._w.classList.toggle('fill', fill);
+    // Rand: Luft rundherum, z. B. in einer Panel-Ansicht, die Karten sonst bis an den Fensterrand zieht
+    const m = Math.max(0, +c.margin || 0);
+    if (m) this.style.padding = `${m}px`; else this.style.removeProperty('padding');
     this._fit();
     // Seiten mit unveränderter Konfiguration behalten – ihre Karten müssen dann nicht neu entstehen
     // Seiten-Objekte weiterverwenden: _grid() übernimmt Zellen mit unveränderter Karte, statt sie neu zu erzeugen
@@ -181,12 +184,13 @@ class NovaSwipeCard extends HTMLElement {
     this._mark(this._i, true);
     requestAnimationFrame(() => { this._pages.forEach(p => p._stack()); this.go(this._i, false); });
   }
-  // Bis zum unteren Bildschirmrand: Höhe = sichtbares Fenster minus Abstand oben, minus 8 px unten.
+  // Bis zum unteren Bildschirmrand: Höhe = sichtbares Fenster minus Abstand oben, minus 8 px unten
+  // (mit Rand steckt der Abstand unten schon im Rand).
   // Unabhängig davon, ob der Browser 100vh/100dvh richtig kennt (z. B. Silk auf dem Echo Show) – innerHeight stimmt immer.
   _fit() {
     if (!this._cfg?.fit_screen) { if (this._fitH) { this._fitH = 0; this.style.removeProperty('height'); } return; }
     const top = this.getBoundingClientRect().top + (window.scrollY || 0);
-    const hgt = Math.max(160, Math.floor(window.innerHeight - Math.max(0, top) - 8));
+    const hgt = Math.max(160, Math.floor(window.innerHeight - Math.max(0, top) - (+this._cfg.margin > 0 ? 0 : 8)));
     if (hgt !== this._fitH) { this._fitH = hgt; this.style.height = `${hgt}px`; }
   }
   // Zu Seite i wischen (smooth = mit Animation, außer bei „Bewegung reduzieren“)
@@ -220,19 +224,20 @@ define('swipe-card', NovaSwipeCard, {name: 'Nova Swipe Card', description: 'Mehr
 const S_PAGE = [g2({name: 'name', selector: T}, {name: 'icon', selector: I})];
 const S_SWIPE = [
   g2({name: 'dots', selector: {boolean: {}}}, {name: 'fill', selector: {boolean: {}}}),
-  {name: 'fit_screen', selector: {boolean: {}}},
+  g2({name: 'fit_screen', selector: {boolean: {}}}, {name: 'margin', selector: {number: {min: 0, max: 48, step: 2, mode: 'box', unit_of_measurement: 'px'}}}),
   g2({name: 'reset_after', selector: {number: {min: 0, max: 600, step: 5, mode: 'box', unit_of_measurement: 's'}}},
     {name: 'stack_below', selector: {number: {min: 0, max: 1200, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
 ];
 const LABELS = {
   ...GRID_LABELS,
-  name: 'Name der Seite (optional)', icon: 'Icon (optional)', dots: 'Seiten-Punkte', fill: 'Ganze Höhe ausfüllen', fit_screen: 'Bis zum unteren Bildschirmrand',
+  name: 'Name der Seite (optional)', icon: 'Icon (optional)', dots: 'Seiten-Punkte', fill: 'Ganze Höhe ausfüllen', fit_screen: 'Bis zum unteren Bildschirmrand', margin: 'Rand',
   reset_after: 'Zurück zu Seite 1 nach', stack_below: 'Untereinander unter Breite',
 };
 const HELPERS = {
   ...GRID_HELPERS,
   name: 'Nur für dich im Editor und als Hinweis an den Punkten.',
   fit_screen: 'Für Wand-Displays wie den Echo Show: Die Karte endet genau am unteren Rand des sichtbaren Fensters, auch wenn der Browser die Höhe falsch meldet. Schließt „Ganze Höhe ausfüllen“ ein.',
+  margin: 'Luft rundherum. In einer Panel-Ansicht reichen 8 px, damit die Karten nicht am Fensterrand kleben.',
   fill: 'Für Wand-Displays: Die Karte ist so hoch wie ihr Platz, die Karten einer Seite teilen sich die Höhe.',
   reset_after: 'Sekunden ohne Bedienung, danach springt die Karte zur ersten Seite. 0 = aus.',
   stack_below: 'Ist die Karte schmaler als dieser Wert, stehen die Karten einer Seite untereinander (0 = nie).',

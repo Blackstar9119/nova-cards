@@ -48,7 +48,7 @@ const TKEY = {run: 'text_running', pause: 'text_paused', wait: 'text_waiting', d
 const TXT = {pause: 'Pausiert', wait: 'Startet später', done: 'Fertig', err: 'Störung', prep: 'Wird eingestellt', heat: 'Heizt auf', warm: 'Hält warm', ready: 'Bereit', off: 'Aus'};
 const BAD = new Set(['unavailable', 'unknown', 'none', '']);
 const ok = s => !!s && !BAD.has(s.state);
-const GDEF = {controls_columns: '1', layout: 'full', animation: true, glow: true, hide_when_off: false, start_at: 'none', window: true, door_anim: true};
+const GDEF = {controls_columns: '1', controls_labels: 'auto', layout: 'full', animation: true, glow: true, hide_when_off: false, start_at: 'none', window: true, door_anim: true};
 // Rohwert ohne Übersetzung (z. B. fresh_fries) lesbar machen
 const nice = (raw, t) => t === raw && /_/.test(raw) ? raw.replace(/_/g, ' ').replace(/^./, x => x.toUpperCase()) : t;
 const fmtOpt = (h, s, o) => { let t = o; try { if (h.formatEntityState) t = h.formatEntityState(s, o); } catch { /* Rohwert */ } return nice(o, t); };
@@ -1197,7 +1197,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     this._fitLbl();
   }
   // Regler-Namen, die nicht passen, ausblenden statt abschneiden (nur Icon + Wert)
-  _fitLbl() { if (this._e?.ctls) fitLabels(this._e.ctls, '.ct .kv .k, .ct .row .k'); }
+  // „Nur Icons“: Namen immer weg (stehen dann im Tooltip)
+  _fitLbl() {
+    const box = this._e?.ctls;
+    if (!box) return;
+    if (this._c?.controls_labels === 'icon') box.querySelectorAll('.ct .kv .k, .ct .row .k').forEach(k => { k.style.display = 'none'; k.parentElement.title = k.textContent; });
+    else { box.querySelectorAll('.ct .kv .k, .ct .row .k').forEach(k => { if (k.style.display === 'none') k.style.display = ''; }); fitLabels(box, '.ct .kv .k, .ct .row .k'); }
+  }
   // Knöpfe nur mit eingetragener, verfügbarer Entität; Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen
   _actUp(cls) {
     const c = this._c, b = this._ab, av = k => !!c[k] && this._S(c[k]) && this._S(c[k]).state !== 'unavailable';
@@ -1320,7 +1326,7 @@ const GCTL = it => {
     sel('show', [['always', 'Immer'], ['idle', 'Nur vor dem Start'], ['running', 'Nur während des Laufs']]),
   ];
 };
-const GCOLS = [sel('controls_columns', [['1', 'Untereinander'], ['2', 'Zwei nebeneinander']])];
+const GCOLS = [g2(sel('controls_columns', [['1', 'Untereinander'], ['2', 'Zwei nebeneinander']]), sel('controls_labels', [['auto', 'Icon und Name'], ['icon', 'Nur Icons']]))];
 const GACT = c => [
   g2({name: 'start', selector: {entity: {domain: [...BTN.entity.domain, 'select', 'input_select']}}}, {name: 'start_name', selector: T}),
   ...(['select', 'input_select'].includes(dom(c.start)) ? [{name: 'start_option', selector: {entity: {domain: ['select', 'input_select', 'sensor', 'input_text']}}}] : []),
@@ -1359,7 +1365,7 @@ const GLABELS = {...BASE_LABELS, device_type: 'Gerätetyp', entity: 'Status', po
   running_states: 'Zustände „läuft“', paused_states: 'Zustände „pausiert“', waiting_states: 'Zustände „startet später“', finished_states: 'Zustände „fertig“', error_states: 'Zustände „Störung“', prep_states: 'Zustände „wird eingestellt“', text_prep: 'Text „wird eingestellt“',
   ready_states: 'Zustände „bereit“', heat_states: 'Zustände „heizt auf“', warm_states: 'Zustände „hält warm“', text_ready: 'Text „bereit“', text_heat: 'Text „heizt auf“', text_warm: 'Text „hält warm“',
   text_running: 'Text „läuft“', text_paused: 'Text „pausiert“', text_waiting: 'Text „startet später“', text_finished: 'Text „fertig“', text_error: 'Text „Störung“', text_off: 'Text „aus“',
-  controls_columns: 'Anordnung der Regler', layout: 'Darstellung', hide_when_off: 'Ausblenden, wenn aus, bereit oder fertig', animation: 'Animation (aus = Standbild)', color: 'Farbe', glow: 'Rahmen leuchtet beim Laufen', window: 'Sichtfenster', heat_color: 'Glühfarbe (Heizspirale)'};
+  controls_columns: 'Anordnung der Regler', controls_labels: 'Beschriftung der Regler', layout: 'Darstellung', hide_when_off: 'Ausblenden, wenn aus, bereit oder fertig', animation: 'Animation (aus = Standbild)', color: 'Farbe', glow: 'Rahmen leuchtet beim Laufen', window: 'Sichtfenster', heat_color: 'Glühfarbe (Heizspirale)'};
 const GHELPERS = {
   device_type: 'Bestimmt nur Symbol, Texte, Standardfarbe und Animation',
   entity: 'Betriebszustand, z. B. sensor.waschmaschine_betriebszustand – auch binary_sensor (an = läuft)',
@@ -1378,6 +1384,7 @@ const GHELPERS = {
   end_time: 'Zeitpunkt-Sensor. Restzeit wird daraus berechnet',
   phase: 'Leer = Status. Steuert die Sonder-Animation und wird unter dem Programm angezeigt',
   phase_states: 'Leer = Vorschlag zum Gerätetyp',
+  controls_labels: 'Nur Icons spart Platz auf kleinen Displays. Bei „Icon und Name“ fällt der Name nur weg, wenn er nicht passt.',
   show: 'z. B. Temperatur und Schleudern nur vor dem Start',
   step: 'Leer = Schritt der Entität (bei „Fertig in“ in Sekunden z. B. 1800 = 30 min)',
   start: 'Button, Skript, Schalter – oder ein Select wie „Aktives Programm“ bei Home Connect',
