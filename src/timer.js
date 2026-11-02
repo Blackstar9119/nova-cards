@@ -14,9 +14,16 @@ import {dialDefs, dialBody, dialGlass, crown, bellBadge, DIAL_CSS} from './share
    Steuert einen Timer-Helfer (timer.*): Starten mit Schnellwahl oder eigener Zeit, Pause, Weiter, +1 Minute, Abbrechen.
    Der Timer läuft in Home Assistant – alle Geräte zeigen denselben Stand, ein Neuladen ändert nichts.
    Zeichnung: Stoppuhr im Nova-Stil, der Ring zeigt die Restzeit. Abgelaufen = Klingel-Animation und Hinweis, bis man ihn bestätigt. */
-const DEF = {presets: [1, 5, 10, 15], show_presets: true, show_custom: true, custom_units: 'auto', show_add: true, color: 'accent-1', alarm_color: 'accent-2',
+const DEF = {presets: [1, 5, 10, 15], show_presets: true, show_custom: true, custom_units: 'auto', custom_picker: 'scale', scale_max: 180, click_sound: true, custom_input: true, show_add: true, color: 'accent-1', alarm_color: 'accent-2',
   alarm_minutes: 10, layout: 'full', animation: true, glow: true};
 const CX = 100, CY = 112, R = 80, RING = 58;
+const SP = 14; // Abstand der Skalenstriche in px
+// Eingabe im Zahlenfeld: „5“ = 5 Min, „5:30“ = 5 Min 30 s, „1:05:00“ = 1 Std 5 Min
+const parseIn = x => {
+  const p = String(x).trim().replace(',', ':').split(/[:.\s]+/).filter(Boolean).map(Number);
+  if (!p.length || p.some(n => !Number.isFinite(n) || n < 0)) return 0;
+  return Math.round(p.length === 1 ? p[0] * 60 : p.length === 2 ? p[0] * 60 + p[1] : p[0] * 3600 + p[1] * 60 + p[2]);
+};
 
 // Dauer „H:MM:SS“ bzw. „1 day, 0:05:00“ → Sekunden
 export const parseDur = v => {
@@ -71,7 +78,28 @@ display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;fo
 .bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
 .pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
 .pre .bt2{font-size:16px;font-weight:600}
-.cust{display:flex;flex-direction:column;gap:10px}
+.zone{position:relative;display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
+/* Eigene Zeit liegt über Start/Schnellwahl (die bleiben unsichtbar stehen) – die Karte wird nie höher oder niedriger */
+.zone.op>.main,.zone.op>.pre{visibility:hidden}
+.cust{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;justify-content:center;min-height:0}
+.cust.sc{display:grid;grid-template-columns:minmax(0,1fr) minmax(84px,40%);grid-template-rows:minmax(0,1fr) auto;gap:10px}
+.cust:not(.sc) .scl,.cust:not(.sc) .rd,.cust.sc .stps{display:none}
+.cust.sc .rd{grid-column:1;grid-row:1}.cust.sc .row2{grid-column:1;grid-row:2;flex-wrap:nowrap}.cust.sc .scl{grid-column:2;grid-row:1/3}
+/* Tuner-Skala: Striche wandern beim Ziehen (nur transform), die Marke in der Mitte zeigt die Zeit */
+.rd{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
+.rd b{font-size:clamp(26px,10cqw,52px);font-weight:600;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
+.rd.in b{cursor:text}
+.rd input{width:100%;max-width:6.5em;box-sizing:border-box;font:inherit;font-size:clamp(20px,7cqw,36px);font-weight:600;text-align:center;color:inherit;background:var(--nv-chip);border:1px solid color-mix(in srgb,var(--dc) 60%,transparent);border-radius:12px;padding:6px;outline:none}
+.scl{position:relative;overflow:hidden;min-height:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;cursor:grab;outline:none;user-select:none;-webkit-user-select:none;
+-webkit-mask-image:linear-gradient(transparent,#000 24%,#000 76%,transparent);mask-image:linear-gradient(transparent,#000 24%,#000 76%,transparent)}
+.scl:focus-visible{border-color:color-mix(in srgb,var(--dc) 70%,transparent)}
+.scl .str{position:absolute;left:0;right:0;top:0;height:0;will-change:transform}
+.scl .str.snap{transition:transform .22s cubic-bezier(.2,.8,.3,1)}
+.scl i{position:absolute;left:10px;width:16%;height:1.5px;margin-top:-.75px;background:rgba(255,255,255,.2)}
+.scl i.m{width:34%;background:rgba(255,255,255,.5)}
+.scl b{position:absolute;left:calc(10px + 34% + 8px);height:16px;margin-top:-8px;line-height:16px;font-size:13px;font-weight:600;opacity:.7;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scl .mk{position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:var(--dc);box-shadow:0 0 8px color-mix(in srgb,var(--dc) 60%,transparent);pointer-events:none}
+.scl .mk::before{content:'';position:absolute;left:0;top:-5px;border:6px solid transparent;border-left:7px solid var(--dc);border-right:0}
 /* Eigene Zeit: je Einheit [−] 05 Min [+] nebeneinander, so hoch wie Schnellwahl + Knöpfe – die Karte wächst nicht */
 .stps{display:flex;gap:8px}
 .stp{flex:1 1 0;display:flex;align-items:center;justify-content:space-between;gap:2px;padding:0 3px;min-width:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);height:var(--nova-timer-button-height,52px);box-sizing:border-box}
@@ -103,7 +131,8 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 .cmp .dial{grid-column:1;grid-row:1;width:84px;max-width:84px}.cmp .ro{display:none}
 .cmp .ct2{grid-column:2;grid-row:1;min-width:0}
 .cmp .main{flex-wrap:nowrap}
-.cmp .main,.cmp .msg,.cmp .pre,.cmp .cust{grid-column:1/-1}
+.cmp .zone,.cmp .msg{grid-column:1/-1}
+.cmp .zone{min-height:calc(2 * var(--nova-timer-button-height,52px) + 10px)}
 .cmp .msg{display:none}
 .ct2 .tt b{display:block;font-size:42px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
 .ct2 .tt small{display:block;font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -112,7 +141,7 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 .cmp.alm .tt b{color:var(--ac)}
 @container (max-width:340px){.main.n3 .bt2 ha-icon{display:none}.bt2{font-size:14px}}
 @container (max-width:260px){.main .bt2 span{display:none}.main .bt2 ha-icon{display:flex!important}}
-@container (min-width:400px){.full .bd{flex-direction:row;align-items:center}.full .dial{width:46%;max-width:var(--nova-timer-size,260px)}.full .ctl{flex:1}}
+@container (min-width:400px){.full .bd{flex-direction:row;align-items:center}.full .dial{width:46%;max-width:var(--nova-timer-size,260px)}.full .ctl{flex:1;align-self:stretch}.full .zone{flex:1}}
 /* Stoppuhr neben den Knöpfen, aber wenig Platz rechts: Hauptknöpfe untereinander, damit kein Text abgeschnitten wird */
 @container (min-width:400px) and (max-width:560px){.full .main{flex-direction:column}.full .main .bt2{flex:none;width:100%}}
 @keyframes tm-blink{0%,100%{opacity:1}50%{opacity:.35}}
@@ -159,6 +188,7 @@ class NovaTimerCard extends HTMLElement {
   connectedCallback() {
     this._quiet = inPicker(this);
     if (!this._e && this._c && this._h) this._build();
+    else if (this._ro && this._e) { this._ro.observe(this._e.dial); this._ro.observe(this._e.g); }
     this._stopVis?.();
     this._stopVis = watchVisible(this, v => { this._vis = v && !this._quiet; this._tick(true); });
   }
@@ -167,6 +197,8 @@ class NovaTimerCard extends HTMLElement {
     this._vis = false; this._tick();
     this._ro?.disconnect();
     this._stopRep();
+    this._stopFling();
+    this._ac?.close?.().catch(() => {}); this._ac = null;
   }
   getCardSize() { return this._c?.layout === 'compact' ? 2 : 5; }
   getGridOptions() { return this._c?.layout === 'compact' ? {columns: 6, rows: 'auto', min_columns: 4} : {columns: 6, rows: 'auto', min_columns: 4}; }
@@ -178,13 +210,14 @@ class NovaTimerCard extends HTMLElement {
 <div class="bd"><div class="dial">${SVG}<div class="ro"><span class="t"></span><span class="s"></span></div></div>
 <div class="ctl"><div class="ct2"><div class="tt"><b></b><small></small></div></div>
 <div class="msg" hidden><ha-icon icon="mdi:bell-ring"></ha-icon><span>Zeit ist um!</span></div>
-<div class="row2 main"></div><div class="pre"></div>
-<div class="cust" hidden><div class="stps">${['h|Std', 'm|Min', 's|Sek'].map(x => { const [k, l] = x.split('|'); return `<div class="stp" data-k="${k}"><small>${l}</small><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div><span class="v"></span><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div></div>`; }).join('')}</div>
-<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:check"></ha-icon><span>Übernehmen</span></div></div></div>
+<div class="zone"><div class="row2 main"></div><div class="pre"></div>
+<div class="cust" hidden><div class="rd"><b></b></div><div class="scl" tabindex="0" role="slider" aria-label="Eigene Zeit"><div class="str"></div><div class="mk"></div></div><div class="stps">${['h|Std', 'm|Min', 's|Sek'].map(x => { const [k, l] = x.split('|'); return `<div class="stp" data-k="${k}"><small>${l}</small><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div><span class="v"></span><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div></div>`; }).join('')}</div>
+<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:check"></ha-icon><span>Übernehmen</span></div></div></div></div>
 </div></div></div>`;
     const q = s => r.querySelector(s);
     this._e = {g: q('.g'), hd: q('.hd'), ic: q('.hd .ic'), nm: q('.hd b'), sub: q('.hd small'), dial: q('.dial'), svg: q('svg'), t: q('.ro .t'), s: q('.ro .s'),
-      tt: q('.ct2 b'), ts: q('.ct2 small'), msg: q('.msg'), main: q('.main'), pre: q('.pre'), cust: q('.cust'), tip: q('.tipg')};
+      tt: q('.ct2 b'), ts: q('.ct2 small'), msg: q('.msg'), main: q('.main'), pre: q('.pre'), cust: q('.cust'), zone: q('.zone'), rd: q('.rd'), scl: q('.scl'), str: q('.str'), tip: q('.tipg')};
+    this._scaleInit();
     // Kopfzeile: Antippen/lang drücken = Details (bzw. eigene Aktion)
     const act = () => ({entity: this._c.entity, tap_action: this._c.tap_action, hold_action: this._c.hold_action});
     press(this._e.hd, {tap: () => runAction(this, act(), 'tap', true), hold: () => runAction(this, act(), 'hold')});
@@ -197,10 +230,10 @@ class NovaTimerCard extends HTMLElement {
     });
     press(q('.cbk'), {tap: () => { this._showCust = false; this._key = null; this._render(); }});
     // Übernehmen: Zeit vormerken (Uhr zeigt sie), gestartet wird mit „Start“ bzw. Antippen der Stoppuhr
-    press(q('.cgo'), {tap: () => { const {h, m, s} = this._cust, u = this._units(), sec = (u.includes('h') ? h : 0) * 3600 + m * 60 + (u.includes('s') ? s : 0); if (sec > 0) { this._armed = sec; this._showCust = false; this._key = null; this._render(); } }});
+    press(q('.cgo'), {tap: () => { const {h, m, s} = this._cust, u = this._units(), sec = this._scale() ? this._sec : (u.includes('h') ? h : 0) * 3600 + m * 60 + (u.includes('s') ? s : 0); if (sec > 0) { this._armed = sec; this._showCust = false; this._key = null; this._render(); } }});
     // Größe der Zeitanzeige an die Uhr anpassen
     if ('ResizeObserver' in window) {
-      this._ro = new ResizeObserver(es => { es.forEach(x => { if (x.target === this._e.dial && x.contentRect.width) this._e.dial.style.setProperty('--dw', `${x.contentRect.width}px`); }); this._fitBtn(); });
+      this._ro = new ResizeObserver(es => { es.forEach(x => { if (x.target === this._e.dial && x.contentRect.width) this._e.dial.style.setProperty('--dw', `${x.contentRect.width}px`); }); this._fitBtn(); if (this._scale() && !this._e.cust.hidden) this._scaleTo(this._sec, false); });
       this._ro.observe(this._e.dial); this._ro.observe(this._e.g);
     }
     this._layout();
@@ -342,7 +375,7 @@ class NovaTimerCard extends HTMLElement {
     }
     e.cust.hidden = !(idle && this._showCust && c.show_custom !== false);
     // Eigene Zeit ersetzt Start/Eigene Zeit und Schnellwahl, damit die Karte nicht wächst
-    e.main.hidden = !e.cust.hidden;
+    e.zone.classList.toggle('op', !e.cust.hidden);
     if (!e.cust.hidden) this._custShow();
     this._fitBtn();
   }
@@ -388,6 +421,7 @@ class NovaTimerCard extends HTMLElement {
   }
   // Auswahl beginnt mit der eingestellten Zeit (5:00 → 0 Std, 5 Min, 0 Sek); fehlt eine größere Einheit, zählt ihr Teil in der nächstkleineren
   _custFrom(sec) {
+    if (this._scale()) { this._sec = sec > 0 ? Math.min(sec, this._vals.at(-1)) : 300; return; }
     const t = Math.max(0, Math.round(sec)), u = this._units(), H = u.includes('h'), M = u.includes('m'), S = u.includes('s');
     const c = {h: 0, m: 0, s: 0};
     if (H) c.h = Math.min(this._max('h'), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
@@ -398,7 +432,11 @@ class NovaTimerCard extends HTMLElement {
   }
   // Knopf-Texte, die nicht passen, weglassen – der Knopf zeigt dann nur sein Icon (nie „Überne…“)
   _fitBtn() { if (this._e) fitLabels(this.shadowRoot, '.bt2 > span', true); }
-  _custShow() { const u = this._units(); this._e.cust.querySelectorAll('.stp').forEach(st => { st.hidden = !u.includes(st.dataset.k); st.querySelector('.v').textContent = String(this._cust[st.dataset.k]).padStart(2, '0'); }); }
+  _custShow() {
+    const e = this._e, sc = this._scale();
+    e.cust.classList.toggle('sc', sc);
+    if (sc) { this._scaleBuild(); e.rd.classList.toggle('in', this._c.custom_input !== false); requestAnimationFrame(() => this._scaleTo(this._sec, false)); return; }
+    const u = this._units(); this._e.cust.querySelectorAll('.stp').forEach(st => { st.hidden = !u.includes(st.dataset.k); st.querySelector('.v').textContent = String(this._cust[st.dataset.k]).padStart(2, '0'); }); }
   // Taste mit Wiederholung beim Gedrückthalten (Stepper)
   _rep(el, fn) {
     el.tabIndex = 0; el.setAttribute('role', 'button'); el.classList.add('tap');
@@ -408,6 +446,162 @@ class NovaTimerCard extends HTMLElement {
     el.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); fn(); } });
   }
   _stopRep() { clearTimeout(this._rt); clearInterval(this._ri); this._rt = this._ri = null; }
+  /* ---------- Eigene Zeit als Tuner-Skala ----------
+     Senkrechte Skala, mit dem Finger hoch/runter ziehen. Raster: bis 5 Min 15 s, bis 60 Min 1 Min, darüber 5 Min.
+     Schnelles Wischen läuft mit Schwung aus und rastet dann ein. Pro Raster ein leiser Klick (und Vibration, wo es geht).
+     Pro Bild wird nur transform gesetzt – nichts wird neu gezeichnet. */
+  _scale() { return this._c?.custom_picker !== 'buttons'; }
+  get _vals() {
+    const max = Math.max(5, Math.min(1440, +this._c?.scale_max || 180)) * 60;
+    if (this._valsFor === max) return this._valsC;
+    const v = [];
+    for (let t = 15; t <= Math.min(300, max); t += 15) v.push(t);
+    for (let t = 360; t <= Math.min(3600, max); t += 60) v.push(t);
+    for (let t = 3900; t <= max; t += 300) v.push(t);
+    this._valsFor = max; this._valsC = v;
+    return v;
+  }
+  _scaleBuild() {
+    const vals = this._vals, key = vals.length + '|' + vals.at(-1);
+    if (this._strKey === key) return;
+    this._strKey = key;
+    // Lange Striche: volle Minuten bis 5, alle 5 Min bis 60, darüber alle 15 Min; Zahlen (Minuten) an ausgewählten Stellen
+    const LBL = new Set([1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 480, 600, 720, 900, 1080, 1260, 1440]);
+    this._e.str.innerHTML = vals.map((t, i) => {
+      const y = i * SP, maj = t <= 300 ? t % 60 === 0 : t <= 3600 ? t % 300 === 0 : t % 900 === 0, min = t / 60;
+      return `<i${maj ? ' class="m"' : ''} style="top:${y}px"></i>${maj && LBL.has(min) ? `<b style="top:${y}px">${min}</b>` : ''}`;
+    }).join('');
+  }
+  _fmt(t) { const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60, p = n => String(n).padStart(2, '0'); return h ? `${h}:${p(m)}:${p(s)}` : `${m}:${p(s)}`; }
+  _idxOf(t) { const v = this._vals; let b = 0; v.forEach((x, i) => { if (Math.abs(x - t) < Math.abs(v[b] - t)) b = i; }); return b; }
+  _mid() { return (this._e.scl.clientHeight || 0) / 2; }
+  _offOf(i) { return this._mid() - i * SP; }
+  _clampOff(o) { return Math.max(this._offOf(this._vals.length - 1), Math.min(this._offOf(0), o)); }
+  _move(o, snap) {
+    this._off = o;
+    const s = this._e.str;
+    s.classList.toggle('snap', !!snap);
+    s.style.transform = `translate3d(0,${o}px,0)`;
+  }
+  // Raster unter der Marke prüfen: neue Zeit, Klick
+  _hit(o) {
+    const i = Math.max(0, Math.min(this._vals.length - 1, Math.round((this._mid() - o) / SP)));
+    if (i === this._idx) return;
+    this._idx = i; this._sec = this._vals[i];
+    this._showSec(); this._click();
+  }
+  _showSec() {
+    const e = this._e, txt = this._fmt(this._sec);
+    const b = e.rd.querySelector('b');
+    if (b) b.textContent = txt;
+    e.scl.setAttribute('aria-valuetext', txt);
+    if (this._c.layout === 'compact') e.tt.textContent = txt;
+  }
+  // Zeit setzen und Skala dorthin stellen (exakte Werte aus dem Zahlenfeld bleiben exakt, die Skala zeigt das nächste Raster)
+  _scaleTo(t, snap) {
+    if (!this._e) return;
+    this._sec = t; this._idx = this._idxOf(t);
+    this._move(this._offOf(this._idx), snap);
+    this._showSec();
+  }
+  _snap() { this._stopFling(); const i = Math.max(0, Math.min(this._vals.length - 1, Math.round((this._mid() - this._off) / SP))); this._idx = -1; this._move(this._offOf(i), true); this._hit(this._offOf(i)); }
+  _stopFling() { if (this._raf) cancelAnimationFrame(this._raf); this._raf = 0; }
+  // Leiser Klick: sehr kurzer Ton über Web Audio (der Echo kann nicht vibrieren), dazu Vibration, wo vorhanden
+  _click() {
+    if (this._c.click_sound === false || !this._drag) return;
+    const now = performance.now();
+    if (now - (this._lastClick || 0) < 28) return;
+    this._lastClick = now;
+    try { navigator.vibrate?.(6); } catch (e) { /* nicht unterstützt */ }
+    const ac = this._ac;
+    if (!ac || ac.state === 'closed') return;
+    try {
+      const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+      o.type = 'triangle'; o.frequency.value = 2100;
+      g.gain.setValueAtTime(0.07, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.03);
+    } catch (e) { /* ohne Ton weiter */ }
+  }
+  _scaleInit() {
+    const e = this._e, sc = e.scl;
+    let y0 = 0, o0 = 0, moved = false, pts = [];
+    sc.addEventListener('pointerdown', ev => {
+      if (ev.button > 0) return;
+      ev.preventDefault(); ev.stopPropagation();
+      // Ton erst nach einer Berührung möglich (Autoplay-Regeln der Browser)
+      if (this._c.click_sound !== false && !this._ac) { const A = window.AudioContext || window.webkitAudioContext; if (A) try { this._ac = new A(); } catch (x) { this._ac = null; } }
+      this._ac?.resume?.().catch(() => {});
+      this._stopFling();
+      sc.setPointerCapture?.(ev.pointerId);
+      this._drag = true; moved = false; y0 = ev.clientY; o0 = this._off ?? this._offOf(this._idx || 0); pts = [[ev.timeStamp, ev.clientY]];
+      this._move(o0, false);
+      sc.focus({preventScroll: true});
+    });
+    sc.addEventListener('pointermove', ev => {
+      if (!this._drag || this._fling) return;
+      const dy = ev.clientY - y0;
+      if (Math.abs(dy) > 4) moved = true;
+      if (!moved) return;
+      const o = this._clampOff(o0 + dy);
+      this._move(o, false); this._hit(o);
+      pts.push([ev.timeStamp, ev.clientY]); if (pts.length > 6) pts.shift();
+    });
+    const up = ev => {
+      if (!this._drag) return;
+      if (!moved) {
+        // Antippen: oberhalb der Marke = kürzer, unterhalb = länger
+        const r = sc.getBoundingClientRect(), i = Math.max(0, Math.min(this._vals.length - 1, this._idx + (ev.clientY < r.top + r.height / 2 ? -1 : 1)));
+        this._move(this._offOf(i), true); this._hit(this._offOf(i)); this._drag = false; return;
+      }
+      // Schwung: Geschwindigkeit der letzten ~100 ms, läuft mit Reibung aus, dann einrasten
+      const last = pts.at(-1), first = pts.find(p => last[0] - p[0] <= 100) || pts[0];
+      let v = last[0] > first[0] ? (last[1] - first[1]) / (last[0] - first[0]) : 0;
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (calm || Math.abs(v) < 0.25 || ev.type === 'pointercancel') { this._snap(); this._drag = false; return; }
+      let t0 = performance.now();
+      this._fling = true;
+      const step = now => {
+        const dt = Math.min(40, now - t0); t0 = now;
+        let o = this._off + v * dt;
+        const c = this._clampOff(o);
+        if (c !== o) { o = c; v = 0; }
+        v *= Math.pow(0.94, dt / 16);
+        this._move(o, false); this._hit(o);
+        if (Math.abs(v) > 0.03) this._raf = requestAnimationFrame(step);
+        else { this._raf = 0; this._fling = false; this._snap(); this._drag = false; }
+      };
+      this._raf = requestAnimationFrame(step);
+    };
+    sc.addEventListener('pointerup', up);
+    sc.addEventListener('pointercancel', up);
+    // Swipe Card & Co. nicht mitwischen lassen
+    ['touchstart', 'touchmove'].forEach(t => sc.addEventListener(t, ev => ev.stopPropagation(), {passive: true}));
+    sc.addEventListener('wheel', ev => { ev.preventDefault(); this._drag = true; this._nudge(ev.deltaY > 0 ? 1 : -1); this._drag = false; }, {passive: false});
+    sc.addEventListener('keydown', ev => {
+      const d = {ArrowDown: 1, ArrowUp: -1, PageDown: 5, PageUp: -5}[ev.key];
+      if (d) { ev.preventDefault(); this._drag = true; this._nudge(d); this._drag = false; }
+    });
+    // Zeit antippen = Zahlenfeld für exakte Eingabe (5 → 5 Min, 5:30, 1:05:00)
+    press(e.rd, {tap: () => this._typeIn()});
+  }
+  _nudge(d) { this._stopFling(); const i = Math.max(0, Math.min(this._vals.length - 1, this._idx + d)); this._move(this._offOf(i), true); this._hit(this._offOf(i)); }
+  _typeIn() {
+    const rd = this._e.rd;
+    if (this._c.custom_input === false || rd.querySelector('input')) return;
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.inputMode = 'numeric'; inp.value = this._fmt(this._sec); inp.setAttribute('aria-label', 'Zeit eintippen (Minuten oder m:ss)');
+    rd.replaceChildren(inp);
+    inp.focus(); inp.select();
+    let done = false;
+    const fin = ok => {
+      if (done) return; done = true;
+      const t = ok ? parseIn(inp.value) : 0;
+      rd.replaceChildren(document.createElement('b'));
+      if (t > 0) this._scaleTo(Math.min(t, 86399), true); else this._showSec();
+    };
+    inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') fin(true); if (ev.key === 'Escape') fin(false); });
+    inp.addEventListener('blur', () => fin(true));
+  }
   // Ein Takt pro Sekunde, nur wenn der Timer läuft (oder klingelt) und die Karte zu sehen ist
   _tick(cameIn) {
     const e = this._e;
@@ -436,7 +630,10 @@ const S_GEN = [
 const S_START = [
   {name: 'show_presets', selector: {boolean: {}}},
   {name: 'presets', selector: T},
-  g2({name: 'show_custom', selector: {boolean: {}}}, sel('custom_units', [['auto', 'Automatisch'], ['h', 'Nur Stunden'], ['m', 'Nur Minuten'], ['s', 'Nur Sekunden'], ['hm', 'Stunden und Minuten'], ['ms', 'Minuten und Sekunden'], ['hms', 'Stunden, Minuten, Sekunden']])),
+  g2({name: 'show_custom', selector: {boolean: {}}}, sel('custom_picker', [['scale', 'Skala zum Ziehen'], ['buttons', 'Plus / Minus']])),
+  g2({name: 'scale_max', selector: {number: {min: 5, max: 1440, step: 5, mode: 'box', unit_of_measurement: 'min'}}}, {name: 'click_sound', selector: {boolean: {}}}),
+  {name: 'custom_input', selector: {boolean: {}}},
+  sel('custom_units', [['auto', 'Automatisch'], ['h', 'Nur Stunden'], ['m', 'Nur Minuten'], ['s', 'Nur Sekunden'], ['hm', 'Stunden und Minuten'], ['ms', 'Minuten und Sekunden'], ['hms', 'Stunden, Minuten, Sekunden']]),
   {name: 'show_add', selector: {boolean: {}}},
 ];
 const S_ALARM = [
@@ -450,14 +647,17 @@ const S_LOOK = [
 const S_ACT = [{name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}];
 const LABELS = {
   entity: 'Timer-Helfer', name: 'Name', icon: 'Icon', show_presets: 'Schnellwahl-Knöpfe zeigen', presets: 'Schnellwahl (Minuten, mit Komma)',
-  show_custom: 'Knopf „Eigene Zeit“ zeigen', custom_units: 'Eigene Zeit in', show_add: 'Knopf „+1 Min“ während der Timer läuft', alarm_text: 'Text beim Ablauf',
+  show_custom: 'Knopf „Eigene Zeit“ zeigen', custom_picker: 'Eigene Zeit einstellen mit', scale_max: 'Skala bis', click_sound: 'Klick-Geräusch beim Drehen', custom_input: 'Zeit antippen = eintippen', custom_units: 'Plus / Minus in', show_add: 'Knopf „+1 Min“ während der Timer läuft', alarm_text: 'Text beim Ablauf',
   alarm_color: 'Farbe beim Ablauf', alarm_minutes: 'Hinweis anzeigen für', layout: 'Darstellung', color: 'Farbe',
   animation: 'Animationen', glow: 'Rahmen leuchtet, solange der Timer läuft', tap_action: 'Kopfzeile antippen', hold_action: 'Lange drücken',
 };
 const HELPERS = {
   entity: 'Ein Timer-Helfer läuft in Home Assistant – alle Geräte zeigen dieselbe Zeit. Anlegen unter Einstellungen → Geräte & Dienste → Helfer → Timer.',
   presets: 'z. B. „1, 5, 10, 15“. Auch „30s“ oder „1h“ geht. Höchstens 8.',
-  custom_units: 'Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. Gibt es keine größere Einheit, geht die kleinere weiter: „Nur Minuten“ bis 180, „Nur Sekunden“ bis 59:55.',
+  custom_picker: 'Skala: wie ein Radio-Tuner hoch und runter ziehen, schnelles Wischen läuft mit Schwung aus. Raster bis 5 Min 15 Sekunden, bis 60 Min 1 Minute, darüber 5 Minuten.',
+  click_sound: 'Leiser Klick pro Raster (und Vibration, wo das Gerät es kann).',
+  custom_input: 'Antippen der großen Zeit öffnet ein Zahlenfeld: „5“ = 5 Minuten, „5:30“, „1:05:00“.',
+  custom_units: 'Nur für Plus / Minus. Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. Gibt es keine größere Einheit, geht die kleinere weiter: „Nur Minuten“ bis 180, „Nur Sekunden“ bis 59:55.',
   alarm_text: 'Leer = „Zeit ist um!“',
   alarm_minutes: 'So lange klingelt die Karte nach dem Ablauf, wenn niemand „OK“ drückt. 0 = bis jemand bestätigt.',
   tap_action: 'Leer = Details des Timers öffnen. Die Stoppuhr selbst startet, pausiert und setzt fort.',

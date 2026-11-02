@@ -34,7 +34,7 @@ presets: [3, 8, 12, 20]
 
 ## Wenn der Platz knapp ist (z. B. Echo Show), dann so
 
-`layout: compact` zeigt eine kleine Stoppuhr mit großer Zeit daneben, die Knöpfe bleiben groß genug für den Finger.
+„Eigene Zeit“ (Skala oder Plus/Minus) liegt solange über Start und Schnellwahl (in beiden Layouts) – die Karte
 „Eigene Zeit“ hat hier Minuten (bis 180) und Sekunden nebeneinander und ersetzt solange Start und Schnellwahl (in beiden Layouts) – die Karte
 wird dadurch nicht höher.
 
@@ -56,7 +56,7 @@ Aktion z. B. eine Benachrichtigung oder Ansage. So kommt der Ton genau einmal, e
 | Was | Wie |
 |---|---|
 | Starten mit eingestellter Dauer | „Start“ oder die Stoppuhr antippen |
-| Starten mit anderer Zeit | Schnellwahl-Knopf, oder „Eigene Zeit“ → Minuten (je nach Einstellung auch Stunden/Sekunden) mit + und − (gedrückt halten = schnell) → „Übernehmen“ → „Start“. Die Auswahl beginnt mit der eingestellten Zeit |
+| Starten mit anderer Zeit | Schnellwahl-Knopf, oder „Eigene Zeit“ → Skala hoch/runter ziehen wie bei einem Radio-Tuner (schnell wischen = mit Schwung, rastet ein, leiser Klick pro Raster) oder die große Zeit antippen und eintippen → „Übernehmen“ → „Start“. Die Auswahl beginnt mit der eingestellten Zeit |
 | Pause / Weiter | „Pause“ bzw. „Weiter“, oder die Stoppuhr antippen |
 | Eine Minute dazu | „1 Min“ (nur während der Timer läuft) |
 | Abbrechen | „Abbrechen“ |
@@ -73,7 +73,11 @@ Aktion z. B. eine Benachrichtigung oder Ansage. So kommt der Ton genau einmal, e
 | `show_presets` | `true` | Schnellwahl-Knöpfe zeigen |
 | `presets` | `[1, 5, 10, 15]` | Schnellwahl in Minuten (`30s`, `1h` gehen auch), höchstens 8 |
 | `show_custom` | `true` | Knopf „Eigene Zeit“ |
-| `custom_units` | `auto` | Eigene Zeit in: `h`, `m`, `s` oder kombiniert `hm`, `ms`, `hms`. Fehlt die größere Einheit, geht die kleinere weiter (nur Minuten bis 180, nur Sekunden bis 59:55). `auto` = groß Std/Min/Sek, kompakt Min/Sek |
+| `custom_picker` | `scale` | Eigene Zeit mit `scale` (senkrechte Skala zum Ziehen; Raster bis 5 Min 15 s, bis 60 Min 1 Min, darüber 5 Min) oder `buttons` (Plus/Minus je Einheit) |
+| `scale_max` | `180` | Skala reicht bis so viele Minuten |
+| `click_sound` | `true` | Leiser Klick pro Raster, dazu Vibration, wo das Gerät es kann |
+| `custom_input` | `true` | Große Zeit antippen öffnet ein Zahlenfeld („5“ = 5 Min, „5:30“, „1:05:00“) |
+| `custom_units` | `auto` | Nur für Plus/Minus – Eigene Zeit in: `h`, `m`, `s` oder kombiniert `hm`, `ms`, `hms`. Fehlt die größere Einheit, geht die kleinere weiter (nur Minuten bis 180, nur Sekunden bis 59:55). `auto` = groß Std/Min/Sek, kompakt Min/Sek |
 | `show_add` | `true` | Knopf „+1 Min“, solange der Timer läuft |
 | `alarm_text` | „Zeit ist um!“ | Text beim Ablauf |
 | `alarm_color` | `accent-2` | Farbrolle beim Ablauf (`neutral`, `accent-1` … `accent-4`) |
