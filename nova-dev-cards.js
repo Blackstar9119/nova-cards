@@ -2635,7 +2635,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       this._rt = this._ri = null;
     }
     /* ---------- Eigene Zeit als Tuner-Skala ----------
-       Senkrechte Skala, mit dem Finger hoch/runter ziehen. Raster: bis 5 Min 15 s, bis 60 Min 1 Min, darüber 5 Min.
+       Senkrechte Skala, mit dem Finger hoch/runter ziehen. Raster: bis 5 Min 15 s, bis 15 Min 30 s, bis 60 Min 1 Min, darüber 5 Min.
        Schnelles Wischen läuft mit Schwung aus und rastet dann ein. Pro Raster ein leiser Klick (und Vibration, wo es geht).
        Pro Bild wird nur transform gesetzt – nichts wird neu gezeichnet. */
     _scale() {
@@ -2646,7 +2646,8 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       if (this._valsFor === max) return this._valsC;
       const v = [];
       for (let t = 15; t <= Math.min(300, max); t += 15) v.push(t);
-      for (let t = 360; t <= Math.min(3600, max); t += 60) v.push(t);
+      for (let t = 330; t <= Math.min(900, max); t += 30) v.push(t);
+      for (let t = 960; t <= Math.min(3600, max); t += 60) v.push(t);
       for (let t = 3900; t <= max; t += 300) v.push(t);
       this._valsFor = max;
       this._valsC = v;
@@ -2658,7 +2659,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       this._strKey = key;
       const LBL = /* @__PURE__ */ new Set([1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 480, 600, 720, 900, 1080, 1260, 1440]);
       this._e.str.innerHTML = vals.map((t, i) => {
-        const y = i * SP, maj = t <= 300 ? t % 60 === 0 : t <= 3600 ? t % 300 === 0 : t % 900 === 0, min = t / 60;
+        const y = i * SP, maj = t <= 900 ? t % 60 === 0 : t <= 3600 ? t % 300 === 0 : t % 900 === 0, min = t / 60;
         return `<i${maj ? ' class="m"' : ""} style="top:${y}px"></i>${maj && LBL.has(min) ? `<b style="top:${y}px">${min}</b>` : ""}`;
       }).join("");
     }
@@ -2981,7 +2982,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   var HELPERS2 = {
     entity: "Ein Timer-Helfer läuft in Home Assistant – alle Geräte zeigen dieselbe Zeit. Anlegen unter Einstellungen → Geräte & Dienste → Helfer → Timer.",
     presets: "z. B. „1, 5, 10, 15“. Auch „30s“ oder „1h“ geht. Höchstens 8.",
-    custom_picker: "Skala: wie ein Radio-Tuner hoch und runter ziehen, schnelles Wischen läuft mit Schwung aus. Raster bis 5 Min 15 Sekunden, bis 60 Min 1 Minute, darüber 5 Minuten.",
+    custom_picker: "Skala: wie ein Radio-Tuner hoch und runter ziehen, schnelles Wischen läuft mit Schwung aus. Raster bis 5 Min 15 Sekunden, bis 15 Min 30 Sekunden, bis 60 Min 1 Minute, darüber 5 Minuten.",
     click_sound: "Leiser Klick pro Raster (und Vibration, wo das Gerät es kann).",
     custom_input: "Antippen der großen Zeit öffnet ein Zahlenfeld: „5“ = 5 Minuten, „5:30“, „1:05:00“.",
     custom_units: "Nur für Plus / Minus. Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. Gibt es keine größere Einheit, geht die kleinere weiter: „Nur Minuten“ bis 180, „Nur Sekunden“ bis 59:55.",

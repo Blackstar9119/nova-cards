@@ -73,7 +73,7 @@ Aktion z. B. eine Benachrichtigung oder Ansage. So kommt der Ton genau einmal, e
 | `show_presets` | `true` | Schnellwahl-Knöpfe zeigen |
 | `presets` | `[1, 5, 10, 15]` | Schnellwahl in Minuten (`30s`, `1h` gehen auch), höchstens 8 |
 | `show_custom` | `true` | Knopf „Eigene Zeit“ |
-| `custom_picker` | `scale` | Eigene Zeit mit `scale` (senkrechte Skala zum Ziehen; Raster bis 5 Min 15 s, bis 60 Min 1 Min, darüber 5 Min) oder `buttons` (Plus/Minus je Einheit) |
+| `custom_picker` | `scale` | Eigene Zeit mit `scale` (senkrechte Skala zum Ziehen; Raster bis 5 Min 15 s, bis 15 Min 30 s, bis 60 Min 1 Min, darüber 5 Min) oder `buttons` (Plus/Minus je Einheit) |
 | `scale_max` | `180` | Skala reicht bis so viele Minuten |
 | `click_sound` | `true` | Leiser Klick pro Raster, dazu Vibration, wo das Gerät es kann |
 | `custom_input` | `true` | Große Zeit antippen öffnet ein Zahlenfeld („5“ = 5 Min, „5:30“, „1:05:00“) |
