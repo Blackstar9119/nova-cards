@@ -2,7 +2,7 @@
 
 [← Zurück zur Übersicht](../README.md)
 
-Uhrzeit im Nova-Stil – digital mit großen Ziffern oder analog als Zifferblatt mit Chromring und Glas. Wochentag und Datum
+Uhrzeit im Nova-Stil – digital mit großen, schlanken Ziffern wie die Uhr der Wetter Card oder analog als Zifferblatt mit Chromring und Glas. Wochentag und Datum
 auf Wunsch darunter. Sprache, 12/24 Stunden und Zeitzone kommen aus deinem Home-Assistant-Profil.
 
 ## Wenn du einfach nur eine Uhr willst, dann so
@@ -50,7 +50,7 @@ glass: false
 | `show_date` | `true` | Datum |
 | `date_format` | `long` | `long` (2. November), `short` (2. Nov.) oder `numeric` (02.11.2026) |
 | `time_format` | `auto` | `auto` (wie im Profil), `24` oder `12` |
-| `color` | `accent-1` | Farbrolle für den Doppelpunkt bzw. Sekundenzeiger |
+| `color` | `accent-1` | Farbrolle für den Sekundenzeiger der analogen Uhr |
 | `glass` | `true` | Glas-Hintergrund der Karte |
 | `tap_action`, `hold_action` | – | Aktion beim Antippen bzw. langen Drücken |
 

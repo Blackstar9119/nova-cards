@@ -1,4 +1,4 @@
-/* Nova Cards v0.11.1 DEV (nur timer, clock, light, chips, appliance) – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
+/* Nova Cards v0.11.1 DEV (nur timer, clock, light, chips, appliance, modular) – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -33,6 +33,8 @@
   };
 
   // src/shared/state.js
+  var OFF = /* @__PURE__ */ new Set(["off", "unavailable", "unknown", "idle", "docked", "standby", "closed", "paused", "not_home", "none", "ready"]);
+  var isOn = (s) => !!s && !OFF.has(s.state);
   var DICON = { light: "mdi:lightbulb", switch: "mdi:power-socket-eu", fan: "mdi:fan", input_boolean: "mdi:toggle-switch-outline", button: "mdi:gesture-tap-button", input_button: "mdi:gesture-tap-button", script: "mdi:script-text-outline", scene: "mdi:palette", automation: "mdi:robot", climate: "mdi:thermostat", cover: "mdi:window-shutter", media_player: "mdi:speaker", number: "mdi:ray-vertex", input_number: "mdi:ray-vertex", select: "mdi:format-list-bulleted", binary_sensor: "mdi:checkbox-blank-circle-outline", sensor: "mdi:eye" };
   var TOGGLE = ["light", "switch", "input_boolean", "fan", "cover", "group", "siren", "humidifier", "automation", "media_player", "valve"];
   var PRESS = { button: ["button", "press"], input_button: ["input_button", "press"], script: ["script", "turn_on"], scene: ["scene", "turn_on"] };
@@ -44,8 +46,64 @@
     }
   };
   var unitJoin = (v, u) => !u ? `${v}` : u.startsWith("°") ? `${v}${u}` : `${v} ${u}`;
+  var decOf = (st) => (String(st).split(".")[1] || "").length;
   var nameOf = (h, o) => o.name ?? h.states[o.entity]?.attributes.friendly_name ?? o.entity ?? "";
-  var iconOf = (h, o, fb) => o.icon || h.states[o.entity]?.attributes.icon || DICON[dom(o.entity)] || fb;
+  var SCLASS = {
+    temperature: "mdi:thermometer",
+    humidity: "mdi:water-percent",
+    battery: "mdi:battery",
+    power: "mdi:flash",
+    energy: "mdi:lightning-bolt",
+    illuminance: "mdi:brightness-5",
+    pressure: "mdi:gauge",
+    atmospheric_pressure: "mdi:gauge",
+    co2: "mdi:molecule-co2",
+    carbon_dioxide: "mdi:molecule-co2",
+    pm25: "mdi:blur",
+    pm10: "mdi:blur",
+    voltage: "mdi:sine-wave",
+    current: "mdi:current-ac",
+    duration: "mdi:timer-outline",
+    timestamp: "mdi:clock-outline",
+    date: "mdi:calendar",
+    moisture: "mdi:water",
+    precipitation: "mdi:weather-rainy",
+    wind_speed: "mdi:weather-windy",
+    gas: "mdi:meter-gas",
+    water: "mdi:water",
+    signal_strength: "mdi:wifi",
+    volatile_organic_compounds: "mdi:air-filter",
+    speed: "mdi:speedometer",
+    weight: "mdi:weight"
+  };
+  var BCLASS = {
+    window: ["mdi:window-closed", "mdi:window-open"],
+    door: ["mdi:door-closed", "mdi:door-open"],
+    garage_door: ["mdi:garage", "mdi:garage-open"],
+    opening: ["mdi:square-outline", "mdi:square-rounded-outline"],
+    motion: ["mdi:motion-sensor-off", "mdi:motion-sensor"],
+    occupancy: ["mdi:home-outline", "mdi:home"],
+    presence: ["mdi:home-outline", "mdi:home"],
+    moisture: ["mdi:water-off", "mdi:water"],
+    smoke: ["mdi:smoke-detector", "mdi:smoke-detector-alert"],
+    battery: ["mdi:battery", "mdi:battery-outline"],
+    problem: ["mdi:check-circle-outline", "mdi:alert-circle"],
+    connectivity: ["mdi:close-network-outline", "mdi:check-network-outline"],
+    power: ["mdi:power-plug-off", "mdi:power-plug"],
+    plug: ["mdi:power-plug-off", "mdi:power-plug"],
+    running: ["mdi:stop", "mdi:play"],
+    lock: ["mdi:lock", "mdi:lock-open"]
+  };
+  var classIcon = (s, id) => {
+    const dc = s?.attributes.device_class, d = dom(id);
+    if (!dc) return null;
+    if (d === "binary_sensor") return BCLASS[dc]?.[s.state === "on" ? 1 : 0] || null;
+    return d === "sensor" || d === "number" || d === "input_number" ? SCLASS[dc] || null : null;
+  };
+  var iconOf = (h, o, fb) => {
+    const s = h.states[o.entity];
+    return o.icon || s?.attributes.icon || classIcon(s, o.entity) || DICON[dom(o.entity)] || fb;
+  };
   var langOf = (h) => h.locale?.language || h.language || "de";
   var tzOf = (h) => h.locale?.time_zone === "server" ? h.config?.time_zone : void 0;
   var areaOf = (h, id) => {
@@ -68,6 +126,21 @@
     if (a.above != null || a.below != null) return NUMRE.test(v) && (a.above == null || n > a.above) && (a.below == null || n < a.below);
     return ["on", "problem"].includes(v);
   }
+  var SLIDE = {
+    number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("number", "set_value", { entity_id: id, value: v }) },
+    input_number: { v: (s) => +s.state, r: (a) => [a.min ?? 0, a.max ?? 100, a.step ?? 1], set: (h, id, v) => h.callService("input_number", "set_value", { entity_id: id, value: v }) },
+    light: {
+      v: (s) => s.state === "on" ? Math.max(1, Math.round((s.attributes.brightness || 0) / 2.55)) : 0,
+      r: () => [0, 100, 1],
+      u: "%",
+      set: (h, id, v) => v > 0 ? h.callService("light", "turn_on", { entity_id: id, brightness_pct: v }) : h.callService("light", "turn_off", { entity_id: id })
+    },
+    fan: { v: (s) => s.state === "on" ? s.attributes.percentage ?? 0 : 0, r: (a) => [0, 100, a.percentage_step || 1], u: "%", set: (h, id, v) => h.callService("fan", "set_percentage", { entity_id: id, percentage: Math.round(v) }) },
+    cover: { v: (s) => s.attributes.current_position ?? 0, r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("cover", "set_cover_position", { entity_id: id, position: v }) },
+    media_player: { v: (s) => Math.round((s.attributes.volume_level ?? 0) * 100), r: () => [0, 100, 1], u: "%", set: (h, id, v) => h.callService("media_player", "volume_set", { entity_id: id, volume_level: v / 100 }) },
+    climate: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 7, a.max_temp ?? 35, a.target_temp_step ?? 0.5], u: "°", set: (h, id, v) => h.callService("climate", "set_temperature", { entity_id: id, temperature: v }) },
+    water_heater: { v: (s) => s.attributes.temperature ?? 0, r: (a) => [a.min_temp ?? 30, a.max_temp ?? 70, a.target_temp_step ?? 1], u: "°", set: (h, id, v) => h.callService("water_heater", "set_temperature", { entity_id: id, temperature: v }) }
+  };
 
   // src/shared/actions.js
   var fire = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
@@ -561,6 +634,8 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   var I = { icon: {} };
   var A = { ui_action: {} };
   var ENT = { name: "entity", required: true, selector: { entity: {} } };
+  var TITLE = { name: "title", selector: T };
+  var COLS = { name: "columns", selector: { number: { min: 1, max: 4, mode: "slider" } } };
   var NUM = (n) => ({ name: n, selector: { number: { mode: "box", step: "any" } } });
   var sel = (n, opts) => ({ name: n, selector: { select: { mode: "dropdown", options: opts.map(([value, label]) => ({ value, label })) } } });
   var ROLE = (n) => sel(n, [["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]);
@@ -762,12 +837,15 @@ ${frameGlow(".g.tm.glow.st-active")}
 .anim.st-paused .ro .t{animation:tm-blink 1.4s ease-in-out infinite}
 .ctl{display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
 .row2{display:flex;gap:8px;flex-wrap:wrap}
-.bt2{flex:1 1 0;min-width:0;min-height:var(--nova-timer-button-height,52px);border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);
-display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:inherit;white-space:nowrap;transition:background-color .2s,transform .15s,box-shadow .2s}
-.bt2 ha-icon{--mdc-icon-size:22px}
+.bt2{flex:1 1 0;min-width:0;box-sizing:border-box;min-height:var(--nova-timer-button-height,52px);padding:0 8px;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);
+display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:inherit;white-space:nowrap;overflow:hidden;transition:background-color .2s,transform .15s,box-shadow .2s}
+.bt2 span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bt2 ha-icon{--mdc-icon-size:21px;flex:none}
 .bt2:active{transform:scale(.95)}
-.bt2.pri{background:var(--dc);color:var(--dcfg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--dc) 45%,transparent)}
-.bt2.sel{box-shadow:0 0 0 2px var(--dc)}
+/* Hauptknopf im Glas-Stil: nur leicht in der Kartenfarbe getönt, Icon in der Farbe – keine Vollfarbfläche */
+.bt2.pri{background:color-mix(in srgb,var(--dc) 22%,var(--nv-chip));border-color:color-mix(in srgb,var(--dc) 55%,transparent)}
+.bt2.pri ha-icon{color:var(--dc)}
+.bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
 .pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
 .pre .bt2{font-size:16px;font-weight:600}
 .cust{display:flex;flex-direction:column;gap:10px;padding:10px;border-radius:18px;background:var(--nv-box);border:1px solid var(--nv-box-border)}
@@ -777,8 +855,16 @@ display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;fo
 .stp .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;min-height:30px}
 .stp .hb{width:100%;max-width:64px;height:40px;border-radius:12px}
 .stp .hb ha-icon{--mdc-icon-size:22px}
+.full .cbk{display:none}
+/* Kompakt: Minuten und Sekunden nebeneinander als [−] 05 Min [+], gleiche Höhe wie Schnellwahl + Knöpfe */
+.cmp .cust{padding:0;background:none;border:none}
+.cmp .stps{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cmp .stp[data-k="h"]{display:none}
+.cmp .stp{flex-direction:row;justify-content:space-between;gap:2px;padding:0 3px;min-width:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);height:var(--nova-timer-button-height,52px);box-sizing:border-box}
+.cmp .stp .mi{order:0}.cmp .stp .v{order:1;min-height:0;font-size:19px}.cmp .stp small{order:2;text-transform:none;letter-spacing:0;font-size:11px;margin-left:-1px}.cmp .stp .pl{order:3}
+.cmp .stp .hb{width:34px;height:42px;flex:none;border-radius:12px}
 .msg{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;font-size:16px;font-weight:600;
-background:color-mix(in srgb,var(--ac) 22%,transparent);border:1px solid color-mix(in srgb,var(--ac) 60%,transparent)}
+background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid color-mix(in srgb,var(--ac) 50%,transparent)}
 .msg ha-icon{color:var(--ac);--mdc-icon-size:26px}
 .anim .msg ha-icon{animation:tm-ring 1.2s ease-in-out infinite;transform-origin:50% 10%}
 .alm .dl-bell{opacity:1}
@@ -797,18 +883,20 @@ background:color-mix(in srgb,var(--ac) 22%,transparent);border:1px solid color-m
 [hidden]{display:none!important}
 /* Kompakt: kleine Stoppuhr links, Zeit daneben, Knöpfe rechts; Schnellwahl und eigene Zeit darunter über die ganze Breite */
 .cmp .hd{display:none}
-.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:14px;row-gap:10px}
+.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;align-content:center;column-gap:14px;row-gap:10px}
 .cmp .ctl{display:contents}
-.cmp .dial{grid-column:1;grid-row:1;width:72px;max-width:72px}.cmp .ro{display:none}
+.cmp .dial{grid-column:1;grid-row:1;width:84px;max-width:84px}.cmp .ro{display:none}
 .cmp .ct2{grid-column:2;grid-row:1;min-width:0}
 .cmp .main{flex-wrap:nowrap}
 .cmp .main,.cmp .msg,.cmp .pre,.cmp .cust{grid-column:1/-1}
 .cmp .msg{display:none}
-.ct2 .tt b{display:block;font-size:38px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.ct2 .tt b{display:block;font-size:42px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
 .ct2 .tt small{display:block;font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ct2 .tt i{font-style:normal;opacity:.75}
 .full .ct2{display:none}
 .cmp.alm .tt b{color:var(--ac)}
+@container (max-width:340px){.main.n3 .bt2 ha-icon{display:none}.bt2{font-size:14px}}
+@container (max-width:260px){.main .bt2 span{display:none}.main .bt2 ha-icon{display:flex!important}}
 @container (min-width:400px){.full .bd{flex-direction:row;align-items:center}.full .dial{width:46%;max-width:var(--nova-timer-size,260px)}.full .ctl{flex:1}}
 @keyframes tm-blink{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes tm-ring{0%,60%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-14deg)}20%,40%{transform:rotate(14deg)}}
@@ -889,7 +977,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         const [k, l] = x.split("|");
         return `<div class="stp" data-k="${k}"><small>${l}</small><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div><span class="v"></span><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div></div>`;
       }).join("")}</div>
-<div class="row2"><div class="bt2 pri cgo"><ha-icon icon="mdi:play"></ha-icon><span>Starten</span></div></div></div>
+<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:play"></ha-icon><span>Starten</span></div></div></div>
 </div></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
@@ -917,8 +1005,13 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         const k = st.dataset.k;
         [[".pl", 1], [".mi", -1]].forEach(([s, d]) => this._rep(st.querySelector(s), () => this._step(k, d)));
       });
+      press(q(".cbk"), { tap: () => {
+        this._showCust = false;
+        this._key = null;
+        this._render();
+      } });
       press(q(".cgo"), { tap: () => {
-        const { h, m, s } = this._cust, sec = h * 3600 + m * 60 + s;
+        const { h, m, s } = this._cust, sec = (this._c.layout === "compact" ? 0 : h) * 3600 + m * 60 + s;
         if (sec > 0) {
           this._showCust = false;
           this._start(sec);
@@ -1050,7 +1143,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         });
       } else if (st === "active") {
         B("", ICON.pause, "Pause", () => this._svc("pause"));
-        if (c.show_add !== false) B("", ICON.plus, "1 Min", () => this._add(60));
+        if (c.show_add !== false) B("", ICON.plus, "+1 Min", () => this._add(60));
         B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
       } else if (st === "paused") {
         B("pri", ICON.play, "Weiter", () => this._svc("start"));
@@ -1064,6 +1157,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         });
       }
       e.main.innerHTML = "";
+      e.main.classList.toggle("n3", b.length > 2);
       b.forEach(([cls, icon, label, fn]) => {
         const d = document.createElement("div");
         d.className = `bt2 ${cls}`;
@@ -1091,6 +1185,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         }
       }
       e.cust.hidden = !(idle && this._showCust && c.show_custom !== false);
+      e.main.hidden = c.layout === "compact" && !e.cust.hidden;
       if (!e.cust.hidden) this._custShow();
     }
     _dialTap() {
@@ -1130,10 +1225,10 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         if (v) this._start(Math.round(v.left + sec));
       }
     }
+    // Stepper: läuft am Ende rundherum (59 → 0); Sekunden in 5er-Schritten, kompakt ohne Stunden bis 180 Minuten
     _step(k, d) {
-      const c = this._cust, max = { h: 23, m: 59, s: 59 }[k], st = k === "s" ? 5 : 1;
-      c[k] = (c[k] + d * st + max + 1 - (k === "s" ? 0 : 0)) % (max + 1);
-      if (k === "s") c[k] = Math.round(c[k] / 5) * 5 % 60;
+      const c = this._cust, n = { h: 24, m: this._c.layout === "compact" ? 181 : 60, s: 60 }[k], st = k === "s" ? 5 : 1;
+      c[k] = ((Math.round(c[k] / st) * st + d * st) % n + n) % n;
       this._custShow();
     }
     _custShow() {
@@ -1285,12 +1380,10 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
 .g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
 .g.ck.flat{background:none;border-color:transparent;box-shadow:none}
 .nm{font-size:12.5px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
-.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
+.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
 .tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
 .tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
-.tm .cl{color:var(--kc)}
-.dt{font-size:clamp(13px,6cqw,26px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.dt b{font-weight:600;opacity:1}
+.dt{font-size:clamp(13px,5cqw,22px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .ana{width:100%;max-width:var(--nova-clock-size,240px);aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
@@ -1418,7 +1511,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         }
       }
       const wd = c.show_weekday ? f2.wd.format(now) : "", dt = c.show_date ? f2.date.format(now) : "";
-      const dh = [wd && `<b>${esc(wd)}</b>`, dt && esc(dt)].filter(Boolean).join(", ");
+      const dh = [wd && esc(wd), dt && esc(dt)].filter(Boolean).join(", ");
       e.dt.hidden = !dh;
       if (this._dtH !== dh) {
         this._dtH = dh;
@@ -1473,7 +1566,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
   };
   var HELPERS2 = {
     show_seconds: "Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.",
-    color: "Doppelpunkt bzw. Sekundenzeiger. Die Farben selbst kommen aus dem Theme.",
+    color: "Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.",
     glass: "Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild."
   };
   var NovaClockCardEditor = class extends NovaEditorBase {
@@ -3803,4 +3896,465 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   __publicField(NovaApplianceCardEditor, "helpers", GHELPERS);
   __publicField(NovaApplianceCardEditor, "openSections", ["general"]);
   define("geraet-card-editor", NovaApplianceCardEditor);
+
+  // src/modular.js
+  var duration = (m) => m >= 60 ? `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, "0")} h` : `${m} min`;
+  var ITEMS = { info: "entities", entities: "entities", sliders: "entities", buttons: "buttons", alerts: "alerts" };
+  var normBlock = (b) => {
+    const k = ITEMS[b.type];
+    if (!k) return { ...b };
+    const it = (b[k] || []).map((x) => typeof x === "string" ? { entity: x } : { ...x });
+    return { ...b, [k]: it.filter((x) => k === "buttons" ? x.entity || x.tap_action : x.entity) };
+  };
+  var BLOCKS = {
+    header(b, w) {
+      const ent = b.status || b.active;
+      const btn = b.button_icon || b.button_action?.action && b.button_action.action !== "none";
+      w.innerHTML = `<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="pct"></span>${btn ? '<div class="hb"></div>' : ""}</div><div class="prog" hidden><i></i></div>`;
+      const q = (s) => w.querySelector(s), hd = q(".hd"), ic = q(".ic"), sm = q("small"), pct = q(".pct"), pg = q(".prog"), pi = q(".prog i");
+      q("b").textContent = b.name ?? "";
+      press(ic, { tap: () => this._act({ entity: ent, tap_action: b.tap_action }, "tap", true), hold: () => this._act({ entity: ent, hold_action: b.hold_action }, "hold") });
+      if (btn) {
+        setIcon(q(".hb"), b.button_icon || "mdi:dots-horizontal");
+        press(q(".hb"), { tap: () => this._act({ entity: ent, tap_action: b.button_action }, "tap", true) });
+      }
+      return (h) => {
+        const s = b.status && h.states[b.status];
+        const on = b.active ? isOn(h.states[b.active]) : isOn(s);
+        if (!b.name && ent) q("b").textContent = h.states[ent]?.attributes.friendly_name || "";
+        setIcon(ic, b.icon || s?.attributes.icon || "mdi:devices");
+        hd.classList.toggle("on", on);
+        sm.textContent = s ? fmtState(h, s) : b.active ? on ? "an" : "aus" : "";
+        const pr = b.progress && h.states[b.progress], p = pr ? parseFloat(pr.state) : NaN;
+        const show = !isNaN(p) && p > 0 && (on || p < 100);
+        pg.hidden = !show;
+        pct.textContent = show ? `${Math.round(p)} %` : "";
+        if (show) pi.style.width = `${Math.min(100, p)}%`;
+      };
+    },
+    info(b, w) {
+      const chips = b.layout === "chips";
+      const box = document.createElement("div");
+      box.className = chips ? "pills" : "list";
+      if (b.columns > 1) box.style.setProperty("--cols", b.columns);
+      const els = b.entities.map((o) => {
+        const el = document.createElement("div");
+        el.className = chips ? "pill" : "kv";
+        el.innerHTML = chips ? '<span class="i"></span><span class="t"></span>' : '<span class="i"></span><span class="k"></span><span class="v"></span>';
+        press(el, { tap: () => this._act(o, "tap", true), hold: () => this._act(o, "hold") });
+        box.append(el);
+        return [el, o];
+      });
+      w.append(box);
+      return (h) => els.forEach(([el, o]) => {
+        const s = h.states[o.entity];
+        el.classList.toggle("na", !s || s.state === "unavailable");
+        setIcon(el.firstChild, iconOf(h, o, "mdi:information-outline"));
+        const v = valueOf(h, s, o);
+        if (chips) el.lastChild.textContent = o.name === "" ? v : `${nameOf(h, o)} · ${v}`;
+        else {
+          el.children[1].textContent = nameOf(h, o);
+          el.children[2].textContent = v;
+        }
+      });
+    },
+    entities(b, w) {
+      const box = document.createElement("div");
+      box.className = "list";
+      if (b.columns > 1) box.style.setProperty("--cols", b.columns);
+      const els = b.entities.map((o) => {
+        const el = document.createElement("div");
+        el.className = "row";
+        el.innerHTML = `<div class="ic"></div><div class="nm"><b></b><small></small></div>${TOGGLE.includes(dom(o.entity)) ? '<div class="sw"></div>' : ""}`;
+        press(el, { tap: () => this._act(o, "tap"), hold: () => this._act(o, "hold") });
+        box.append(el);
+        return [el, o];
+      });
+      w.append(box);
+      return (h) => els.forEach(([el, o]) => {
+        const s = h.states[o.entity];
+        el.classList.toggle("na", !s || s.state === "unavailable");
+        el.classList.toggle("on", isOn(s) && !PRESS[dom(o.entity)]);
+        setIcon(el.firstChild, iconOf(h, o, "mdi:power"));
+        el.querySelector("b").textContent = nameOf(h, o);
+        el.querySelector("small").textContent = s ? valueOf(h, s, o) : "nicht gefunden";
+      });
+    },
+    sliders(b, w) {
+      const els = b.entities.map((o) => {
+        const el = document.createElement("div");
+        el.className = "sl";
+        el.innerHTML = '<div class="kv"><span class="i"></span><span class="k"></span><span class="v"></span></div><input type="range">';
+        const top = el.firstChild, inp = el.lastChild, v = el.querySelector(".v");
+        press(top, { tap: () => this._act(o, "tap", true), hold: () => this._act(o, "hold") });
+        const paint = () => {
+          const mn = +inp.min, mx = +inp.max, n = +inp.value;
+          inp.style.setProperty("--p", `${mx > mn ? (n - mn) / (mx - mn) * 100 : 0}%`);
+          v.textContent = o.format === "duration" ? duration(n) : unitJoin(n.toFixed(decOf(inp.step)), el._u);
+        };
+        inp.addEventListener("pointerdown", () => {
+          el._drag = true;
+        });
+        inp.addEventListener("input", () => {
+          el._drag = true;
+          paint();
+        });
+        inp.addEventListener("change", () => {
+          SLIDE[dom(o.entity)]?.set(this._h, o.entity, +inp.value);
+          clearTimeout(el._t);
+          el._t = setTimeout(() => {
+            el._drag = false;
+          }, 1500);
+        });
+        w.append(el);
+        return { el, o, inp, paint };
+      });
+      return (h) => els.forEach(({ el, o, inp, paint }) => {
+        const s = h.states[o.entity], D = SLIDE[dom(o.entity)];
+        el.classList.toggle("na", !s || !D || s.state === "unavailable");
+        setIcon(el.querySelector(".i"), iconOf(h, o, "mdi:tune-variant"));
+        el.querySelector(".k").textContent = nameOf(h, o);
+        inp.disabled = !s || !D || s.state === "unavailable";
+        if (!s || !D) {
+          el.querySelector(".v").textContent = s ? fmtState(h, s) : "–";
+          return;
+        }
+        const [mn, mx, st] = D.r(s.attributes);
+        inp.min = o.min ?? mn;
+        inp.max = o.max ?? mx;
+        inp.step = o.step ?? st;
+        el._u = o.unit ?? D.u ?? s.attributes.unit_of_measurement;
+        if (!el._drag) inp.value = D.v(s);
+        paint();
+      });
+    },
+    buttons(b, w) {
+      const box = document.createElement("div");
+      box.className = `pills${b.layout === "grid" ? " grid" : ""}`;
+      const els = b.buttons.map((o) => {
+        const el = document.createElement("div");
+        el.className = "pill";
+        el.innerHTML = '<span class="i"></span><span class="t"></span>';
+        press(el, { tap: () => this._act(o, "tap"), hold: () => this._act(o, "hold") });
+        box.append(el);
+        return [el, o];
+      });
+      w.append(box);
+      return (h) => els.forEach(([el, o]) => {
+        const s = o.entity && h.states[o.entity];
+        el.classList.toggle("na", !!o.entity && (!s || s.state === "unavailable"));
+        el.classList.toggle("on", !!s && TOGGLE.includes(dom(o.entity)) && isOn(s));
+        setIcon(el.firstChild, iconOf(h, o, "mdi:gesture-tap-button"));
+        el.lastChild.textContent = o.name ?? (s?.attributes.friendly_name || "");
+      });
+    },
+    alerts(b, w) {
+      const box = document.createElement("div");
+      box.className = `als${b.layout === "chips" ? " chips" : ""}`;
+      const els = b.alerts.map((o) => {
+        const el = document.createElement("div");
+        el.className = `al ${o.level || "warning"}`;
+        el.innerHTML = '<span class="i"></span><span class="t"></span>';
+        press(el, { tap: () => this._act(o, "tap", true), hold: () => this._act(o, "hold") });
+        box.append(el);
+        return [el, o];
+      });
+      w.append(box);
+      return (h) => {
+        let lvl = 0;
+        els.forEach(([el, o]) => {
+          const s = h.states[o.entity], hit = alertHit(o, s);
+          el.hidden = !hit;
+          if (!hit) return;
+          lvl = Math.max(lvl, o.level === "error" ? 2 : o.level === "info" ? 0 : 1);
+          setIcon(el.firstChild, o.icon || (o.level === "error" ? "mdi:alert-octagon" : o.level === "info" ? "mdi:information" : "mdi:alert"));
+          el.lastChild.textContent = o.message ? o.message.replace("{state}", fmtState(h, s)) : `${nameOf(h, o)}: ${fmtState(h, s)}`;
+        });
+        w.hidden = !els.some(([el]) => !el.hidden);
+        return b.glow === false ? 0 : lvl;
+      };
+    }
+  };
+  var NovaModularCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("modular-card-editor"));
+    }
+    static getStubConfig(h) {
+      const ids = Object.keys(h.states);
+      const sensor = ids.find((i) => i.startsWith("sensor.")), sw = ids.find((i) => i.startsWith("switch."));
+      return { blocks: [
+        { type: "header", name: "Gerät", icon: "mdi:devices", ...sensor ? { status: sensor } : {} },
+        ...sw ? [{ type: "entities", entities: [{ entity: sw }] }] : []
+      ] };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (!Array.isArray(c.blocks)) throw new Error("blocks (Liste der Bausteine) fehlt");
+      this._c = { ...c, blocks: c.blocks.filter((b) => b && BLOCKS[b.type]).map(normBlock) };
+      this._ids = entityIds(this._c);
+      this._built = false;
+      if (this._h) {
+        this._build();
+        this._update();
+      }
+    }
+    // Neu zeichnen nur, wenn sich eine Entität der Karte geändert hat
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._ids)) return;
+      this._update();
+    }
+    getCardSize() {
+      return 1 + (this._c?.blocks.length || 1);
+    }
+    getGridOptions() {
+      return { columns: 12, rows: "auto", min_columns: 4 };
+    }
+    _build() {
+      this._built = true;
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}</style><div class="g"></div>`;
+      this._g = r.querySelector(".g");
+      const z = +this._c.size;
+      if (z > 0 && z !== 100) this._g.style.zoom = z / 100;
+      this._ups = this._c.blocks.map((b) => {
+        const w = document.createElement("div");
+        w.className = `blk ${b.type}`;
+        if (b.title) {
+          const t = document.createElement("div");
+          t.className = "bt";
+          t.textContent = b.title;
+          w.append(t);
+        }
+        const up = BLOCKS[b.type].call(this, b, w);
+        this._g.append(w);
+        return up;
+      });
+    }
+    _update() {
+      if (!this._h || !this._ups) return;
+      const lvl = Math.max(0, ...this._ups.map((up) => up(this._h) || 0));
+      this._g.classList.toggle("warn", lvl === 1);
+      this._g.classList.toggle("err", lvl === 2);
+    }
+    _act(o, kind, info) {
+      return runAction(this, o, kind, info);
+    }
+  };
+  define("modular-card", NovaModularCard, { name: "Nova Modular Card", description: "Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.", documentationURL: docUrl("nova-modular-card") });
+  var BM = {
+    // parts: Einstellungen in Gruppen mit Zwischenüberschrift (sonst ein Formular aus schema)
+    header: { label: "Kopfzeile", icon: "mdi:page-layout-header", parts: [
+      [null, [g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "status" } }), { name: "status", selector: { entity: {} } }]],
+      ["Aktiv und Fortschritt", [g2({ name: "active", selector: { entity: {} } }, { name: "progress", selector: { entity: { domain: ["sensor", "number", "input_number"] } } })]],
+      ["Aktionen", [{ name: "tap_action", selector: A }]],
+      ["Button rechts", [{ name: "button_icon", selector: I }, { name: "button_action", selector: A }]]
+    ] },
+    info: {
+      label: "Info-Entitäten",
+      icon: "mdi:information-outline",
+      item: "Entität",
+      plural: "Entitäten",
+      defaults: { layout: "rows", columns: 1 },
+      schema: [TITLE, g2(sel("layout", [["rows", "Liste"], ["chips", "Chips"]]), COLS)],
+      items: [ENT, NAMEICON, g2({ name: "unit", selector: T }, { name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }), { name: "tap_action", selector: A }]
+    },
+    entities: {
+      label: "Schalter & Entitäten",
+      icon: "mdi:toggle-switch-outline",
+      item: "Entität",
+      plural: "Entitäten",
+      defaults: { columns: 1 },
+      schema: [TITLE, COLS],
+      items: [ENT, NAMEICON, { name: "tap_action", selector: A }, { name: "hold_action", selector: A }, { name: "confirm", selector: T }]
+    },
+    sliders: {
+      label: "Schieberegler",
+      icon: "mdi:tune-variant",
+      item: "Regler",
+      plural: "Regler",
+      schema: [TITLE],
+      items: [
+        { ...ENT, selector: { entity: { domain: Object.keys(SLIDE) } } },
+        NAMEICON,
+        g2(NUM("min"), NUM("max"), NUM("step")),
+        g2({ name: "unit", selector: T }, sel("format", [["value", "Zahl"], ["duration", "Minuten → Std:Min"]]))
+      ]
+    },
+    buttons: {
+      label: "Aktionsbuttons",
+      icon: "mdi:gesture-tap-button",
+      item: "Button",
+      plural: "Buttons",
+      key: "buttons",
+      defaults: { layout: "pills" },
+      schema: [TITLE, sel("layout", [["pills", "Pillen"], ["grid", "Kacheln"]])],
+      items: [NAMEICON, { name: "entity", selector: { entity: {} } }, { name: "tap_action", selector: A }, { name: "confirm", selector: T }]
+    },
+    alerts: {
+      label: "Warnungen",
+      icon: "mdi:alert-outline",
+      item: "Warnung",
+      plural: "Warnungen",
+      key: "alerts",
+      defaults: { layout: "list", glow: true },
+      schema: [TITLE, g2(sel("layout", [["list", "Balken"], ["chips", "Badges"]]), { name: "glow", selector: { boolean: {} } })],
+      items: [
+        ENT,
+        g2({ name: "state", selector: T }, { name: "state_not", selector: T }),
+        g2(NUM("above"), NUM("below")),
+        { name: "message", selector: T },
+        g2({ name: "icon", selector: I }, sel("level", [["warning", "Warnung"], ["error", "Fehler"], ["info", "Hinweis"]]))
+      ]
+    }
+  };
+  var MLOOK = [{ name: "size", selector: { number: { min: 50, max: 250, step: 10, mode: "slider", unit_of_measurement: "%" } } }];
+  var MHELPERS = {
+    size: "Skaliert die ganze Karte, z. B. 150 % für Wandpanels. Standard 100 %",
+    status: "Text unter dem Namen. Aus/Standby/Idle = inaktiv",
+    active: "Optional: bestimmt, ob das Icon leuchtet (statt Status-Entität)",
+    button_icon: "Button erscheint, sobald Icon oder Aktion gesetzt ist",
+    unit: "Überschreibt die Einheit der Entität",
+    confirm: "Optional: Text der Rückfrage vor dem Auslösen",
+    state: "Mehrere mit Komma trennen. Ohne Bedingung: Warnung bei „on“ bzw. „problem“",
+    message: "Leer = Name: Zustand. {state} wird ersetzt",
+    min: "Leer = Werte der Entität"
+  };
+  var normItems = (b) => {
+    const k = ITEMS[b.type];
+    return k && Array.isArray(b[k]) ? { ...b, [k]: b[k].map((x) => typeof x === "string" ? { entity: x } : x) } : { ...b };
+  };
+  var NovaModularCardEditor = class extends NovaEditorBase {
+    _blocks() {
+      return (this._config.blocks || []).map(normItems);
+    }
+    _set(bl) {
+      this._emit({ ...this._config, blocks: bl });
+    }
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      r.querySelector(".wrap").append(
+        this._section("blocks", "mdi:view-dashboard-outline", "Bausteine", (w) => this._blockList(w)),
+        this._section("look", "mdi:palette-outline", "Aussehen", (w) => w.append(this._form(MLOOK, { size: 100, ...this._config }, (v) => {
+          const n = merge(this._config, ["size"], v);
+          if (n.size === 100) delete n.size;
+          this._emit(n);
+        })))
+      );
+    }
+    _blockList(w) {
+      const bl = this._blocks();
+      w.append(this._hint("Frei kombinierbar – die Reihenfolge hier ist die Reihenfolge auf der Karte."));
+      bl.forEach((b, i) => w.append(this._block(b, i, bl.length)));
+      const adds = document.createElement("div");
+      adds.className = "adds";
+      Object.entries(BM).forEach(([type, m]) => {
+        adds.append(this._add(m.label, () => {
+          const k = BM[type].items && (m.key || "entities");
+          const n = [...bl, { type, ...k ? { [k]: [{}] } : {} }];
+          this._open = /* @__PURE__ */ new Set([`${n.length - 1}`, `${n.length - 1}.0`]);
+          this._set(n);
+          this._rebuild();
+        }));
+      });
+      w.append(adds);
+    }
+    _blabel(b, i) {
+      const m = BM[b.type];
+      return `${i + 1}. ${m ? m.label : b.type}${b.title || b.name ? " · " + (b.title || b.name) : ""}`;
+    }
+    _block(b, i, n) {
+      const m = BM[b.type];
+      const [d] = this._details(
+        `${i}`,
+        m?.icon || "mdi:help-circle-outline",
+        this._blabel(b, i),
+        this._itemBtns(i, n, (dir) => this._move(null, i, dir), () => this._del(null, i)),
+        (body, s) => this._blockBody(body, s, b, i, m)
+      );
+      return d;
+    }
+    _blockBody(body, s, b, i, m) {
+      if (!m) {
+        body.append(this._hint(`Unbekannter Baustein „${b.type}“ – nur per YAML bearbeitbar.`));
+        return;
+      }
+      const def = m.defaults || {};
+      (m.parts || [[null, m.schema]]).forEach(([title, schema]) => {
+        if (title) body.append(this._h4(title));
+        body.append(this._form(schema, { ...def, ...b }, (v) => {
+          const bl = this._blocks(), nb = merge(bl[i], names(schema), v);
+          Object.entries(def).forEach(([k, x]) => nb[k] === x && delete nb[k]);
+          bl[i] = nb;
+          this._set(bl);
+          s.querySelector(".lbl").textContent = this._blabel(nb, i);
+        }));
+      });
+      if (m.items) {
+        const k = m.key || "entities", items = b[k] || [];
+        body.append(this._h4(m.plural));
+        items.forEach((it, j) => body.append(this._sub(i, j, it, items.length, m, k)));
+        body.append(this._add(`${m.item} hinzufügen`, () => {
+          const bl = this._blocks();
+          bl[i] = { ...bl[i], [k]: [...bl[i][k] || [], {}] };
+          this._open = /* @__PURE__ */ new Set([`${i}`, `${i}.${bl[i][k].length - 1}`]);
+          this._set(bl);
+          this._rebuild();
+        }));
+      }
+    }
+    _sub(i, j, it, n, m, k) {
+      const keys = names(m.items);
+      const [d] = this._details(
+        `${i}.${j}`,
+        it.icon || m.icon,
+        this._ilabel(it, j, m),
+        this._itemBtns(j, n, (dir) => this._move(i, j, dir), () => this._del(i, j)),
+        (body, s) => body.append(this._form(m.items, it, (v) => {
+          const bl = this._blocks(), arr = [...bl[i][k]];
+          arr[j] = merge(arr[j], keys, v);
+          bl[i] = { ...bl[i], [k]: arr };
+          this._set(bl);
+          s.querySelector(".lbl").textContent = this._ilabel(arr[j], j, m);
+        }))
+      );
+      return d;
+    }
+    // i = null: Block verschieben/löschen, sonst Eintrag j in Block i
+    _move(i, j, dir) {
+      const bl = this._blocks(), t = j + dir;
+      if (i === null) {
+        [bl[j], bl[t]] = [bl[t], bl[j]];
+        this._open = /* @__PURE__ */ new Set([`${t}`]);
+      } else {
+        const k = BM[bl[i].type].key || "entities", arr = [...bl[i][k]];
+        [arr[j], arr[t]] = [arr[t], arr[j]];
+        bl[i] = { ...bl[i], [k]: arr };
+        this._open = /* @__PURE__ */ new Set([`${i}`, `${i}.${t}`]);
+      }
+      this._set(bl);
+      this._rebuild();
+    }
+    _del(i, j) {
+      const bl = this._blocks();
+      if (i === null) {
+        bl.splice(j, 1);
+        this._open = /* @__PURE__ */ new Set();
+      } else {
+        const k = BM[bl[i].type].key || "entities";
+        bl[i] = { ...bl[i], [k]: bl[i][k].filter((_, x) => x !== j) };
+        this._open = /* @__PURE__ */ new Set([`${i}`]);
+      }
+      this._set(bl);
+      this._rebuild();
+    }
+  };
+  __publicField(NovaModularCardEditor, "labels", { ...BASE_LABELS, size: "Größe" });
+  __publicField(NovaModularCardEditor, "helpers", MHELPERS);
+  __publicField(NovaModularCardEditor, "openSections", ["blocks"]);
+  define("modular-card-editor", NovaModularCardEditor);
 })();

@@ -11,7 +11,24 @@ export const fmtState = (h, s) => { try { return h.formatEntityState ? h.formatE
 export const unitJoin = (v, u) => !u ? `${v}` : u.startsWith('°') ? `${v}${u}` : `${v} ${u}`;
 export const decOf = st => (String(st).split('.')[1] || '').length;
 export const nameOf = (h, o) => o.name ?? h.states[o.entity]?.attributes.friendly_name ?? o.entity ?? '';
-export const iconOf = (h, o, fb) => o.icon || h.states[o.entity]?.attributes.icon || DICON[dom(o.entity)] || fb;
+// Icons nach device_class (wie im HA-Frontend), sonst wäre jeder Sensor ohne eigenes Icon ein Auge. Binärsensoren: [aus, an]
+const SCLASS = {temperature: 'mdi:thermometer', humidity: 'mdi:water-percent', battery: 'mdi:battery', power: 'mdi:flash', energy: 'mdi:lightning-bolt',
+  illuminance: 'mdi:brightness-5', pressure: 'mdi:gauge', atmospheric_pressure: 'mdi:gauge', co2: 'mdi:molecule-co2', carbon_dioxide: 'mdi:molecule-co2',
+  pm25: 'mdi:blur', pm10: 'mdi:blur', voltage: 'mdi:sine-wave', current: 'mdi:current-ac', duration: 'mdi:timer-outline', timestamp: 'mdi:clock-outline',
+  date: 'mdi:calendar', moisture: 'mdi:water', precipitation: 'mdi:weather-rainy', wind_speed: 'mdi:weather-windy', gas: 'mdi:meter-gas',
+  water: 'mdi:water', signal_strength: 'mdi:wifi', volatile_organic_compounds: 'mdi:air-filter', speed: 'mdi:speedometer', weight: 'mdi:weight'};
+const BCLASS = {window: ['mdi:window-closed', 'mdi:window-open'], door: ['mdi:door-closed', 'mdi:door-open'], garage_door: ['mdi:garage', 'mdi:garage-open'],
+  opening: ['mdi:square-outline', 'mdi:square-rounded-outline'], motion: ['mdi:motion-sensor-off', 'mdi:motion-sensor'], occupancy: ['mdi:home-outline', 'mdi:home'],
+  presence: ['mdi:home-outline', 'mdi:home'], moisture: ['mdi:water-off', 'mdi:water'], smoke: ['mdi:smoke-detector', 'mdi:smoke-detector-alert'],
+  battery: ['mdi:battery', 'mdi:battery-outline'], problem: ['mdi:check-circle-outline', 'mdi:alert-circle'], connectivity: ['mdi:close-network-outline', 'mdi:check-network-outline'],
+  power: ['mdi:power-plug-off', 'mdi:power-plug'], plug: ['mdi:power-plug-off', 'mdi:power-plug'], running: ['mdi:stop', 'mdi:play'], lock: ['mdi:lock', 'mdi:lock-open']};
+const classIcon = (s, id) => {
+  const dc = s?.attributes.device_class, d = dom(id);
+  if (!dc) return null;
+  if (d === 'binary_sensor') return BCLASS[dc]?.[s.state === 'on' ? 1 : 0] || null;
+  return (d === 'sensor' || d === 'number' || d === 'input_number') ? SCLASS[dc] || null : null;
+};
+export const iconOf = (h, o, fb) => { const s = h.states[o.entity]; return o.icon || s?.attributes.icon || classIcon(s, o.entity) || DICON[dom(o.entity)] || fb; };
 // Sprache und Zeitzone wie im HA-Profil: „Server“ = Zeitzone von HA, sonst die des Browsers
 export const langOf = h => h.locale?.language || h.language || 'de';
 export const tzOf = h => h.locale?.time_zone === 'server' ? h.config?.time_zone : undefined;

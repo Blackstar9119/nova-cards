@@ -34,6 +34,8 @@ presets: [3, 8, 12, 20]
 ## Wenn der Platz knapp ist (z. B. Echo Show), dann so
 
 `layout: compact` zeigt eine kleine Stoppuhr mit großer Zeit daneben, die Knöpfe bleiben groß genug für den Finger.
+„Eigene Zeit“ hat hier Minuten (bis 180) und Sekunden nebeneinander und ersetzt solange Start und Schnellwahl – die Karte
+wird dadurch nicht höher.
 
 ```yaml
 type: custom:nova-timer-card

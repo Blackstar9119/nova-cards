@@ -59,12 +59,15 @@ ${frameGlow('.g.tm.glow.st-active')}
 .anim.st-paused .ro .t{animation:tm-blink 1.4s ease-in-out infinite}
 .ctl{display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
 .row2{display:flex;gap:8px;flex-wrap:wrap}
-.bt2{flex:1 1 0;min-width:0;min-height:var(--nova-timer-button-height,52px);border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);
-display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:inherit;white-space:nowrap;transition:background-color .2s,transform .15s,box-shadow .2s}
-.bt2 ha-icon{--mdc-icon-size:22px}
+.bt2{flex:1 1 0;min-width:0;box-sizing:border-box;min-height:var(--nova-timer-button-height,52px);padding:0 8px;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);
+display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:inherit;white-space:nowrap;overflow:hidden;transition:background-color .2s,transform .15s,box-shadow .2s}
+.bt2 span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bt2 ha-icon{--mdc-icon-size:21px;flex:none}
 .bt2:active{transform:scale(.95)}
-.bt2.pri{background:var(--dc);color:var(--dcfg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--dc) 45%,transparent)}
-.bt2.sel{box-shadow:0 0 0 2px var(--dc)}
+/* Hauptknopf im Glas-Stil: nur leicht in der Kartenfarbe getönt, Icon in der Farbe – keine Vollfarbfläche */
+.bt2.pri{background:color-mix(in srgb,var(--dc) 22%,var(--nv-chip));border-color:color-mix(in srgb,var(--dc) 55%,transparent)}
+.bt2.pri ha-icon{color:var(--dc)}
+.bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
 .pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
 .pre .bt2{font-size:16px;font-weight:600}
 .cust{display:flex;flex-direction:column;gap:10px;padding:10px;border-radius:18px;background:var(--nv-box);border:1px solid var(--nv-box-border)}
@@ -74,8 +77,16 @@ display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;fo
 .stp .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;min-height:30px}
 .stp .hb{width:100%;max-width:64px;height:40px;border-radius:12px}
 .stp .hb ha-icon{--mdc-icon-size:22px}
+.full .cbk{display:none}
+/* Kompakt: Minuten und Sekunden nebeneinander als [−] 05 Min [+], gleiche Höhe wie Schnellwahl + Knöpfe */
+.cmp .cust{padding:0;background:none;border:none}
+.cmp .stps{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cmp .stp[data-k="h"]{display:none}
+.cmp .stp{flex-direction:row;justify-content:space-between;gap:2px;padding:0 3px;min-width:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);height:var(--nova-timer-button-height,52px);box-sizing:border-box}
+.cmp .stp .mi{order:0}.cmp .stp .v{order:1;min-height:0;font-size:19px}.cmp .stp small{order:2;text-transform:none;letter-spacing:0;font-size:11px;margin-left:-1px}.cmp .stp .pl{order:3}
+.cmp .stp .hb{width:34px;height:42px;flex:none;border-radius:12px}
 .msg{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;font-size:16px;font-weight:600;
-background:color-mix(in srgb,var(--ac) 22%,transparent);border:1px solid color-mix(in srgb,var(--ac) 60%,transparent)}
+background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid color-mix(in srgb,var(--ac) 50%,transparent)}
 .msg ha-icon{color:var(--ac);--mdc-icon-size:26px}
 .anim .msg ha-icon{animation:tm-ring 1.2s ease-in-out infinite;transform-origin:50% 10%}
 .alm .dl-bell{opacity:1}
@@ -94,18 +105,20 @@ background:color-mix(in srgb,var(--ac) 22%,transparent);border:1px solid color-m
 [hidden]{display:none!important}
 /* Kompakt: kleine Stoppuhr links, Zeit daneben, Knöpfe rechts; Schnellwahl und eigene Zeit darunter über die ganze Breite */
 .cmp .hd{display:none}
-.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:14px;row-gap:10px}
+.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;align-content:center;column-gap:14px;row-gap:10px}
 .cmp .ctl{display:contents}
-.cmp .dial{grid-column:1;grid-row:1;width:72px;max-width:72px}.cmp .ro{display:none}
+.cmp .dial{grid-column:1;grid-row:1;width:84px;max-width:84px}.cmp .ro{display:none}
 .cmp .ct2{grid-column:2;grid-row:1;min-width:0}
 .cmp .main{flex-wrap:nowrap}
 .cmp .main,.cmp .msg,.cmp .pre,.cmp .cust{grid-column:1/-1}
 .cmp .msg{display:none}
-.ct2 .tt b{display:block;font-size:38px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.ct2 .tt b{display:block;font-size:42px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
 .ct2 .tt small{display:block;font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ct2 .tt i{font-style:normal;opacity:.75}
 .full .ct2{display:none}
 .cmp.alm .tt b{color:var(--ac)}
+@container (max-width:340px){.main.n3 .bt2 ha-icon{display:none}.bt2{font-size:14px}}
+@container (max-width:260px){.main .bt2 span{display:none}.main .bt2 ha-icon{display:flex!important}}
 @container (min-width:400px){.full .bd{flex-direction:row;align-items:center}.full .dial{width:46%;max-width:var(--nova-timer-size,260px)}.full .ctl{flex:1}}
 @keyframes tm-blink{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes tm-ring{0%,60%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-14deg)}20%,40%{transform:rotate(14deg)}}
@@ -172,7 +185,7 @@ class NovaTimerCard extends HTMLElement {
 <div class="msg" hidden><ha-icon icon="mdi:bell-ring"></ha-icon><span>Zeit ist um!</span></div>
 <div class="row2 main"></div><div class="pre"></div>
 <div class="cust" hidden><div class="stps">${['h|Std', 'm|Min', 's|Sek'].map(x => { const [k, l] = x.split('|'); return `<div class="stp" data-k="${k}"><small>${l}</small><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div><span class="v"></span><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div></div>`; }).join('')}</div>
-<div class="row2"><div class="bt2 pri cgo"><ha-icon icon="mdi:play"></ha-icon><span>Starten</span></div></div></div>
+<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:play"></ha-icon><span>Starten</span></div></div></div>
 </div></div></div>`;
     const q = s => r.querySelector(s);
     this._e = {g: q('.g'), hd: q('.hd'), ic: q('.hd .ic'), nm: q('.hd b'), sub: q('.hd small'), dial: q('.dial'), svg: q('svg'), t: q('.ro .t'), s: q('.ro .s'),
@@ -187,7 +200,8 @@ class NovaTimerCard extends HTMLElement {
       const k = st.dataset.k;
       [['.pl', 1], ['.mi', -1]].forEach(([s, d]) => this._rep(st.querySelector(s), () => this._step(k, d)));
     });
-    press(q('.cgo'), {tap: () => { const {h, m, s} = this._cust, sec = h * 3600 + m * 60 + s; if (sec > 0) { this._showCust = false; this._start(sec); } }});
+    press(q('.cbk'), {tap: () => { this._showCust = false; this._key = null; this._render(); }});
+    press(q('.cgo'), {tap: () => { const {h, m, s} = this._cust, sec = (this._c.layout === 'compact' ? 0 : h) * 3600 + m * 60 + s; if (sec > 0) { this._showCust = false; this._start(sec); } }});
     // Größe der Zeitanzeige an die Uhr anpassen
     if ('ResizeObserver' in window) { this._ro = new ResizeObserver(es => { const w = es[0].contentRect.width; if (w) this._e.dial.style.setProperty('--dw', `${w}px`); }); this._ro.observe(this._e.dial); }
     this._layout();
@@ -292,7 +306,7 @@ class NovaTimerCard extends HTMLElement {
       if (v?.total) B('', ICON.again, 'Nochmal', () => { this._dismiss(); this._start(v.total); });
     } else if (st === 'active') {
       B('', ICON.pause, 'Pause', () => this._svc('pause'));
-      if (c.show_add !== false) B('', ICON.plus, '1 Min', () => this._add(60));
+      if (c.show_add !== false) B('', ICON.plus, '+1 Min', () => this._add(60));
       B('', ICON.stop, 'Abbrechen', () => this._svc('cancel'));
     } else if (st === 'paused') {
       B('pri', ICON.play, 'Weiter', () => this._svc('start'));
@@ -302,6 +316,7 @@ class NovaTimerCard extends HTMLElement {
       if (c.show_custom !== false) B(this._showCust ? 'sel' : '', ICON.tune, 'Eigene Zeit', () => { this._showCust = !this._showCust; this._key = null; this._render(); });
     }
     e.main.innerHTML = '';
+    e.main.classList.toggle('n3', b.length > 2);
     b.forEach(([cls, icon, label, fn]) => {
       const d = document.createElement('div');
       d.className = `bt2 ${cls}`; d.title = label;
@@ -326,6 +341,8 @@ class NovaTimerCard extends HTMLElement {
       }
     }
     e.cust.hidden = !(idle && this._showCust && c.show_custom !== false);
+    // Kompakt: eigene Zeit ersetzt Start/Eigene Zeit, damit die Karte nicht wächst
+    e.main.hidden = c.layout === 'compact' && !e.cust.hidden;
     if (!e.cust.hidden) this._custShow();
   }
   _dialTap() {
@@ -350,10 +367,10 @@ class NovaTimerCard extends HTMLElement {
     try { await this._svc('change', {duration: hms(sec)}); }
     catch (err) { console.warn('[nova-cards] Timer: +1 Min per Neustart', err); if (v) this._start(Math.round(v.left + sec)); }
   }
+  // Stepper: läuft am Ende rundherum (59 → 0); Sekunden in 5er-Schritten, kompakt ohne Stunden bis 180 Minuten
   _step(k, d) {
-    const c = this._cust, max = {h: 23, m: 59, s: 59}[k], st = k === 's' ? 5 : 1;
-    c[k] = (c[k] + d * st + max + 1 - (k === 's' ? 0 : 0)) % (max + 1);
-    if (k === 's') c[k] = Math.round(c[k] / 5) * 5 % 60;
+    const c = this._cust, n = {h: 24, m: this._c.layout === 'compact' ? 181 : 60, s: 60}[k], st = k === 's' ? 5 : 1;
+    c[k] = ((Math.round(c[k] / st) * st + d * st) % n + n) % n;
     this._custShow();
   }
   _custShow() { this._e.cust.querySelectorAll('.stp').forEach(st => { st.querySelector('.v').textContent = String(this._cust[st.dataset.k]).padStart(2, '0'); }); }

@@ -21,12 +21,10 @@ const CCSS = `${DIAL_CSS}
 .g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
 .g.ck.flat{background:none;border-color:transparent;box-shadow:none}
 .nm{font-size:12.5px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
-.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
+.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
 .tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
 .tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
-.tm .cl{color:var(--kc)}
-.dt{font-size:clamp(13px,6cqw,26px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.dt b{font-weight:600;opacity:1}
+.dt{font-size:clamp(13px,5cqw,22px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .ana{width:100%;max-width:var(--nova-clock-size,240px);aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
@@ -122,7 +120,7 @@ class NovaClockCard extends HTMLElement {
       if (this._tmH !== html) { this._tmH = html; e.tm.innerHTML = html; }
     }
     const wd = c.show_weekday ? f.wd.format(now) : '', dt = c.show_date ? f.date.format(now) : '';
-    const dh = [wd && `<b>${esc(wd)}</b>`, dt && esc(dt)].filter(Boolean).join(', ');
+    const dh = [wd && esc(wd), dt && esc(dt)].filter(Boolean).join(', ');
     e.dt.hidden = !dh;
     if (this._dtH !== dh) { this._dtH = dh; e.dt.innerHTML = dh; }
     if (!e.ana.hidden) {
@@ -163,7 +161,7 @@ const LABELS = {
 };
 const HELPERS = {
   show_seconds: 'Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.',
-  color: 'Doppelpunkt bzw. Sekundenzeiger. Die Farben selbst kommen aus dem Theme.',
+  color: 'Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.',
   glass: 'Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild.',
 };
 

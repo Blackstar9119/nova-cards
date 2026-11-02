@@ -65,7 +65,62 @@
   var unitJoin = (v, u) => !u ? `${v}` : u.startsWith("°") ? `${v}${u}` : `${v} ${u}`;
   var decOf = (st) => (String(st).split(".")[1] || "").length;
   var nameOf = (h, o) => o.name ?? h.states[o.entity]?.attributes.friendly_name ?? o.entity ?? "";
-  var iconOf = (h, o, fb) => o.icon || h.states[o.entity]?.attributes.icon || DICON[dom(o.entity)] || fb;
+  var SCLASS = {
+    temperature: "mdi:thermometer",
+    humidity: "mdi:water-percent",
+    battery: "mdi:battery",
+    power: "mdi:flash",
+    energy: "mdi:lightning-bolt",
+    illuminance: "mdi:brightness-5",
+    pressure: "mdi:gauge",
+    atmospheric_pressure: "mdi:gauge",
+    co2: "mdi:molecule-co2",
+    carbon_dioxide: "mdi:molecule-co2",
+    pm25: "mdi:blur",
+    pm10: "mdi:blur",
+    voltage: "mdi:sine-wave",
+    current: "mdi:current-ac",
+    duration: "mdi:timer-outline",
+    timestamp: "mdi:clock-outline",
+    date: "mdi:calendar",
+    moisture: "mdi:water",
+    precipitation: "mdi:weather-rainy",
+    wind_speed: "mdi:weather-windy",
+    gas: "mdi:meter-gas",
+    water: "mdi:water",
+    signal_strength: "mdi:wifi",
+    volatile_organic_compounds: "mdi:air-filter",
+    speed: "mdi:speedometer",
+    weight: "mdi:weight"
+  };
+  var BCLASS = {
+    window: ["mdi:window-closed", "mdi:window-open"],
+    door: ["mdi:door-closed", "mdi:door-open"],
+    garage_door: ["mdi:garage", "mdi:garage-open"],
+    opening: ["mdi:square-outline", "mdi:square-rounded-outline"],
+    motion: ["mdi:motion-sensor-off", "mdi:motion-sensor"],
+    occupancy: ["mdi:home-outline", "mdi:home"],
+    presence: ["mdi:home-outline", "mdi:home"],
+    moisture: ["mdi:water-off", "mdi:water"],
+    smoke: ["mdi:smoke-detector", "mdi:smoke-detector-alert"],
+    battery: ["mdi:battery", "mdi:battery-outline"],
+    problem: ["mdi:check-circle-outline", "mdi:alert-circle"],
+    connectivity: ["mdi:close-network-outline", "mdi:check-network-outline"],
+    power: ["mdi:power-plug-off", "mdi:power-plug"],
+    plug: ["mdi:power-plug-off", "mdi:power-plug"],
+    running: ["mdi:stop", "mdi:play"],
+    lock: ["mdi:lock", "mdi:lock-open"]
+  };
+  var classIcon = (s, id) => {
+    const dc = s?.attributes.device_class, d = dom(id);
+    if (!dc) return null;
+    if (d === "binary_sensor") return BCLASS[dc]?.[s.state === "on" ? 1 : 0] || null;
+    return d === "sensor" || d === "number" || d === "input_number" ? SCLASS[dc] || null : null;
+  };
+  var iconOf = (h, o, fb) => {
+    const s = h.states[o.entity];
+    return o.icon || s?.attributes.icon || classIcon(s, o.entity) || DICON[dom(o.entity)] || fb;
+  };
   var langOf = (h) => h.locale?.language || h.language || "de";
   var tzOf = (h) => h.locale?.time_zone === "server" ? h.config?.time_zone : void 0;
   var areaOf = (h, id) => {
@@ -11709,12 +11764,15 @@ ${frameGlow(".g.tm.glow.st-active")}
 .anim.st-paused .ro .t{animation:tm-blink 1.4s ease-in-out infinite}
 .ctl{display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
 .row2{display:flex;gap:8px;flex-wrap:wrap}
-.bt2{flex:1 1 0;min-width:0;min-height:var(--nova-timer-button-height,52px);border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);
-display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:inherit;white-space:nowrap;transition:background-color .2s,transform .15s,box-shadow .2s}
-.bt2 ha-icon{--mdc-icon-size:22px}
+.bt2{flex:1 1 0;min-width:0;box-sizing:border-box;min-height:var(--nova-timer-button-height,52px);padding:0 8px;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);
+display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:inherit;white-space:nowrap;overflow:hidden;transition:background-color .2s,transform .15s,box-shadow .2s}
+.bt2 span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bt2 ha-icon{--mdc-icon-size:21px;flex:none}
 .bt2:active{transform:scale(.95)}
-.bt2.pri{background:var(--dc);color:var(--dcfg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--dc) 45%,transparent)}
-.bt2.sel{box-shadow:0 0 0 2px var(--dc)}
+/* Hauptknopf im Glas-Stil: nur leicht in der Kartenfarbe getönt, Icon in der Farbe – keine Vollfarbfläche */
+.bt2.pri{background:color-mix(in srgb,var(--dc) 22%,var(--nv-chip));border-color:color-mix(in srgb,var(--dc) 55%,transparent)}
+.bt2.pri ha-icon{color:var(--dc)}
+.bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
 .pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
 .pre .bt2{font-size:16px;font-weight:600}
 .cust{display:flex;flex-direction:column;gap:10px;padding:10px;border-radius:18px;background:var(--nv-box);border:1px solid var(--nv-box-border)}
@@ -11724,8 +11782,16 @@ display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;fo
 .stp .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;min-height:30px}
 .stp .hb{width:100%;max-width:64px;height:40px;border-radius:12px}
 .stp .hb ha-icon{--mdc-icon-size:22px}
+.full .cbk{display:none}
+/* Kompakt: Minuten und Sekunden nebeneinander als [−] 05 Min [+], gleiche Höhe wie Schnellwahl + Knöpfe */
+.cmp .cust{padding:0;background:none;border:none}
+.cmp .stps{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cmp .stp[data-k="h"]{display:none}
+.cmp .stp{flex-direction:row;justify-content:space-between;gap:2px;padding:0 3px;min-width:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);height:var(--nova-timer-button-height,52px);box-sizing:border-box}
+.cmp .stp .mi{order:0}.cmp .stp .v{order:1;min-height:0;font-size:19px}.cmp .stp small{order:2;text-transform:none;letter-spacing:0;font-size:11px;margin-left:-1px}.cmp .stp .pl{order:3}
+.cmp .stp .hb{width:34px;height:42px;flex:none;border-radius:12px}
 .msg{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;font-size:16px;font-weight:600;
-background:color-mix(in srgb,var(--ac) 22%,transparent);border:1px solid color-mix(in srgb,var(--ac) 60%,transparent)}
+background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid color-mix(in srgb,var(--ac) 50%,transparent)}
 .msg ha-icon{color:var(--ac);--mdc-icon-size:26px}
 .anim .msg ha-icon{animation:tm-ring 1.2s ease-in-out infinite;transform-origin:50% 10%}
 .alm .dl-bell{opacity:1}
@@ -11744,18 +11810,20 @@ background:color-mix(in srgb,var(--ac) 22%,transparent);border:1px solid color-m
 [hidden]{display:none!important}
 /* Kompakt: kleine Stoppuhr links, Zeit daneben, Knöpfe rechts; Schnellwahl und eigene Zeit darunter über die ganze Breite */
 .cmp .hd{display:none}
-.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:14px;row-gap:10px}
+.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;align-content:center;column-gap:14px;row-gap:10px}
 .cmp .ctl{display:contents}
-.cmp .dial{grid-column:1;grid-row:1;width:72px;max-width:72px}.cmp .ro{display:none}
+.cmp .dial{grid-column:1;grid-row:1;width:84px;max-width:84px}.cmp .ro{display:none}
 .cmp .ct2{grid-column:2;grid-row:1;min-width:0}
 .cmp .main{flex-wrap:nowrap}
 .cmp .main,.cmp .msg,.cmp .pre,.cmp .cust{grid-column:1/-1}
 .cmp .msg{display:none}
-.ct2 .tt b{display:block;font-size:38px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.ct2 .tt b{display:block;font-size:42px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
 .ct2 .tt small{display:block;font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ct2 .tt i{font-style:normal;opacity:.75}
 .full .ct2{display:none}
 .cmp.alm .tt b{color:var(--ac)}
+@container (max-width:340px){.main.n3 .bt2 ha-icon{display:none}.bt2{font-size:14px}}
+@container (max-width:260px){.main .bt2 span{display:none}.main .bt2 ha-icon{display:flex!important}}
 @container (min-width:400px){.full .bd{flex-direction:row;align-items:center}.full .dial{width:46%;max-width:var(--nova-timer-size,260px)}.full .ctl{flex:1}}
 @keyframes tm-blink{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes tm-ring{0%,60%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-14deg)}20%,40%{transform:rotate(14deg)}}
@@ -11836,7 +11904,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         const [k, l] = x.split("|");
         return `<div class="stp" data-k="${k}"><small>${l}</small><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div><span class="v"></span><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div></div>`;
       }).join("")}</div>
-<div class="row2"><div class="bt2 pri cgo"><ha-icon icon="mdi:play"></ha-icon><span>Starten</span></div></div></div>
+<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:play"></ha-icon><span>Starten</span></div></div></div>
 </div></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
@@ -11864,8 +11932,13 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         const k = st.dataset.k;
         [[".pl", 1], [".mi", -1]].forEach(([s, d]) => this._rep(st.querySelector(s), () => this._step(k, d)));
       });
+      press(q(".cbk"), { tap: () => {
+        this._showCust = false;
+        this._key = null;
+        this._render();
+      } });
       press(q(".cgo"), { tap: () => {
-        const { h, m, s } = this._cust, sec = h * 3600 + m * 60 + s;
+        const { h, m, s } = this._cust, sec = (this._c.layout === "compact" ? 0 : h) * 3600 + m * 60 + s;
         if (sec > 0) {
           this._showCust = false;
           this._start(sec);
@@ -11997,7 +12070,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         });
       } else if (st === "active") {
         B("", ICON.pause, "Pause", () => this._svc("pause"));
-        if (c.show_add !== false) B("", ICON.plus, "1 Min", () => this._add(60));
+        if (c.show_add !== false) B("", ICON.plus, "+1 Min", () => this._add(60));
         B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
       } else if (st === "paused") {
         B("pri", ICON.play, "Weiter", () => this._svc("start"));
@@ -12011,6 +12084,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         });
       }
       e.main.innerHTML = "";
+      e.main.classList.toggle("n3", b.length > 2);
       b.forEach(([cls, icon2, label, fn]) => {
         const d = document.createElement("div");
         d.className = `bt2 ${cls}`;
@@ -12038,6 +12112,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         }
       }
       e.cust.hidden = !(idle && this._showCust && c.show_custom !== false);
+      e.main.hidden = c.layout === "compact" && !e.cust.hidden;
       if (!e.cust.hidden) this._custShow();
     }
     _dialTap() {
@@ -12077,10 +12152,10 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         if (v) this._start(Math.round(v.left + sec));
       }
     }
+    // Stepper: läuft am Ende rundherum (59 → 0); Sekunden in 5er-Schritten, kompakt ohne Stunden bis 180 Minuten
     _step(k, d) {
-      const c = this._cust, max = { h: 23, m: 59, s: 59 }[k], st = k === "s" ? 5 : 1;
-      c[k] = (c[k] + d * st + max + 1 - (k === "s" ? 0 : 0)) % (max + 1);
-      if (k === "s") c[k] = Math.round(c[k] / 5) * 5 % 60;
+      const c = this._cust, n = { h: 24, m: this._c.layout === "compact" ? 181 : 60, s: 60 }[k], st = k === "s" ? 5 : 1;
+      c[k] = ((Math.round(c[k] / st) * st + d * st) % n + n) % n;
       this._custShow();
     }
     _custShow() {
@@ -12232,12 +12307,10 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
 .g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
 .g.ck.flat{background:none;border-color:transparent;box-shadow:none}
 .nm{font-size:12.5px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
-.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
+.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
 .tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
 .tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
-.tm .cl{color:var(--kc)}
-.dt{font-size:clamp(13px,6cqw,26px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.dt b{font-weight:600;opacity:1}
+.dt{font-size:clamp(13px,5cqw,22px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .ana{width:100%;max-width:var(--nova-clock-size,240px);aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
@@ -12365,7 +12438,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         }
       }
       const wd = c.show_weekday ? f2.wd.format(now) : "", dt = c.show_date ? f2.date.format(now) : "";
-      const dh = [wd && `<b>${esc(wd)}</b>`, dt && esc(dt)].filter(Boolean).join(", ");
+      const dh = [wd && esc(wd), dt && esc(dt)].filter(Boolean).join(", ");
       e.dt.hidden = !dh;
       if (this._dtH !== dh) {
         this._dtH = dh;
@@ -12420,7 +12493,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
   };
   var HELPERS6 = {
     show_seconds: "Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.",
-    color: "Doppelpunkt bzw. Sekundenzeiger. Die Farben selbst kommen aus dem Theme.",
+    color: "Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.",
     glass: "Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild."
   };
   var NovaClockCardEditor = class extends NovaEditorBase {
