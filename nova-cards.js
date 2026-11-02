@@ -12272,7 +12272,8 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,o
 .scene .dl-cr{stroke:rgba(255,255,255,.2);stroke-width:.5}.scene .dl-grv{stroke:#000;stroke-opacity:.3;stroke-width:.8}
 .scene .dl-cap{stroke:rgba(255,255,255,.2);stroke-width:.4}
 .scene .dl-push,.scene .dl-crown{transform-box:view-box}
-.scene .dl-bell{opacity:0;transform-box:fill-box;transform-origin:center}
+/* Unsichtbares mit Leuchten (drop-shadow) zusätzlich per visibility weg – manche Browser (Echo Show) malen den Schatten sonst als Fleck */
+.scene .dl-bell{opacity:0;visibility:hidden;transform-box:fill-box;transform-origin:center}
 .scene .dl-br{fill:var(--dc);filter:drop-shadow(0 0 4px var(--dc))}.scene .dl-bk{fill:var(--dcfg,#fff)}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important;transition:none!important}}`;
 
@@ -12355,6 +12356,8 @@ display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;fo
 /* Hauptknopf im Glas-Stil: nur leicht in der Kartenfarbe getönt, Icon in der Farbe – keine Vollfarbfläche */
 .bt2.pri{background:color-mix(in srgb,var(--dc) 22%,var(--nv-chip));border-color:color-mix(in srgb,var(--dc) 55%,transparent)}
 .bt2.pri ha-icon{color:var(--dc)}
+/* Nur-Icon-Knöpfe in „Eigene Zeit“: Icon hell, sonst verschwindet z. B. das Häkchen auf dem getönten Knopf */
+.cust .bt2.pri ha-icon{color:inherit}
 .bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
 .pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
 .pre .bt2{font-size:16px;font-weight:600}
@@ -12394,7 +12397,7 @@ contain:strict}
 background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid color-mix(in srgb,var(--ac) 50%,transparent)}
 .msg ha-icon{color:var(--ac);--mdc-icon-size:26px}
 .anim .msg ha-icon{animation:tm-ring 1.2s ease-in-out infinite;transform-origin:50% 10%}
-.alm .dl-bell{opacity:1}
+.alm .dl-bell{opacity:1;visibility:visible}
 .anim.alm.fx .dl-bell{animation:tm-pop .45s ease-out both}
 .anim.alm .dl-crown,.anim.alm .dl-push{animation:tm-press 1.2s ease-in-out infinite}
 .anim.alm .rot{animation:tm-shake 1.2s ease-in-out infinite;transform-box:view-box;transform-origin:100px 112px}
@@ -12403,8 +12406,8 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 .alm:not(.anim) .snd path{opacity:.7}
 .st-active .dl-push.r{animation:none}
 .prs .dl-push.r,.prs .dl-crown{animation:tm-press .35s ease-out}
-.scene .tip{fill:#fff;filter:drop-shadow(0 0 3px var(--dc));opacity:0;transition:opacity .4s}
-.st-active .scene .tip,.st-paused .scene .tip{opacity:1}
+.scene .tip{fill:#fff;filter:drop-shadow(0 0 3px var(--dc));opacity:0;visibility:hidden;transition:opacity .4s,visibility 0s .4s}
+.st-active .scene .tip,.st-paused .scene .tip{opacity:1;visibility:visible;transition:opacity .4s}
 .scene .tipg{transition:transform 1s linear;transform-box:view-box;transform-origin:100px 112px}
 .st-idle .scene .dl-arc{opacity:.35}
 [hidden]{display:none!important}
@@ -12938,6 +12941,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       if (b) b.textContent = txt;
       e.scl.setAttribute("aria-valuetext", txt);
       if (this._c.layout === "compact") e.tt.textContent = txt;
+      else e.t.textContent = txt;
     }
     // Zeit setzen und Skala dorthin stellen (exakte Werte aus dem Zahlenfeld bleiben exakt, die Skala zeigt das nächste Raster)
     _scaleTo(t, snap) {

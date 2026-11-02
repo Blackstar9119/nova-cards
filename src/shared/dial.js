@@ -69,6 +69,7 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,o
 .scene .dl-cr{stroke:rgba(255,255,255,.2);stroke-width:.5}.scene .dl-grv{stroke:#000;stroke-opacity:.3;stroke-width:.8}
 .scene .dl-cap{stroke:rgba(255,255,255,.2);stroke-width:.4}
 .scene .dl-push,.scene .dl-crown{transform-box:view-box}
-.scene .dl-bell{opacity:0;transform-box:fill-box;transform-origin:center}
+/* Unsichtbares mit Leuchten (drop-shadow) zusätzlich per visibility weg – manche Browser (Echo Show) malen den Schatten sonst als Fleck */
+.scene .dl-bell{opacity:0;visibility:hidden;transform-box:fill-box;transform-origin:center}
 .scene .dl-br{fill:var(--dc);filter:drop-shadow(0 0 4px var(--dc))}.scene .dl-bk{fill:var(--dcfg,#fff)}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important;transition:none!important}}`;
