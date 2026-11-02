@@ -72,7 +72,7 @@
     const e = h.entities?.[id];
     return e && (e.area_id || h.devices?.[e.device_id]?.area_id) || null;
   };
-  var hasF = (s, f) => ((s?.attributes.supported_features || 0) & f) === f;
+  var hasF = (s, f2) => ((s?.attributes.supported_features || 0) & f2) === f2;
   function valueOf(h, s, o) {
     if (!s) return "–";
     if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
@@ -318,6 +318,31 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     }
     return false;
   };
+  var watchVisible = (el2, cb) => {
+    let inView = !("IntersectionObserver" in window), last;
+    const upd = () => {
+      const v = inView && !document.hidden && el2.isConnected;
+      if (v !== last) {
+        last = v;
+        cb(v);
+      }
+    };
+    const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => {
+      inView = es[es.length - 1].isIntersecting;
+      upd();
+    }, { rootMargin: "100px" }) : null;
+    io?.observe(el2);
+    document.addEventListener("visibilitychange", upd);
+    upd();
+    return () => {
+      io?.disconnect();
+      document.removeEventListener("visibilitychange", upd);
+      if (last) {
+        last = false;
+        cb(false);
+      }
+    };
+  };
 
   // src/shared/editor-base.js
   var preload;
@@ -351,8 +376,8 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
     set hass(h) {
       const old = this._hass;
       this._hass = h;
-      if (hassChanged(old, h, this._ids)) this._forms.forEach((f) => {
-        f.hass = h;
+      if (hassChanged(old, h, this._ids)) this._forms.forEach((f2) => {
+        f2.hass = h;
       });
     }
     setConfig(c) {
@@ -406,28 +431,28 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
       return el2;
     }
     _form(schema, data, cb) {
-      const f = this._reuse(`form:${JSON.stringify(schema)}`, () => {
-        const f2 = document.createElement("ha-form");
-        f2.schema = schema;
-        f2.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
-        f2.computeHelper = (s) => this.constructor.helpers?.[s.name];
-        f2.addEventListener("value-changed", (e) => {
+      const f2 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
+        const f3 = document.createElement("ha-form");
+        f3.schema = schema;
+        f3.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f3.computeHelper = (s) => this.constructor.helpers?.[s.name];
+        f3.addEventListener("value-changed", (e) => {
           e.stopPropagation();
-          f2.data = e.detail.value;
-          f2._dk = JSON.stringify(f2.data);
-          f2._cb(e.detail.value);
+          f3.data = e.detail.value;
+          f3._dk = JSON.stringify(f3.data);
+          f3._cb(e.detail.value);
         });
-        return f2;
+        return f3;
       });
-      if (f.hass !== this._hass) f.hass = this._hass;
+      if (f2.hass !== this._hass) f2.hass = this._hass;
       const dk = JSON.stringify(data);
-      if (f._dk !== dk) {
-        f.data = data;
-        f._dk = dk;
+      if (f2._dk !== dk) {
+        f2.data = data;
+        f2._dk = dk;
       }
-      f._cb = cb;
-      this._forms.push(f);
-      return f;
+      f2._cb = cb;
+      this._forms.push(f2);
+      return f2;
     }
     // Runder Icon-Button (Verschieben, Löschen …)
     _btn(icon2, title, fn, dis) {
@@ -1338,11 +1363,11 @@ h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
 
   // src/light.js
   function hsToRgb(hue, sat) {
-    const f = (n) => {
+    const f2 = (n) => {
       const k = (n + hue / 60) % 6;
       return Math.round(255 * (1 - sat * Math.max(0, Math.min(k, 4 - k, 1))));
     };
-    return [f(5), f(3), f(1)];
+    return [f2(5), f2(3), f2(1)];
   }
   var rgbToHex = (rgb) => "#" + rgb.map((x) => x.toString(16).padStart(2, "0")).join("");
   var hexToRgb = (hex) => {
@@ -2384,21 +2409,21 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     _flip(cur2, lbl, sig) {
       const dock = this._dock, btns = this._btns;
       const rect = (e) => e.getBoundingClientRect();
-      const f = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
+      const f2 = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
       const oldNm = btns.map((d) => d._nm).find((n) => n.classList.contains("on") && !n.hidden);
       const fn = oldNm && { r: rect(oldNm), t: oldNm.textContent, o: +getComputedStyle(oldNm).opacity };
       this._stop();
       this._apply(cur2, lbl, false);
       const o = this._origin(), l = { bg: rect(this._bg), b: btns.map(rect) }, newNm = btns[cur2]?._nm.classList.contains("on") ? btns[cur2]._nm : null;
       btns.forEach((d, k) => {
-        if (!d.hidden && f.b[k].width) d.style.transform = `translate(${f.b[k].left - l.b[k].left}px,${f.b[k].top - l.b[k].top}px)`;
+        if (!d.hidden && f2.b[k].width) d.style.transform = `translate(${f2.b[k].left - l.b[k].left}px,${f2.b[k].top - l.b[k].top}px)`;
       });
-      if (l.bg.width) this._bg.style.transform = `translate(${f.bg.left - l.bg.left}px,${f.bg.top - l.bg.top}px) scale(${f.bg.width / l.bg.width},${f.bg.height / l.bg.height})`;
-      if (f.hlOn) this._hl.style.transform = `translate(${f.hl.left - o.x}px,${f.hl.top - o.y}px)`;
+      if (l.bg.width) this._bg.style.transform = `translate(${f2.bg.left - l.bg.left}px,${f2.bg.top - l.bg.top}px) scale(${f2.bg.width / l.bg.width},${f2.bg.height / l.bg.height})`;
+      if (f2.hlOn) this._hl.style.transform = `translate(${f2.hl.left - o.x}px,${f2.hl.top - o.y}px)`;
       else this._pillTo(cur2, false);
       if (newNm) {
         newNm.style.opacity = "0";
-        newNm.style.transform = `translate(${f.b[cur2].left - l.b[cur2].left - 12}px,0)`;
+        newNm.style.transform = `translate(${f2.b[cur2].left - l.b[cur2].left - 12}px,0)`;
       }
       if (fn) {
         const g = this._ghost = document.createElement("span");
@@ -2431,7 +2456,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         const g = this._ghost, ob = fn && btns.findIndex((d) => d._nm === oldNm);
         if (g) {
           g.style.opacity = "0";
-          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f.b[ob].left : 0) - 8}px,${g._dy}px)`;
+          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f2.b[ob].left : 0) - 8}px,${g._dy}px)`;
         }
         this._ft = setTimeout(() => {
           if (this._shown === sig) {
@@ -7537,18 +7562,18 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       delete data.info;
       delete data.badges;
       if (data.color && !data.tint) data.tint = data.color;
-      const f = this._form(GENERAL, data, (v) => {
+      const f2 = this._form(GENERAL, data, (v) => {
         const c = merge(this._config, names(GENERAL), v);
         delete c.color;
         if (v.hash != null) {
           const h = cleanHash(v.hash);
-          if (h !== v.hash) f.data = { ...v, hash: h };
+          if (h !== v.hash) f2.data = { ...v, hash: h };
           if (h) c.hash = h;
           else delete c.hash;
         }
         this._emit(c);
       });
-      b.append(f);
+      b.append(f2);
       if (!this._config.hash) b.append(this._hint("Ohne Hash lässt sich das Pop-up nicht öffnen."));
       return d;
     }
@@ -8138,7 +8163,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var qTumb = (x) => `<path class="qgl" d="M${x - 4} 104 L${x - 3.2} 91 h6.4 L${x + 4} 104 Z"/><path class="qgh" d="M${x - 2.6} 102 L${x - 2} 93"/>`;
   var qCup = (x, c) => `<path class="qcup${c ? " c2" : ""}" d="M${x - 5} 104 v-9.5 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v9.5 Z"/><path class="qcuh" d="M${x + 5} 95.6 h1.4 a2.5 2.5 0 0 1 0 5 h-1.4"/><path class="qgh" d="M${x - 3.4} 102 v-7"/>`;
   var qWire = (y1, y2) => `<path class="qwire" d="${Array.from({ length: 19 }, (_, i) => `M${46 + i * 6} ${y1} V${y2}`).join(" ")}"/><rect class="qrl" x="45" y="${y2 - 0.6}" width="110" height="1.4" rx=".7"/><rect class="qrl t" x="45" y="${y1 - 0.4}" width="110" height=".9" rx=".45"/><circle class="qrol" cx="47" cy="${y2 + 1.6}" r="1.6"/><circle class="qrol" cx="153" cy="${y2 + 1.6}" r="1.6"/>`;
-  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f) => `<circle class="qnz" cx="${100 + f * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
+  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f2) => `<circle class="qnz" cx="${100 + f2 * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
   var qJets = (y, xs) => `<g class="qjet">${xs.map((x, i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1 : 1.3}" style="--dx:${x < 100 ? -4 : 4}px;animation-delay:${(i * 0.27).toFixed(2)}s"/>`).join("")}</g>`;
   var QIN = `<g class="qtop"><path class="qcut" d="M58 37.4 h18 M82 36.6 h16 M118 37.4 h20"/><ellipse class="qcuts" cx="76.6" cy="37.4" rx="2.2" ry="1.2"/><path class="qcutk" d="M98 36.6 h6 q-1 1.4 -6 1.2 Z"/>${qWire(33, 40.5)}</g>
 <g class="qup">${[58, 70].map(qWine).join("")}${qTumb(82)}${qCup(96)}${qCup(110, 1)}${qTumb(124)}${[136, 146].map(qWine).join("")}${qWire(88, 104.5)}</g>
@@ -8163,8 +8188,8 @@ ${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" 
       for (let x = x0 - 1 + rnd() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd() * rMax * 0.6) {
         const r = rMin + rnd() * (rMax - rMin), cx = x + (rnd() - 0.5) * 1.6, cy = y + (rnd() - 0.5) * 1.8;
         if (cy < top(cx) + r * 0.2 || rnd() < 0.1) continue;
-        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f = (n) => n.toFixed(1);
-        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f(cx)} ${f(cy)})"><path d="M${f(cx - a[0])} ${f(cy)}Q${f(cx - a[0])} ${f(cy - a[1])} ${f(cx)} ${f(cy - a[1])}Q${f(cx + a[2])} ${f(cy - a[1])} ${f(cx + a[2])} ${f(cy)}Q${f(cx + a[2])} ${f(cy + a[3])} ${f(cx)} ${f(cy + a[3])}Q${f(cx - a[0])} ${f(cy + a[3])} ${f(cx - a[0])} ${f(cy)}Z"/><ellipse cx="${f(cx - r * 0.3)}" cy="${f(cy - r * 0.38)}" rx="${f(r * 0.38)}" ry="${f(r * 0.24)}"/></g>`);
+        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f2 = (n) => n.toFixed(1);
+        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f2(cx)} ${f2(cy)})"><path d="M${f2(cx - a[0])} ${f2(cy)}Q${f2(cx - a[0])} ${f2(cy - a[1])} ${f2(cx)} ${f2(cy - a[1])}Q${f2(cx + a[2])} ${f2(cy - a[1])} ${f2(cx + a[2])} ${f2(cy)}Q${f2(cx + a[2])} ${f2(cy + a[3])} ${f2(cx)} ${f2(cy + a[3])}Q${f2(cx - a[0])} ${f2(cy + a[3])} ${f2(cx - a[0])} ${f2(cy)}Z"/><ellipse cx="${f2(cx - r * 0.3)}" cy="${f2(cy - r * 0.38)}" rx="${f2(r * 0.38)}" ry="${f2(r * 0.24)}"/></g>`);
       }
     }
     return out.join("");
@@ -9201,9 +9226,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.g.classList.toggle("last", cls === "run" && rem != null && rem <= 60);
       if (e.kp) {
         const r = secsOf(this._S(c.remaining)), tot = secsOf(this._S(c.duration));
-        const f = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
-        e.g.classList.toggle("kring", f != null);
-        e.kp.style.strokeDashoffset = String(100 - (f ?? 0) * 100);
+        const f2 = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
+        e.g.classList.toggle("kring", f2 != null);
+        e.kp.style.strokeDashoffset = String(100 - (f2 ?? 0) * 100);
         if (e.kt) e.kt.textContent = r > 0 ? fmtDisp(r) : "";
       }
       if (e.wd) e.wd.textContent = cls === "done" ? "End" : cls === "off" ? "" : rem != null ? fmtDisp(rem) : "– –";
@@ -9346,10 +9371,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       DRINKS.forEach(([x]) => g.classList.toggle(`k-${x}`, x === k));
       ["--cc", "--cr", "--cm"].forEach((v, i) => g.style.setProperty(v, col[i]));
       g.classList.toggle("milk", milk);
-      const prog = cls === "run" && p != null, f = cls === "done" ? 1 : prog ? p / 100 : 0;
+      const prog = cls === "run" && p != null, f2 = cls === "done" ? 1 : prog ? p / 100 : 0;
       g.classList.toggle("cprog", prog);
-      g.style.setProperty("--cl", f.toFixed(2));
-      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f - 0.45) / 0.55)).toFixed(2) : "0");
+      g.style.setProperty("--cl", f2.toFixed(2));
+      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f2 - 0.45) / 0.55)).toFixed(2) : "0");
       if (this._e.cx) this._e.cx.textContent = { off: "", err: "Störung", done: "Fertig", heat: "Heizt auf", warm: "Warm", wait: "Später" }[cls] ?? (src ? D[2] : cls === "run" ? TY.run : "Bereit");
     }
     _alerts(cls, stx) {
@@ -9794,8 +9819,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     const a = s.attributes || {}, groups = {};
     for (const [k, v] of Object.entries(a)) {
       if (["friendly_name", "device_class", "icon", "Count", "count"].includes(k) || v == null || typeof v === "object") continue;
-      const m = k.match(/^(\d+)[-_ ](.+)$/), n = m ? m[1] : "0", f = (m ? m[2] : k).toLowerCase();
-      (groups[n] ||= {})[f] = String(v);
+      const m = k.match(/^(\d+)[-_ ](.+)$/), n = m ? m[1] : "0", f2 = (m ? m[2] : k).toLowerCase();
+      (groups[n] ||= {})[f2] = String(v);
     }
     const out = Object.values(groups).map((g) => {
       const raw = g.error || g.message || g.text || g.description || g.desc || "";
@@ -10484,7 +10509,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const wnSlot = ["empty", "tangle"].includes(m.fx);
       e.sl.forEach((x, i) => {
         const s = aU?.slots[i];
-        const f = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f, y = 75 - hh / 2;
+        const f2 = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f2, y = 75 - hh / 2;
         [x.fl, x.fcl].forEach((r) => {
           r.setAttribute("y", y.toFixed(1));
           r.setAttribute("height", hh.toFixed(1));
@@ -11172,11 +11197,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       return { columns: 6, rows: "auto", min_columns: 4 };
     }
     disconnectedCallback() {
-      this._stops?.forEach((f) => f());
+      this._stops?.forEach((f2) => f2());
     }
     _build() {
       this._built = true;
-      this._stops?.forEach((f) => f());
+      this._stops?.forEach((f2) => f2());
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" });
       this._plat = platformOf(this._h, c);
       this._mp = playerOf(this._h, c);
@@ -11543,20 +11568,876 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
     _keys(b) {
       const plat = platformOf(this._hass, this._config), map = KEYMAPS[plat] || {};
       b.append(this._hint("Nur ausfüllen, wenn eine Taste anders belegt sein soll. Mehrere Befehle nacheinander mit Komma, abwechselnd bei jedem Druck mit | (z. B. Pause|Play)."));
-      const f = this._form(RKEYS, { ...this._config.keys }, (v) => {
+      const f2 = this._form(RKEYS, { ...this._config.keys }, (v) => {
         const keys = Object.fromEntries(KEYS.filter((k) => v[k]).map((k) => [k, v[k]])), c = { ...this._config };
         if (Object.keys(keys).length) c.keys = keys;
         else delete c.keys;
         this._emit(c);
       });
-      f.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
-      b.append(f);
+      f2.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
+      b.append(f2);
     }
   };
   __publicField(NovaRemoteCardEditor, "labels", RLABELS);
   __publicField(NovaRemoteCardEditor, "helpers", RHELPERS);
   __publicField(NovaRemoteCardEditor, "openSections", ["general"]);
   define("remote-card-editor", NovaRemoteCardEditor);
+
+  // src/shared/dial.js
+  var f = (n) => +n.toFixed(2);
+  var pt = (cx, cy, r, a) => [f(cx + r * Math.sin(a)), f(cy - r * Math.cos(a))];
+  var ticks = (cx, cy, r, len = 5, big = 9) => {
+    let s = "", m = "";
+    for (let i = 0; i < 60; i++) {
+      const a = i / 60 * Math.PI * 2, major = i % 5 === 0, [x1, y1] = pt(cx, cy, r, a), [x2, y2] = pt(cx, cy, r - (major ? big : len), a);
+      if (major) m += `M${x1} ${y1}L${x2} ${y2}`;
+      else s += `M${x1} ${y1}L${x2} ${y2}`;
+    }
+    return `<path class="tk" d="${s}"/><path class="tkm" d="${m}"/>`;
+  };
+  var dialDefs = (p, cx, cy, r) => `${sceneDefs(p)}
+<radialGradient id="${p}-fc" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="${PAL.inner}"/><stop offset=".75" stop-color="${PAL.innerDark}"/><stop offset="1" stop-color="#05070a"/></radialGradient>
+<clipPath id="${p}-gc"><circle cx="${cx}" cy="${cy}" r="${r - 9}"/></clipPath>`;
+  var dialBody = (p, cx, cy, r, ring = 0) => `<ellipse class="s-shd" cx="${cx}" cy="${cy + r + 4}" rx="${f(r * 0.7)}" ry="3.5"/>
+<circle class="s-body" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${p}-bd)"/>
+<circle class="s-sheen" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${p}-sh)"/>
+<path class="dl-edge" d="M${pt(cx, cy, r - 1, -1.1).join(" ")}A${r - 1} ${r - 1} 0 0 1 ${pt(cx, cy, r - 1, 1.1).join(" ")}"/>
+<circle class="dl-bz" cx="${cx}" cy="${cy}" r="${r - 5}" stroke="url(#${p}-cr)"/>
+<circle class="dl-fc" cx="${cx}" cy="${cy}" r="${r - 8}" fill="url(#${p}-fc)"/>
+${ticks(cx, cy, r - 11)}
+${ring ? `<circle class="dl-tr" cx="${cx}" cy="${cy}" r="${ring}"/><circle class="dl-arc" cx="${cx}" cy="${cy}" r="${ring}" transform="rotate(-90 ${cx} ${cy})" pathLength="1000"/>` : ""}`;
+  var dialGlass = (p, cx, cy, r) => {
+    const g = r - 9, [ax, ay] = pt(cx, cy, g - 4, -1.25), [bx, by] = pt(cx, cy, g - 4, -0.35);
+    return `<circle class="s-glass" cx="${cx}" cy="${cy}" r="${g}" fill="url(#${p}-gl)"/>
+<g clip-path="url(#${p}-gc)"><path class="s-refl" d="M${cx - g} ${cy - g * 0.2}L${cx - g * 0.2} ${cy - g}h${f(g * 0.35)}L${cx - g} ${cy + g * 0.15}z"/>
+<path class="s-refl" d="M${cx - g * 0.7} ${cy + g * 0.55}L${cx + g * 0.55} ${cy - g * 0.7}h${f(g * 0.12)}L${cx - g * 0.58} ${cy + g * 0.67}z"/>
+<g transform="rotate(25 ${cx} ${cy})"><rect class="s-gls" x="${cx - g - 18}" y="${cy - g - 20}" width="16" height="${2 * g + 40}" fill="url(#${p}-gs)"/></g></g>
+<path class="dl-arcl" d="M${ax} ${ay}A${g - 4} ${g - 4} 0 0 1 ${bx} ${by}"/>`;
+  };
+  var crown = (p, cx, cy, r) => {
+    const top = cy - r, grooves = [-6, -3, 0, 3, 6].map((x) => `M${cx + x} ${top - 16}v8`).join("");
+    const pusher = (side, a) => `<g class="dl-push ${side}" transform="rotate(${a} ${cx} ${cy})"><rect class="s-part" x="${cx - 5}" y="${top - 9}" width="10" height="10" rx="2" fill="url(#${p}-pt)"/><rect class="dl-cap" x="${cx - 6.5}" y="${top - 12}" width="13" height="4" rx="1.5" fill="url(#${p}-cr)"/></g>`;
+    return `${pusher("l", -40)}${pusher("r", 40)}
+<rect class="s-part" x="${cx - 5}" y="${top - 8}" width="10" height="9" rx="1.5" fill="url(#${p}-pt)"/>
+<g class="dl-crown"><rect class="dl-cr" x="${cx - 10}" y="${top - 19}" width="20" height="12" rx="3" fill="url(#${p}-cr)"/><path class="dl-grv" d="${grooves}"/></g>`;
+  };
+  var bellBadge = (right, bottom) => {
+    const { x, y, r } = badgeAt(right, bottom);
+    return `<g class="dl-bell"><circle class="dl-br" cx="${x}" cy="${y}" r="${r}"/><path class="dl-bk" transform="translate(${x - 6} ${y - 6.5}) scale(.5)" d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1z"/></g>`;
+  };
+  var DIAL_CSS = `${SCENE_CSS}
+.scene .dl-edge{fill:none;stroke:#fff;stroke-opacity:.14;stroke-width:.7}
+.scene .dl-bz{fill:none;stroke-width:4.4}
+.scene .dl-fc{stroke:rgba(0,0,0,.6);stroke-width:1}
+.scene .tk{stroke:#fff;stroke-opacity:.14;stroke-width:.6}.scene .tkm{stroke:#fff;stroke-opacity:.3;stroke-width:1.4;stroke-linecap:round}
+.scene .dl-tr{fill:none;stroke:#fff;stroke-opacity:.06;stroke-width:6}
+.scene .dl-arc{fill:none;stroke:var(--dc);stroke-width:6;stroke-linecap:round;stroke-dasharray:1000;stroke-dashoffset:calc(1000 - var(--p,0) * 1000);
+filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,opacity .4s}
+.scene .dl-arcl{fill:none;stroke:#fff;stroke-opacity:.16;stroke-width:1.2;stroke-linecap:round}
+.scene .dl-cr{stroke:rgba(255,255,255,.2);stroke-width:.5}.scene .dl-grv{stroke:#000;stroke-opacity:.3;stroke-width:.8}
+.scene .dl-cap{stroke:rgba(255,255,255,.2);stroke-width:.4}
+.scene .dl-push,.scene .dl-crown{transform-box:view-box}
+.scene .dl-bell{opacity:0;transform-box:fill-box;transform-origin:center}
+.scene .dl-br{fill:var(--dc);filter:drop-shadow(0 0 4px var(--dc))}.scene .dl-bk{fill:var(--dcfg,#fff)}
+@media (prefers-reduced-motion:reduce){.scene *{animation:none!important;transition:none!important}}`;
+
+  // src/timer.js
+  var DEF4 = {
+    presets: [1, 5, 10, 15],
+    show_presets: true,
+    show_custom: true,
+    show_add: true,
+    color: "accent-1",
+    alarm_color: "accent-2",
+    alarm_minutes: 10,
+    layout: "full",
+    animation: true,
+    glow: true
+  };
+  var CX = 100;
+  var CY = 112;
+  var R = 80;
+  var RING = 58;
+  var parseDur = (v) => {
+    if (v == null) return null;
+    if (typeof v === "number") return v;
+    const m = String(v).match(/^(?:(\d+)\s*days?,\s*)?(\d+):(\d{1,2})(?::(\d{1,2})(?:\.\d+)?)?$/);
+    if (!m) return null;
+    return (+m[1] || 0) * 86400 + +m[2] * 3600 + +m[3] * 60 + (+m[4] || 0);
+  };
+  var hms = (s) => `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  var fmtLeft = (s) => {
+    s = Math.max(0, Math.ceil(s));
+    const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = String(s % 60).padStart(2, "0");
+    return h ? `${h}:${String(m).padStart(2, "0")}:${x}` : `${m}:${x}`;
+  };
+  var presetSecs = (v) => list(v).map((x) => {
+    const m = String(x).match(/^(\d+(?:[.,]\d+)?)\s*(s|sek|min|m|h|std)?$/i);
+    if (!m) return null;
+    const n = +m[1].replace(",", ".");
+    const u = (m[2] || "min").toLowerCase();
+    return Math.round(n * (u[0] === "s" ? 1 : u[0] === "h" ? 3600 : 60));
+  }).filter((n) => n > 0).slice(0, 8);
+  var presetLbl = (s) => s % 3600 === 0 ? `${s / 3600} h` : s % 60 === 0 ? `${s / 60} Min` : s > 60 ? fmtLeft(s) : `${s} s`;
+  var ICON = { play: "mdi:play", pause: "mdi:pause", stop: "mdi:stop", plus: "mdi:plus", tune: "mdi:timer-edit-outline", ok: "mdi:check", again: "mdi:restart" };
+  var TCSS = `${DIAL_CSS}
+.g.tm{--dc:var(--tc);--dcfg:var(--tcfg);padding:14px;gap:10px;transition:box-shadow .4s}
+${frameGlow(".g.tm.glow.st-active")}
+.g.tm.alm{--dc:var(--ac);--dcfg:var(--acfg)}
+.g.tm.glow.alm{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 2px var(--ac),0 0 24px color-mix(in srgb,var(--ac) 55%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.anim.glow.alm{animation:tm-frame 1.2s ease-in-out infinite}
+.still{animation-play-state:paused!important}.still *{animation-play-state:paused!important}
+.hd .nm small{font-variant-numeric:tabular-nums}
+.bd{display:flex;flex-direction:column;gap:12px;align-items:stretch;flex:1;min-height:0}
+.dial{position:relative;align-self:center;width:100%;max-width:var(--nova-timer-size,240px);aspect-ratio:1;flex:none}
+.dial svg{display:block;width:100%;height:100%;overflow:visible}
+.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%}
+.ro .t{display:block;font-size:clamp(22px,calc(var(--dw,240px) * .16),46px);font-weight:600;letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.05;white-space:nowrap}
+.ro .s{display:block;font-size:clamp(11px,calc(var(--dw,240px) * .05),14px);opacity:.65;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-idle .scene{opacity:.55}.st-idle .ro .t{opacity:.7}
+.alm .scene{opacity:1}
+.anim.st-paused .ro .t{animation:tm-blink 1.4s ease-in-out infinite}
+.ctl{display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
+.row2{display:flex;gap:8px;flex-wrap:wrap}
+.bt2{flex:1 1 0;min-width:0;min-height:var(--nova-timer-button-height,52px);border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);
+display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:inherit;white-space:nowrap;transition:background-color .2s,transform .15s,box-shadow .2s}
+.bt2 ha-icon{--mdc-icon-size:22px}
+.bt2:active{transform:scale(.95)}
+.bt2.pri{background:var(--dc);color:var(--dcfg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--dc) 45%,transparent)}
+.bt2.sel{box-shadow:0 0 0 2px var(--dc)}
+.pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
+.pre .bt2{font-size:16px;font-weight:600}
+.cust{display:flex;flex-direction:column;gap:10px;padding:10px;border-radius:18px;background:var(--nv-box);border:1px solid var(--nv-box-border)}
+.stps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stp{display:flex;flex-direction:column;align-items:center;gap:4px}
+.stp small{font-size:11.5px;opacity:.6;text-transform:uppercase;letter-spacing:.05em}
+.stp .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;min-height:30px}
+.stp .hb{width:100%;max-width:64px;height:40px;border-radius:12px}
+.stp .hb ha-icon{--mdc-icon-size:22px}
+.msg{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;font-size:16px;font-weight:600;
+background:color-mix(in srgb,var(--ac) 22%,transparent);border:1px solid color-mix(in srgb,var(--ac) 60%,transparent)}
+.msg ha-icon{color:var(--ac);--mdc-icon-size:26px}
+.anim .msg ha-icon{animation:tm-ring 1.2s ease-in-out infinite;transform-origin:50% 10%}
+.alm .dl-bell{opacity:1}
+.anim.alm.fx .dl-bell{animation:tm-pop .45s ease-out both}
+.anim.alm .dl-crown,.anim.alm .dl-push{animation:tm-press 1.2s ease-in-out infinite}
+.anim.alm .rot{animation:tm-shake 1.2s ease-in-out infinite;transform-box:view-box;transform-origin:100px 112px}
+.scene .snd path{fill:none;stroke:var(--ac);stroke-width:2;stroke-linecap:round;opacity:0}
+.anim.alm .snd path{animation:tm-snd 1.2s ease-out infinite}.anim.alm .snd path:nth-child(2n){animation-delay:.25s}
+.alm:not(.anim) .snd path{opacity:.7}
+.st-active .dl-push.r{animation:none}
+.prs .dl-push.r,.prs .dl-crown{animation:tm-press .35s ease-out}
+.scene .tip{fill:#fff;filter:drop-shadow(0 0 3px var(--dc));opacity:0;transition:opacity .4s}
+.st-active .scene .tip,.st-paused .scene .tip{opacity:1}
+.scene .tipg{transition:transform 1s linear;transform-box:view-box;transform-origin:100px 112px}
+.st-idle .scene .dl-arc{opacity:.35}
+[hidden]{display:none!important}
+/* Kompakt: kleine Stoppuhr links, Zeit daneben, Knöpfe rechts; Schnellwahl und eigene Zeit darunter über die ganze Breite */
+.cmp .hd{display:none}
+.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:14px;row-gap:10px}
+.cmp .ctl{display:contents}
+.cmp .dial{grid-column:1;grid-row:1;width:72px;max-width:72px}.cmp .ro{display:none}
+.cmp .ct2{grid-column:2;grid-row:1;min-width:0}
+.cmp .main{flex-wrap:nowrap}
+.cmp .main,.cmp .msg,.cmp .pre,.cmp .cust{grid-column:1/-1}
+.cmp .msg{display:none}
+.ct2 .tt b{display:block;font-size:38px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.ct2 .tt small{display:block;font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct2 .tt i{font-style:normal;opacity:.75}
+.full .ct2{display:none}
+.cmp.alm .tt b{color:var(--ac)}
+@container (min-width:400px){.full .bd{flex-direction:row;align-items:center}.full .dial{width:46%;max-width:var(--nova-timer-size,260px)}.full .ctl{flex:1}}
+@keyframes tm-blink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes tm-ring{0%,60%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-14deg)}20%,40%{transform:rotate(14deg)}}
+@keyframes tm-shake{0%,60%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-3deg)}20%,40%{transform:rotate(3deg)}}
+@keyframes tm-press{0%,100%{transform:translateY(0)}20%{transform:translateY(3px)}}
+@keyframes tm-snd{0%{opacity:0;transform:scale(.8)}30%{opacity:.85}100%{opacity:0;transform:scale(1.25)}}
+@keyframes tm-pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes tm-frame{0%,100%{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 2px var(--ac),0 0 10px color-mix(in srgb,var(--ac) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}50%{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 2px var(--ac),0 0 30px color-mix(in srgb,var(--ac) 75%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}}
+@media (prefers-reduced-motion:reduce){.anim *,.anim{animation:none!important}}`;
+  var SND = `<g class="snd" style="transform-box:view-box;transform-origin:100px 18px"><path d="M78 20a16 16 0 0 1 6-12"/><path d="M70 24a26 26 0 0 1 9-20"/><path d="M122 20a16 16 0 0 0-6-12"/><path d="M130 24a26 26 0 0 0-9-20"/></g>`;
+  var SVG = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("t", CX, CY, R)}</defs>${SND}
+<g class="rot">${crown("t", CX, CY, R)}${dialBody("t", CX, CY, R, RING)}
+<g class="tipg"><circle class="tip" cx="${CX}" cy="${CY - RING}" r="3.2"/></g>
+${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
+  var NovaTimerCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("timer-card-editor"));
+    }
+    static getStubConfig(h) {
+      const t = Object.keys(h?.states || {}).find((id) => id.startsWith("timer."));
+      return t ? { entity: t } : {};
+    }
+    constructor() {
+      super();
+      this._cust = { h: 0, m: 5, s: 0 };
+      this._showCust = false;
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (c.entity && !String(c.entity).startsWith("timer.")) throw new Error("Bitte einen Timer-Helfer (timer.*) wählen");
+      this._c = { ...DEF4, ...c };
+      this._pre = presetSecs(this._c.presets);
+      this._ids = [c.entity].filter(Boolean);
+      this._key = null;
+      if (this._e) this._layout();
+      if (this._h) this._render();
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) this._build();
+      else if (this._key != null && !hassChanged(old, h, this._ids)) return;
+      this._render();
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      if (!this._e && this._c && this._h) this._build();
+      this._stopVis?.();
+      this._stopVis = watchVisible(this, (v) => {
+        this._vis = v && !this._quiet;
+        this._tick(true);
+      });
+    }
+    disconnectedCallback() {
+      this._stopVis?.();
+      this._stopVis = null;
+      this._vis = false;
+      this._tick();
+      this._ro?.disconnect();
+      this._stopRep();
+    }
+    getCardSize() {
+      return this._c?.layout === "compact" ? 2 : 5;
+    }
+    getGridOptions() {
+      return this._c?.layout === "compact" ? { columns: 6, rows: "auto", min_columns: 4 } : { columns: 6, rows: "auto", min_columns: 4 };
+    }
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${TCSS}</style><div class="g tm">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
+<div class="bd"><div class="dial">${SVG}<div class="ro"><span class="t"></span><span class="s"></span></div></div>
+<div class="ctl"><div class="ct2"><div class="tt"><b></b><small></small></div></div>
+<div class="msg" hidden><ha-icon icon="mdi:bell-ring"></ha-icon><span>Zeit ist um!</span></div>
+<div class="row2 main"></div><div class="pre"></div>
+<div class="cust" hidden><div class="stps">${["h|Std", "m|Min", "s|Sek"].map((x) => {
+        const [k, l] = x.split("|");
+        return `<div class="stp" data-k="${k}"><small>${l}</small><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div><span class="v"></span><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div></div>`;
+      }).join("")}</div>
+<div class="row2"><div class="bt2 pri cgo"><ha-icon icon="mdi:play"></ha-icon><span>Starten</span></div></div></div>
+</div></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = {
+        g: q(".g"),
+        hd: q(".hd"),
+        ic: q(".hd .ic"),
+        nm: q(".hd b"),
+        sub: q(".hd small"),
+        dial: q(".dial"),
+        svg: q("svg"),
+        t: q(".ro .t"),
+        s: q(".ro .s"),
+        tt: q(".ct2 b"),
+        ts: q(".ct2 small"),
+        msg: q(".msg"),
+        main: q(".main"),
+        pre: q(".pre"),
+        cust: q(".cust"),
+        tip: q(".tipg")
+      };
+      const act = () => ({ entity: this._c.entity, tap_action: this._c.tap_action, hold_action: this._c.hold_action });
+      press(this._e.hd, { tap: () => runAction(this, act(), "tap", true), hold: () => runAction(this, act(), "hold") });
+      press(this._e.dial, { tap: () => this._dialTap(), hold: () => runAction(this, act(), "hold") });
+      r.querySelectorAll(".stp").forEach((st) => {
+        const k = st.dataset.k;
+        [[".pl", 1], [".mi", -1]].forEach(([s, d]) => this._rep(st.querySelector(s), () => this._step(k, d)));
+      });
+      press(q(".cgo"), { tap: () => {
+        const { h, m, s } = this._cust, sec = h * 3600 + m * 60 + s;
+        if (sec > 0) {
+          this._showCust = false;
+          this._start(sec);
+        }
+      } });
+      if ("ResizeObserver" in window) {
+        this._ro = new ResizeObserver((es) => {
+          const w = es[0].contentRect.width;
+          if (w) this._e.dial.style.setProperty("--dw", `${w}px`);
+        });
+        this._ro.observe(this._e.dial);
+      }
+      this._layout();
+      this._key = null;
+    }
+    _layout() {
+      const c = this._c, e = this._e, rv = roleVars(c.color), av = roleVars(c.alarm_color);
+      e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--ac:${av.c};--acfg:${av.fg}`;
+      e.g.classList.toggle("cmp", c.layout === "compact");
+      e.g.classList.toggle("full", c.layout !== "compact");
+      e.g.classList.toggle("glow", c.glow !== false);
+      this._presetsKey = null;
+    }
+    _S() {
+      return this._c.entity ? this._h?.states[this._c.entity] : null;
+    }
+    // Restzeit und Gesamtdauer aus dem Zustand des Helfers
+    _calc() {
+      const s = this._S();
+      if (!s) return null;
+      const a = s.attributes, total = parseDur(a.duration) || 0;
+      let left = total;
+      if (s.state === "active") left = a.finishes_at ? (Date.parse(a.finishes_at) - Date.now()) / 1e3 : parseDur(a.remaining) ?? total;
+      else if (s.state === "paused") left = parseDur(a.remaining) ?? total;
+      return { st: s.state, total, left: Math.max(0, left), fin: a.finishes_at };
+    }
+    // Abgelaufen? HA setzt nach dem Ablauf last_transition = finished; ohne das Attribut zählt der beobachtete Wechsel aktiv → bereit
+    _alarm(s) {
+      if (!s || s.state !== "idle") return false;
+      const fin = s.attributes.last_transition ? s.attributes.last_transition === "finished" : this._sawFinish === s.last_changed;
+      const age = (Date.now() - Date.parse(s.last_changed)) / 6e4, max = +this._c.alarm_minutes;
+      return fin && this._dismissed !== s.last_changed && (!(max > 0) || age < max);
+    }
+    _render() {
+      const c = this._c, e = this._e, h = this._h;
+      if (!e || !h) return;
+      const s = this._S();
+      if (s && this._prevSt === "active" && s.state === "idle" && this._prevFin && Date.parse(this._prevFin) <= Date.now() + 2e3) this._sawFinish = s.last_changed;
+      const fresh = s && this._prevSt && this._prevSt !== "idle" && s.state === "idle";
+      this._prevSt = s?.state;
+      this._prevFin = s?.attributes.finishes_at;
+      const v = this._calc(), al = this._alarm(s), st = v?.st || "na";
+      const key = JSON.stringify([s?.state, s?.last_changed, s?.attributes, al, this._showCust, c]);
+      const changed = key !== this._key;
+      this._key = key;
+      if (changed) {
+        e.g.classList.remove("st-active", "st-paused", "st-idle", "st-na");
+        e.g.classList.add(`st-${st}`);
+        if (al && !e.g.classList.contains("alm")) {
+          e.g.classList.add("fx");
+          if (c.animation !== false && this._vis) sweep(e.g);
+        }
+        if (!al) e.g.classList.remove("fx");
+        e.g.classList.toggle("alm", al);
+        e.g.classList.toggle("na", !s);
+        const nm = s ? nameOf(h, { entity: c.entity, name: c.name }) : c.name || "Timer";
+        e.nm.textContent = nm;
+        this._nm = nm;
+        e.ic.innerHTML = `<ha-icon icon="${esc(c.icon || s?.attributes.icon || "mdi:timer-outline")}"></ha-icon>`;
+        e.ic.classList.toggle("on", st === "active" || al);
+        e.hd.classList.toggle("on", st === "active" || al);
+        e.msg.hidden = !al;
+        e.msg.querySelector("span").textContent = c.alarm_text || "Zeit ist um!";
+        this._buttons(st, al, v);
+        if (fresh && !al) e.cust.hidden = !this._showCust;
+      }
+      this._time();
+      this._tick();
+    }
+    // Zeit, Ring und Untertitel – läuft jede Sekunde, solange der Timer läuft
+    _time() {
+      const e = this._e, v = this._calc(), s = this._S(), al = this._alarm(s);
+      if (!v) {
+        e.t.textContent = "–:––";
+        e.s.textContent = this._c.entity ? "Timer nicht gefunden" : "Timer-Helfer wählen";
+        e.tt.textContent = "–:––";
+        e.ts.textContent = e.s.textContent;
+        e.sub.textContent = e.s.textContent;
+        e.svg.style.setProperty("--p", 0);
+        return;
+      }
+      const p = v.total ? v.left / v.total : 0, txt = al ? "0:00" : fmtLeft(v.st === "idle" ? v.total : v.left);
+      let sub = "";
+      if (al) sub = this._c.alarm_text || "Zeit ist um!";
+      else if (v.st === "active") sub = `bis ${this._clock(v.fin ? new Date(v.fin) : new Date(Date.now() + v.left * 1e3))}`;
+      else if (v.st === "paused") sub = "Pausiert";
+      else sub = "Bereit";
+      if (e.t.textContent !== txt) {
+        e.t.textContent = txt;
+        e.tt.textContent = txt;
+      }
+      const hs = al ? sub : { active: "Läuft", paused: "Pausiert" }[v.st] || "Bereit";
+      if (e.s.textContent !== sub) e.s.textContent = sub;
+      const ts = `${this._nm ? `${this._nm} · ` : ""}${sub}`;
+      if (e.ts.textContent !== ts) e.ts.textContent = ts;
+      if (e.sub.textContent !== hs) e.sub.textContent = hs;
+      const pp = v.st === "idle" ? al ? 0 : 1 : p;
+      e.svg.style.setProperty("--p", pp.toFixed(4));
+      e.tip.style.transform = `rotate(${(pp * 360).toFixed(2)}deg)`;
+    }
+    _clock(d) {
+      const h = this._h, o = { hour: "2-digit", minute: "2-digit", timeZone: tzOf(h) };
+      try {
+        return new Intl.DateTimeFormat(langOf(h), o).format(d);
+      } catch {
+        delete o.timeZone;
+        return new Intl.DateTimeFormat(langOf(h), o).format(d);
+      }
+    }
+    _buttons(st, al, v) {
+      const c = this._c, e = this._e, b = [];
+      const B = (cls, icon2, label, fn) => b.push([cls, icon2, label, fn]);
+      if (!this._S()) {
+      } else if (al) {
+        B("pri", ICON.ok, "OK", () => this._dismiss());
+        if (v?.total) B("", ICON.again, "Nochmal", () => {
+          this._dismiss();
+          this._start(v.total);
+        });
+      } else if (st === "active") {
+        B("", ICON.pause, "Pause", () => this._svc("pause"));
+        if (c.show_add !== false) B("", ICON.plus, "1 Min", () => this._add(60));
+        B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
+      } else if (st === "paused") {
+        B("pri", ICON.play, "Weiter", () => this._svc("start"));
+        B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
+      } else {
+        B("pri", ICON.play, "Start", () => this._start(v?.total || 0));
+        if (c.show_custom !== false) B(this._showCust ? "sel" : "", ICON.tune, "Eigene Zeit", () => {
+          this._showCust = !this._showCust;
+          this._key = null;
+          this._render();
+        });
+      }
+      e.main.innerHTML = "";
+      b.forEach(([cls, icon2, label, fn]) => {
+        const d = document.createElement("div");
+        d.className = `bt2 ${cls}`;
+        d.title = label;
+        d.innerHTML = `<ha-icon icon="${icon2}"></ha-icon><span>${esc(label)}</span>`;
+        press(d, { tap: fn });
+        e.main.append(d);
+      });
+      const idle = st === "idle" && !al && !!this._S();
+      e.pre.hidden = !idle || this._showCust || c.show_presets === false || !this._pre.length;
+      if (!e.pre.hidden) {
+        const pk = JSON.stringify(this._pre);
+        if (this._presetsKey !== pk) {
+          this._presetsKey = pk;
+          e.pre.style.setProperty("--n", Math.min(4, this._pre.length));
+          e.pre.innerHTML = "";
+          this._pre.forEach((sec) => {
+            const d = document.createElement("div");
+            d.className = "bt2";
+            d.textContent = presetLbl(sec);
+            d.title = `${presetLbl(sec)} starten`;
+            press(d, { tap: () => this._start(sec) });
+            e.pre.append(d);
+          });
+        }
+      }
+      e.cust.hidden = !(idle && this._showCust && c.show_custom !== false);
+      if (!e.cust.hidden) this._custShow();
+    }
+    _dialTap() {
+      const s = this._S();
+      if (!s) return;
+      if (this._alarm(s)) return this._dismiss();
+      if (s.state === "active") return this._svc("pause");
+      if (s.state === "paused") return this._svc("start");
+      this._start(this._calc()?.total || 0);
+    }
+    _dismiss() {
+      this._dismissed = this._S()?.last_changed;
+      this._key = null;
+      this._render();
+    }
+    _press() {
+      const g = this._e.g;
+      g.classList.remove("prs");
+      void g.offsetWidth;
+      g.classList.add("prs");
+    }
+    _svc(svc, data = {}) {
+      if (!this._c.entity) return;
+      this._press();
+      return this._h.callService("timer", svc, { entity_id: this._c.entity, ...data });
+    }
+    _start(sec) {
+      return sec > 0 ? this._svc("start", { duration: hms(Math.round(sec)) }) : this._svc("start");
+    }
+    // +1 Minute: timer.change (ab HA 2024.x); geht nicht über die eingestellte Dauer hinaus → dann neu starten mit Rest + 60 s
+    async _add(sec) {
+      const v = this._calc();
+      try {
+        await this._svc("change", { duration: hms(sec) });
+      } catch (err) {
+        console.warn("[nova-cards] Timer: +1 Min per Neustart", err);
+        if (v) this._start(Math.round(v.left + sec));
+      }
+    }
+    _step(k, d) {
+      const c = this._cust, max = { h: 23, m: 59, s: 59 }[k], st = k === "s" ? 5 : 1;
+      c[k] = (c[k] + d * st + max + 1 - (k === "s" ? 0 : 0)) % (max + 1);
+      if (k === "s") c[k] = Math.round(c[k] / 5) * 5 % 60;
+      this._custShow();
+    }
+    _custShow() {
+      this._e.cust.querySelectorAll(".stp").forEach((st) => {
+        st.querySelector(".v").textContent = String(this._cust[st.dataset.k]).padStart(2, "0");
+      });
+    }
+    // Taste mit Wiederholung beim Gedrückthalten (Stepper)
+    _rep(el2, fn) {
+      el2.tabIndex = 0;
+      el2.setAttribute("role", "button");
+      el2.classList.add("tap");
+      el2.addEventListener("pointerdown", (ev) => {
+        ev.preventDefault();
+        fn();
+        this._stopRep();
+        this._rt = setTimeout(() => {
+          this._ri = setInterval(fn, 110);
+        }, 450);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach((t) => el2.addEventListener(t, () => this._stopRep()));
+      el2.addEventListener("contextmenu", (ev) => ev.preventDefault());
+      el2.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          fn();
+        }
+      });
+    }
+    _stopRep() {
+      clearTimeout(this._rt);
+      clearInterval(this._ri);
+      this._rt = this._ri = null;
+    }
+    // Ein Takt pro Sekunde, nur wenn der Timer läuft (oder klingelt) und die Karte zu sehen ist
+    _tick(cameIn) {
+      const e = this._e;
+      if (!e) return;
+      const vis3 = !!this._vis, s = this._S(), al = this._alarm(s);
+      e.g.classList.toggle("anim", vis3 && this._c.animation !== false);
+      e.g.classList.toggle("still", !vis3);
+      if (cameIn && vis3 && !this._wasVis && this._c.animation !== false) sweep(e.g);
+      this._wasVis = vis3;
+      const run = vis3 && (s?.state === "active" || al);
+      if (run && !this._tm) this._tm = setInterval(() => {
+        const s2 = this._S();
+        if (s2?.state === "active") this._time();
+        else if (!this._alarm(s2)) {
+          this._key = null;
+          this._render();
+        }
+      }, 1e3);
+      if (!run && this._tm) {
+        clearInterval(this._tm);
+        this._tm = null;
+      }
+    }
+  };
+  define("timer-card", NovaTimerCard, { name: "Nova Timer Card", description: "Küchen-Timer über einen Timer-Helfer: Schnellwahl, eigene Zeit, Pause, +1 Minute, Abbrechen – auf allen Geräten synchron, mit Hinweis beim Ablauf.", documentationURL: docUrl("nova-timer-card") });
+  var S_GEN5 = [
+    { name: "entity", required: true, selector: { entity: { domain: "timer" } } },
+    g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } })
+  ];
+  var S_START = [
+    { name: "show_presets", selector: { boolean: {} } },
+    { name: "presets", selector: T },
+    { name: "show_custom", selector: { boolean: {} } },
+    { name: "show_add", selector: { boolean: {} } }
+  ];
+  var S_ALARM = [
+    { name: "alarm_text", selector: T },
+    g2(ROLE("alarm_color"), { name: "alarm_minutes", selector: { number: { min: 0, max: 120, mode: "box", unit_of_measurement: "min" } } })
+  ];
+  var S_LOOK3 = [
+    g2(sel("layout", [["full", "Groß (mit Stoppuhr)"], ["compact", "Kompakt"]]), ROLE("color")),
+    g2({ name: "animation", selector: { boolean: {} } }, { name: "glow", selector: { boolean: {} } })
+  ];
+  var S_ACT3 = [{ name: "tap_action", selector: A }, { name: "hold_action", selector: A }];
+  var LABELS5 = {
+    entity: "Timer-Helfer",
+    name: "Name",
+    icon: "Icon",
+    show_presets: "Schnellwahl-Knöpfe zeigen",
+    presets: "Schnellwahl (Minuten, mit Komma)",
+    show_custom: "Knopf „Eigene Zeit“ zeigen",
+    show_add: "Knopf „+1 Min“ während der Timer läuft",
+    alarm_text: "Text beim Ablauf",
+    alarm_color: "Farbe beim Ablauf",
+    alarm_minutes: "Hinweis anzeigen für",
+    layout: "Darstellung",
+    color: "Farbe",
+    animation: "Animationen",
+    glow: "Rahmen leuchtet, solange der Timer läuft",
+    tap_action: "Kopfzeile antippen",
+    hold_action: "Lange drücken"
+  };
+  var HELPERS5 = {
+    entity: "Ein Timer-Helfer läuft in Home Assistant – alle Geräte zeigen dieselbe Zeit. Anlegen unter Einstellungen → Geräte & Dienste → Helfer → Timer.",
+    presets: "z. B. „1, 5, 10, 15“. Auch „30s“ oder „1h“ geht. Höchstens 8.",
+    alarm_text: "Leer = „Zeit ist um!“",
+    alarm_minutes: "So lange klingelt die Karte nach dem Ablauf, wenn niemand „OK“ drückt. 0 = bis jemand bestätigt.",
+    tap_action: "Leer = Details des Timers öffnen. Die Stoppuhr selbst startet, pausiert und setzt fort."
+  };
+  var NovaTimerCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const data = () => {
+        const d = { ...DEF4, ...this._config };
+        if (Array.isArray(d.presets)) d.presets = d.presets.join(", ");
+        return d;
+      };
+      const form = (s) => this._form(s, data(), (v) => {
+        const c = merge(this._config, names(s), v);
+        if ("presets" in v) {
+          const arr = list(v.presets).map((x) => /^\d+$/.test(x) ? +x : x);
+          if (!arr.length || JSON.stringify(arr) === JSON.stringify(DEF4.presets)) delete c.presets;
+          else c.presets = arr;
+        }
+        Object.keys(DEF4).forEach((k) => {
+          if (k !== "presets" && c[k] === DEF4[k]) delete c[k];
+        });
+        this._emit(c);
+      });
+      const w = r.querySelector(".wrap");
+      if (!Object.keys(this._hass?.states || {}).some((id) => id.startsWith("timer."))) w.append(this._hint("Noch kein Timer-Helfer vorhanden: Einstellungen → Geräte & Dienste → Helfer → „Helfer erstellen“ → Timer. Tipp: „Zustand wiederherstellen“ anhaken, dann übersteht der Timer auch einen Neustart von Home Assistant."));
+      w.append(
+        this._section("general", "mdi:timer-outline", "Timer", (b) => b.append(form(S_GEN5))),
+        this._section("start", "mdi:gesture-tap-button", "Schnellwahl und Knöpfe", (b) => b.append(form(S_START))),
+        this._section("alarm", "mdi:bell-ring-outline", "Wenn die Zeit um ist", (b) => {
+          b.append(form(S_ALARM), this._hint("Ton oder Ansage (z. B. auf dem Echo) per Automation: Auslöser „Ereignis“ timer.finished mit diesem Timer."));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK3))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT3)))
+      );
+    }
+  };
+  __publicField(NovaTimerCardEditor, "labels", LABELS5);
+  __publicField(NovaTimerCardEditor, "helpers", HELPERS5);
+  __publicField(NovaTimerCardEditor, "openSections", ["general"]);
+  define("timer-card-editor", NovaTimerCardEditor);
+
+  // src/clock.js
+  var DEF5 = { mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true };
+  var C = 100;
+  var R2 = 92;
+  var CCSS2 = `${DIAL_CSS}
+:host{container-type:inline-size}
+.g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
+.g.ck.flat{background:none;border-color:transparent;box-shadow:none}
+.nm{font-size:12.5px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
+.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
+.tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
+.tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
+.tm .cl{color:var(--kc)}
+.dt{font-size:clamp(13px,6cqw,26px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dt b{font-weight:600;opacity:1}
+.ana{width:100%;max-width:var(--nova-clock-size,240px);aspect-ratio:1}
+.ana svg{display:block;width:100%;height:100%}
+.scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
+.scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
+.scene .cap{fill:url(#k-cr);stroke:rgba(255,255,255,.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
+.scene .hsh{fill:#000;opacity:.25}
+[hidden]{display:none!important}
+@container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}.row .txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start}}
+.txt{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0;max-width:100%}`;
+  var hand = (cls, w, len, back) => `<path class="${cls}" d="M${C - w / 2} ${C + back} L${C - w / 2 + 0.4} ${C - len} Q${C} ${C - len - w / 2} ${C + w / 2 - 0.4} ${C - len} L${C + w / 2} ${C + back} Z"/>`;
+  var SVG2 = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("k", C, C, R2)}</defs>${dialBody("k", C, C, R2)}
+<g class="hh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 6, 44, 10)}</g>${hand("hd", 6, 44, 10)}</g>
+<g class="mh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 4.2, 64, 12)}</g>${hand("md", 4.2, 64, 12)}</g>
+<g class="sh">${hand("sd", 1.6, 70, 18)}<circle class="sd" cx="${C}" cy="${C + 14}" r="3"/></g>
+<circle class="cap" cx="${C}" cy="${C}" r="5"/><circle class="cap2" cx="${C}" cy="${C}" r="1.8"/>
+${dialGlass("k", C, C, R2)}</svg>`;
+  var NovaClockCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("clock-card-editor"));
+    }
+    static getStubConfig() {
+      return {};
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._c = { ...DEF5, ...c };
+      this._fmtKey = null;
+      if (this._e) {
+        this._layout();
+        this._draw();
+        this._plan();
+      }
+    }
+    // Nur Sprache, Zeitformat und Zeitzone aus hass sind wichtig – Zustände nicht
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) {
+        this._build();
+        this._draw();
+        this._plan();
+        return;
+      }
+      if (!old || old.locale !== h.locale || old.config !== h.config || old.language !== h.language) {
+        this._fmtKey = null;
+        this._draw();
+      }
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      if (!this._e && this._c && this._h) this._build();
+      this._stopVis?.();
+      this._stopVis = watchVisible(this, (v) => {
+        const was = this._vis;
+        this._vis = v && !this._quiet;
+        if (this._vis && !was && this._c?.mode === "analog" && this._c.animation !== false) sweep(this._e?.g);
+        this._draw();
+        this._plan();
+      });
+    }
+    disconnectedCallback() {
+      this._stopVis?.();
+      this._stopVis = null;
+      this._vis = false;
+      clearTimeout(this._t);
+      this._t = null;
+    }
+    getCardSize() {
+      return this._c?.mode === "analog" ? 4 : 2;
+    }
+    getGridOptions() {
+      return { columns: 6, rows: "auto", min_columns: 3 };
+    }
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${CCSS2}</style><div class="g ck"><div class="ana">${SVG2}</div>
+<div class="txt"><div class="nm"></div><div class="tm"></div><div class="dt"></div></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = { g: q(".g"), ana: q(".ana"), nm: q(".nm"), tm: q(".tm"), dt: q(".dt"), hh: q(".hh"), mh: q(".mh"), sh: q(".sh") };
+      const act = () => ({ tap_action: this._c.tap_action, hold_action: this._c.hold_action });
+      press(this._e.g, { tap: () => runAction(this, act(), "tap", true), hold: () => runAction(this, act(), "hold") });
+      this._layout();
+    }
+    _layout() {
+      const c = this._c, e = this._e, rv = roleVars(c.color), an = c.mode === "analog";
+      e.g.style.setProperty("--kc", rv.c);
+      e.ana.hidden = !an;
+      e.tm.hidden = an && !c.analog_digital;
+      e.g.classList.toggle("row", an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name));
+      e.g.classList.toggle("flat", c.glass === false);
+      this.classList.toggle("nv-flat", c.glass === false);
+      e.nm.hidden = !c.name;
+      e.nm.textContent = c.name || "";
+    }
+    // Formatierer nur neu bauen, wenn sich Sprache/Zeitzone/Optionen ändern
+    _fmts() {
+      const h = this._h, c = this._c, lang = langOf(h), tz = tzOf(h), tf = c.time_format === "auto" ? h?.locale?.time_format : c.time_format;
+      const key = JSON.stringify([lang, tz, tf, c.date_format, c.show_seconds]);
+      if (key === this._fmtKey) return this._f;
+      this._fmtKey = key;
+      const mk = (o) => {
+        try {
+          return new Intl.DateTimeFormat(lang, { ...o, timeZone: tz });
+        } catch {
+          return new Intl.DateTimeFormat(lang, o);
+        }
+      };
+      const h12 = tf === "12" ? true : tf === "24" ? false : void 0;
+      const time = mk({ hour: "2-digit", minute: "2-digit", second: "2-digit", ...h12 != null ? { hour12: h12 } : {} });
+      const DF = { long: { day: "numeric", month: "long" }, short: { day: "numeric", month: "short" }, numeric: { day: "2-digit", month: "2-digit", year: "numeric" } };
+      this._f = { time, wd: mk({ weekday: "long" }), date: mk(DF[c.date_format] || DF.long) };
+      return this._f;
+    }
+    _draw() {
+      const e = this._e, c = this._c;
+      if (!e || !this._h) return;
+      const f2 = this._fmts(), now = /* @__PURE__ */ new Date();
+      const p = Object.fromEntries(f2.time.formatToParts(now).map((x) => [x.type, x.value]));
+      if (!e.tm.hidden) {
+        const html = `${esc(p.hour)}<span class="cl">:</span>${esc(p.minute)}${c.show_seconds ? `<span class="sc">${esc(p.second)}</span>` : ""}${p.dayPeriod ? `<span class="ap">${esc(p.dayPeriod)}</span>` : ""}`;
+        if (this._tmH !== html) {
+          this._tmH = html;
+          e.tm.innerHTML = html;
+        }
+      }
+      const wd = c.show_weekday ? f2.wd.format(now) : "", dt = c.show_date ? f2.date.format(now) : "";
+      const dh = [wd && `<b>${esc(wd)}</b>`, dt && esc(dt)].filter(Boolean).join(", ");
+      e.dt.hidden = !dh;
+      if (this._dtH !== dh) {
+        this._dtH = dh;
+        e.dt.innerHTML = dh;
+      }
+      if (!e.ana.hidden) {
+        const h24 = +p.hour % 12, mm = +p.minute, ss = +p.second;
+        e.hh.setAttribute("transform", `rotate(${((h24 + mm / 60) * 30).toFixed(2)} ${C} ${C})`);
+        e.mh.setAttribute("transform", `rotate(${((mm + (c.show_seconds ? ss / 60 : 0)) * 6).toFixed(2)} ${C} ${C})`);
+        e.sh.style.display = c.show_seconds ? "" : "none";
+        if (c.show_seconds) e.sh.setAttribute("transform", `rotate(${ss * 6} ${C} ${C})`);
+      }
+    }
+    // Ein Zeitgeber: zum nächsten Sekunden- (mit Sekunden) bzw. Minutenwechsel; nur sichtbar und nicht in der Kartenauswahl
+    _plan() {
+      clearTimeout(this._t);
+      this._t = null;
+      if (!this._vis || !this._e) return;
+      const step = this._c.show_seconds ? 1e3 : 6e4, now = Date.now();
+      this._t = setTimeout(() => {
+        this._t = null;
+        this._draw();
+        this._plan();
+      }, step - now % step + 15);
+    }
+  };
+  define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit digital oder analog im Nova-Stil, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("nova-uhr-card") });
+  var S_GEN6 = [
+    sel("mode", [["digital", "Digital"], ["analog", "Analog (Zifferblatt)"]]),
+    { name: "name", selector: T }
+  ];
+  var S_SHOW = (c) => [
+    g2({ name: "show_seconds", selector: { boolean: {} } }, ...c.mode === "analog" ? [{ name: "analog_digital", selector: { boolean: {} } }] : []),
+    g2({ name: "show_weekday", selector: { boolean: {} } }, { name: "show_date", selector: { boolean: {} } }),
+    g2(sel("date_format", [["long", "2. November"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]), sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]]))
+  ];
+  var S_LOOK4 = [g2(ROLE("color"), { name: "glass", selector: { boolean: {} } })];
+  var S_ACT4 = [{ name: "tap_action", selector: A }, { name: "hold_action", selector: A }];
+  var LABELS6 = {
+    mode: "Art der Uhr",
+    name: "Überschrift (optional)",
+    show_seconds: "Sekunden",
+    analog_digital: "Zusätzlich digitale Zeit",
+    show_weekday: "Wochentag",
+    show_date: "Datum",
+    date_format: "Datumsformat",
+    time_format: "Zeitformat",
+    color: "Akzentfarbe",
+    glass: "Glas-Hintergrund",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken"
+  };
+  var HELPERS6 = {
+    show_seconds: "Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.",
+    color: "Doppelpunkt bzw. Sekundenzeiger. Die Farben selbst kommen aus dem Theme.",
+    glass: "Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild."
+  };
+  var NovaClockCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const data = () => ({ ...DEF5, ...this._config });
+      const form = (s) => this._form(s, data(), (v) => {
+        const was = this._config.mode, c = merge(this._config, names(s), v);
+        Object.keys(DEF5).forEach((k) => {
+          if (c[k] === DEF5[k]) delete c[k];
+        });
+        this._emit(c);
+        if ((c.mode || DEF5.mode) !== (was || DEF5.mode)) this._rebuild();
+      });
+      r.querySelector(".wrap").append(
+        this._section("general", "mdi:clock-outline", "Uhr", (b) => b.append(form(S_GEN6))),
+        this._section("show", "mdi:calendar-today", "Anzeige", (b) => b.append(form(S_SHOW(data())))),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK4))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT4)))
+      );
+    }
+  };
+  __publicField(NovaClockCardEditor, "labels", LABELS6);
+  __publicField(NovaClockCardEditor, "helpers", HELPERS6);
+  __publicField(NovaClockCardEditor, "openSections", ["general", "show"]);
+  define("clock-card-editor", NovaClockCardEditor);
 
   // src/index.js
   console.info(`%c NOVA-CARDS %c v${"0.11.1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
