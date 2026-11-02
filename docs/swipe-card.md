@@ -47,6 +47,18 @@ stack_below: 600
 pages: …
 ```
 
+## Wenn unten etwas abgeschnitten wird (z. B. Echo Show), dann so
+
+Manche Browser melden die Bildschirmhöhe falsch, dann ist „100vh“ höher als das, was man sieht. „Bis zum unteren
+Bildschirmrand“ (`fit_screen: true`) misst das sichtbare Fenster direkt und lässt die Karte genau dort enden. Das schließt
+„Ganze Höhe ausfüllen“ mit ein.
+
+```yaml
+type: custom:nova-swipe-card
+fit_screen: true
+pages: …
+```
+
 ## Wenn das Display nach einer Weile wieder die erste Seite zeigen soll, dann so
 
 „Zurück zu Seite 1 nach“ auf z. B. 120 Sekunden stellen. Jede Berührung startet die Zeit neu. 0 = aus (Standard).
@@ -73,6 +85,7 @@ pages: …
 | `pages[].rows[].cells[]` | – | `card` (beliebige Karte) und optional `width`: `1/4`, `1/3`, `1/2`, `2/3`, `3/4`, `1` |
 | `dots` | `true` | Seiten-Punkte unten (bei nur einer Seite immer aus) |
 | `fill` | `false` | Ganze Höhe des Platzes ausfüllen, Karten einer Seite teilen sich die Höhe |
+| `fit_screen` | `false` | Karte endet am unteren Rand des sichtbaren Fensters (für Wand-Displays, gegen Abschneiden) |
 | `reset_after` | `0` | Sekunden ohne Bedienung, danach zurück zu Seite 1. `0` = aus |
 | `stack_below` | `500` | Schmaler als so viele Pixel → Karten einer Seite untereinander (z. B. am Handy). `0` = nie |
 | `equal_height` | `false` | Karten einer Zeile gleich hoch |

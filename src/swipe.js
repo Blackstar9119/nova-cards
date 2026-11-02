@@ -10,7 +10,7 @@ import {GridEditor, GRID_ED_CSS, GRID_LABELS, GRID_HELPERS} from './shared/card-
    Mehrere Seiten in einer Karte, zum Wischen nach links/rechts. Jede Seite ist ein Raster aus beliebigen Karten wie in der
    Pop-up Card (rows). Gewischt wird nativ (scroll-snap) – das läuft auch auf schwachen Geräten flüssig. Beginnt eine Berührung
    auf einem Schieberegler, ist das Wischen für diese Berührung aus. */
-const DEF = {dots: true, reset_after: 0, fill: false, stack_below: 500};
+const DEF = {dots: true, reset_after: 0, fill: false, fit_screen: false, stack_below: 500};
 
 const SCSS = `${NOVA_VARS}${GRID_CSS}
 :host{display:block}
@@ -86,7 +86,8 @@ class NovaSwipeCard extends HTMLElement {
     this._sc.addEventListener('touchstart', lock, {capture: true, passive: true});
     this._sc.addEventListener('keydown', () => this._poke());
     // Größe ändert sich (Drehen, Seitenleiste) → auf der aktuellen Seite bleiben, Stapeln prüfen
-    this._ro = new ResizeObserver(() => { this._pages.forEach(p => p._stack()); this.go(this._i, false); });
+    this._ro = new ResizeObserver(() => { this._fit(); this._pages.forEach(p => p._stack()); this.go(this._i, false); });
+    this._onResize = () => this._fit();
     // Editor wählt eine Seite → Vorschau springt dorthin
     this._onGoto = e => { if (this._prev) this.go(e.detail?.page ?? 0, false); };
   }
@@ -111,12 +112,14 @@ class NovaSwipeCard extends HTMLElement {
     this._detect();
     requestAnimationFrame(() => this._detect());
     this._ro.observe(this._sc);
+    window.addEventListener('resize', this._onResize);
     window.addEventListener('nova-swipe-goto', this._onGoto);
     if (this._dirty && this._cfg) this._render();
     this._poke();
   }
   disconnectedCallback() {
     this._ro.disconnect();
+    window.removeEventListener('resize', this._onResize);
     window.removeEventListener('nova-swipe-goto', this._onGoto);
     clearTimeout(this._rt); this._rt = null;
     cancelAnimationFrame(this._raf); this._raf = 0;
@@ -137,8 +140,10 @@ class NovaSwipeCard extends HTMLElement {
   _render() {
     this._dirty = false;
     const c = this._cfg, list = Array.isArray(c.pages) && c.pages.length ? c.pages : [{rows: []}];
-    this.classList.toggle('fill', !!c.fill);
-    this._w.classList.toggle('fill', !!c.fill);
+    const fill = !!c.fill || !!c.fit_screen;
+    this.classList.toggle('fill', fill);
+    this._w.classList.toggle('fill', fill);
+    this._fit();
     // Seiten mit unveränderter Konfiguration behalten – ihre Karten müssen dann nicht neu entstehen
     // Seiten-Objekte weiterverwenden: _grid() übernimmt Zellen mit unveränderter Karte, statt sie neu zu erzeugen
     const old = this._pages;
@@ -171,6 +176,14 @@ class NovaSwipeCard extends HTMLElement {
     this._mark(this._i, true);
     requestAnimationFrame(() => { this._pages.forEach(p => p._stack()); this.go(this._i, false); });
   }
+  // Bis zum unteren Bildschirmrand: Höhe = sichtbares Fenster minus Abstand oben, minus 8 px unten.
+  // Unabhängig davon, ob der Browser 100vh/100dvh richtig kennt (z. B. Silk auf dem Echo Show) – innerHeight stimmt immer.
+  _fit() {
+    if (!this._cfg?.fit_screen) { if (this._fitH) { this._fitH = 0; this.style.removeProperty('height'); } return; }
+    const top = this.getBoundingClientRect().top + (window.scrollY || 0);
+    const hgt = Math.max(160, Math.floor(window.innerHeight - Math.max(0, top) - 8));
+    if (hgt !== this._fitH) { this._fitH = hgt; this.style.height = `${hgt}px`; }
+  }
   // Zu Seite i wischen (smooth = mit Animation, außer bei „Bewegung reduzieren“)
   go(i, smooth = true) {
     const n = this._pages.length;
@@ -202,17 +215,19 @@ define('swipe-card', NovaSwipeCard, {name: 'Nova Swipe Card', description: 'Mehr
 const S_PAGE = [g2({name: 'name', selector: T}, {name: 'icon', selector: I})];
 const S_SWIPE = [
   g2({name: 'dots', selector: {boolean: {}}}, {name: 'fill', selector: {boolean: {}}}),
+  {name: 'fit_screen', selector: {boolean: {}}},
   g2({name: 'reset_after', selector: {number: {min: 0, max: 600, step: 5, mode: 'box', unit_of_measurement: 's'}}},
     {name: 'stack_below', selector: {number: {min: 0, max: 1200, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
 ];
 const LABELS = {
   ...GRID_LABELS,
-  name: 'Name der Seite (optional)', icon: 'Icon (optional)', dots: 'Seiten-Punkte', fill: 'Ganze Höhe ausfüllen',
+  name: 'Name der Seite (optional)', icon: 'Icon (optional)', dots: 'Seiten-Punkte', fill: 'Ganze Höhe ausfüllen', fit_screen: 'Bis zum unteren Bildschirmrand',
   reset_after: 'Zurück zu Seite 1 nach', stack_below: 'Untereinander unter Breite',
 };
 const HELPERS = {
   ...GRID_HELPERS,
   name: 'Nur für dich im Editor und als Hinweis an den Punkten.',
+  fit_screen: 'Für Wand-Displays wie den Echo Show: Die Karte endet genau am unteren Rand des sichtbaren Fensters, auch wenn der Browser die Höhe falsch meldet. Schließt „Ganze Höhe ausfüllen“ ein.',
   fill: 'Für Wand-Displays: Die Karte ist so hoch wie ihr Platz, die Karten einer Seite teilen sich die Höhe.',
   reset_after: 'Sekunden ohne Bedienung, danach springt die Karte zur ersten Seite. 0 = aus.',
   stack_below: 'Ist die Karte schmaler als dieser Wert, stehen die Karten einer Seite untereinander (0 = nie).',

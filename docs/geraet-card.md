@@ -117,7 +117,8 @@ hints:
 
 Liste von Entitäten (`select`, `number`, `switch`, `sensor` …), je mit `entity`, `name`, `icon`, `display`
 (Select: `auto`, `pills`, `list`; Zahl: `buttons`, `slider`), `step` und `show` (`always`, `idle` = nur vor dem Start,
-`running` = nur während des Laufs).
+`running` = nur während des Laufs). Buttons, Skripte und Szenen erscheinen als Zeile mit rundem Knopf zum Auslösen
+(z. B. Warmhalten beim Airfryer). `controls_columns: 2` stellt die Regler zu zweit nebeneinander – spart Höhe auf kleinen Displays.
 
 ### Steuerung
 
