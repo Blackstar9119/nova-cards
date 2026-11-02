@@ -12250,11 +12250,11 @@ ${ring ? `<circle class="dl-tr" cx="${cx}" cy="${cy}" r="${ring}"/><circle class
 <path class="dl-arcl" d="M${ax} ${ay}A${g - 4} ${g - 4} 0 0 1 ${bx} ${by}"/>`;
   };
   var crown = (p, cx, cy, r) => {
-    const top = cy - r, grooves = [-6, -3, 0, 3, 6].map((x) => `M${cx + x} ${top - 16}v8`).join("");
+    const top = cy - r, grooves = [-12, -9, -6, -3, 0, 3, 6, 9, 12].map((x) => `M${cx + x} ${top - 16}v8`).join("");
     const pusher = (side, a) => `<g class="dl-push ${side}" transform="rotate(${a} ${cx} ${cy})"><rect class="s-part" x="${cx - 5}" y="${top - 9}" width="10" height="10" rx="2" fill="url(#${p}-pt)"/><rect class="dl-cap" x="${cx - 6.5}" y="${top - 12}" width="13" height="4" rx="1.5" fill="url(#${p}-cr)"/></g>`;
     return `${pusher("l", -40)}${pusher("r", 40)}
 <rect class="s-part" x="${cx - 5}" y="${top - 8}" width="10" height="9" rx="1.5" fill="url(#${p}-pt)"/>
-<g class="dl-crown"><rect class="dl-cr" x="${cx - 10}" y="${top - 19}" width="20" height="12" rx="3" fill="url(#${p}-cr)"/><path class="dl-grv" d="${grooves}"/></g>`;
+<g class="dl-crown"><rect class="dl-cr" x="${cx - 10}" y="${top - 19}" width="20" height="12" rx="3" fill="url(#${p}-cr)"/><clipPath id="${p}-cc"><rect x="${cx - 7.5}" y="${top - 19}" width="15" height="12"/></clipPath><g clip-path="url(#${p}-cc)"><g class="dl-gv"><path class="dl-grv" d="${grooves}"/></g></g></g>`;
   };
   var bellBadge = (right, bottom) => {
     const { x, y, r } = badgeAt(right, bottom);
@@ -12378,6 +12378,7 @@ contain:strict}
 .scl:focus-visible{border-color:color-mix(in srgb,var(--dc) 70%,transparent)}
 .scl .str{position:absolute;left:0;right:0;top:0;height:0;will-change:transform}
 .scl .str.snap{transition:transform .22s cubic-bezier(.2,.8,.3,1)}
+.scene .dl-gv{transform-box:view-box}
 .scl i{position:absolute;left:10px;width:16%;height:1.5px;margin-top:-.75px;background:rgba(255,255,255,.2)}
 .scl i.m{width:34%;background:rgba(255,255,255,.5)}
 .scl b{position:absolute;left:calc(10px + 34% + 8px);height:16px;margin-top:-8px;line-height:16px;font-size:13px;font-weight:600;opacity:.7;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -12535,6 +12536,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         main: q(".main"),
         pre: q(".pre"),
         cust: q(".cust"),
+        gv: q(".dl-gv"),
         zone: q(".zone"),
         rd: q(".rd"),
         scl: q(".scl"),
@@ -12918,6 +12920,8 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       const s = this._e.str;
       s.classList.toggle("snap", !!snap);
       s.style.transform = `translate3d(0,${o}px,0)`;
+      const gv = this._e.gv;
+      if (gv) gv.style.transform = `translateX(${(o * 0.12 % 3 + 3) % 3}px)`;
     }
     // Raster unter der Marke prüfen: neue Zeit, Klick
     _hit(o) {

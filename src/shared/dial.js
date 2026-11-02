@@ -43,11 +43,12 @@ export const dialGlass = (p, cx, cy, r) => {
 
 // Stoppuhr-Teile oben: Krone mit Riffeln und zwei Drücker (Klassen dl-crown, dl-push l/r für die Drück-Animation)
 export const crown = (p, cx, cy, r) => {
-  const top = cy - r, grooves = [-6, -3, 0, 3, 6].map(x => `M${cx + x} ${top - 16}v8`).join('');
+  // Riffeln etwas breiter als sichtbar und auf die Krone beschnitten – so kann die Timer-Skala sie per transform „drehen“ (Klasse dl-gv)
+  const top = cy - r, grooves = [-12, -9, -6, -3, 0, 3, 6, 9, 12].map(x => `M${cx + x} ${top - 16}v8`).join('');
   const pusher = (side, a) => `<g class="dl-push ${side}" transform="rotate(${a} ${cx} ${cy})"><rect class="s-part" x="${cx - 5}" y="${top - 9}" width="10" height="10" rx="2" fill="url(#${p}-pt)"/><rect class="dl-cap" x="${cx - 6.5}" y="${top - 12}" width="13" height="4" rx="1.5" fill="url(#${p}-cr)"/></g>`;
   return `${pusher('l', -40)}${pusher('r', 40)}
 <rect class="s-part" x="${cx - 5}" y="${top - 8}" width="10" height="9" rx="1.5" fill="url(#${p}-pt)"/>
-<g class="dl-crown"><rect class="dl-cr" x="${cx - 10}" y="${top - 19}" width="20" height="12" rx="3" fill="url(#${p}-cr)"/><path class="dl-grv" d="${grooves}"/></g>`;
+<g class="dl-crown"><rect class="dl-cr" x="${cx - 10}" y="${top - 19}" width="20" height="12" rx="3" fill="url(#${p}-cr)"/><clipPath id="${p}-cc"><rect x="${cx - 7.5}" y="${top - 19}" width="15" height="12"/></clipPath><g clip-path="url(#${p}-cc)"><g class="dl-gv"><path class="dl-grv" d="${grooves}"/></g></g></g>`;
 };
 
 // Glocke als Badge (Timer abgelaufen) an der gemeinsamen Badge-Stelle unten rechts

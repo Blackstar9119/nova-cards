@@ -100,6 +100,7 @@ contain:strict}
 .scl:focus-visible{border-color:color-mix(in srgb,var(--dc) 70%,transparent)}
 .scl .str{position:absolute;left:0;right:0;top:0;height:0;will-change:transform}
 .scl .str.snap{transition:transform .22s cubic-bezier(.2,.8,.3,1)}
+.scene .dl-gv{transform-box:view-box}
 .scl i{position:absolute;left:10px;width:16%;height:1.5px;margin-top:-.75px;background:rgba(255,255,255,.2)}
 .scl i.m{width:34%;background:rgba(255,255,255,.5)}
 .scl b{position:absolute;left:calc(10px + 34% + 8px);height:16px;margin-top:-8px;line-height:16px;font-size:13px;font-weight:600;opacity:.7;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -221,7 +222,7 @@ class NovaTimerCard extends HTMLElement {
 </div></div></div>`;
     const q = s => r.querySelector(s);
     this._e = {g: q('.g'), hd: q('.hd'), ic: q('.hd .ic'), nm: q('.hd b'), sub: q('.hd small'), dial: q('.dial'), svg: q('svg'), t: q('.ro .t'), s: q('.ro .s'),
-      tt: q('.ct2 b'), ts: q('.ct2 small'), msg: q('.msg'), main: q('.main'), pre: q('.pre'), cust: q('.cust'), zone: q('.zone'), rd: q('.rd'), scl: q('.scl'), str: q('.str'), tip: q('.tipg')};
+      tt: q('.ct2 b'), ts: q('.ct2 small'), msg: q('.msg'), main: q('.main'), pre: q('.pre'), cust: q('.cust'), gv: q('.dl-gv'), zone: q('.zone'), rd: q('.rd'), scl: q('.scl'), str: q('.str'), tip: q('.tipg')};
     this._scaleInit();
     // Kopfzeile: Antippen/lang drücken = Details (bzw. eigene Aktion)
     const act = () => ({entity: this._c.entity, tap_action: this._c.tap_action, hold_action: this._c.hold_action});
@@ -489,6 +490,9 @@ class NovaTimerCard extends HTMLElement {
     const s = this._e.str;
     s.classList.toggle('snap', !!snap);
     s.style.transform = `translate3d(0,${o}px,0)`;
+    // Krone der Stoppuhr dreht mit: Riffeln wandern seitlich (Abstand 3, also nur 0…3 verschieben)
+    const gv = this._e.gv;
+    if (gv) gv.style.transform = `translateX(${((o * 0.12) % 3 + 3) % 3}px)`;
   }
   // Raster unter der Marke prüfen: neue Zeit, Klick
   _hit(o) {
