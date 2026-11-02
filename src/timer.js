@@ -86,7 +86,7 @@ display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;fo
 .cust:not(.sc) .scl,.cust:not(.sc) .rd,.cust.sc .stps{display:none}
 .cust.sc .rd{grid-column:1;grid-row:1}.cust.sc .row2{grid-column:1;grid-row:2;flex-wrap:nowrap}.cust.sc .scl{grid-column:2;grid-row:1/3}
 /* Tuner-Skala: Striche wandern beim Ziehen (nur transform), die Marke in der Mitte zeigt die Zeit */
-.rd{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
+.rd{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;contain:strict}
 .rd b{font-size:clamp(26px,10cqw,52px);font-weight:600;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
 .rd.in b{cursor:text}
 .rd input{width:100%;max-width:6.5em;box-sizing:border-box;font:inherit;font-size:clamp(20px,7cqw,36px);font-weight:600;text-align:center;color:inherit;background:var(--nv-chip);border:1px solid color-mix(in srgb,var(--dc) 60%,transparent);border-radius:12px;padding:6px;outline:none}
@@ -201,7 +201,7 @@ class NovaTimerCard extends HTMLElement {
     this._ro?.disconnect();
     this._stopRep();
     this._stopFling();
-    this._ac?.close?.().catch(() => {}); this._ac = null;
+    this._ac?.close?.().catch(() => {}); this._ac = null; this._clk = null; this._drag = false;
   }
   getCardSize() { return this._c?.layout === 'compact' ? 2 : 5; }
   getGridOptions() { return this._c?.layout === 'compact' ? {columns: 6, rows: 'auto', min_columns: 4} : {columns: 6, rows: 'auto', min_columns: 4}; }
@@ -510,21 +510,26 @@ class NovaTimerCard extends HTMLElement {
     this._showSec();
   }
   _snap() { this._stopFling(); const i = Math.max(0, Math.min(this._vals.length - 1, Math.round((this._mid() - this._off) / SP))); this._idx = -1; this._move(this._offOf(i), true); this._hit(this._offOf(i)); }
-  _stopFling() { if (this._raf) cancelAnimationFrame(this._raf); this._raf = 0; }
+  // Schwung beenden – setzt auch den Zustand zurück, sonst würde jedes Ziehen danach als Antippen (ein Schritt) zählen
+  _stopFling() { if (this._raf) cancelAnimationFrame(this._raf); this._raf = 0; this._fling = false; }
   // Leiser Klick: sehr kurzer Ton über Web Audio (der Echo kann nicht vibrieren), dazu Vibration, wo vorhanden
   _click() {
     if (this._c.click_sound === false || !this._drag) return;
     const now = performance.now();
-    if (now - (this._lastClick || 0) < 28) return;
+    if (now - (this._lastClick || 0) < (this._fling ? 45 : 28)) return;
     this._lastClick = now;
     try { navigator.vibrate?.(6); } catch (e) { /* nicht unterstützt */ }
     const ac = this._ac;
     if (!ac || ac.state === 'closed') return;
     try {
-      const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
-      o.type = 'triangle'; o.frequency.value = 2100;
-      g.gain.setValueAtTime(0.07, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
-      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.03);
+      // Klick einmal vorbereiten (5 ms abklingendes Knacken) und nur noch abspielen – keine neuen Klangquellen pro Raster
+      if (!this._clk) {
+        const n = Math.round(ac.sampleRate * 0.005), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = Math.sin(i / ac.sampleRate * 2 * Math.PI * 2100) * Math.pow(1 - i / n, 3) * 0.12;
+        this._clk = buf;
+      }
+      const src = ac.createBufferSource();
+      src.buffer = this._clk; src.connect(ac.destination); src.start();
     } catch (e) { /* ohne Ton weiter */ }
   }
   _scaleInit() {
@@ -559,6 +564,7 @@ class NovaTimerCard extends HTMLElement {
     });
     const up = ev => {
       if (!this._drag) return;
+      if (!moved && ev.type !== 'pointerup') { this._drag = false; return; }
       if (!moved) {
         // Antippen: oberhalb der Marke = kürzer, unterhalb = länger
         const r = sc.getBoundingClientRect(), i = Math.max(0, Math.min(this._vals.length - 1, this._idx + (ev.clientY < r.top + r.height / 2 ? -1 : 1)));
@@ -588,6 +594,7 @@ class NovaTimerCard extends HTMLElement {
     };
     sc.addEventListener('pointerup', up);
     sc.addEventListener('pointercancel', up);
+    sc.addEventListener('lostpointercapture', ev => { if (this._drag && !this._fling) up(ev); });
     // Swipe Card & Co. nicht mitwischen lassen
     ['touchstart', 'touchmove'].forEach(t => sc.addEventListener(t, ev => ev.stopPropagation(), {passive: true}));
     sc.addEventListener('wheel', ev => { ev.preventDefault(); this._drag = true; this._nudge(ev.deltaY > 0 ? 1 : -1); this._drag = false; }, {passive: false});
