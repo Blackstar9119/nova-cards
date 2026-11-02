@@ -17,7 +17,7 @@ import {dialDefs, dialBody, dialGlass, crown, bellBadge, DIAL_CSS} from './share
 const DEF = {presets: [1, 5, 10, 15], show_presets: true, show_custom: true, custom_units: 'auto', custom_picker: 'scale', scale_max: 180, click_sound: true, custom_input: true, show_add: true, color: 'accent-1', alarm_color: 'accent-2',
   alarm_minutes: 10, layout: 'full', animation: true, glow: true};
 const CX = 100, CY = 112, R = 80, RING = 58;
-const SP = 14; // Abstand der Skalenstriche in px
+const SP = 10; // Abstand der Skalenstriche in px
 // Eingabe im Zahlenfeld: „5“ = 5 Min, „5:30“ = 5 Min 30 s, „1:05:00“ = 1 Std 5 Min
 const parseIn = x => {
   const p = String(x).trim().replace(',', ':').split(/[:.\s]+/).filter(Boolean).map(Number);
@@ -91,14 +91,17 @@ display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;fo
 .rd.in b{cursor:text}
 .rd input{width:100%;max-width:6.5em;box-sizing:border-box;font:inherit;font-size:clamp(20px,7cqw,36px);font-weight:600;text-align:center;color:inherit;background:var(--nv-chip);border:1px solid color-mix(in srgb,var(--dc) 60%,transparent);border-radius:12px;padding:6px;outline:none}
 .scl{position:relative;overflow:hidden;min-height:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;cursor:grab;outline:none;user-select:none;-webkit-user-select:none;
--webkit-mask-image:linear-gradient(transparent,#000 24%,#000 76%,transparent);mask-image:linear-gradient(transparent,#000 24%,#000 76%,transparent)}
+contain:strict}
+/* Abdunkeln oben/unten als feste Ebene darüber – eine Maske müsste bei jeder Bewegung neu gerechnet werden (ruckelt auf schwachen Geräten) */
+.scl::before,.scl::after{content:'';position:absolute;left:0;right:0;height:26%;z-index:1;pointer-events:none}
+.scl::before{top:0;background:linear-gradient(rgba(0,0,0,.35),transparent)}.scl::after{bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.35))}
 .scl:focus-visible{border-color:color-mix(in srgb,var(--dc) 70%,transparent)}
 .scl .str{position:absolute;left:0;right:0;top:0;height:0;will-change:transform}
 .scl .str.snap{transition:transform .22s cubic-bezier(.2,.8,.3,1)}
 .scl i{position:absolute;left:10px;width:16%;height:1.5px;margin-top:-.75px;background:rgba(255,255,255,.2)}
 .scl i.m{width:34%;background:rgba(255,255,255,.5)}
 .scl b{position:absolute;left:calc(10px + 34% + 8px);height:16px;margin-top:-8px;line-height:16px;font-size:13px;font-weight:600;opacity:.7;font-variant-numeric:tabular-nums;white-space:nowrap}
-.scl .mk{position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:var(--dc);box-shadow:0 0 8px color-mix(in srgb,var(--dc) 60%,transparent);pointer-events:none}
+.scl .mk{z-index:2;position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:var(--dc);box-shadow:0 0 8px color-mix(in srgb,var(--dc) 60%,transparent);pointer-events:none}
 .scl .mk::before{content:'';position:absolute;left:0;top:-5px;border:6px solid transparent;border-left:7px solid var(--dc);border-right:0}
 /* Eigene Zeit: je Einheit [−] 05 Min [+] nebeneinander, so hoch wie Schnellwahl + Knöpfe – die Karte wächst nicht */
 .stps{display:flex;gap:8px}
@@ -474,7 +477,8 @@ class NovaTimerCard extends HTMLElement {
   }
   _fmt(t) { const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60, p = n => String(n).padStart(2, '0'); return h ? `${h}:${p(m)}:${p(s)}` : `${m}:${p(s)}`; }
   _idxOf(t) { const v = this._vals; let b = 0; v.forEach((x, i) => { if (Math.abs(x - t) < Math.abs(v[b] - t)) b = i; }); return b; }
-  _mid() { return (this._e.scl.clientHeight || 0) / 2; }
+  // Höhe nur beim Öffnen/Anfassen messen – nie während der Bewegung (kein erzwungenes Layout pro Bild)
+  _mid(fresh) { if (fresh || !this._midC) this._midC = (this._e.scl.clientHeight || 0) / 2; return this._midC; }
   _offOf(i) { return this._mid() - i * SP; }
   _clampOff(o) { return Math.max(this._offOf(this._vals.length - 1), Math.min(this._offOf(0), o)); }
   _move(o, snap) {
@@ -500,6 +504,7 @@ class NovaTimerCard extends HTMLElement {
   // Zeit setzen und Skala dorthin stellen (exakte Werte aus dem Zahlenfeld bleiben exakt, die Skala zeigt das nächste Raster)
   _scaleTo(t, snap) {
     if (!this._e) return;
+    this._mid(true);
     this._sec = t; this._idx = this._idxOf(t);
     this._move(this._offOf(this._idx), snap);
     this._showSec();
@@ -524,27 +529,33 @@ class NovaTimerCard extends HTMLElement {
   }
   _scaleInit() {
     const e = this._e, sc = e.scl;
-    let y0 = 0, o0 = 0, moved = false, pts = [];
+    let y0 = 0, ly = 0, lt = 0, moved = false, pts = [], want = null, frame = 0;
+    // Bewegung pro Bild bündeln: viele pointermove-Events, aber nur ein transform je Bild
+    const flush = () => { frame = 0; if (want == null) return; this._move(want, false); this._hit(want); };
     sc.addEventListener('pointerdown', ev => {
       if (ev.button > 0) return;
       ev.preventDefault(); ev.stopPropagation();
       // Ton erst nach einer Berührung möglich (Autoplay-Regeln der Browser)
       if (this._c.click_sound !== false && !this._ac) { const A = window.AudioContext || window.webkitAudioContext; if (A) try { this._ac = new A(); } catch (x) { this._ac = null; } }
       this._ac?.resume?.().catch(() => {});
-      this._stopFling();
+      this._stopFling(); this._fling = false;
       sc.setPointerCapture?.(ev.pointerId);
-      this._drag = true; moved = false; y0 = ev.clientY; o0 = this._off ?? this._offOf(this._idx || 0); pts = [[ev.timeStamp, ev.clientY]];
-      this._move(o0, false);
+      this._mid(true);
+      this._drag = true; moved = false; y0 = ly = ev.clientY; lt = ev.timeStamp; want = this._off ?? this._offOf(this._idx || 0); pts = [[ev.timeStamp, want]];
+      this._move(want, false);
       sc.focus({preventScroll: true});
     });
     sc.addEventListener('pointermove', ev => {
       if (!this._drag || this._fling) return;
-      const dy = ev.clientY - y0;
-      if (Math.abs(dy) > 4) moved = true;
+      if (!moved && Math.abs(ev.clientY - y0) > 4) moved = true;
       if (!moved) return;
-      const o = this._clampOff(o0 + dy);
-      this._move(o, false); this._hit(o);
-      pts.push([ev.timeStamp, ev.clientY]); if (pts.length > 6) pts.shift();
+      // Beschleunigung: schnelles Ziehen legt mehr Weg zurück (wie ein Mauszeiger), langsames bleibt fein
+      const dy = ev.clientY - ly, dt = Math.max(1, ev.timeStamp - lt), sp = Math.abs(dy) / dt;
+      ly = ev.clientY; lt = ev.timeStamp;
+      const gain = 1 + Math.min(4, Math.max(0, sp - 0.15) * 3);
+      want = this._clampOff(want + dy * gain);
+      pts.push([ev.timeStamp, want]); if (pts.length > 8) pts.shift();
+      if (!frame) frame = requestAnimationFrame(flush);
     });
     const up = ev => {
       if (!this._drag) return;
@@ -554,10 +565,13 @@ class NovaTimerCard extends HTMLElement {
         this._move(this._offOf(i), true); this._hit(this._offOf(i)); this._drag = false; return;
       }
       // Schwung: Geschwindigkeit der letzten ~100 ms, läuft mit Reibung aus, dann einrasten
+      if (frame) { cancelAnimationFrame(frame); flush(); }
+      // Geschwindigkeit aus der zurückgelegten Strecke der Skala (inkl. Beschleunigung)
       const last = pts.at(-1), first = pts.find(p => last[0] - p[0] <= 100) || pts[0];
       let v = last[0] > first[0] ? (last[1] - first[1]) / (last[0] - first[0]) : 0;
       const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (calm || Math.abs(v) < 0.25 || ev.type === 'pointercancel') { this._snap(); this._drag = false; return; }
+      if (ev.timeStamp - last[0] > 120) v = 0;
+      if (calm || Math.abs(v) < 0.2 || ev.type === 'pointercancel') { this._snap(); this._drag = false; return; }
       let t0 = performance.now();
       this._fling = true;
       const step = now => {
@@ -565,9 +579,9 @@ class NovaTimerCard extends HTMLElement {
         let o = this._off + v * dt;
         const c = this._clampOff(o);
         if (c !== o) { o = c; v = 0; }
-        v *= Math.pow(0.94, dt / 16);
+        v *= Math.pow(0.965, dt / 16);
         this._move(o, false); this._hit(o);
-        if (Math.abs(v) > 0.03) this._raf = requestAnimationFrame(step);
+        if (Math.abs(v) > 0.05) this._raf = requestAnimationFrame(step);
         else { this._raf = 0; this._fling = false; this._snap(); this._drag = false; }
       };
       this._raf = requestAnimationFrame(step);
