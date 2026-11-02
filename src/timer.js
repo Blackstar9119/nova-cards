@@ -14,10 +14,12 @@ import {dialDefs, dialBody, dialGlass, crown, bellBadge, DIAL_CSS} from './share
    Steuert einen Timer-Helfer (timer.*): Starten mit Schnellwahl oder eigener Zeit, Pause, Weiter, +1 Minute, Abbrechen.
    Der Timer läuft in Home Assistant – alle Geräte zeigen denselben Stand, ein Neuladen ändert nichts.
    Zeichnung: Stoppuhr im Nova-Stil, der Ring zeigt die Restzeit. Abgelaufen = Klingel-Animation und Hinweis, bis man ihn bestätigt. */
-const DEF = {presets: [1, 5, 10, 15], show_presets: true, show_custom: true, custom_units: 'auto', custom_picker: 'scale', scale_max: 180, click_sound: true, custom_input: true, show_add: true, color: 'accent-1', alarm_color: 'accent-2',
+const DEF = {presets: [1, 5, 10, 15], show_presets: true, show_custom: true, custom_units: 'auto', custom_picker: 'scale', scale_max: 180, scale_speed: 'normal', click_sound: true, custom_input: true, show_add: true, color: 'accent-1', alarm_color: 'accent-2',
   alarm_minutes: 10, layout: 'full', animation: true, glow: true};
 const CX = 100, CY = 112, R = 80, RING = 58;
 const SP = 10; // Abstand der Skalenstriche in px
+// Tempo der Skala: Beschleunigung beim schnellen Ziehen (bis zu max-fach) und Reibung beim Auslaufen
+const SPEED = {slow: {k: 0.8, max: 1, fr: 0.94}, normal: {k: 1.5, max: 2, fr: 0.955}, fast: {k: 3, max: 4, fr: 0.965}};
 // Eingabe im Zahlenfeld: „5“ = 5 Min, „5:30“ = 5 Min 30 s, „1:05:00“ = 1 Std 5 Min
 const parseIn = x => {
   const p = String(x).trim().replace(',', ':').split(/[:.\s]+/).filter(Boolean).map(Number);
@@ -558,7 +560,7 @@ class NovaTimerCard extends HTMLElement {
       // Beschleunigung: schnelles Ziehen legt mehr Weg zurück (wie ein Mauszeiger), langsames bleibt fein
       const dy = ev.clientY - ly, dt = Math.max(1, ev.timeStamp - lt), sp = Math.abs(dy) / dt;
       ly = ev.clientY; lt = ev.timeStamp;
-      const gain = 1 + Math.min(4, Math.max(0, sp - 0.15) * 3);
+      const S = SPEED[this._c.scale_speed] || SPEED.normal, gain = 1 + Math.min(S.max, Math.max(0, sp - 0.15) * S.k);
       want = this._clampOff(want + dy * gain);
       pts.push([ev.timeStamp, want]); if (pts.length > 8) pts.shift();
       if (!frame) frame = requestAnimationFrame(flush);
@@ -586,7 +588,7 @@ class NovaTimerCard extends HTMLElement {
         let o = this._off + v * dt;
         const c = this._clampOff(o);
         if (c !== o) { o = c; v = 0; }
-        v *= Math.pow(0.965, dt / 16);
+        v *= Math.pow((SPEED[this._c.scale_speed] || SPEED.normal).fr, dt / 16);
         this._move(o, false); this._hit(o);
         if (Math.abs(v) > 0.05) this._raf = requestAnimationFrame(step);
         else { this._raf = 0; this._fling = false; this._snap(); this._drag = false; }
@@ -654,7 +656,7 @@ const S_START = [
   {name: 'presets', selector: T},
   g2({name: 'show_custom', selector: {boolean: {}}}, sel('custom_picker', [['scale', 'Skala zum Ziehen'], ['buttons', 'Plus / Minus']])),
   g2({name: 'scale_max', selector: {number: {min: 5, max: 1440, step: 5, mode: 'box', unit_of_measurement: 'min'}}}, {name: 'click_sound', selector: {boolean: {}}}),
-  {name: 'custom_input', selector: {boolean: {}}},
+  g2(sel('scale_speed', [['slow', 'Langsam'], ['normal', 'Normal'], ['fast', 'Schnell']]), {name: 'custom_input', selector: {boolean: {}}}),
   sel('custom_units', [['auto', 'Automatisch'], ['h', 'Nur Stunden'], ['m', 'Nur Minuten'], ['s', 'Nur Sekunden'], ['hm', 'Stunden und Minuten'], ['ms', 'Minuten und Sekunden'], ['hms', 'Stunden, Minuten, Sekunden']]),
   {name: 'show_add', selector: {boolean: {}}},
 ];
@@ -669,7 +671,7 @@ const S_LOOK = [
 const S_ACT = [{name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}];
 const LABELS = {
   entity: 'Timer-Helfer', name: 'Name', icon: 'Icon', show_presets: 'Schnellwahl-Knöpfe zeigen', presets: 'Schnellwahl (Minuten, mit Komma)',
-  show_custom: 'Knopf „Eigene Zeit“ zeigen', custom_picker: 'Eigene Zeit einstellen mit', scale_max: 'Skala bis', click_sound: 'Klick-Geräusch beim Drehen', custom_input: 'Zeit antippen = eintippen', custom_units: 'Plus / Minus in', show_add: 'Knopf „+1 Min“ während der Timer läuft', alarm_text: 'Text beim Ablauf',
+  show_custom: 'Knopf „Eigene Zeit“ zeigen', custom_picker: 'Eigene Zeit einstellen mit', scale_max: 'Skala bis', scale_speed: 'Tempo der Skala', click_sound: 'Klick-Geräusch beim Drehen', custom_input: 'Zeit antippen = eintippen', custom_units: 'Plus / Minus in', show_add: 'Knopf „+1 Min“ während der Timer läuft', alarm_text: 'Text beim Ablauf',
   alarm_color: 'Farbe beim Ablauf', alarm_minutes: 'Hinweis anzeigen für', layout: 'Darstellung', color: 'Farbe',
   animation: 'Animationen', glow: 'Rahmen leuchtet, solange der Timer läuft', tap_action: 'Kopfzeile antippen', hold_action: 'Lange drücken',
 };
@@ -677,6 +679,7 @@ const HELPERS = {
   entity: 'Ein Timer-Helfer läuft in Home Assistant – alle Geräte zeigen dieselbe Zeit. Anlegen unter Einstellungen → Geräte & Dienste → Helfer → Timer.',
   presets: 'z. B. „1, 5, 10, 15“. Auch „30s“ oder „1h“ geht. Höchstens 8.',
   custom_picker: 'Skala: wie ein Radio-Tuner hoch und runter ziehen, schnelles Wischen läuft mit Schwung aus. Raster bis 5 Min 15 Sekunden, bis 15 Min 30 Sekunden, bis 60 Min 1 Minute, darüber 5 Minuten.',
+  scale_speed: 'Wie weit schnelles Ziehen und Wischen die Skala dreht. Langsames Ziehen bleibt immer fein.',
   click_sound: 'Leiser Klick pro Raster (und Vibration, wo das Gerät es kann).',
   custom_input: 'Antippen der großen Zeit öffnet ein Zahlenfeld: „5“ = 5 Minuten, „5:30“, „1:05:00“.',
   custom_units: 'Nur für Plus / Minus. Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. Gibt es keine größere Einheit, geht die kleinere weiter: „Nur Minuten“ bis 180, „Nur Sekunden“ bis 59:55.',

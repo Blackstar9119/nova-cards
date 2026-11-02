@@ -2059,6 +2059,7 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,o
     custom_units: "auto",
     custom_picker: "scale",
     scale_max: 180,
+    scale_speed: "normal",
     click_sound: true,
     custom_input: true,
     show_add: true,
@@ -2074,6 +2075,7 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,o
   var R = 80;
   var RING = 58;
   var SP = 10;
+  var SPEED = { slow: { k: 0.8, max: 1, fr: 0.94 }, normal: { k: 1.5, max: 2, fr: 0.955 }, fast: { k: 3, max: 4, fr: 0.965 } };
   var parseIn = (x) => {
     const p = String(x).trim().replace(",", ":").split(/[:.\s]+/).filter(Boolean).map(Number);
     if (!p.length || p.some((n) => !Number.isFinite(n) || n < 0)) return 0;
@@ -2798,7 +2800,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         const dy = ev.clientY - ly, dt = Math.max(1, ev.timeStamp - lt), sp = Math.abs(dy) / dt;
         ly = ev.clientY;
         lt = ev.timeStamp;
-        const gain = 1 + Math.min(4, Math.max(0, sp - 0.15) * 3);
+        const S = SPEED[this._c.scale_speed] || SPEED.normal, gain = 1 + Math.min(S.max, Math.max(0, sp - 0.15) * S.k);
         want = this._clampOff(want + dy * gain);
         pts.push([ev.timeStamp, want]);
         if (pts.length > 8) pts.shift();
@@ -2841,7 +2843,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
             o = c;
             v = 0;
           }
-          v *= Math.pow(0.965, dt / 16);
+          v *= Math.pow((SPEED[this._c.scale_speed] || SPEED.normal).fr, dt / 16);
           this._move(o, false);
           this._hit(o);
           if (Math.abs(v) > 0.05) this._raf = requestAnimationFrame(step);
@@ -2943,7 +2945,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
     { name: "presets", selector: T },
     g2({ name: "show_custom", selector: { boolean: {} } }, sel("custom_picker", [["scale", "Skala zum Ziehen"], ["buttons", "Plus / Minus"]])),
     g2({ name: "scale_max", selector: { number: { min: 5, max: 1440, step: 5, mode: "box", unit_of_measurement: "min" } } }, { name: "click_sound", selector: { boolean: {} } }),
-    { name: "custom_input", selector: { boolean: {} } },
+    g2(sel("scale_speed", [["slow", "Langsam"], ["normal", "Normal"], ["fast", "Schnell"]]), { name: "custom_input", selector: { boolean: {} } }),
     sel("custom_units", [["auto", "Automatisch"], ["h", "Nur Stunden"], ["m", "Nur Minuten"], ["s", "Nur Sekunden"], ["hm", "Stunden und Minuten"], ["ms", "Minuten und Sekunden"], ["hms", "Stunden, Minuten, Sekunden"]]),
     { name: "show_add", selector: { boolean: {} } }
   ];
@@ -2965,6 +2967,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
     show_custom: "Knopf „Eigene Zeit“ zeigen",
     custom_picker: "Eigene Zeit einstellen mit",
     scale_max: "Skala bis",
+    scale_speed: "Tempo der Skala",
     click_sound: "Klick-Geräusch beim Drehen",
     custom_input: "Zeit antippen = eintippen",
     custom_units: "Plus / Minus in",
@@ -2983,6 +2986,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
     entity: "Ein Timer-Helfer läuft in Home Assistant – alle Geräte zeigen dieselbe Zeit. Anlegen unter Einstellungen → Geräte & Dienste → Helfer → Timer.",
     presets: "z. B. „1, 5, 10, 15“. Auch „30s“ oder „1h“ geht. Höchstens 8.",
     custom_picker: "Skala: wie ein Radio-Tuner hoch und runter ziehen, schnelles Wischen läuft mit Schwung aus. Raster bis 5 Min 15 Sekunden, bis 15 Min 30 Sekunden, bis 60 Min 1 Minute, darüber 5 Minuten.",
+    scale_speed: "Wie weit schnelles Ziehen und Wischen die Skala dreht. Langsames Ziehen bleibt immer fein.",
     click_sound: "Leiser Klick pro Raster (und Vibration, wo das Gerät es kann).",
     custom_input: "Antippen der großen Zeit öffnet ein Zahlenfeld: „5“ = 5 Minuten, „5:30“, „1:05:00“.",
     custom_units: "Nur für Plus / Minus. Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. Gibt es keine größere Einheit, geht die kleinere weiter: „Nur Minuten“ bis 180, „Nur Sekunden“ bis 59:55.",

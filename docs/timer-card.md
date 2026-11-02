@@ -75,6 +75,7 @@ Aktion z. B. eine Benachrichtigung oder Ansage. So kommt der Ton genau einmal, e
 | `show_custom` | `true` | Knopf „Eigene Zeit“ |
 | `custom_picker` | `scale` | Eigene Zeit mit `scale` (senkrechte Skala zum Ziehen; Raster bis 5 Min 15 s, bis 15 Min 30 s, bis 60 Min 1 Min, darüber 5 Min) oder `buttons` (Plus/Minus je Einheit) |
 | `scale_max` | `180` | Skala reicht bis so viele Minuten |
+| `scale_speed` | `normal` | Tempo der Skala beim schnellen Ziehen/Wischen: `slow`, `normal`, `fast` |
 | `click_sound` | `true` | Leiser Klick pro Raster, dazu Vibration, wo das Gerät es kann |
 | `custom_input` | `true` | Große Zeit antippen öffnet ein Zahlenfeld („5“ = 5 Min, „5:30“, „1:05:00“) |
 | `custom_units` | `auto` | Nur für Plus/Minus – Eigene Zeit in: `h`, `m`, `s` oder kombiniert `hm`, `ms`, `hms`. Fehlt die größere Einheit, geht die kleinere weiter (nur Minuten bis 180, nur Sekunden bis 59:55). `auto` = groß Std/Min/Sek, kompakt Min/Sek |
