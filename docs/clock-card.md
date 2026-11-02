@@ -31,6 +31,19 @@ show_weekday: false
 show_date: false
 ```
 
+## Wenn Temperatur und Luftfeuchte klein unter der Uhr stehen sollen, dann so
+
+Im Editor unter „Anzeige“ bei „Werte unter der Uhr“ die Sensoren auswählen. Sie erscheinen als dezente Zeile mit Icon.
+
+```yaml
+type: custom:nova-clock-card
+show_weekday: false
+show_date: false
+entities:
+  - sensor.kuche_temperatur
+  - sensor.kuche_luftfeuchtigkeit
+```
+
 ## Wenn die Uhr ohne Kartenhintergrund auf dem Dashboard stehen soll, dann so
 
 ```yaml
@@ -48,6 +61,7 @@ glass: false
 | `analog_digital` | `false` | Nur analog: zusätzlich die digitale Zeit neben dem Zifferblatt |
 | `show_weekday` | `true` | Wochentag |
 | `show_date` | `true` | Datum |
+| `entities` | – | Werte unter der Uhr, z. B. Temperatur und Feuchte. Einträge als Entität oder `{entity, name, icon, unit, decimals}` |
 | `date_format` | `long` | `long` (2. November), `short` (2. Nov.) oder `numeric` (02.11.2026) |
 | `time_format` | `auto` | `auto` (wie im Profil), `24` oder `12` |
 | `color` | `accent-1` | Farbrolle für den Sekundenzeiger der analogen Uhr |

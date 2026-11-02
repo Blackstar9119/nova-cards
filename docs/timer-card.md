@@ -24,6 +24,7 @@ entity: timer.kuche_timer
 ## Wenn du andere Schnellwahl-Knöpfe willst, dann so
 
 Im Editor unter „Schnellwahl und Knöpfe“ die Minuten mit Komma eintragen. `30s` sind Sekunden, `1h` eine Stunde.
+Volle Minuten stehen auf den Knöpfen nur als Zahl (`1`, `5`, `10` …), damit sie auch auf kleinen Displays passen.
 
 ```yaml
 type: custom:nova-timer-card

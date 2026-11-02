@@ -1,17 +1,17 @@
 import {define, docUrl, tag} from './shared/define.js';
-import {esc} from './shared/utils.js';
-import {langOf, tzOf} from './shared/state.js';
+import {esc, setIcon} from './shared/utils.js';
+import {langOf, tzOf, iconOf, valueOf} from './shared/state.js';
 import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS, roleVars} from './shared/styles.js';
-import {inPicker, watchVisible} from './shared/lifecycle.js';
+import {inPicker, watchVisible, hassChanged} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, A, sel, ROLE} from './shared/editor-schema.js';
 import {sweep} from './shared/scene.js';
 import {dialDefs, dialBody, dialGlass, DIAL_CSS} from './shared/dial.js';
 
 /* ---------- Nova Uhr Card ----------
-   Uhrzeit digital oder analog, optional mit Sekunden, Wochentag und Datum. Sprache, 12/24 h und Zeitzone wie im HA-Profil.
+   Uhrzeit digital oder analog, optional mit Sekunden, Wochentag, Datum und einer dezenten Werte-Zeile (z. B. Temperatur, Feuchte). Sprache, 12/24 h und Zeitzone wie im HA-Profil.
    Ein einziger Zeitgeber, der genau zum nächsten Sekunden- bzw. Minutenwechsel feuert – und nur, solange die Karte zu sehen ist. */
 const DEF = {mode: 'digital', show_seconds: false, show_weekday: true, show_date: true, date_format: 'long', time_format: 'auto', color: 'accent-1', glass: true};
 const C = 100, R = 92;
@@ -32,7 +32,13 @@ const CCSS = `${DIAL_CSS}
 .scene .cap{fill:url(#k-cr);stroke:rgba(255,255,255,.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
 .scene .hsh{fill:#000;opacity:.25}
 [hidden]{display:none!important}
-@container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}.row .txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}}
+@container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}.row .inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:clamp(12px,4.2cqw,17px);opacity:.75;font-variant-numeric:tabular-nums;white-space:nowrap}
+.inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
+.row .inf{justify-content:flex-start}
+.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}}
+.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:clamp(12px,4.2cqw,17px);opacity:.75;font-variant-numeric:tabular-nums;white-space:nowrap}
+.inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
+.row .inf{justify-content:flex-start}
 .txt{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0;max-width:100%}`;
 
 // Zeiger: Stunde, Minute (Chrom), Sekunde (Farbrolle) mit Gegengewicht; Schatten leicht versetzt
@@ -50,16 +56,20 @@ class NovaClockCard extends HTMLElement {
   setConfig(c) {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     this._c = {...DEF, ...c};
+    // Werte-Zeile: Liste aus Entitäten (Text oder {entity, name, icon})
+    this._ents = (Array.isArray(c.entities) ? c.entities : []).map(x => typeof x === 'string' ? {entity: x} : {...x}).filter(x => x.entity);
+    this._ids = this._ents.map(x => x.entity);
     this._fmtKey = null;
-    if (this._e) { this._layout(); this._draw(); this._plan(); }
+    if (this._e) { this._layout(); this._draw(); this._vals(); this._plan(); }
   }
   // Nur Sprache, Zeitformat und Zeitzone aus hass sind wichtig – Zustände nicht
   set hass(h) {
     const old = this._h;
     this._h = h;
     if (!this._c) return;
-    if (!this._e) { this._build(); this._draw(); this._plan(); return; }
+    if (!this._e) { this._build(); this._draw(); this._vals(); this._plan(); return; }
     if (!old || old.locale !== h.locale || old.config !== h.config || old.language !== h.language) { this._fmtKey = null; this._draw(); }
+    if (this._ents.length && hassChanged(old, h, this._ids)) this._vals();
   }
   connectedCallback() {
     this._quiet = inPicker(this);
@@ -79,9 +89,9 @@ class NovaClockCard extends HTMLElement {
   _build() {
     const r = this.shadowRoot || this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${CCSS}</style><div class="g ck"><div class="ana">${SVG}</div>
-<div class="txt"><div class="nm"></div><div class="tm"></div><div class="dt"></div></div></div>`;
+<div class="txt"><div class="nm"></div><div class="tm"></div><div class="dt"></div><div class="inf"></div></div></div>`;
     const q = s => r.querySelector(s);
-    this._e = {g: q('.g'), ana: q('.ana'), nm: q('.nm'), tm: q('.tm'), dt: q('.dt'), hh: q('.hh'), mh: q('.mh'), sh: q('.sh')};
+    this._e = {g: q('.g'), ana: q('.ana'), nm: q('.nm'), tm: q('.tm'), dt: q('.dt'), inf: q('.inf'), hh: q('.hh'), mh: q('.mh'), sh: q('.sh')};
     const act = () => ({tap_action: this._c.tap_action, hold_action: this._c.hold_action});
     press(this._e.g, {tap: () => runAction(this, act(), 'tap', true), hold: () => runAction(this, act(), 'hold')});
     this._layout();
@@ -91,11 +101,25 @@ class NovaClockCard extends HTMLElement {
     e.g.style.setProperty('--kc', rv.c);
     e.ana.hidden = !an;
     e.tm.hidden = an && !c.analog_digital;
-    e.g.classList.toggle('row', an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name));
     e.g.classList.toggle('flat', c.glass === false);
     this.classList.toggle('nv-flat', c.glass === false);
     e.nm.hidden = !c.name;
     e.nm.textContent = c.name || '';
+    e.inf.hidden = !this._ents.length;
+    e.inf.replaceChildren(...this._ents.map(() => { const sp = document.createElement('span'); sp.innerHTML = '<i></i><b></b>'; return sp; }));
+    e.g.classList.toggle('row', an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name || this._ents.length));
+  }
+  // Werte-Zeile: nur neu schreiben, wenn sich eine der Entitäten ändert
+  _vals() {
+    const e = this._e, h = this._h;
+    if (!e || !h || !this._ents.length) return;
+    this._ents.forEach((o, i) => {
+      const sp = e.inf.children[i], s = h.states[o.entity];
+      if (!sp) return;
+      setIcon(sp.firstChild, iconOf(h, o, 'mdi:information-outline'));
+      sp.lastChild.textContent = valueOf(h, s, o);
+      sp.title = o.name ?? s?.attributes.friendly_name ?? o.entity;
+    });
   }
   // Formatierer nur neu bauen, wenn sich Sprache/Zeitzone/Optionen ändern
   _fmts() {
@@ -150,6 +174,7 @@ const S_GEN = [
 const S_SHOW = c => [
   g2({name: 'show_seconds', selector: {boolean: {}}}, ...(c.mode === 'analog' ? [{name: 'analog_digital', selector: {boolean: {}}}] : [])),
   g2({name: 'show_weekday', selector: {boolean: {}}}, {name: 'show_date', selector: {boolean: {}}}),
+  {name: 'entities', selector: {entity: {multiple: true, domain: ['sensor', 'binary_sensor', 'input_number', 'number', 'input_text', 'input_select']}}},
   g2(sel('date_format', [['long', '2. November'], ['short', '2. Nov.'], ['numeric', '02.11.2026']]), sel('time_format', [['auto', 'Wie im Profil'], ['24', '24 Stunden'], ['12', '12 Stunden (AM/PM)']])),
 ];
 const S_LOOK = [g2(ROLE('color'), {name: 'glass', selector: {boolean: {}}})];
@@ -157,12 +182,13 @@ const S_ACT = [{name: 'tap_action', selector: A}, {name: 'hold_action', selector
 const LABELS = {
   mode: 'Art der Uhr', name: 'Überschrift (optional)', show_seconds: 'Sekunden', analog_digital: 'Zusätzlich digitale Zeit', show_weekday: 'Wochentag',
   show_date: 'Datum', date_format: 'Datumsformat', time_format: 'Zeitformat', color: 'Akzentfarbe', glass: 'Glas-Hintergrund',
-  tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken',
+  tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken', entities: 'Werte unter der Uhr',
 };
 const HELPERS = {
   show_seconds: 'Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.',
   color: 'Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.',
   glass: 'Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild.',
+  entities: 'Optional: z. B. Temperatur und Luftfeuchte – erscheinen klein in einer Zeile unter der Uhrzeit.',
 };
 
 class NovaClockCardEditor extends NovaEditorBase {

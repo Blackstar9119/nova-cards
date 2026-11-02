@@ -36,7 +36,8 @@ export const fmtLeft = s => {
 };
 // Schnellwahl: „1, 5, 10“ oder [1, 5, 10] in Minuten; „30s“ = Sekunden, „1h“ = Stunden
 const presetSecs = v => list(v).map(x => { const m = String(x).match(/^(\d+(?:[.,]\d+)?)\s*(s|sek|min|m|h|std)?$/i); if (!m) return null; const n = +m[1].replace(',', '.'); const u = (m[2] || 'min').toLowerCase(); return Math.round(n * (u[0] === 's' ? 1 : u[0] === 'h' ? 3600 : 60)); }).filter(n => n > 0).slice(0, 8);
-const presetLbl = s => s % 3600 === 0 ? `${s / 3600} h` : s % 60 === 0 ? `${s / 60} Min` : s > 60 ? fmtLeft(s) : `${s} s`;
+// Schnellwahl: volle Minuten nur als Zahl (Platz!), sonst mit Einheit
+const presetLbl = s => s % 3600 === 0 ? `${s / 3600} h` : s % 60 === 0 ? `${s / 60}` : s > 60 ? fmtLeft(s) : `${s} s`;
 
 const ICON = {play: 'mdi:play', pause: 'mdi:pause', stop: 'mdi:stop', plus: 'mdi:plus', tune: 'mdi:timer-edit-outline', ok: 'mdi:check', again: 'mdi:restart'};
 
@@ -120,6 +121,8 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 @container (max-width:340px){.main.n3 .bt2 ha-icon{display:none}.bt2{font-size:14px}}
 @container (max-width:260px){.main .bt2 span{display:none}.main .bt2 ha-icon{display:flex!important}}
 @container (min-width:400px){.full .bd{flex-direction:row;align-items:center}.full .dial{width:46%;max-width:var(--nova-timer-size,260px)}.full .ctl{flex:1}}
+/* Stoppuhr neben den Knöpfen, aber wenig Platz rechts: Hauptknöpfe untereinander, damit kein Text abgeschnitten wird */
+@container (min-width:400px) and (max-width:560px){.full .main{flex-direction:column}.full .main .bt2{flex:none;width:100%}}
 @keyframes tm-blink{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes tm-ring{0%,60%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-14deg)}20%,40%{transform:rotate(14deg)}}
 @keyframes tm-shake{0%,60%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-3deg)}20%,40%{transform:rotate(3deg)}}
@@ -334,7 +337,7 @@ class NovaTimerCard extends HTMLElement {
         e.pre.innerHTML = '';
         this._pre.forEach(sec => {
           const d = document.createElement('div');
-          d.className = 'bt2'; d.textContent = presetLbl(sec); d.title = `${presetLbl(sec)} starten`;
+          d.className = 'bt2'; d.textContent = presetLbl(sec); d.title = `${sec % 60 ? presetLbl(sec) : sec / 60 + ' Minuten'} starten`;
           press(d, {tap: () => this._start(sec)});
           e.pre.append(d);
         });

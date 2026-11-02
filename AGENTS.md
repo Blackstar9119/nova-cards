@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Navi,
-Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer und Uhr – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer und Uhr – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -24,6 +24,7 @@ src/
   weather.js          Nova Wetter Card + Editor (aktuelles Wetter + Vorhersage per weather/subscribe_forecast)
   popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten)
   area.js             Nova Bereich Card + Editor (Raumansicht: Kopfzeile, Raster aus beliebigen Karten)
+  swipe.js            Nova Swipe Card + Editor (Seiten zum Wischen, je Seite ein Raster aus beliebigen Karten, Seiten-Punkte)
   chips.js            Nova Chips Card + Editor (Reihe aus Wert- und Knopf-Chips)
   appliance.js        Nova Gerät Card + Editor (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Allgemein)
   printer.js          Nova 3D-Drucker Card + Editor (Bambu Lab: Druckerzeichnung im P2S-Stil, AMS, Kamera, Meldungen, Demo-Modus)
@@ -49,7 +50,7 @@ src/
     dial.js           Runde Zeichnungen im Nova-Stil: Gehäuse, Chromring, Zifferblatt, Fortschrittsring, Glas, Stoppuhr-Krone,
                       Glocken-Badge – genutzt von Timer und Uhr
     card-grid.js      Raster aus beliebigen Karten (rows/cells, Karten erzeugen, Übergabe in der Vorschau) und Info-Chips –
-                      Kartenseite von Pop-up und Bereich
+                      Kartenseite von Pop-up, Bereich und Swipe
     card-grid-editor.js  Editorseite dazu: Vorlagen, Miniatur-Raster, Kartenauswahl, Karteneditor, YAML (Mixin GridEditor)
     chips.js          Nova Chips: Wert- und Knopf-Chips (Darstellung, Schnellauswahl wie „Alle Lichter im Raum aus“,
                       Editor-Schema) – für die Chips Card, später auch Pop-up
@@ -135,12 +136,13 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 
 | Stelle | Datei | Fallback |
 |---|---|---|
-| `window.loadCardHelpers()` → `createCardElement` | `card-grid.js` (Karten in Zellen), `editor-base.js` | Fehler nur in der betroffenen Zelle |
+| `window.loadCardHelpers()` → `createCardElement` | `card-grid.js` (Karten in Zellen, auch Swipe), `editor-base.js` | Fehler nur in der betroffenen Zelle |
 | `hui-card-picker` (Kartenauswahl) | `card-grid-editor.js` | neue Karte als YAML eintragen |
 | `ha-dialog` (Fenster für die Kartenauswahl, Slots `footer`, Attribut `header-title`, Event `closed`) und `ha-dialog-footer` | `card-grid-editor.js` (`_openPicker`) | neue Karte als YAML eintragen |
 | Nachladen von Picker/Karteneditor über `getConfigElement()` der `vertical-stack`-Karte | `card-grid-editor.js` (`loadHaEditors`) | nach 3 s ohne, dann greifen die Fallbacks |
 | `hui-card-element-editor` (Karteneditor) | `card-grid-editor.js` | YAML-Feld |
 | `ha-yaml-editor` | `card-grid-editor.js` | Textfeld im JSON-Format |
+| Elementnamen `ha-slider`, `ha-control-slider` (Regler erkennen, damit Wischen sie nicht stört) | `swipe.js` | Erkennung über `input[type=range]`, `role=slider` und `touch-action` |
 | `getStubConfig()` der Kartenklassen (`hui-<typ>-card`) | `popup.js` | nur `{type}` |
 | Elementnamen `hui-card-preview`, `hui-dialog-edit-card`, `hui-card-options`, `hui-card-edit-mode` … | `card-grid.js` (Pop-up, Bereich), `navi.js` | Karte gilt als normal eingebunden |
 | WebSocket `lovelace/config` | `popup-hub.js` (Pop-ups für Nova Navi und Raum-Karte), `navi.js` | keine Pop-ups/Einträge aus dem Dashboard |

@@ -11,6 +11,7 @@ import './waste.js';
 import './weather.js';
 import './popup.js';
 import './area.js';
+import './swipe.js';
 import './chips.js';
 import './appliance.js';
 import './printer.js';
