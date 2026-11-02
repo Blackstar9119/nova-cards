@@ -48,6 +48,15 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
   }
+  var fitLabels = (root, sel2, collapse) => root?.querySelectorAll(sel2).forEach((k) => {
+    if (collapse) k.style.display = "";
+    const cut = k.offsetParent !== null && k.scrollWidth > k.clientWidth + 1;
+    if (collapse) k.style.display = cut ? "none" : "";
+    else k.style.visibility = cut ? "hidden" : "";
+    const p = k.parentElement;
+    if (cut) p.title = k.textContent;
+    else if (p.title === k.textContent) p.removeAttribute("title");
+  });
 
   // src/shared/state.js
   var OFF = /* @__PURE__ */ new Set(["off", "unavailable", "unknown", "idle", "docked", "standby", "closed", "paused", "not_home", "none", "ready"]);
@@ -9469,11 +9478,16 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
         this._io.observe(this);
       } else this._inView = true;
       this._tick();
+      if ("ResizeObserver" in window) {
+        this._ro ||= new ResizeObserver(() => this._fitLbl());
+        this._ro.observe(this);
+      }
       if (this._fat && this._e) this._update();
     }
     disconnectedCallback() {
       document.removeEventListener("visibilitychange", this._onVis);
       this._io?.disconnect();
+      this._ro?.disconnect();
       this._inView = false;
       this._tick();
       Object.values(this._pend || {}).forEach((p) => clearTimeout(p.t));
@@ -9923,6 +9937,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         else if (u.kind === "btn") return;
         else v.textContent = valueOf(h, s, o);
       });
+      this._fitLbl();
+    }
+    // Regler-Namen, die nicht passen, ausblenden statt abschneiden (nur Icon + Wert)
+    _fitLbl() {
+      if (this._e?.ctls) fitLabels(this._e.ctls, ".ct .kv .k, .ct .row .k");
     }
     // Knöpfe nur mit eingetragener, verfügbarer Entität; Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen
     _actUp(cls) {
@@ -12430,7 +12449,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         const [k, l] = x.split("|");
         return `<div class="stp" data-k="${k}"><small>${l}</small><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div><span class="v"></span><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div></div>`;
       }).join("")}</div>
-<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:play"></ha-icon><span>Starten</span></div></div></div>
+<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:check"></ha-icon><span>Übernehmen</span></div></div></div>
 </div></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
@@ -12466,16 +12485,21 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       press(q(".cgo"), { tap: () => {
         const { h, m, s } = this._cust, u = this._units(), sec = (u.includes("h") ? h : 0) * 3600 + m * 60 + (u.includes("s") ? s : 0);
         if (sec > 0) {
+          this._armed = sec;
           this._showCust = false;
-          this._start(sec);
+          this._key = null;
+          this._render();
         }
       } });
       if ("ResizeObserver" in window) {
         this._ro = new ResizeObserver((es) => {
-          const w = es[0].contentRect.width;
-          if (w) this._e.dial.style.setProperty("--dw", `${w}px`);
+          es.forEach((x) => {
+            if (x.target === this._e.dial && x.contentRect.width) this._e.dial.style.setProperty("--dw", `${x.contentRect.width}px`);
+          });
+          this._fitBtn();
         });
         this._ro.observe(this._e.dial);
+        this._ro.observe(this._e.g);
       }
       this._layout();
       this._key = null;
@@ -12497,6 +12521,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       if (!s) return null;
       const a = s.attributes, total = parseDur(a.duration) || 0;
       let left = total;
+      if (s.state === "idle" && this._armed > 0) return { st: s.state, total: this._armed, left: this._armed, fin: a.finishes_at };
       if (s.state === "active") left = a.finishes_at ? (Date.parse(a.finishes_at) - Date.now()) / 1e3 : parseDur(a.remaining) ?? total;
       else if (s.state === "paused") left = parseDur(a.remaining) ?? total;
       return { st: s.state, total, left: Math.max(0, left), fin: a.finishes_at };
@@ -12605,6 +12630,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         B("pri", ICON.play, "Start", () => this._start(v?.total || 0));
         if (c.show_custom !== false) B(this._showCust ? "sel" : "", ICON.tune, "Eigene Zeit", () => {
           this._showCust = !this._showCust;
+          if (this._showCust) this._custFrom(v?.total || 0);
           this._key = null;
           this._render();
         });
@@ -12640,6 +12666,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       e.cust.hidden = !(idle && this._showCust && c.show_custom !== false);
       e.main.hidden = !e.cust.hidden;
       if (!e.cust.hidden) this._custShow();
+      this._fitBtn();
     }
     _dialTap() {
       const s = this._S();
@@ -12666,6 +12693,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       return this._h.callService("timer", svc, { entity_id: this._c.entity, ...data });
     }
     _start(sec) {
+      this._armed = 0;
       return sec > 0 ? this._svc("start", { duration: hms(Math.round(sec)) }) : this._svc("start");
     }
     // +1 Minute: timer.change (ab HA 2024.x); geht nicht über die eingestellte Dauer hinaus → dann neu starten mit Rest + 60 s
@@ -12688,6 +12716,16 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       const c = this._cust, n = { h: 24, m: this._units().includes("h") ? 60 : 181, s: 60 }[k], st = k === "s" ? 5 : 1;
       c[k] = ((Math.round(c[k] / st) * st + d * st) % n + n) % n;
       this._custShow();
+    }
+    // Auswahl beginnt mit der eingestellten Zeit (5:00 → 0 Std, 5 Min, 0 Sek); ohne Stunden-Feld zählen die Stunden als Minuten
+    _custFrom(sec) {
+      const t = Math.max(0, Math.round(sec)), u = this._units(), hh = u.includes("h");
+      this._cust = { h: hh ? Math.min(23, Math.floor(t / 3600)) : 0, m: hh ? Math.floor(t % 3600 / 60) : Math.min(180, Math.floor(t / 60)), s: u.includes("s") ? Math.round(t % 60 / 5) * 5 % 60 : 0 };
+      if (!this._cust.h && !this._cust.m && !this._cust.s) this._cust.m = 5;
+    }
+    // Knopf-Texte, die nicht passen, weglassen – der Knopf zeigt dann nur sein Icon (nie „Überne…“)
+    _fitBtn() {
+      if (this._e) fitLabels(this.shadowRoot, ".bt2 > span", true);
     }
     _custShow() {
       const u = this._units();

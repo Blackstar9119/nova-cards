@@ -56,7 +56,7 @@ Aktion z. B. eine Benachrichtigung oder Ansage. So kommt der Ton genau einmal, e
 | Was | Wie |
 |---|---|
 | Starten mit eingestellter Dauer | „Start“ oder die Stoppuhr antippen |
-| Starten mit anderer Zeit | Schnellwahl-Knopf, oder „Eigene Zeit“ → Minuten (je nach Einstellung auch Stunden/Sekunden) mit + und − (gedrückt halten = schnell) → „Starten“ |
+| Starten mit anderer Zeit | Schnellwahl-Knopf, oder „Eigene Zeit“ → Minuten (je nach Einstellung auch Stunden/Sekunden) mit + und − (gedrückt halten = schnell) → „Übernehmen“ → „Start“. Die Auswahl beginnt mit der eingestellten Zeit |
 | Pause / Weiter | „Pause“ bzw. „Weiter“, oder die Stoppuhr antippen |
 | Eine Minute dazu | „1 Min“ (nur während der Timer läuft) |
 | Abbrechen | „Abbrechen“ |

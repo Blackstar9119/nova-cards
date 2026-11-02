@@ -1,5 +1,5 @@
 import {define, docUrl, tag} from './shared/define.js';
-import {esc, dom, setIcon, list, NUMRE, toObj} from './shared/utils.js';
+import {esc, dom, setIcon, list, NUMRE, toObj, fitLabels} from './shared/utils.js';
 import {fmtState, iconOf, valueOf, alertHit, langOf, tzOf} from './shared/state.js';
 import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
@@ -828,12 +828,14 @@ class NovaApplianceCard extends HTMLElement {
       this._io.observe(this);
     } else this._inView = true;
     this._tick();
+    if ('ResizeObserver' in window) { this._ro ||= new ResizeObserver(() => this._fitLbl()); this._ro.observe(this); }
     // Fütterung lief, während die Karte weg war: Zustand neu bestimmen
     if (this._fat && this._e) this._update();
   }
   disconnectedCallback() {
     document.removeEventListener('visibilitychange', this._onVis);
     this._io?.disconnect();
+    this._ro?.disconnect();
     this._inView = false;
     this._tick();
     Object.values(this._pend || {}).forEach(p => clearTimeout(p.t));
@@ -1192,7 +1194,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       else if (u.kind === 'btn') return;
       else v.textContent = valueOf(h, s, o);
     });
+    this._fitLbl();
   }
+  // Regler-Namen, die nicht passen, ausblenden statt abschneiden (nur Icon + Wert)
+  _fitLbl() { if (this._e?.ctls) fitLabels(this._e.ctls, '.ct .kv .k, .ct .row .k'); }
   // Knöpfe nur mit eingetragener, verfügbarer Entität; Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen
   _actUp(cls) {
     const c = this._c, b = this._ab, av = k => !!c[k] && this._S(c[k]) && this._S(c[k]).state !== 'unavailable';

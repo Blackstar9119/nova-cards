@@ -1,5 +1,5 @@
 import {define, docUrl, tag} from './shared/define.js';
-import {esc, list} from './shared/utils.js';
+import {esc, list, fitLabels} from './shared/utils.js';
 import {nameOf, langOf, tzOf} from './shared/state.js';
 import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
@@ -180,7 +180,7 @@ class NovaTimerCard extends HTMLElement {
 <div class="msg" hidden><ha-icon icon="mdi:bell-ring"></ha-icon><span>Zeit ist um!</span></div>
 <div class="row2 main"></div><div class="pre"></div>
 <div class="cust" hidden><div class="stps">${['h|Std', 'm|Min', 's|Sek'].map(x => { const [k, l] = x.split('|'); return `<div class="stp" data-k="${k}"><small>${l}</small><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div><span class="v"></span><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div></div>`; }).join('')}</div>
-<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:play"></ha-icon><span>Starten</span></div></div></div>
+<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:check"></ha-icon><span>Übernehmen</span></div></div></div>
 </div></div></div>`;
     const q = s => r.querySelector(s);
     this._e = {g: q('.g'), hd: q('.hd'), ic: q('.hd .ic'), nm: q('.hd b'), sub: q('.hd small'), dial: q('.dial'), svg: q('svg'), t: q('.ro .t'), s: q('.ro .s'),
@@ -196,9 +196,13 @@ class NovaTimerCard extends HTMLElement {
       [['.pl', 1], ['.mi', -1]].forEach(([s, d]) => this._rep(st.querySelector(s), () => this._step(k, d)));
     });
     press(q('.cbk'), {tap: () => { this._showCust = false; this._key = null; this._render(); }});
-    press(q('.cgo'), {tap: () => { const {h, m, s} = this._cust, u = this._units(), sec = (u.includes('h') ? h : 0) * 3600 + m * 60 + (u.includes('s') ? s : 0); if (sec > 0) { this._showCust = false; this._start(sec); } }});
+    // Übernehmen: Zeit vormerken (Uhr zeigt sie), gestartet wird mit „Start“ bzw. Antippen der Stoppuhr
+    press(q('.cgo'), {tap: () => { const {h, m, s} = this._cust, u = this._units(), sec = (u.includes('h') ? h : 0) * 3600 + m * 60 + (u.includes('s') ? s : 0); if (sec > 0) { this._armed = sec; this._showCust = false; this._key = null; this._render(); } }});
     // Größe der Zeitanzeige an die Uhr anpassen
-    if ('ResizeObserver' in window) { this._ro = new ResizeObserver(es => { const w = es[0].contentRect.width; if (w) this._e.dial.style.setProperty('--dw', `${w}px`); }); this._ro.observe(this._e.dial); }
+    if ('ResizeObserver' in window) {
+      this._ro = new ResizeObserver(es => { es.forEach(x => { if (x.target === this._e.dial && x.contentRect.width) this._e.dial.style.setProperty('--dw', `${x.contentRect.width}px`); }); this._fitBtn(); });
+      this._ro.observe(this._e.dial); this._ro.observe(this._e.g);
+    }
     this._layout();
     this._key = null;
   }
@@ -218,6 +222,7 @@ class NovaTimerCard extends HTMLElement {
     if (!s) return null;
     const a = s.attributes, total = parseDur(a.duration) || 0;
     let left = total;
+    if (s.state === 'idle' && this._armed > 0) return {st: s.state, total: this._armed, left: this._armed, fin: a.finishes_at};
     if (s.state === 'active') left = a.finishes_at ? (Date.parse(a.finishes_at) - Date.now()) / 1000 : parseDur(a.remaining) ?? total;
     else if (s.state === 'paused') left = parseDur(a.remaining) ?? total;
     return {st: s.state, total, left: Math.max(0, left), fin: a.finishes_at};
@@ -308,7 +313,7 @@ class NovaTimerCard extends HTMLElement {
       B('', ICON.stop, 'Abbrechen', () => this._svc('cancel'));
     } else {
       B('pri', ICON.play, 'Start', () => this._start(v?.total || 0));
-      if (c.show_custom !== false) B(this._showCust ? 'sel' : '', ICON.tune, 'Eigene Zeit', () => { this._showCust = !this._showCust; this._key = null; this._render(); });
+      if (c.show_custom !== false) B(this._showCust ? 'sel' : '', ICON.tune, 'Eigene Zeit', () => { this._showCust = !this._showCust; if (this._showCust) this._custFrom(v?.total || 0); this._key = null; this._render(); });
     }
     e.main.innerHTML = '';
     e.main.classList.toggle('n3', b.length > 2);
@@ -339,6 +344,7 @@ class NovaTimerCard extends HTMLElement {
     // Eigene Zeit ersetzt Start/Eigene Zeit und Schnellwahl, damit die Karte nicht wächst
     e.main.hidden = !e.cust.hidden;
     if (!e.cust.hidden) this._custShow();
+    this._fitBtn();
   }
   _dialTap() {
     const s = this._S();
@@ -355,7 +361,7 @@ class NovaTimerCard extends HTMLElement {
     this._press();
     return this._h.callService('timer', svc, {entity_id: this._c.entity, ...data});
   }
-  _start(sec) { return sec > 0 ? this._svc('start', {duration: hms(Math.round(sec))}) : this._svc('start'); }
+  _start(sec) { this._armed = 0; return sec > 0 ? this._svc('start', {duration: hms(Math.round(sec))}) : this._svc('start'); }
   // +1 Minute: timer.change (ab HA 2024.x); geht nicht über die eingestellte Dauer hinaus → dann neu starten mit Rest + 60 s
   async _add(sec) {
     const v = this._calc();
@@ -370,6 +376,14 @@ class NovaTimerCard extends HTMLElement {
     c[k] = ((Math.round(c[k] / st) * st + d * st) % n + n) % n;
     this._custShow();
   }
+  // Auswahl beginnt mit der eingestellten Zeit (5:00 → 0 Std, 5 Min, 0 Sek); ohne Stunden-Feld zählen die Stunden als Minuten
+  _custFrom(sec) {
+    const t = Math.max(0, Math.round(sec)), u = this._units(), hh = u.includes('h');
+    this._cust = {h: hh ? Math.min(23, Math.floor(t / 3600)) : 0, m: hh ? Math.floor(t % 3600 / 60) : Math.min(180, Math.floor(t / 60)), s: u.includes('s') ? Math.round(t % 60 / 5) * 5 % 60 : 0};
+    if (!this._cust.h && !this._cust.m && !this._cust.s) this._cust.m = 5;
+  }
+  // Knopf-Texte, die nicht passen, weglassen – der Knopf zeigt dann nur sein Icon (nie „Überne…“)
+  _fitBtn() { if (this._e) fitLabels(this.shadowRoot, '.bt2 > span', true); }
   _custShow() { const u = this._units(); this._e.cust.querySelectorAll('.stp').forEach(st => { st.hidden = !u.includes(st.dataset.k); st.querySelector('.v').textContent = String(this._cust[st.dataset.k]).padStart(2, '0'); }); }
   // Taste mit Wiederholung beim Gedrückthalten (Stepper)
   _rep(el, fn) {
