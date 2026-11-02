@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Navi,
-Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips, Gerät, 3D-Drucker und Fernbedienung – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer und Uhr – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -29,6 +29,8 @@ src/
   printer.js          Nova 3D-Drucker Card + Editor (Bambu Lab: Druckerzeichnung im P2S-Stil, AMS, Kamera, Meldungen, Demo-Modus)
   printer-messages.js Meldungen der 3D-Drucker Card: Druckphasen (stg_cur), HMS-/Druckfehler-Codes, Textmuster → Animation
   remote.js           Nova Fernbedienung + Editor (Tastenbelegung je Integration, App-Vorlagen)
+  timer.js            Nova Timer Card + Editor (steuert einen timer.*-Helfer, Stoppuhr-Zeichnung, Hinweis beim Ablauf)
+  clock.js            Nova Uhr Card + Editor (digital/analog, ein einziger Zeitgeber)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
                       tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
@@ -42,7 +44,10 @@ src/
                       Lichtstreifen beim Reinscrollen (sweep), Rahmen-Glow, Badge-Stelle (badgeAt) – siehe „Stil der Zeichnungen“
     editor-base.js    NovaEditorBase – Basisklasse ALLER Editoren
     editor-schema.js  Bausteine für ha-form-Schemas + gemeinsame Beschriftungen
-    lifecycle.js      Relevante hass-Änderungen erkennen (hassChanged, entityIds), Vorschau in der Kartenauswahl (inPicker)
+    lifecycle.js      Relevante hass-Änderungen erkennen (hassChanged, entityIds), Vorschau in der Kartenauswahl (inPicker),
+                      Sichtbarkeit beobachten (watchVisible: IntersectionObserver + Tab)
+    dial.js           Runde Zeichnungen im Nova-Stil: Gehäuse, Chromring, Zifferblatt, Fortschrittsring, Glas, Stoppuhr-Krone,
+                      Glocken-Badge – genutzt von Timer und Uhr
     card-grid.js      Raster aus beliebigen Karten (rows/cells, Karten erzeugen, Übergabe in der Vorschau) und Info-Chips –
                       Kartenseite von Pop-up und Bereich
     card-grid-editor.js  Editorseite dazu: Vorlagen, Miniatur-Raster, Kartenauswahl, Karteneditor, YAML (Mixin GridEditor)
@@ -156,7 +161,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
   `resource_type` = `module`) auf den neuen Commit-Hash umstellen. **Immer dieselbe Ressource aktualisieren**
   (`resource_id`), nie eine neue anlegen. Laufen mehrere Feature-Branches parallel, alle getesteten Karten in einen
   Build packen (z. B. `npm run dev -- weather,popup,navi,info,room`), damit kein Test verloren geht.
-- **resource_id der Dev-Ressource:** `4cc06e00074c416590e298ace68fe3a7`
+- **resource_id der Dev-Ressource:** `5c4e80a5870942189b61f27d4c6b2bbd`
   Fehlt sie oder ist sie ungültig, zuerst per `ha_config_list_dashboard_resources` nach einer bestehenden
   Ressource suchen, die auf `nova-dev-cards.js` zeigt (oder inline mit `/* Nova Cards v… DEV` beginnt), und deren ID
   hier eintragen. Nur wenn es keine gibt, eine neue anlegen.

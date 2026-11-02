@@ -34,7 +34,7 @@ const CCSS = `${DIAL_CSS}
 .scene .cap{fill:url(#k-cr);stroke:rgba(255,255,255,.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
 .scene .hsh{fill:#000;opacity:.25}
 [hidden]{display:none!important}
-@container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}.row .txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start}}
+@container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}.row .txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}}
 .txt{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0;max-width:100%}`;
 
 // Zeiger: Stunde, Minute (Chrom), Sekunde (Farbrolle) mit Gegengewicht; Schatten leicht versetzt
