@@ -1601,7 +1601,8 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
   var vis = (c) => `${!!c.area}|${c.show_colors !== false}`;
   var LAMP = [
     { name: "entity", required: true, selector: { entity: { domain: "light" } } },
-    { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] }
+    { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] },
+    { name: "slider", selector: { boolean: {} } }
   ];
   var LAMP_ACT = [{ name: "tap_action", selector: { ui_action: {} } }, { name: "hold_action", selector: { ui_action: {} } }];
   var EDITOR_DEFAULTS = { show_header: true, show_all_off: true, use_light_color: true, show_colors: true, hide_group_members: true, strip_area_name: true };
@@ -1686,9 +1687,10 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
       return d;
     }
     _lampBody(body, s, l, i, keys) {
-      body.append(this._form(LAMP, l, (v) => {
+      body.append(this._form(LAMP, { slider: true, ...l }, (v) => {
         const lamps = [...this._config.entities], old = lamps[i];
         lamps[i] = merge(old, keys, v);
+        if (lamps[i].slider !== false) delete lamps[i].slider;
         this._set(lamps);
         s.querySelector(".lbl").textContent = this._label(lamps[i], i);
         if (old.entity !== lamps[i].entity) this._rebuild();
@@ -1775,6 +1777,7 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     show_colors: "Farbknöpfe anzeigen",
     entity: "Lampe",
     name: "Name",
+    slider: "Helligkeitsregler",
     tap_action: "Aktion beim Antippen",
     hold_action: "Aktion bei langem Drücken",
     hide_group_members: "Lampen einer Lichtgruppe ausblenden",
@@ -1783,7 +1786,8 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
   __publicField(NovaLightCardEditor, "helpers", {
     area: "Optional. Neue Lampen im Bereich erscheinen von selbst",
     hide_group_members: "Ist eine Lichtgruppe (z. B. Deckenlampen) im Bereich, erscheint nur die Gruppe, nicht jede einzelne Lampe darin.",
-    strip_area_name: "„Wohnzimmer Pilzlampe“ wird zu „Pilzlampe“. Eigene Namen bleiben, wie sie sind."
+    strip_area_name: "„Wohnzimmer Pilzlampe“ wird zu „Pilzlampe“. Eigene Namen bleiben, wie sie sind.",
+    slider: "Aus = nur an/aus, die Kachel wird flacher (z. B. für kleine Displays). Gilt nur für dimmbare Lampen."
   });
   __publicField(NovaLightCardEditor, "openSections", ["general", "lamps"]);
   define("light-card-editor", NovaLightCardEditor);
@@ -1941,7 +1945,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
         const rgb = this._c.use_light_color !== false && on && a.rgb_color;
         if (rgb) x.t.style.setProperty("--lc", `rgb(${rgb.join(",")})`);
         else x.t.style.removeProperty("--lc");
-        x.sl.style.display = dimmable && !na ? "" : "none";
+        x.sl.style.display = dimmable && !na && x.o.slider !== false ? "" : "none";
         if (!x.t._drag) {
           x.sl.value = pct || 1;
           x.t.style.setProperty("--p", `${pct}%`);
