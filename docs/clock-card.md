@@ -68,7 +68,7 @@ glass: false
 | `glass` | `true` | Glas-Hintergrund der Karte |
 | `tap_action`, `hold_action` | – | Aktion beim Antippen bzw. langen Drücken |
 
-Theme-Variable: `--nova-clock-size` – Schriftgröße der digitalen Zeit bzw. größte Breite des Zifferblatts.
+Theme-Variable: `--nova-clock-size` – Schriftgröße der digitalen Zeit bzw. größte Breite des Zifferblatts. `--nova-clock-info-size` – Schriftgröße der Werte-Zeile unter der Uhr (Standard passt sich der Kartenbreite an, 14–26 px).
 
 ## Gut zu wissen
 

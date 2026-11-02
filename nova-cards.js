@@ -12891,11 +12891,9 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
 .scene .cap{fill:url(#k-cr);stroke:rgba(255,255,255,.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
 .scene .hsh{fill:#000;opacity:.25}
 [hidden]{display:none!important}
-@container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}.row .inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:clamp(12px,4.2cqw,17px);opacity:.75;font-variant-numeric:tabular-nums;white-space:nowrap}
-.inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
-.row .inf{justify-content:flex-start}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}}
-.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:clamp(12px,4.2cqw,17px);opacity:.75;font-variant-numeric:tabular-nums;white-space:nowrap}
+@container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}
+.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}.row .inf{font-size:clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)}}
+.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:clamp(14px,var(--nova-clock-info-size,7.5cqw),26px);opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
 .inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
 .row .inf{justify-content:flex-start}
 .txt{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0;max-width:100%}`;
