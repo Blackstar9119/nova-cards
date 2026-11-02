@@ -7910,11 +7910,14 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   define("area-card-editor", NovaAreaCardEditor);
 
   // src/chips.js
-  var DEF3 = { layout: "wrap" };
+  var DEF3 = { layout: "wrap", size: "normal" };
   var CSS = `${NOVA_VARS}${NOVA_CHIPS_CSS}
 :host{display:block;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 .nchips:empty{display:flex;min-height:34px}
-.hint{font-size:13px;opacity:.7;padding:8px 2px}`;
+.hint{font-size:13px;opacity:.7;padding:8px 2px}
+/* Groß: für kleine Touch-Displays (z. B. Echo Show) – höhere Chips, die die Zeile gleichmäßig füllen */
+.nchips.lg{gap:8px}.nchips.lg .nchip{min-height:var(--nova-chip-large-height,50px);padding:0 16px;font-size:15px;border-radius:16px;flex:1 1 auto;justify-content:center}
+.nchips.lg .nchip ha-icon{--mdc-icon-size:21px}.nchips.lg .nchip img{width:21px;height:21px}`;
   var NovaChipsCard = class extends HTMLElement {
     static getConfigElement() {
       return document.createElement(tag("chips-card-editor"));
@@ -7934,6 +7937,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       this._cfg = { ...DEF3, ...c, chips: normChips(c.chips) };
       this._ids = entityIds(this._cfg.chips);
       this._box.classList.toggle("scroll", this._cfg.layout === "scroll");
+      this._box.classList.toggle("lg", this._cfg.size === "large");
       if (this._h) this._render();
     }
     set hass(h) {
@@ -7954,9 +7958,10 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   define("chips-card", NovaChipsCard, { name: "Nova Chips Card", description: "Eine Reihe frei belegbarer Chips: Werte von Entitäten oder Knöpfe mit Aktion, z. B. „Alle Lichter im Raum aus“.", documentationURL: docUrl("nova-chips-card") });
   var S_GEN4 = [
     { name: "area", selector: { area: {} } },
-    sel("layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])
+    sel("layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]]),
+    sel("size", [["normal", "Normal"], ["large", "Groß (für kleine Touch-Displays)"]])
   ];
-  var LABELS4 = { ...CHIP_LABELS, area: "Area (für „Alle Lichter im Raum aus“)", layout: "Bei vielen Chips" };
+  var LABELS4 = { ...CHIP_LABELS, area: "Area (für „Alle Lichter im Raum aus“)", layout: "Bei vielen Chips", size: "Größe" };
   var HELPERS4 = { ...CHIP_HELPERS, area: "Nur nötig für die Schnellauswahl „Alle Lichter im Raum aus“." };
   var NovaChipsCardEditor = class extends NovaEditorBase {
     _build() {
@@ -7966,6 +7971,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(this._form(S_GEN4, { ...DEF3, ...this._config }, (v) => {
           const c = merge(this._config, names(S_GEN4), v);
           if (c.layout === DEF3.layout) delete c.layout;
+          if (c.size === DEF3.size) delete c.size;
           this._emit(c);
           if (!!c.area !== !!this._built) this._rebuild();
         }))),
