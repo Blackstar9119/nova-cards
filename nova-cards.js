@@ -8108,6 +8108,11 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     set hass(h) {
       this._h = h;
       if (!this._cfg) return;
+      if (DEV && !window.__novaVp && h.callService) {
+        window.__novaVp = 1;
+        setTimeout(() => h.callService("system_log", "write", { message: `Nova Dev Swipe: Fenster ${innerWidth}×${innerHeight} px, DPR ${devicePixelRatio}, Karte ${Math.round(this.getBoundingClientRect().height)} px hoch`, level: "warning", logger: "nova_cards.dev" })?.catch?.(() => {
+        }), 3e3);
+      }
       if (this._dirty && this.isConnected) this._render();
       this._pages.forEach((p) => p._cells().forEach((el2) => p._setHass(el2)));
     }
@@ -12237,6 +12242,7 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,o
     presets: [1, 5, 10, 15],
     show_presets: true,
     show_custom: true,
+    custom_units: "auto",
     show_add: true,
     color: "accent-1",
     alarm_color: "accent-2",
@@ -12301,21 +12307,13 @@ display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;fo
 .bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
 .pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
 .pre .bt2{font-size:16px;font-weight:600}
-.cust{display:flex;flex-direction:column;gap:10px;padding:10px;border-radius:18px;background:var(--nv-box);border:1px solid var(--nv-box-border)}
-.stps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.stp{display:flex;flex-direction:column;align-items:center;gap:4px}
-.stp small{font-size:11.5px;opacity:.6;text-transform:uppercase;letter-spacing:.05em}
-.stp .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;min-height:30px}
-.stp .hb{width:100%;max-width:64px;height:40px;border-radius:12px}
+.cust{display:flex;flex-direction:column;gap:10px}
+/* Eigene Zeit: je Einheit [−] 05 Min [+] nebeneinander, so hoch wie Schnellwahl + Knöpfe – die Karte wächst nicht */
+.stps{display:flex;gap:8px}
+.stp{flex:1 1 0;display:flex;align-items:center;justify-content:space-between;gap:2px;padding:0 3px;min-width:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);height:var(--nova-timer-button-height,52px);box-sizing:border-box}
+.stp .mi{order:0}.stp .v{order:1;flex:1;text-align:right;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}.stp small{order:2;flex:1;text-align:left;font-size:11px;opacity:.6;margin-left:4px}.stp .pl{order:3}
+.stp .hb{width:34px;height:42px;flex:none;border-radius:12px}
 .stp .hb ha-icon{--mdc-icon-size:22px}
-.full .cbk{display:none}
-/* Kompakt: Minuten und Sekunden nebeneinander als [−] 05 Min [+], gleiche Höhe wie Schnellwahl + Knöpfe */
-.cmp .cust{padding:0;background:none;border:none}
-.cmp .stps{grid-template-columns:repeat(2,minmax(0,1fr))}
-.cmp .stp[data-k="h"]{display:none}
-.cmp .stp{flex-direction:row;justify-content:space-between;gap:2px;padding:0 3px;min-width:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);height:var(--nova-timer-button-height,52px);box-sizing:border-box}
-.cmp .stp .mi{order:0}.cmp .stp .v{order:1;min-height:0;font-size:19px}.cmp .stp small{order:2;text-transform:none;letter-spacing:0;font-size:11px;margin-left:-1px}.cmp .stp .pl{order:3}
-.cmp .stp .hb{width:34px;height:42px;flex:none;border-radius:12px}
 .msg{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;font-size:16px;font-weight:600;
 background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid color-mix(in srgb,var(--ac) 50%,transparent)}
 .msg ha-icon{color:var(--ac);--mdc-icon-size:26px}
@@ -12466,7 +12464,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         this._render();
       } });
       press(q(".cgo"), { tap: () => {
-        const { h, m, s } = this._cust, sec = (this._c.layout === "compact" ? 0 : h) * 3600 + m * 60 + s;
+        const { h, m, s } = this._cust, u = this._units(), sec = (u.includes("h") ? h : 0) * 3600 + m * 60 + (u.includes("s") ? s : 0);
         if (sec > 0) {
           this._showCust = false;
           this._start(sec);
@@ -12640,7 +12638,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         }
       }
       e.cust.hidden = !(idle && this._showCust && c.show_custom !== false);
-      e.main.hidden = c.layout === "compact" && !e.cust.hidden;
+      e.main.hidden = !e.cust.hidden;
       if (!e.cust.hidden) this._custShow();
     }
     _dialTap() {
@@ -12681,13 +12679,20 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       }
     }
     // Stepper: läuft am Ende rundherum (59 → 0); Sekunden in 5er-Schritten, kompakt ohne Stunden bis 180 Minuten
+    // Einheiten der eigenen Zeit: auto = groß Std/Min/Sek, kompakt Min/Sek
+    _units() {
+      const u = this._c.custom_units;
+      return u === "m" ? ["m"] : u === "ms" ? ["m", "s"] : u === "hms" ? ["h", "m", "s"] : this._c.layout === "compact" ? ["m", "s"] : ["h", "m", "s"];
+    }
     _step(k, d) {
-      const c = this._cust, n = { h: 24, m: this._c.layout === "compact" ? 181 : 60, s: 60 }[k], st = k === "s" ? 5 : 1;
+      const c = this._cust, n = { h: 24, m: this._units().includes("h") ? 60 : 181, s: 60 }[k], st = k === "s" ? 5 : 1;
       c[k] = ((Math.round(c[k] / st) * st + d * st) % n + n) % n;
       this._custShow();
     }
     _custShow() {
+      const u = this._units();
       this._e.cust.querySelectorAll(".stp").forEach((st) => {
+        st.hidden = !u.includes(st.dataset.k);
         st.querySelector(".v").textContent = String(this._cust[st.dataset.k]).padStart(2, "0");
       });
     }
@@ -12750,7 +12755,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   var S_START = [
     { name: "show_presets", selector: { boolean: {} } },
     { name: "presets", selector: T },
-    { name: "show_custom", selector: { boolean: {} } },
+    g2({ name: "show_custom", selector: { boolean: {} } }, sel("custom_units", [["auto", "Automatisch"], ["m", "Nur Minuten"], ["ms", "Minuten und Sekunden"], ["hms", "Stunden, Minuten, Sekunden"]])),
     { name: "show_add", selector: { boolean: {} } }
   ];
   var S_ALARM = [
@@ -12769,6 +12774,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
     show_presets: "Schnellwahl-Knöpfe zeigen",
     presets: "Schnellwahl (Minuten, mit Komma)",
     show_custom: "Knopf „Eigene Zeit“ zeigen",
+    custom_units: "Eigene Zeit in",
     show_add: "Knopf „+1 Min“ während der Timer läuft",
     alarm_text: "Text beim Ablauf",
     alarm_color: "Farbe beim Ablauf",
@@ -12783,6 +12789,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   var HELPERS6 = {
     entity: "Ein Timer-Helfer läuft in Home Assistant – alle Geräte zeigen dieselbe Zeit. Anlegen unter Einstellungen → Geräte & Dienste → Helfer → Timer.",
     presets: "z. B. „1, 5, 10, 15“. Auch „30s“ oder „1h“ geht. Höchstens 8.",
+    custom_units: "Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. „Nur Minuten“ geht bis 180.",
     alarm_text: "Leer = „Zeit ist um!“",
     alarm_minutes: "So lange klingelt die Karte nach dem Ablauf, wenn niemand „OK“ drückt. 0 = bis jemand bestätigt.",
     tap_action: "Leer = Details des Timers öffnen. Die Stoppuhr selbst startet, pausiert und setzt fort."

@@ -1,4 +1,4 @@
-import {define, docUrl, tag} from './shared/define.js';
+import {define, docUrl, tag, DEV} from './shared/define.js';
 import {NOVA_VARS, SECTION_EDITOR_CSS} from './shared/styles.js';
 import {inPicker} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
@@ -101,6 +101,11 @@ class NovaSwipeCard extends HTMLElement {
   set hass(h) {
     this._h = h;
     if (!this._cfg) return;
+    // Nur im Dev-Build: Fenstergröße einmal ins HA-Protokoll schreiben (zum Abstimmen auf Wand-Displays)
+    if (DEV && !window.__novaVp && h.callService) {
+      window.__novaVp = 1;
+      setTimeout(() => h.callService('system_log', 'write', {message: `Nova Dev Swipe: Fenster ${innerWidth}×${innerHeight} px, DPR ${devicePixelRatio}, Karte ${Math.round(this.getBoundingClientRect().height)} px hoch`, level: 'warning', logger: 'nova_cards.dev'})?.catch?.(() => {}), 3000);
+    }
     if (this._dirty && this.isConnected) this._render();
     this._pages.forEach(p => p._cells().forEach(el => p._setHass(el)));
   }

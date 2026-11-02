@@ -35,7 +35,7 @@ presets: [3, 8, 12, 20]
 ## Wenn der Platz knapp ist (z. B. Echo Show), dann so
 
 `layout: compact` zeigt eine kleine Stoppuhr mit großer Zeit daneben, die Knöpfe bleiben groß genug für den Finger.
-„Eigene Zeit“ hat hier Minuten (bis 180) und Sekunden nebeneinander und ersetzt solange Start und Schnellwahl – die Karte
+„Eigene Zeit“ hat hier Minuten (bis 180) und Sekunden nebeneinander und ersetzt solange Start und Schnellwahl (in beiden Layouts) – die Karte
 wird dadurch nicht höher.
 
 ```yaml
@@ -56,7 +56,7 @@ Aktion z. B. eine Benachrichtigung oder Ansage. So kommt der Ton genau einmal, e
 | Was | Wie |
 |---|---|
 | Starten mit eingestellter Dauer | „Start“ oder die Stoppuhr antippen |
-| Starten mit anderer Zeit | Schnellwahl-Knopf, oder „Eigene Zeit“ → Stunden/Minuten/Sekunden mit + und − (gedrückt halten = schnell) → „Starten“ |
+| Starten mit anderer Zeit | Schnellwahl-Knopf, oder „Eigene Zeit“ → Minuten (je nach Einstellung auch Stunden/Sekunden) mit + und − (gedrückt halten = schnell) → „Starten“ |
 | Pause / Weiter | „Pause“ bzw. „Weiter“, oder die Stoppuhr antippen |
 | Eine Minute dazu | „1 Min“ (nur während der Timer läuft) |
 | Abbrechen | „Abbrechen“ |
@@ -73,6 +73,7 @@ Aktion z. B. eine Benachrichtigung oder Ansage. So kommt der Ton genau einmal, e
 | `show_presets` | `true` | Schnellwahl-Knöpfe zeigen |
 | `presets` | `[1, 5, 10, 15]` | Schnellwahl in Minuten (`30s`, `1h` gehen auch), höchstens 8 |
 | `show_custom` | `true` | Knopf „Eigene Zeit“ |
+| `custom_units` | `auto` | Eigene Zeit in: `m` (nur Minuten, bis 180), `ms`, `hms`. `auto` = groß Std/Min/Sek, kompakt Min/Sek |
 | `show_add` | `true` | Knopf „+1 Min“, solange der Timer läuft |
 | `alarm_text` | „Zeit ist um!“ | Text beim Ablauf |
 | `alarm_color` | `accent-2` | Farbrolle beim Ablauf (`neutral`, `accent-1` … `accent-4`) |
