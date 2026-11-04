@@ -8,11 +8,14 @@ import {normChips, renderNovaChips, NOVA_CHIPS_CSS, chipSchema, chipView, CHIP_L
 /* ---------- Nova Chips Card ----------
    Eine Reihe frei belegbarer Wert- und Knopf-Chips (Baustein aus shared/chips.js), umbrechend oder waagrecht scrollend.
    area wird nur für die Schnellauswahl „Alle Lichter im Raum aus“ gebraucht. */
-const DEF = {layout: 'wrap'};
+const DEF = {layout: 'wrap', size: 'normal'};
 const CSS = `${NOVA_VARS}${NOVA_CHIPS_CSS}
 :host{display:block;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 .nchips:empty{display:flex;min-height:34px}
-.hint{font-size:13px;opacity:.7;padding:8px 2px}`;
+.hint{font-size:13px;opacity:.7;padding:8px 2px}
+/* Groß: für kleine Touch-Displays (z. B. Echo Show) – höhere Chips, die die Zeile gleichmäßig füllen */
+.nchips.lg{gap:8px}.nchips.lg .nchip{min-height:var(--nova-chip-large-height,50px);padding:0 16px;font-size:15px;border-radius:16px;flex:1 1 auto;justify-content:center}
+.nchips.lg .nchip ha-icon{--mdc-icon-size:21px}.nchips.lg .nchip img{width:21px;height:21px}`;
 
 class NovaChipsCard extends HTMLElement {
   static getConfigElement() { return document.createElement(tag('chips-card-editor')); }
@@ -31,6 +34,7 @@ class NovaChipsCard extends HTMLElement {
     this._cfg = {...DEF, ...c, chips: normChips(c.chips)};
     this._ids = entityIds(this._cfg.chips);
     this._box.classList.toggle('scroll', this._cfg.layout === 'scroll');
+    this._box.classList.toggle('lg', this._cfg.size === 'large');
     if (this._h) this._render();
   }
   set hass(h) {
@@ -48,8 +52,9 @@ define('chips-card', NovaChipsCard, {name: 'Nova Chips Card', description: 'Eine
 const S_GEN = [
   {name: 'area', selector: {area: {}}},
   sel('layout', [['wrap', 'Umbrechen'], ['scroll', 'Waagrecht scrollen']]),
+  sel('size', [['normal', 'Normal'], ['large', 'Groß (für kleine Touch-Displays)']]),
 ];
-const LABELS = {...CHIP_LABELS, area: 'Area (für „Alle Lichter im Raum aus“)', layout: 'Bei vielen Chips'};
+const LABELS = {...CHIP_LABELS, area: 'Area (für „Alle Lichter im Raum aus“)', layout: 'Bei vielen Chips', size: 'Größe'};
 const HELPERS = {...CHIP_HELPERS, area: 'Nur nötig für die Schnellauswahl „Alle Lichter im Raum aus“.'};
 
 class NovaChipsCardEditor extends NovaEditorBase {
@@ -63,6 +68,7 @@ class NovaChipsCardEditor extends NovaEditorBase {
       this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(this._form(S_GEN, {...DEF, ...this._config}, v => {
         const c = merge(this._config, names(S_GEN), v);
         if (c.layout === DEF.layout) delete c.layout;
+        if (c.size === DEF.size) delete c.size;
         this._emit(c);
         // Schnellauswahl hängt an der Area
         if (!!c.area !== !!this._built) this._rebuild();

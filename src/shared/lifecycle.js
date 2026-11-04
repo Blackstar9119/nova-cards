@@ -33,3 +33,15 @@ export const inPicker = el => {
   }
   return false;
 };
+
+// Sichtbarkeit beobachten: cb(true/false), sobald die Karte ins Bild kommt bzw. verschwindet oder der Tab wechselt.
+// Liefert eine Funktion zum Beenden (in disconnectedCallback aufrufen). Ohne IntersectionObserver gilt die Karte als sichtbar.
+export const watchVisible = (el, cb) => {
+  let inView = !('IntersectionObserver' in window), last;
+  const upd = () => { const v = inView && !document.hidden && el.isConnected; if (v !== last) { last = v; cb(v); } };
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => { inView = es[es.length - 1].isIntersecting; upd(); }, {rootMargin: '100px'}) : null;
+  io?.observe(el);
+  document.addEventListener('visibilitychange', upd);
+  upd();
+  return () => { io?.disconnect(); document.removeEventListener('visibilitychange', upd); if (last) { last = false; cb(false); } };
+};

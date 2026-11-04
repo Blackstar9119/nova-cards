@@ -1,5 +1,5 @@
 import {define, docUrl, tag} from './shared/define.js';
-import {esc, dom, setIcon, list, NUMRE, toObj} from './shared/utils.js';
+import {esc, dom, setIcon, list, NUMRE, toObj, fitLabels} from './shared/utils.js';
 import {fmtState, iconOf, valueOf, alertHit, langOf, tzOf} from './shared/state.js';
 import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
@@ -48,7 +48,7 @@ const TKEY = {run: 'text_running', pause: 'text_paused', wait: 'text_waiting', d
 const TXT = {pause: 'Pausiert', wait: 'Startet später', done: 'Fertig', err: 'Störung', prep: 'Wird eingestellt', heat: 'Heizt auf', warm: 'Hält warm', ready: 'Bereit', off: 'Aus'};
 const BAD = new Set(['unavailable', 'unknown', 'none', '']);
 const ok = s => !!s && !BAD.has(s.state);
-const GDEF = {layout: 'full', animation: true, glow: true, hide_when_off: false, start_at: 'none', window: true, door_anim: true};
+const GDEF = {controls_columns: '1', controls_labels: 'auto', layout: 'full', animation: true, glow: true, hide_when_off: false, start_at: 'none', window: true, door_anim: true};
 // Rohwert ohne Übersetzung (z. B. fresh_fries) lesbar machen
 const nice = (raw, t) => t === raw && /_/.test(raw) ? raw.replace(/_/g, ' ').replace(/^./, x => x.toUpperCase()) : t;
 const fmtOpt = (h, s, o) => { let t = o; try { if (h.formatEntityState) t = h.formatEntityState(s, o); } catch { /* Rohwert */ } return nice(o, t); };
@@ -389,6 +389,9 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .bar i{display:block;height:100%;width:0;background:var(--dc);border-radius:4px;transition:width 1s}
 .tm{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;flex-wrap:wrap}.tm .rm{font-weight:600}.tm .en{opacity:.7}
 .ctls{display:flex;flex-direction:column;gap:2px}
+.ctls.c2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px}
+.ctls.c2 .stp{gap:4px}.ctls.c2 .stp .v{min-width:52px}
+.ct .row .hb.go{width:32px;height:32px}
 .ct{border-top:1px solid rgba(255,255,255,.08);padding:8px 0 6px;min-width:0}
 .ct .kv{border:none;padding:0}.ct .kv .v{font-weight:600;opacity:1}
 .ct .pills{margin-top:8px}.ct .pill.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 45%,transparent)}
@@ -825,12 +828,14 @@ class NovaApplianceCard extends HTMLElement {
       this._io.observe(this);
     } else this._inView = true;
     this._tick();
+    if ('ResizeObserver' in window) { this._ro ||= new ResizeObserver(() => this._fitLbl()); this._ro.observe(this); }
     // Fütterung lief, während die Karte weg war: Zustand neu bestimmen
     if (this._fat && this._e) this._update();
   }
   disconnectedCallback() {
     document.removeEventListener('visibilitychange', this._onVis);
     this._io?.disconnect();
+    this._ro?.disconnect();
     this._inView = false;
     this._tick();
     Object.values(this._pend || {}).forEach(p => clearTimeout(p.t));
@@ -893,7 +898,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const el = ev.target.closest?.('.al[data-e]'); if (el) this._act({entity: el.dataset.e}, 'tap', true);
     });
     if (e.pw) press(e.pw, {tap: () => this._call(dom(c.power) === 'input_boolean' ? 'input_boolean' : 'switch', 'toggle', c.power, {}, 'Ein/Aus')});
-    if (e.ctls) this._ctl = c.controls.map(o => this._mkCtl(o));
+    if (e.ctls) { e.ctls.classList.toggle('c2', String(c.controls_columns) === '2'); this._ctl = c.controls.map(o => this._mkCtl(o)); }
     // Startzeit: nur in der Karte vorgemerkt, wird erst beim Druck auf Start umgerechnet und mitgeschickt
     if (e.sa) {
       e.sat.addEventListener('change', () => { this._at = e.sat.value || null; this._update(); });
@@ -943,6 +948,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       el.innerHTML = '<div class="row"><span class="i"></span><span class="k" style="flex:1"></span><div class="sw"></div></div>';
       up.kind = 'sw';
       press(el.firstChild, {tap: () => this._call(d, 'toggle', o.entity, {}, o.name || 'Schalter'), hold: () => this._act(o, 'hold')});
+    } else if (['button', 'input_button', 'script', 'scene'].includes(d)) {
+      // Zusatzknopf, z. B. Warmhalten: Zeile mit rundem Auslöser rechts
+      el.innerHTML = '<div class="row"><span class="i"></span><span class="k" style="flex:1"></span><div class="hb go"><ha-icon icon="mdi:play"></ha-icon></div></div>';
+      up.kind = 'btn';
+      press(el.firstChild, {tap: () => this._call(d, d.endsWith('button') ? 'press' : 'turn_on', o.entity, {}, o.name || 'Knopf'), hold: () => this._act(o, 'hold')});
     } else {
       el.innerHTML = '<div class="kv"><span class="i"></span><span class="k"></span><span class="v"></span></div>';
       up.kind = 'val';
@@ -1181,8 +1191,18 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         if (u.rng) { Object.assign(u.rng, {min: a.min ?? 0, max: a.max ?? 100, step: o.step || a.step || 1}); if (n != null && pv == null) u.rng.value = n;
           u.rng.style.setProperty('--p', `${((n ?? 0) - (a.min ?? 0)) / (((a.max ?? 100) - (a.min ?? 0)) || 1) * 100}%`); }
       } else if (u.kind === 'sw') el.firstChild.classList.toggle('on', s?.state === 'on');
+      else if (u.kind === 'btn') return;
       else v.textContent = valueOf(h, s, o);
     });
+    this._fitLbl();
+  }
+  // Regler-Namen, die nicht passen, ausblenden statt abschneiden (nur Icon + Wert)
+  // „Nur Icons“: Namen immer weg (stehen dann im Tooltip)
+  _fitLbl() {
+    const box = this._e?.ctls;
+    if (!box) return;
+    if (this._c?.controls_labels === 'icon') box.querySelectorAll('.ct .kv .k, .ct .row .k').forEach(k => { k.style.display = 'none'; k.parentElement.title = k.textContent; });
+    else { box.querySelectorAll('.ct .kv .k, .ct .row .k').forEach(k => { if (k.style.display === 'none') k.style.display = ''; }); fitLabels(box, '.ct .kv .k, .ct .row .k'); }
   }
   // Knöpfe nur mit eingetragener, verfügbarer Entität; Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen
   _actUp(cls) {
@@ -1299,13 +1319,14 @@ const GPROG = t => [
 const GCTL = it => {
   const d = dom(it.entity);
   return [
-    {name: 'entity', required: true, selector: {entity: {domain: ['select', 'input_select', 'number', 'input_number', 'switch', 'input_boolean', 'sensor']}}},
+    {name: 'entity', required: true, selector: {entity: {domain: ['select', 'input_select', 'number', 'input_number', 'switch', 'input_boolean', 'sensor', 'button', 'input_button', 'script', 'scene']}}},
     NAMEICON,
     ...(d === 'select' || d === 'input_select' ? [sel('display', [['auto', 'Automatisch'], ['pills', 'Alle Optionen als Pillen'], ['list', 'Aufklappen']])] : []),
     ...(d === 'number' || d === 'input_number' ? [g2(sel('display', [['buttons', 'Plus / Minus'], ['slider', 'Schieber']]), NUM('step'))] : []),
     sel('show', [['always', 'Immer'], ['idle', 'Nur vor dem Start'], ['running', 'Nur während des Laufs']]),
   ];
 };
+const GCOLS = [g2(sel('controls_columns', [['1', 'Untereinander'], ['2', 'Zwei nebeneinander']]), sel('controls_labels', [['auto', 'Icon und Name'], ['icon', 'Nur Icons']]))];
 const GACT = c => [
   g2({name: 'start', selector: {entity: {domain: [...BTN.entity.domain, 'select', 'input_select']}}}, {name: 'start_name', selector: T}),
   ...(['select', 'input_select'].includes(dom(c.start)) ? [{name: 'start_option', selector: {entity: {domain: ['select', 'input_select', 'sensor', 'input_text']}}}] : []),
@@ -1344,7 +1365,7 @@ const GLABELS = {...BASE_LABELS, device_type: 'Gerätetyp', entity: 'Status', po
   running_states: 'Zustände „läuft“', paused_states: 'Zustände „pausiert“', waiting_states: 'Zustände „startet später“', finished_states: 'Zustände „fertig“', error_states: 'Zustände „Störung“', prep_states: 'Zustände „wird eingestellt“', text_prep: 'Text „wird eingestellt“',
   ready_states: 'Zustände „bereit“', heat_states: 'Zustände „heizt auf“', warm_states: 'Zustände „hält warm“', text_ready: 'Text „bereit“', text_heat: 'Text „heizt auf“', text_warm: 'Text „hält warm“',
   text_running: 'Text „läuft“', text_paused: 'Text „pausiert“', text_waiting: 'Text „startet später“', text_finished: 'Text „fertig“', text_error: 'Text „Störung“', text_off: 'Text „aus“',
-  layout: 'Darstellung', hide_when_off: 'Ausblenden, wenn aus, bereit oder fertig', animation: 'Animation (aus = Standbild)', color: 'Farbe', glow: 'Rahmen leuchtet beim Laufen', window: 'Sichtfenster', heat_color: 'Glühfarbe (Heizspirale)'};
+  controls_columns: 'Anordnung der Regler', controls_labels: 'Beschriftung der Regler', layout: 'Darstellung', hide_when_off: 'Ausblenden, wenn aus, bereit oder fertig', animation: 'Animation (aus = Standbild)', color: 'Farbe', glow: 'Rahmen leuchtet beim Laufen', window: 'Sichtfenster', heat_color: 'Glühfarbe (Heizspirale)'};
 const GHELPERS = {
   device_type: 'Bestimmt nur Symbol, Texte, Standardfarbe und Animation',
   entity: 'Betriebszustand, z. B. sensor.waschmaschine_betriebszustand – auch binary_sensor (an = läuft)',
@@ -1363,6 +1384,7 @@ const GHELPERS = {
   end_time: 'Zeitpunkt-Sensor. Restzeit wird daraus berechnet',
   phase: 'Leer = Status. Steuert die Sonder-Animation und wird unter dem Programm angezeigt',
   phase_states: 'Leer = Vorschlag zum Gerätetyp',
+  controls_labels: 'Nur Icons spart Platz auf kleinen Displays. Bei „Icon und Name“ fällt der Name nur weg, wenn er nicht passt.',
   show: 'z. B. Temperatur und Schleudern nur vor dem Start',
   step: 'Leer = Schritt der Entität (bei „Fertig in“ in Sekunden z. B. 1800 = 30 min)',
   start: 'Button, Skript, Schalter – oder ein Select wie „Aktives Programm“ bei Home Connect',
@@ -1415,8 +1437,9 @@ class NovaApplianceCardEditor extends NovaEditorBase {
       this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(GGEN))),
       this._section('program', 'mdi:progress-clock', 'Programm und Zeit', b => b.append(form(GPROG(t)))),
       this._section('controls', 'mdi:tune-variant', 'Regler', b => {
-        b.append(this._hint('Einstellungen vor dem Start, z. B. Programm, Temperatur, Schleudern, „Fertig in“, Kochzeit. Select = Auswahl, Zahl = Plus/Minus, Schalter = Kippschalter.'));
+        b.append(this._hint('Einstellungen vor dem Start, z. B. Programm, Temperatur, Schleudern, „Fertig in“, Kochzeit. Select = Auswahl, Zahl = Plus/Minus, Schalter = Kippschalter, Button/Skript = Knopf zum Auslösen (z. B. Warmhalten).'));
         this._itemList(b, 'controls', GCTL, {item: 'Regler', icon: 'mdi:tune'}, 'Regler hinzufügen');
+        b.append(form(GCOLS));
       }),
       this._section('buttons', 'mdi:play-pause', 'Bedienung', b => {
         b.append(this._hint('Knöpfe erscheinen nur, wenn eine Entität eingetragen und verfügbar ist: Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen.'));
