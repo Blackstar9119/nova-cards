@@ -1978,11 +1978,12 @@ hui-card-picker{flex:1;min-height:0}`;
 .scene .s-body{stroke:${PAL.line};stroke-width:.6;transition:stroke .4s}.scene .s-sheen{opacity:.4}.scene .s-edge{fill:#fff;opacity:.12}
 .scene .s-part{stroke:rgba(255,255,255,.15);stroke-width:.5}
 .scene .s-glass{stroke:rgba(255,255,255,.22);stroke-width:.7}.scene .s-refl{fill:#fff;opacity:.035}
-.scene .s-gls{opacity:0;transform-box:view-box}
+/* Außerhalb der Animation zusätzlich unsichtbar: manche Browser (Echo Show) zeigen den geparkten Streifen sonst als hellen Balken neben dem Glas */
+.scene .s-gls{opacity:0;visibility:hidden;transform-box:view-box}
 .sweep .scene .s-gls{animation:nv-glare .9s .1s ease-in-out both}
 .scene .s-scr{fill:${PAL.screen};stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .s-tgl{fill:#fff;opacity:.05}
 .still .scene .s-gls{animation-play-state:paused!important}
-@keyframes nv-glare{0%{opacity:0;transform:translateX(0)}15%{opacity:.7}85%{opacity:.7}100%{opacity:0;transform:translateX(var(--gx,70px))}}
+@keyframes nv-glare{0%{opacity:0;visibility:visible;transform:translateX(0)}15%{opacity:.7}85%{opacity:.7}99%{opacity:0;visibility:visible}100%{opacity:0;visibility:hidden;transform:translateX(var(--gx,70px))}}
 @media (prefers-reduced-motion:reduce){.sweep .scene .s-gls{animation:none}}`;
   var frameGlow = (sel2) => `${sel2}{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}`;
   function sweep(el2) {
