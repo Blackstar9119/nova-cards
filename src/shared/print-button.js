@@ -39,32 +39,41 @@ export function printButton(onTap) {
   return b;
 }
 
-// Aussehen nach Konfig und Zustand (idle | busy | ok | err); enabled = es gibt etwas zu drucken
-export function printPaint(b, c, state, enabled) {
-  const pill = c.print_style !== 'round';
-  const icon = {busy: 'mdi:loading', ok: 'mdi:check-bold', err: 'mdi:alert-circle-outline'}[state] || c.print_icon || PRINT_DEF.print_icon;
-  const label = {busy: 'Druckt …', ok: 'Gedruckt', err: 'Fehler'}[state] || c.print_label || PRINT_DEF.print_label;
-  b.className = `pb${pill ? ' pill' : ''}${state && state !== 'idle' ? ` ${state}` : ''}`;
-  b.disabled = state === 'idle' && !enabled;
+// Aussehen eines Aktions-Knopfs: look = {icon, label, pill, busy, ok, err} (Texte der Zustände), state = idle | busy | ok | err
+export function paintBtn(b, look, state, enabled) {
+  const icon = {busy: 'mdi:loading', ok: 'mdi:check-bold', err: 'mdi:alert-circle-outline'}[state] || look.icon;
+  const label = (state && state !== 'idle' && look[state]) || look.label;
+  b.className = `pb${look.pill ? ' pill' : ''}${state && state !== 'idle' ? ` ${state}` : ''}`;
+  b.disabled = (!state || state === 'idle') && !enabled;
   const ic = b.firstChild;
   if (ic.getAttribute('icon') !== icon) ic.setAttribute('icon', icon);
-  b.lastChild.textContent = pill ? label : '';
+  b.lastChild.textContent = look.pill ? label : '';
   b.title = label; b.setAttribute('aria-label', label);
 }
+// Druck-Knopf nach Konfig (print_icon, print_label, print_style); enabled = es gibt etwas zu drucken
+export const printPaint = (b, c, state, enabled) => paintBtn(b, {icon: c.print_icon || PRINT_DEF.print_icon, label: c.print_label || PRINT_DEF.print_label,
+  pill: c.print_style !== 'round', busy: 'Druckt …', ok: 'Gedruckt', err: 'Fehler'}, state, enabled);
+
+// Beliebige Aktion mit Rückmeldung: set(state) bekommt busy, dann ok/err und nach kurzer Zeit idle. key trennt mehrere
+// Knöpfe einer Karte (eigener Timer). Liefert true bei Erfolg.
+export async function runFeedback(card, key, fn, set) {
+  const t = card._pbTs ||= {};
+  clearTimeout(t[key]);
+  set('busy');
+  let ok = true;
+  try { await fn(); } catch (e) { ok = false; console.warn('[nova-cards] Aktion fehlgeschlagen', key, e); }
+  set(ok ? 'ok' : 'err');
+  t[key] = setTimeout(() => set('idle'), FEEDBACK);
+  return ok;
+}
+export const stopFeedback = card => Object.values(card._pbTs || {}).forEach(clearTimeout);
 
 // Skript ausführen und Zustand melden: set(state) wird mit busy, dann ok/err und nach kurzer Zeit idle aufgerufen.
 // Liefert true bei Erfolg.
-export async function runPrint(card, hass, script, data, set) {
+export async function runPrint(card, hass, script, data, set, key = '') {
   const name = String(script || '').replace(/^script\./, '');
   if (!name || !hass) return false;
-  clearTimeout(card._pbT);
-  set('busy');
-  let ok = true;
-  try { await hass.callService('script', name, data || {}); }
-  catch (e) { ok = false; console.warn('[nova-cards] Drucken fehlgeschlagen', script, e); }
-  set(ok ? 'ok' : 'err');
-  card._pbT = setTimeout(() => set('idle'), FEEDBACK);
-  return ok;
+  return runFeedback(card, `print:${name}:${key}`, () => hass.callService('script', name, data || {}), set);
 }
 
 /* ---------- Editor ---------- */

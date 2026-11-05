@@ -3,10 +3,11 @@ import {setIcon} from './shared/utils.js';
 import {moreInfo} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, FIELD_CSS, SECTION_EDITOR_CSS} from './shared/styles.js';
-import {hassChanged, inPicker} from './shared/lifecycle.js';
+import {hassChanged} from './shared/lifecycle.js';
+import {TodoFeed} from './shared/todo.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, BASE_LABELS} from './shared/editor-schema.js';
-import {PRINT_CSS, PRINT_DEF, printButton, printPaint, runPrint, printSchema, PRINT_LABELS, PRINT_HELPERS} from './shared/print-button.js';
+import {PRINT_CSS, PRINT_DEF, printButton, printPaint, runPrint, stopFeedback, printSchema, PRINT_LABELS, PRINT_HELPERS} from './shared/print-button.js';
 
 /* ---------- Nova Einkauf Card ---------- */
 // Einkaufsliste aus einer todo-Entität: neue Einträge direkt in der Karte, offene Punkte abhaken, Liste per Skript drucken.
@@ -45,9 +46,7 @@ transition:background-color .25s,border-color .25s,box-shadow .25s}
 const SDEF = {icon: 'mdi:cart-outline', placeholder: 'Neuer Eintrag …', show_header: true, show_completed: false, height: 200, ...PRINT_DEF};
 const LEAVE = 900;
 
-// HA-INTERN: WebSocket „todo/item/subscribe“ liefert die Einträge einer todo-Liste und jede Änderung daran (nutzt auch
-// die Aufgabenlisten-Karte von HA). Fehlt sie, werden die Einträge über den Dienst todo.get_items geholt –
-// beim Start und bei jeder Zustandsänderung der Liste.
+// Einträge kommen über TodoFeed (shared/todo.js, live per Abo)
 class NovaShoppingCard extends HTMLElement {
   static getConfigElement() { return document.createElement(tag('shopping-card-editor')); }
   static getStubConfig(h) {
@@ -58,26 +57,24 @@ class NovaShoppingCard extends HTMLElement {
   }
   setConfig(c) {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
-    const old = this._c?.entity;
     this._c = {...SDEF, ...c};
-    if (old !== this._c.entity) { this._unsub(); this._items = null; this._err = null; }
+    (this._feed ||= new TodoFeed(this, () => this._render())).setEntity(this._c.entity);
     this._ids = [this._c.entity, this._c.print_script].filter(Boolean);
     if (this._e) this._apply();
-    if (this._h) this._start();
+    if (this._h) this._feed.update(this._h);
   }
   set hass(h) {
     const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._e) this._build();
-    this._start();
-    if (this._fallback && old?.states[this._c.entity] !== h.states[this._c.entity]) this._fetch();
+    this._feed.update(h, old);
     if (hassChanged(old, h, this._ids)) this._render();
   }
   getCardSize() { return 5; }
   getGridOptions() { return {columns: 6, rows: 'auto', min_columns: 3}; }
-  connectedCallback() { if (this._h && this._c) this._start(); }
-  disconnectedCallback() { this._unsub(); clearTimeout(this._pbT); this._leaving?.forEach(x => clearTimeout(x.t)); this._leaving = new Map(); }
+  connectedCallback() { if (this._h && this._c) this._feed.update(this._h); }
+  disconnectedCallback() { this._feed?.stop(); stopFeedback(this); this._leaving?.forEach(x => clearTimeout(x.t)); this._leaving = new Map(); }
 
   _build() {
     const r = this.shadowRoot || this.attachShadow({mode: 'open'});
@@ -108,42 +105,7 @@ class NovaShoppingCard extends HTMLElement {
     this._render();
   }
 
-  // Einträge abonnieren (einmal je Liste); in der Kartenauswahl nur einmal holen
-  _start() {
-    const c = this._c, h = this._h;
-    if (!c?.entity || !h?.states[c.entity] || this._sub || this._fallback || !this.isConnected) return;
-    if (inPicker(this)) { this._fallback = true; this._fetch(); return; }
-    const id = c.entity;
-    this._sub = h.connection.subscribeMessage(m => {
-      if (this._c?.entity !== id) return;
-      this._items = Array.isArray(m?.items) ? m.items : [];
-      this._err = null;
-      this._render();
-    }, {type: 'todo/item/subscribe', entity_id: id}).catch(err => {
-      console.warn('[nova-cards] Einkauf: Abo nicht möglich, hole Einträge über todo.get_items', err);
-      this._sub = null; this._fallback = true; this._fetch();
-      return null;
-    });
-  }
-  _unsub() {
-    const s = this._sub;
-    this._sub = null; this._fallback = false;
-    s?.then(u => typeof u === 'function' && u()).catch(() => {});
-  }
-  async _fetch() {
-    const h = this._h, id = this._c?.entity;
-    if (!h || !id || !h.states[id]) return;
-    const n = this._fid = (this._fid || 0) + 1;
-    try {
-      const res = await h.callService('todo', 'get_items', {}, {entity_id: id}, false, true);
-      if (n !== this._fid) return;
-      this._items = res?.response?.[id]?.items || [];
-      this._err = null;
-    } catch (err) { this._err = err?.message || 'Liste konnte nicht geladen werden'; }
-    this._render();
-  }
-
-  _open() { return (this._items || []).filter(i => i.status === 'needs_action'); }
+  _open() { return (this._feed.items || []).filter(i => i.status === 'needs_action'); }
   _render() {
     const h = this._h, c = this._c, e = this._e;
     if (!h || !c || !e) return;
@@ -151,19 +113,19 @@ class NovaShoppingCard extends HTMLElement {
     setIcon(e.ic, c.icon);
     e.name.textContent = c.name || s?.attributes.friendly_name || 'Einkaufsliste';
     const open = this._open(), n = open.filter(i => !this._leaving.has(i.uid)).length;
-    e.sub.textContent = !s ? '' : this._items ? (n ? `${n} offen` : 'Alles erledigt') : 'Wird geladen …';
+    e.sub.textContent = !s ? '' : this._feed.items ? (n ? `${n} offen` : 'Alles erledigt') : 'Wird geladen …';
     e.inp.disabled = !s;
 
     let msg = null;
     if (!c.entity) msg = ['mdi:format-list-checks', 'Keine Liste gewählt – im Editor eine todo-Entität auswählen.'];
     else if (!s) msg = ['mdi:alert-circle-outline', `Liste nicht gefunden: ${c.entity}`];
-    else if (this._err && !this._items) msg = ['mdi:alert-circle-outline', this._err];
-    else if (!this._items) msg = ['mdi:timer-sand', 'Wird geladen …'];
+    else if (this._feed.err && !this._feed.items) msg = ['mdi:alert-circle-outline', this._feed.err];
+    else if (!this._feed.items) msg = ['mdi:timer-sand', 'Wird geladen …'];
 
     // Gerade abgehakte Einträge bleiben kurz durchgestrichen stehen
     const rows = [...open.map(i => ({...i, done: this._leaving.has(i.uid)}))];
     this._leaving.forEach((x, uid) => { if (!rows.some(r => r.uid === uid)) rows.push({...x.item, done: true, leave: true}); });
-    if (c.show_completed) rows.push(...(this._items || []).filter(i => i.status === 'completed' && !this._leaving.has(i.uid)).map(i => ({...i, done: true})));
+    if (c.show_completed) rows.push(...(this._feed.items || []).filter(i => i.status === 'completed' && !this._leaving.has(i.uid)).map(i => ({...i, done: true})));
     if (!msg && !rows.length) msg = ['mdi:cart-check', 'Nichts auf der Liste'];
 
     const key = JSON.stringify([msg, rows.map(r => [r.uid, r.summary, r.description, r.done, r.leave])]);
