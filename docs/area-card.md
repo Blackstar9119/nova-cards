@@ -40,6 +40,8 @@ Icon (Wert-Chips Icon und Wert).
 
 Wie bei der Pop-up Card: `rows` ist eine Liste von Zeilen, jede Zeile hat `cells` mit je einer Karte (`card`) und
 optional einer Breite (`width`: `1/4`, `1/3`, `1/2`, `2/3`, `3/4`, `1`; ohne Angabe teilen sich die Spalten den Platz).
+Ohne Karten (`rows: []`) zeigt die Karte nur die Kopfzeile – praktisch als Titelleiste mit Zurück-Knopf über einer anderen Karte.
+
 Mit `equal_height: true` („Gleiche Höhe pro Reihe“, Standard aus) werden alle Karten einer Zeile so hoch wie die höchste. Ist die Karte schmaler als `stack_below` (Standard 500 px, 0 = nie),
 stehen alle Karten untereinander.
 
