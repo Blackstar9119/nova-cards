@@ -7,12 +7,18 @@ Bondrucker), zeigt kurz grün mit Häkchen bzw. rot bei einem Fehler und leert d
 Strg/Cmd + Enter druckt ebenfalls. Der Entwurf bleibt im Browser gespeichert, bis er gedruckt oder geleert wird – ein
 Neuladen der Seite verliert also nichts.
 
-Die Karte ist in allen Zuständen gleich hoch; in einem Raster füllt das Textfeld den verfügbaren Platz aus.
+Mit `notes_entity` (eine todo-Liste, z. B. eine lokale To-do-Liste „Notizen“) kommt ein Knopf **Speichern** dazu. Darunter
+stehen die gespeicherten Notizen, die neueste oben, jede mit **Drucken** und **Löschen** (zweimal tippen: das erste Antippen
+färbt den Knopf rot, das zweite löscht). Gespeichert wird die erste Zeile als Titel (`summary`, lange Zeilen gekürzt) und der
+ganze Text als Beschreibung (`description`). Gedruckt wird immer der ganze Text.
+
+Die Karte ist in allen Zuständen gleich hoch; in einem Raster füllen Textfeld und Liste den verfügbaren Platz aus.
 
 ```yaml
 type: custom:nova-note-card
 print_script: script.notiz_drucken
 print_field: text            # unter diesem Namen bekommt das Skript den Text
+notes_entity: todo.notizen   # optional: Notizen speichern
 ```
 
 | Option | Standard | Bedeutung |
@@ -22,6 +28,9 @@ print_field: text            # unter diesem Namen bekommt das Skript den Text
 | `placeholder` | `Notiz schreiben …` | Platzhalter im Textfeld |
 | `height` | `180` | Mindesthöhe des Textfelds in px |
 | `show_clear` | `true` | Knopf „Leeren“ (Radiergummi) |
+| `notes_entity` | – | todo-Liste für gespeicherte Notizen (leer = ohne Speichern) |
+| `notes_height` | `180` | Mindesthöhe der Notizliste in px |
+| `clear_after_save` | `true` | Feld nach dem Speichern leeren |
 | `print_script` | – | Skript für den Druck-Knopf (leer = kein Knopf) |
 | `print_field` | `text` | Feldname, unter dem das Skript den Text bekommt |
 | `clear_after_print` | `true` | Feld nach erfolgreichem Druck leeren |
