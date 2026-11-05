@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Navi,
-Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips, Gerät, 3D-Drucker und Fernbedienung – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips, Gerät, 3D-Drucker, Fernbedienung, Einkauf und Notiz – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -29,6 +29,8 @@ src/
   printer.js          Nova 3D-Drucker Card + Editor (Bambu Lab: Druckerzeichnung im P2S-Stil, AMS, Kamera, Meldungen, Demo-Modus)
   printer-messages.js Meldungen der 3D-Drucker Card: Druckphasen (stg_cur), HMS-/Druckfehler-Codes, Textmuster → Animation
   remote.js           Nova Fernbedienung + Editor (Tastenbelegung je Integration, App-Vorlagen)
+  shopping.js         Nova Einkauf Card + Editor (todo-Liste: Eingabefeld, abhaken, Druck-Knopf)
+  note.js             Nova Notiz Card + Editor (mehrzeiliges Notizfeld, Entwurf im Browser, Druck-Knopf)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
                       tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
@@ -48,6 +50,7 @@ src/
     card-grid-editor.js  Editorseite dazu: Vorlagen, Miniatur-Raster, Kartenauswahl, Karteneditor, YAML (Mixin GridEditor)
     chips.js          Nova Chips: Wert- und Knopf-Chips (Darstellung, Schnellauswahl wie „Alle Lichter im Raum aus“,
                       Editor-Schema) – für die Chips Card, später auch Pop-up
+    print-button.js   Druck-Knopf von Einkauf und Notiz: ruft ein Skript auf und zeigt Erfolg/Fehler (runPrint, printPaint)
     popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
                       Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Nova Navi und Raum-Karte
 docs/
@@ -143,6 +146,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | Elementname `hui-card-picker` (Vorschau in der Kartenauswahl erkennen) | `lifecycle.js` (`inPicker`) | Karte läuft wie normal eingebunden |
 | WebSocket `config/auth/list` (Benutzerliste, nur Admins) | `navi.js` (Editor, Sichtbarkeit) | nur der eigene Benutzer in der Auswahl |
 | Event `card-visibility-changed` + `element.hidden` (Karte ausblenden) | `appliance.js` | Karte ist leer (`:host([hidden])`), Platz im Raster bleibt |
+| WebSocket `todo/item/subscribe` (Einträge einer todo-Liste) | `shopping.js` | Dienst `todo.get_items` bei jeder Zustandsänderung der Liste |
 | `home-assistant` → `home-assistant-main` → `partial-panel-resolver` (Inhaltsbereich neben der Seitenleiste) | `popup-hub.js` (`followContent`, Pop-up Card und Navi-Pop-up) | Pop-up deckt das ganze Fenster ab |
 
 ## Dev-Workflow
