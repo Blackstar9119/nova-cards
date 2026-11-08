@@ -1,4 +1,4 @@
-/* Nova Cards v0.11.1 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.12.0 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
@@ -136,7 +136,7 @@
     const e = h.entities?.[id];
     return e && (e.area_id || h.devices?.[e.device_id]?.area_id) || null;
   };
-  var hasF = (s, f2) => ((s?.attributes.supported_features || 0) & f2) === f2;
+  var hasF = (s, f3) => ((s?.attributes.supported_features || 0) & f3) === f3;
   var DUR_U = { ms: 1e-3, s: 1, min: 60, h: 3600, d: 86400 };
   var clockOf = (sec) => {
     const t = Math.max(0, Math.round(sec)), hh = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), ss = String(t % 60).padStart(2, "0");
@@ -266,7 +266,9 @@
 --nv-popup-base:var(--nova-popup-base-color,rgba(22,27,42,.88));
 --nv-popup-head:var(--nova-popup-header-color,rgba(60,72,100,.85));
 --nv-popup-backdrop:var(--nova-popup-backdrop,rgba(8,12,22,.5));
---nv-popup-r:var(--nova-popup-radius,28px)}`;
+--nv-popup-r:var(--nova-popup-radius,28px);
+--nv-clock-night:var(--nova-clock-night,#4d6bff);--nv-clock-morning:var(--nova-clock-morning,#ffb36b);--nv-clock-noon:var(--nova-clock-noon,#f4f7ff);
+--nv-led-red:var(--nova-led-red,#ff3b30);--nv-led-green:var(--nova-led-green,#39ff7a);--nv-led-blue:var(--nova-led-blue,#3fa9ff);--nv-led-amber:var(--nova-led-amber,#ffb000)}`;
   var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
   var roleVars = (r) => {
     const k = ROLES[r] || ROLES.neutral;
@@ -455,8 +457,8 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     set hass(h) {
       const old = this._hass;
       this._hass = h;
-      if (hassChanged(old, h, this._ids)) this._forms.forEach((f2) => {
-        f2.hass = h;
+      if (hassChanged(old, h, this._ids)) this._forms.forEach((f3) => {
+        f3.hass = h;
       });
     }
     setConfig(c) {
@@ -510,28 +512,28 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
       return el2;
     }
     _form(schema, data, cb) {
-      const f2 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
-        const f3 = document.createElement("ha-form");
-        f3.schema = schema;
-        f3.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
-        f3.computeHelper = (s) => this.constructor.helpers?.[s.name];
-        f3.addEventListener("value-changed", (e) => {
+      const f3 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
+        const f4 = document.createElement("ha-form");
+        f4.schema = schema;
+        f4.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f4.computeHelper = (s) => this.constructor.helpers?.[s.name];
+        f4.addEventListener("value-changed", (e) => {
           e.stopPropagation();
-          f3.data = e.detail.value;
-          f3._dk = JSON.stringify(f3.data);
-          f3._cb(e.detail.value);
+          f4.data = e.detail.value;
+          f4._dk = JSON.stringify(f4.data);
+          f4._cb(e.detail.value);
         });
-        return f3;
+        return f4;
       });
-      if (f2.hass !== this._hass) f2.hass = this._hass;
+      if (f3.hass !== this._hass) f3.hass = this._hass;
       const dk = JSON.stringify(data);
-      if (f2._dk !== dk) {
-        f2.data = data;
-        f2._dk = dk;
+      if (f3._dk !== dk) {
+        f3.data = data;
+        f3._dk = dk;
       }
-      f2._cb = cb;
-      this._forms.push(f2);
-      return f2;
+      f3._cb = cb;
+      this._forms.push(f3);
+      return f3;
     }
     // Runder Icon-Button (Verschieben, Löschen …)
     _btn(icon2, title, fn, dis) {
@@ -1442,11 +1444,11 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
 
   // src/light.js
   function hsToRgb(hue, sat) {
-    const f2 = (n) => {
+    const f3 = (n) => {
       const k = (n + hue / 60) % 6;
       return Math.round(255 * (1 - sat * Math.max(0, Math.min(k, 4 - k, 1))));
     };
-    return [f2(5), f2(3), f2(1)];
+    return [f3(5), f3(3), f3(1)];
   }
   var rgbToHex = (rgb) => "#" + rgb.map((x) => x.toString(16).padStart(2, "0")).join("");
   var hexToRgb = (hex) => {
@@ -2492,21 +2494,21 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     _flip(cur2, lbl, sig) {
       const dock = this._dock, btns = this._btns;
       const rect = (e) => e.getBoundingClientRect();
-      const f2 = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
+      const f3 = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
       const oldNm = btns.map((d) => d._nm).find((n) => n.classList.contains("on") && !n.hidden);
       const fn = oldNm && { r: rect(oldNm), t: oldNm.textContent, o: +getComputedStyle(oldNm).opacity };
       this._stop();
       this._apply(cur2, lbl, false);
       const o = this._origin(), l = { bg: rect(this._bg), b: btns.map(rect) }, newNm = btns[cur2]?._nm.classList.contains("on") ? btns[cur2]._nm : null;
       btns.forEach((d, k) => {
-        if (!d.hidden && f2.b[k].width) d.style.transform = `translate(${f2.b[k].left - l.b[k].left}px,${f2.b[k].top - l.b[k].top}px)`;
+        if (!d.hidden && f3.b[k].width) d.style.transform = `translate(${f3.b[k].left - l.b[k].left}px,${f3.b[k].top - l.b[k].top}px)`;
       });
-      if (l.bg.width) this._bg.style.transform = `translate(${f2.bg.left - l.bg.left}px,${f2.bg.top - l.bg.top}px) scale(${f2.bg.width / l.bg.width},${f2.bg.height / l.bg.height})`;
-      if (f2.hlOn) this._hl.style.transform = `translate(${f2.hl.left - o.x}px,${f2.hl.top - o.y}px)`;
+      if (l.bg.width) this._bg.style.transform = `translate(${f3.bg.left - l.bg.left}px,${f3.bg.top - l.bg.top}px) scale(${f3.bg.width / l.bg.width},${f3.bg.height / l.bg.height})`;
+      if (f3.hlOn) this._hl.style.transform = `translate(${f3.hl.left - o.x}px,${f3.hl.top - o.y}px)`;
       else this._pillTo(cur2, false);
       if (newNm) {
         newNm.style.opacity = "0";
-        newNm.style.transform = `translate(${f2.b[cur2].left - l.b[cur2].left - 12}px,0)`;
+        newNm.style.transform = `translate(${f3.b[cur2].left - l.b[cur2].left - 12}px,0)`;
       }
       if (fn) {
         const g = this._ghost = document.createElement("span");
@@ -2539,7 +2541,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         const g = this._ghost, ob = fn && btns.findIndex((d) => d._nm === oldNm);
         if (g) {
           g.style.opacity = "0";
-          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f2.b[ob].left : 0) - 8}px,${g._dy}px)`;
+          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f3.b[ob].left : 0) - 8}px,${g._dy}px)`;
         }
         this._ft = setTimeout(() => {
           if (this._shown === sig) {
@@ -2648,13 +2650,13 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     }
     // Menü neben dem Button: über der Leiste unten, darunter oben, daneben als Seitenleiste
     _place(m, b) {
-      const r = b.getBoundingClientRect(), W = innerWidth, H2 = innerHeight, g = 10, side = this._side;
+      const r = b.getBoundingClientRect(), W2 = innerWidth, H3 = innerHeight, g = 10, side = this._side;
       const w = m.offsetWidth, ht = m.offsetHeight, clamp2 = (v, max) => Math.max(8, Math.min(v, max - 8));
       if (side) {
         m.style.left = `${side === "right" ? r.left - g - w : r.right + g}px`;
-        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H2 - ht)}px`;
+        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H3 - ht)}px`;
       } else {
-        m.style.left = `${clamp2(r.left + r.width / 2 - w / 2, W - w)}px`;
+        m.style.left = `${clamp2(r.left + r.width / 2 - w / 2, W2 - w)}px`;
         m.style.top = `${this._cfg.position === "top" ? r.bottom + g : r.top - g - ht}px`;
       }
     }
@@ -7661,18 +7663,18 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       delete data.info;
       delete data.badges;
       if (data.color && !data.tint) data.tint = data.color;
-      const f2 = this._form(GENERAL, data, (v) => {
+      const f3 = this._form(GENERAL, data, (v) => {
         const c = merge(this._config, names(GENERAL), v);
         delete c.color;
         if (v.hash != null) {
           const h = cleanHash(v.hash);
-          if (h !== v.hash) f2.data = { ...v, hash: h };
+          if (h !== v.hash) f3.data = { ...v, hash: h };
           if (h) c.hash = h;
           else delete c.hash;
         }
         this._emit(c);
       });
-      b.append(f2);
+      b.append(f3);
       if (!this._config.hash) b.append(this._hint("Ohne Hash lässt sich das Pop-up nicht öffnen."));
       return d;
     }
@@ -8768,7 +8770,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var qTumb = (x) => `<path class="qgl" d="M${x - 4} 104 L${x - 3.2} 91 h6.4 L${x + 4} 104 Z"/><path class="qgh" d="M${x - 2.6} 102 L${x - 2} 93"/>`;
   var qCup = (x, c) => `<path class="qcup${c ? " c2" : ""}" d="M${x - 5} 104 v-9.5 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v9.5 Z"/><path class="qcuh" d="M${x + 5} 95.6 h1.4 a2.5 2.5 0 0 1 0 5 h-1.4"/><path class="qgh" d="M${x - 3.4} 102 v-7"/>`;
   var qWire = (y1, y2) => `<path class="qwire" d="${Array.from({ length: 19 }, (_, i) => `M${46 + i * 6} ${y1} V${y2}`).join(" ")}"/><rect class="qrl" x="45" y="${y2 - 0.6}" width="110" height="1.4" rx=".7"/><rect class="qrl t" x="45" y="${y1 - 0.4}" width="110" height=".9" rx=".45"/><circle class="qrol" cx="47" cy="${y2 + 1.6}" r="1.6"/><circle class="qrol" cx="153" cy="${y2 + 1.6}" r="1.6"/>`;
-  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f2) => `<circle class="qnz" cx="${100 + f2 * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
+  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f3) => `<circle class="qnz" cx="${100 + f3 * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
   var qJets = (y, xs) => `<g class="qjet">${xs.map((x, i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1 : 1.3}" style="--dx:${x < 100 ? -4 : 4}px;animation-delay:${(i * 0.27).toFixed(2)}s"/>`).join("")}</g>`;
   var QIN = `<g class="qtop"><path class="qcut" d="M58 37.4 h18 M82 36.6 h16 M118 37.4 h20"/><ellipse class="qcuts" cx="76.6" cy="37.4" rx="2.2" ry="1.2"/><path class="qcutk" d="M98 36.6 h6 q-1 1.4 -6 1.2 Z"/>${qWire(33, 40.5)}</g>
 <g class="qup">${[58, 70].map(qWine).join("")}${qTumb(82)}${qCup(96)}${qCup(110, 1)}${qTumb(124)}${[136, 146].map(qWine).join("")}${qWire(88, 104.5)}</g>
@@ -8793,8 +8795,8 @@ ${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" 
       for (let x = x0 - 1 + rnd() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd() * rMax * 0.6) {
         const r = rMin + rnd() * (rMax - rMin), cx = x + (rnd() - 0.5) * 1.6, cy = y + (rnd() - 0.5) * 1.8;
         if (cy < top(cx) + r * 0.2 || rnd() < 0.1) continue;
-        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f2 = (n) => n.toFixed(1);
-        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f2(cx)} ${f2(cy)})"><path d="M${f2(cx - a[0])} ${f2(cy)}Q${f2(cx - a[0])} ${f2(cy - a[1])} ${f2(cx)} ${f2(cy - a[1])}Q${f2(cx + a[2])} ${f2(cy - a[1])} ${f2(cx + a[2])} ${f2(cy)}Q${f2(cx + a[2])} ${f2(cy + a[3])} ${f2(cx)} ${f2(cy + a[3])}Q${f2(cx - a[0])} ${f2(cy + a[3])} ${f2(cx - a[0])} ${f2(cy)}Z"/><ellipse cx="${f2(cx - r * 0.3)}" cy="${f2(cy - r * 0.38)}" rx="${f2(r * 0.38)}" ry="${f2(r * 0.24)}"/></g>`);
+        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f3 = (n) => n.toFixed(1);
+        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f3(cx)} ${f3(cy)})"><path d="M${f3(cx - a[0])} ${f3(cy)}Q${f3(cx - a[0])} ${f3(cy - a[1])} ${f3(cx)} ${f3(cy - a[1])}Q${f3(cx + a[2])} ${f3(cy - a[1])} ${f3(cx + a[2])} ${f3(cy)}Q${f3(cx + a[2])} ${f3(cy + a[3])} ${f3(cx)} ${f3(cy + a[3])}Q${f3(cx - a[0])} ${f3(cy + a[3])} ${f3(cx - a[0])} ${f3(cy)}Z"/><ellipse cx="${f3(cx - r * 0.3)}" cy="${f3(cy - r * 0.38)}" rx="${f3(r * 0.38)}" ry="${f3(r * 0.24)}"/></g>`);
       }
     }
     return out.join("");
@@ -9732,8 +9734,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _atCalc() {
       const c = this._c;
       if (!this._at || c.start_at !== "home_connect") return null;
-      const [H2, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
-      start.setHours(H2, M, 0, 0);
+      const [H3, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
+      start.setHours(H3, M, 0, 0);
       if (start <= now) start.setDate(start.getDate() + 1);
       const ds = this._S(c.duration), dur = secsOf(ds);
       if (!dur) return { start, err: "Programmdauer unbekannt (Editor → Programm und Zeit → Gesamtdauer)" };
@@ -9846,9 +9848,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.g.classList.toggle("last", cls === "run" && rem != null && rem <= 60);
       if (e.kp) {
         const r = secsOf(this._S(c.remaining)), tot = secsOf(this._S(c.duration));
-        const f2 = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
-        e.g.classList.toggle("kring", f2 != null);
-        e.kp.style.strokeDashoffset = String(100 - (f2 ?? 0) * 100);
+        const f3 = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
+        e.g.classList.toggle("kring", f3 != null);
+        e.kp.style.strokeDashoffset = String(100 - (f3 ?? 0) * 100);
         if (e.kt) e.kt.textContent = r > 0 ? fmtDisp(r) : "";
       }
       if (e.wd) e.wd.textContent = cls === "done" ? "End" : cls === "off" ? "" : rem != null ? fmtDisp(rem) : "– –";
@@ -10009,10 +10011,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       DRINKS.forEach(([x]) => g.classList.toggle(`k-${x}`, x === k));
       ["--cc", "--cr", "--cm"].forEach((v, i) => g.style.setProperty(v, col[i]));
       g.classList.toggle("milk", milk);
-      const prog = cls === "run" && p != null, f2 = cls === "done" ? 1 : prog ? p / 100 : 0;
+      const prog = cls === "run" && p != null, f3 = cls === "done" ? 1 : prog ? p / 100 : 0;
       g.classList.toggle("cprog", prog);
-      g.style.setProperty("--cl", f2.toFixed(2));
-      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f2 - 0.45) / 0.55)).toFixed(2) : "0");
+      g.style.setProperty("--cl", f3.toFixed(2));
+      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f3 - 0.45) / 0.55)).toFixed(2) : "0");
       if (this._e.cx) this._e.cx.textContent = { off: "", err: "Störung", done: "Fertig", heat: "Heizt auf", warm: "Warm", wait: "Später" }[cls] ?? (src ? D[2] : cls === "run" ? TY.run : "Bereit");
     }
     _alerts(cls, stx) {
@@ -10033,14 +10035,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       c.hints.forEach((a) => {
         const s = this._S(a.entity);
         if (!alertHit(a, s)) return;
-        const an = can.includes(a.anim) ? a.anim : null, H2 = HANIM[an];
+        const an = can.includes(a.anim) ? a.anim : null, H3 = HANIM[an];
         if (an) on.add(an);
         const fd = an === "filter" ? this._S(c.filter_days) : null, fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
         const fx = fdn != null ? `noch ${fdn} ${fdn === 1 ? "Tag" : "Tage"}` : "";
         add(
           ["error", "info"].includes(a.level) ? a.level : "warning",
-          a.icon || (H2 && an !== "warning" ? H2[2] : s?.attributes.icon) || "mdi:information-outline",
-          [a.message || H2 && H2[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
+          a.icon || (H3 && an !== "warning" ? H3[2] : s?.attributes.icon) || "mdi:information-outline",
+          [a.message || H3 && H3[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
           a.entity,
           !!an,
           a.reset && { id: a.reset, name: a.reset_name || "Zurücksetzen" }
@@ -10462,8 +10464,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     const a = s.attributes || {}, groups = {};
     for (const [k, v] of Object.entries(a)) {
       if (["friendly_name", "device_class", "icon", "Count", "count"].includes(k) || v == null || typeof v === "object") continue;
-      const m = k.match(/^(\d+)[-_ ](.+)$/), n = m ? m[1] : "0", f2 = (m ? m[2] : k).toLowerCase();
-      (groups[n] ||= {})[f2] = String(v);
+      const m = k.match(/^(\d+)[-_ ](.+)$/), n = m ? m[1] : "0", f3 = (m ? m[2] : k).toLowerCase();
+      (groups[n] ||= {})[f3] = String(v);
     }
     const out = Object.values(groups).map((g) => {
       const raw = g.error || g.message || g.text || g.description || g.desc || "";
@@ -11152,7 +11154,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const wnSlot = ["empty", "tangle"].includes(m.fx);
       e.sl.forEach((x, i) => {
         const s = aU?.slots[i];
-        const f2 = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f2, y = 75 - hh / 2;
+        const f3 = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f3, y = 75 - hh / 2;
         [x.fl, x.fcl].forEach((r) => {
           r.setAttribute("y", y.toFixed(1));
           r.setAttribute("height", hh.toFixed(1));
@@ -11840,11 +11842,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       return { columns: 6, rows: "auto", min_columns: 4 };
     }
     disconnectedCallback() {
-      this._stops?.forEach((f2) => f2());
+      this._stops?.forEach((f3) => f3());
     }
     _build() {
       this._built = true;
-      this._stops?.forEach((f2) => f2());
+      this._stops?.forEach((f3) => f3());
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" });
       this._plat = platformOf(this._h, c);
       this._mp = playerOf(this._h, c);
@@ -12211,14 +12213,14 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
     _keys(b) {
       const plat = platformOf(this._hass, this._config), map = KEYMAPS[plat] || {};
       b.append(this._hint("Nur ausfüllen, wenn eine Taste anders belegt sein soll. Mehrere Befehle nacheinander mit Komma, abwechselnd bei jedem Druck mit | (z. B. Pause|Play)."));
-      const f2 = this._form(RKEYS, { ...this._config.keys }, (v) => {
+      const f3 = this._form(RKEYS, { ...this._config.keys }, (v) => {
         const keys = Object.fromEntries(KEYS.filter((k) => v[k]).map((k) => [k, v[k]])), c = { ...this._config };
         if (Object.keys(keys).length) c.keys = keys;
         else delete c.keys;
         this._emit(c);
       });
-      f2.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
-      b.append(f2);
+      f3.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
+      b.append(f3);
     }
   };
   __publicField(NovaRemoteCardEditor, "labels", RLABELS);
@@ -12816,14 +12818,14 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         this._sec = sec > 0 ? Math.min(sec, this._vals.at(-1)) : 300;
         return;
       }
-      const t = Math.max(0, Math.round(sec)), u = this._units(), H2 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
+      const t = Math.max(0, Math.round(sec)), u = this._units(), H3 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
       const c = { h: 0, m: 0, s: 0 };
-      if (H2) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
-      if (M) c.m = Math.min(this._max("m"), Math.floor((H2 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
-      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H2 ? t % 3600 : t) / 5) * 5);
+      if (H3) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
+      if (M) c.m = Math.min(this._max("m"), Math.floor((H3 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
+      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H3 ? t % 3600 : t) / 5) * 5);
       if (!c.h && !c.m && !c.s) {
         if (M) c.m = 5;
-        else if (H2) c.h = 1;
+        else if (H3) c.h = 1;
         else c.s = 30;
       }
       this._cust = c;
@@ -13274,11 +13276,147 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   __publicField(NovaTimerCardEditor, "openSections", ["general"]);
   define("timer-card-editor", NovaTimerCardEditor);
 
+  // src/clock-styles.js
+  var f2 = (n) => +n.toFixed(2);
+  var flipDigit = () => '<span class="fd"><span class="h t"><b></b></span><span class="h b"><b></b></span><span class="h t fl"><b></b></span><span class="h b fl"><b></b></span><i class="pin"></i><i class="pin r"></i></span>';
+  function flipSet(el2, ch, anim) {
+    const [t, b, ft, fb] = el2.querySelectorAll("b");
+    const old = el2._ch;
+    if (old === ch) return;
+    el2._ch = ch;
+    clearTimeout(el2._ft);
+    if (!anim || old == null) {
+      t.textContent = b.textContent = ft.textContent = fb.textContent = ch;
+      el2.classList.remove("go");
+      return;
+    }
+    t.textContent = ch;
+    b.textContent = old;
+    ft.textContent = old;
+    fb.textContent = ch;
+    el2.classList.remove("go");
+    void el2.offsetWidth;
+    el2.classList.add("go");
+    el2._ft = setTimeout(() => {
+      b.textContent = ch;
+      el2.classList.remove("go");
+    }, 640);
+  }
+  var FLIP_CSS = `
+.flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:clamp(34px,var(--nova-clock-size,19cqw),150px);line-height:1;font-weight:600;color:#eef1f6;font-variant-numeric:tabular-nums}
+.flp .grp{display:flex;gap:.05em}.flp .grp.sec{font-size:.45em;align-self:flex-end;margin-left:.1em}
+.flp .sep{display:flex;flex-direction:column;gap:.22em;padding:0 .02em}.flp .sep i{width:.1em;height:.1em;border-radius:50%;background:#fff;opacity:.35}
+.flp .ap{font-size:.24em;font-weight:500;opacity:.7;align-self:flex-start;margin-left:.15em;letter-spacing:0}
+.fd{position:relative;display:block;width:.7em;height:1.12em;border-radius:.08em;perspective:2.6em;
+box-shadow:0 .04em .1em rgba(0,0,0,.45),0 0 0 .5px rgba(255,255,255,.12)}
+.fd .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.fd .t{top:0;border-radius:.08em .08em 0 0;background:linear-gradient(180deg,${PAL.part},#2b313d)}
+.fd .b{bottom:0;border-radius:0 0 .08em .08em;background:linear-gradient(180deg,#232833,${PAL.partDark})}
+.fd .t::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 40%)}
+.fd b{position:absolute;left:0;right:0;height:200%;line-height:1.12em;text-align:center;font-weight:inherit;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.fd .t b{top:0}.fd .b b{bottom:0}
+/* Trennfuge in der Mitte und die Achsstifte links und rechts */
+.fd::after{content:"";position:absolute;left:0;right:0;top:calc(50% - .012em);height:.024em;background:rgba(0,0,0,.65);box-shadow:0 .012em 0 rgba(255,255,255,.06);z-index:3}
+.fd .pin{position:absolute;top:calc(50% - .05em);left:-.015em;width:.035em;height:.1em;border-radius:.02em;background:linear-gradient(90deg,${PAL.chromeDark},${PAL.chrome});z-index:4}.fd .pin.r{left:auto;right:-.015em;transform:scaleX(-1)}
+.fd .fl{visibility:hidden;z-index:2}
+.fd.go .t.fl{visibility:visible;transform-origin:50% 100%;animation:fl-t .3s cubic-bezier(.55,.06,.68,.19) forwards}
+.fd.go .b.fl{visibility:visible;transform-origin:50% 0;animation:fl-b .3s .3s cubic-bezier(.22,.61,.36,1) both}
+/* Schatten der fallenden Klappe auf der unteren Hälfte */
+.fd .b:not(.fl)::after{content:"";position:absolute;inset:0;background:#000;opacity:0}
+.fd.go .b:not(.fl)::after{animation:fl-sh .6s ease-out}
+@keyframes fl-t{0%{transform:rotateX(0);filter:brightness(1)}100%{transform:rotateX(-90deg);filter:brightness(.55)}}
+@keyframes fl-b{0%{transform:rotateX(90deg);filter:brightness(1.35)}80%{transform:rotateX(-7deg);filter:brightness(1)}100%{transform:rotateX(0)}}
+@keyframes fl-sh{0%{opacity:0}45%{opacity:.35}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.fd *,.fd::after{animation:none!important}}`;
+  var mix = (a, b, t) => {
+    t = Math.min(1, Math.max(0, t));
+    return `color-mix(in srgb,var(--nv-clock-${a}) ${f2((1 - t) * 100)}%,var(--nv-clock-${b}))`;
+  };
+  function glowColor(elev, rising) {
+    if (elev == null || isNaN(elev)) return null;
+    if (rising) return elev < 0 ? mix("night", "morning", (elev + 10) / 10) : elev < 10 ? "var(--nv-clock-morning)" : mix("morning", "noon", (elev - 10) / 25);
+    return elev > 34 ? "var(--nv-clock-noon)" : mix("noon", "night", (34 - elev) / 40);
+  }
+  var sunGuess = (hour) => ({ elev: 45 * Math.sin(Math.PI * (hour - 6) / 12), rising: hour < 12 });
+  var GLOW_CSS = `
+.tm.glow{font-weight:200;letter-spacing:-.02em;font-size:clamp(40px,var(--nova-clock-size,27cqw),190px);color:var(--gc);
+text-shadow:0 0 .04em var(--gc),0 0 .18em color-mix(in srgb,var(--gc) 55%,transparent),0 0 .5em color-mix(in srgb,var(--gc) 30%,transparent);transition:color 90s linear,text-shadow 90s linear}
+.tm.glow .sc,.tm.glow .ap{opacity:.75}
+.tm.glow .cl{opacity:.8}`;
+  var SEG2 = { 0: "abcdef", 1: "bc", 2: "abged", 3: "abgcd", 4: "fgbc", 5: "afgcd", 6: "afgedc", 7: "abc", 8: "abcdefg", 9: "abcdfg", " ": "" };
+  var W = 34;
+  var H = 64;
+  var T2 = 7.5;
+  var G = 1.3;
+  var segPath = (x1, y1, x2, y2) => {
+    const hz = y1 === y2, h = T2 / 2;
+    if (hz) {
+      const a2 = x1 + G, b2 = x2 - G;
+      return `M${a2} ${y1}L${a2 + h} ${y1 - h}H${b2 - h}L${b2} ${y1}L${b2 - h} ${y1 + h}H${a2 + h}Z`;
+    }
+    const a = y1 + G, b = y2 - G;
+    return `M${x1} ${a}L${x1 + h} ${a + h}V${b - h}L${x1} ${b}L${x1 - h} ${b - h}V${a + h}Z`;
+  };
+  var SEGS = { a: [0, 0, W, 0], b: [W, 0, W, H / 2], c: [W, H / 2, W, H], d: [0, H, W, H], e: [0, H / 2, 0, H], f: [0, 0, 0, H / 2], g: [0, H / 2, W, H / 2] };
+  var digit = (x, y, s = 1) => `<g class="dg" transform="translate(${x} ${y}) scale(${s}) skewX(-6)">${Object.entries(SEGS).map(([k, p]) => `<path class="sg" data-s="${k}" d="${segPath(...p)}"/>`).join("")}</g>`;
+  function retroSvg(sec) {
+    const pad = 22, step = W + 16, colon = 22, sw = sec ? 2 * 21 + 10 : 0;
+    const dispW = 4 * step - 16 + colon + sw + 2 * pad, dispH = H + 2 * pad - 6;
+    const bw = dispW + 36, bh = dispH + 44, X = 18, Y = 26, vw = bw, vh = bh + 16;
+    const xs = [0, step, 2 * step + colon, 3 * step + colon].map((v) => X + pad + 6 + v), dy = Y + (dispH - H) / 2;
+    const cx = X + pad + 6 + 2 * step - 16 / 2 + colon / 2 - 2;
+    const secX = xs[3] + step + 4;
+    return `<svg class="scene rt-svg" viewBox="0 0 ${vw} ${vh}" aria-hidden="true"><defs>${sceneDefs("r")}
+<filter id="r-led" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<radialGradient id="r-vg" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<clipPath id="r-gc"><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/></clipPath></defs>
+<ellipse class="s-shd" cx="${vw / 2}" cy="${bh + 12}" rx="${f2(bw * 0.42)}" ry="4"/>
+<rect class="s-part" x="${f2(bw * 0.3)}" y="4" width="${f2(bw * 0.4)}" height="8" rx="2" fill="url(#r-pt)"/><rect x="${f2(bw * 0.3 + 2)}" y="5" width="${f2(bw * 0.4 - 4)}" height=".6" fill="#fff" opacity=".18"/>
+<rect class="s-body" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-bd)"/><rect class="s-sheen" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-sh)"/>
+<rect class="s-edge" x="9" y="10.4" width="${bw - 18}" height=".7" rx=".35"/>
+<rect class="s-part" x="${X - 6}" y="${Y - 6}" width="${dispW + 12}" height="${dispH + 12}" rx="3" fill="url(#r-pt)"/>
+<rect class="s-scr" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-vg)"/>
+<g class="rt-on" filter="url(#r-led)">${xs.map((x) => digit(x, dy)).join("")}
+<g class="rt-col"><circle cx="${cx}" cy="${dy + H * 0.3}" r="3.4"/><circle cx="${cx}" cy="${dy + H * 0.7}" r="3.4"/></g>
+${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : ""}
+<circle class="rt-pm" cx="${X + 11}" cy="${dy + 4}" r="2.6"/></g>
+<rect class="s-glass" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-gl)"/>
+<g clip-path="url(#r-gc)"><path class="s-refl" d="M${X} ${Y + dispH * 0.7}L${X + dispW * 0.3} ${Y}h${f2(dispW * 0.08)}L${X} ${Y + dispH}z"/><path class="s-refl" d="M${X + dispW * 0.45} ${Y + dispH}L${X + dispW * 0.75} ${Y}h${f2(dispW * 0.03)}L${X + dispW * 0.48} ${Y + dispH}z"/>
+<g transform="rotate(18 ${X + dispW / 2} ${Y + dispH / 2})"><rect class="s-gls" x="${X - 30}" y="${Y - 40}" width="22" height="${dispH + 80}" fill="url(#r-gs)"/></g></g>
+<g opacity=".2" stroke="#fff" stroke-width=".6">${[0, 1, 2, 3, 4].map((i) => `<path d="M${bw - 60 + i * 9} ${Y + dispH + 14}v8"/>`).join("")}</g>
+<circle class="s-part" cx="${X + 8}" cy="${Y + dispH + 18}" r="4" fill="url(#r-cr)"/><circle class="s-part" cx="${X + 22}" cy="${Y + dispH + 18}" r="4" fill="url(#r-cr)"/>
+<rect class="s-part" x="14" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/><rect class="s-part" x="${bw - 30}" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/>
+</svg>`;
+  }
+  function retroSet(svg, chars, pm) {
+    svg.querySelectorAll(".dg").forEach((g, i) => {
+      const on = SEG2[chars[i]] ?? "";
+      if (g._ch === chars[i]) return;
+      g._ch = chars[i];
+      g.querySelectorAll(".sg").forEach((p) => p.classList.toggle("on", on.includes(p.dataset.s)));
+    });
+    svg.querySelector(".rt-pm")?.classList.toggle("on", !!pm);
+  }
+  var RETRO_COLORS = ["red", "green", "blue", "amber"];
+  var RETRO_CSS = `
+.rt{width:100%;max-width:var(--nova-clock-size,520px)}.rt svg{display:block;width:100%;height:auto}
+.rt{--led:var(--nv-led-red)}.rt.green{--led:var(--nv-led-green)}.rt.blue{--led:var(--nv-led-blue)}.rt.amber{--led:var(--nv-led-amber)}
+.scene .sg,.scene .rt-col circle,.scene .rt-pm{fill:var(--led);opacity:.08;transition:opacity .15s}
+.scene .sg.on,.scene .rt-pm.on{opacity:1}
+.scene .rt-col circle{opacity:1}
+.anim .scene .rt-col{animation:rt-blink 1s steps(1) infinite}
+@keyframes rt-blink{50%{opacity:.08}}
+@media (prefers-reduced-motion:reduce){.scene .rt-col{animation:none!important}}`;
+
   // src/clock.js
-  var DEF6 = { mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true };
+  var DEF6 = { style: "default", second_hand: "sweep", retro_color: "red", sun_entity: "sun.sun", mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true };
   var C = 100;
   var R2 = 92;
-  var CCSS2 = `${DIAL_CSS}
+  var STYLES = ["default", "flip", "analog", "glow", "retro"];
+  var styleOf = (c) => STYLES.includes(c.style) && c.style !== "default" ? c.style : c.mode === "analog" ? "analog" : "default";
+  var handOf = (c) => c.style === "analog" ? ["sweep", "tick", "none"].includes(c.second_hand) ? c.second_hand : "sweep" : c.show_seconds ? "tick" : "none";
+  var reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  var CCSS2 = `${DIAL_CSS}${FLIP_CSS}${GLOW_CSS}${RETRO_CSS}
 :host{container-type:inline-size}
 .g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
 .g.ck.flat{background:none;border-color:transparent;box-shadow:none}
@@ -13293,6 +13431,8 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
 .scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
 .scene .cap{fill:url(#k-cr);stroke:rgba(255,255,255,.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
 .scene .hsh{fill:#000;opacity:.25}
+.scene .sw{transform-box:view-box;transform-origin:100px 100px}.anim .scene .sw.on{animation:k-spin 60s linear infinite}
+@keyframes k-spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
 @container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}
 .txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}.row .inf{font-size:clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)}}
@@ -13304,7 +13444,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   var SVG2 = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("k", C, C, R2)}</defs>${dialBody("k", C, C, R2)}
 <g class="hh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 6, 44, 10)}</g>${hand("hd", 6, 44, 10)}</g>
 <g class="mh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 4.2, 64, 12)}</g>${hand("md", 4.2, 64, 12)}</g>
-<g class="sh">${hand("sd", 1.6, 70, 18)}<circle class="sd" cx="${C}" cy="${C + 14}" r="3"/></g>
+<g class="sh"><g class="sw">${hand("sd", 1.6, 70, 18)}<circle class="sd" cx="${C}" cy="${C + 14}" r="3"/></g></g>
 <circle class="cap" cx="${C}" cy="${C}" r="5"/><circle class="cap2" cx="${C}" cy="${C}" r="1.8"/>
 ${dialGlass("k", C, C, R2)}</svg>`;
   var NovaClockCard = class extends HTMLElement {
@@ -13319,9 +13459,12 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       this._c = { ...DEF6, ...c };
       this._ents = (Array.isArray(c.entities) ? c.entities : []).map((x) => typeof x === "string" ? { entity: x } : { ...x }).filter((x) => x.entity);
       this._ids = this._ents.map((x) => x.entity);
+      this._st = styleOf(this._c);
+      this._sun = this._st === "glow" ? this._c.sun_entity || DEF6.sun_entity : null;
       this._fmtKey = null;
       if (this._e) {
         this._layout();
+        this._sync();
         this._draw();
         this._vals();
         this._plan();
@@ -13344,6 +13487,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         this._draw();
       }
       if (this._ents.length && hassChanged(old, h, this._ids)) this._vals();
+      if (this._sun && old?.states[this._sun] !== h.states[this._sun]) this._glow();
     }
     connectedCallback() {
       this._quiet = inPicker(this);
@@ -13352,7 +13496,9 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       this._stopVis = watchVisible(this, (v) => {
         const was = this._vis;
         this._vis = v && !this._quiet;
-        if (this._vis && !was && this._c?.mode === "analog" && this._c.animation !== false) sweep(this._e?.g);
+        if (this._vis && !was && ["analog", "retro"].includes(this._st) && this._c.animation !== false) sweep(this._e?.g);
+        this._e?.g.classList.toggle("anim", !!this._vis);
+        this._sync();
         this._draw();
         this._plan();
       });
@@ -13365,7 +13511,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       this._t = null;
     }
     getCardSize() {
-      return this._c?.mode === "analog" ? 4 : 2;
+      return this._st === "analog" ? 4 : this._st === "retro" || this._st === "flip" ? 3 : 2;
     }
     getGridOptions() {
       return { columns: 6, rows: "auto", min_columns: 3 };
@@ -13373,18 +13519,28 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${CCSS2}</style><div class="g ck"><div class="ana">${SVG2}</div>
-<div class="txt"><div class="nm"></div><div class="tm"></div><div class="dt"></div><div class="inf"></div></div></div>`;
+<div class="txt"><div class="nm"></div><div class="tm"></div><div class="flp"></div><div class="rt"></div><div class="dt"></div><div class="inf"></div></div></div>`;
       const q = (s) => r.querySelector(s);
-      this._e = { g: q(".g"), ana: q(".ana"), nm: q(".nm"), tm: q(".tm"), dt: q(".dt"), inf: q(".inf"), hh: q(".hh"), mh: q(".mh"), sh: q(".sh") };
+      this._e = { g: q(".g"), ana: q(".ana"), nm: q(".nm"), tm: q(".tm"), dt: q(".dt"), inf: q(".inf"), flp: q(".flp"), rt: q(".rt"), sw: q(".sw"), hh: q(".hh"), mh: q(".mh"), sh: q(".sh") };
       const act = () => ({ tap_action: this._c.tap_action, hold_action: this._c.hold_action });
       press(this._e.g, { tap: () => runAction(this, act(), "tap", true), hold: () => runAction(this, act(), "hold") });
       this._layout();
     }
     _layout() {
-      const c = this._c, e = this._e, rv = roleVars(c.color), an = c.mode === "analog";
+      const c = this._c, e = this._e, rv = roleVars(c.color), st = this._st, an = st === "analog";
       e.g.style.setProperty("--kc", rv.c);
+      e.g.classList.toggle("still", !!this._quiet);
       e.ana.hidden = !an;
-      e.tm.hidden = an && !c.analog_digital;
+      e.tm.hidden = an && !c.analog_digital || st === "flip" || st === "retro";
+      e.tm.classList.toggle("glow", st === "glow");
+      this._tmH = null;
+      e.flp.hidden = st !== "flip";
+      e.flp.innerHTML = st === "flip" ? `<div class="grp">${flipDigit()}${flipDigit()}</div><div class="sep"><i></i><i></i></div><div class="grp">${flipDigit()}${flipDigit()}</div>${c.show_seconds ? `<div class="grp sec">${flipDigit()}${flipDigit()}</div>` : ""}<div class="ap"></div>` : "";
+      e.rt.hidden = st !== "retro";
+      e.rt.className = `rt ${RETRO_COLORS.includes(c.retro_color) ? c.retro_color : "red"}`;
+      e.rt.innerHTML = st === "retro" ? retroSvg(!!c.show_seconds) : "";
+      e.sh.style.display = an && handOf(c) !== "none" ? "" : "none";
+      this._glow();
       e.g.classList.toggle("flat", c.glass === false);
       this.classList.toggle("nv-flat", c.glass === false);
       e.nm.hidden = !c.name;
@@ -13396,6 +13552,32 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         return sp;
       }));
       e.g.classList.toggle("row", an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name || this._ents.length));
+    }
+    // Leuchtziffern: Farbe aus dem Sonnenstand (sun.sun → elevation, rising); ohne Sonne grob aus der Uhrzeit
+    _glow() {
+      const e = this._e;
+      if (!e || this._st !== "glow") {
+        e?.tm.style.removeProperty("--gc");
+        return;
+      }
+      const s = this._h?.states[this._sun], a = s?.attributes;
+      const g = a && a.elevation != null ? { elev: +a.elevation, rising: !!a.rising } : sunGuess((/* @__PURE__ */ new Date()).getHours() + (/* @__PURE__ */ new Date()).getMinutes() / 60);
+      const col = glowColor(g.elev, g.rising) || roleVars(this._c.color).c;
+      if (col !== this._gc) {
+        this._gc = col;
+        e.tm.style.setProperty("--gc", col);
+      }
+    }
+    // Laufende Animationen (Sekundenzeiger „sweep“, blinkender Doppelpunkt) auf die echte Sekunde setzen
+    _sync() {
+      const e = this._e;
+      if (!e) return;
+      const now = /* @__PURE__ */ new Date(), off2 = `-${now.getSeconds() + now.getMilliseconds() / 1e3}s`;
+      const sw = this._st === "analog" && handOf(this._c) === "sweep" && !this._quiet && !reduced();
+      e.sw.classList.toggle("on", sw);
+      if (sw) e.sw.style.animationDelay = off2;
+      const col = e.rt.querySelector(".rt-col");
+      if (col) col.style.animationDelay = `-${now.getMilliseconds() / 1e3}s`;
     }
     // Werte-Zeile: nur neu schreiben, wenn sich eine der Entitäten ändert
     _vals() {
@@ -13431,8 +13613,8 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _draw() {
       const e = this._e, c = this._c;
       if (!e || !this._h) return;
-      const f2 = this._fmts(), now = /* @__PURE__ */ new Date();
-      const p = Object.fromEntries(f2.time.formatToParts(now).map((x) => [x.type, x.value]));
+      const f3 = this._fmts(), now = /* @__PURE__ */ new Date();
+      const p = Object.fromEntries(f3.time.formatToParts(now).map((x) => [x.type, x.value]));
       if (!e.tm.hidden) {
         const html = `${esc(p.hour)}<span class="cl">:</span>${esc(p.minute)}${c.show_seconds ? `<span class="sc">${esc(p.second)}</span>` : ""}${p.dayPeriod ? `<span class="ap">${esc(p.dayPeriod)}</span>` : ""}`;
         if (this._tmH !== html) {
@@ -13440,7 +13622,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
           e.tm.innerHTML = html;
         }
       }
-      const wd = c.show_weekday ? f2.wd.format(now) : "", dt = c.show_date ? f2.date.format(now) : "";
+      const wd = c.show_weekday ? f3.wd.format(now) : "", dt = c.show_date ? f3.date.format(now) : "";
       const dh = [wd && esc(wd), dt && esc(dt)].filter(Boolean).join(", ");
       e.dt.hidden = !dh;
       if (this._dtH !== dh) {
@@ -13450,17 +13632,29 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       if (!e.ana.hidden) {
         const h24 = +p.hour % 12, mm = +p.minute, ss = +p.second;
         e.hh.setAttribute("transform", `rotate(${((h24 + mm / 60) * 30).toFixed(2)} ${C} ${C})`);
-        e.mh.setAttribute("transform", `rotate(${((mm + (c.show_seconds ? ss / 60 : 0)) * 6).toFixed(2)} ${C} ${C})`);
-        e.sh.style.display = c.show_seconds ? "" : "none";
-        if (c.show_seconds) e.sh.setAttribute("transform", `rotate(${ss * 6} ${C} ${C})`);
+        const hd = handOf(c), tick = hd === "tick" || hd === "sweep" && !e.sw.classList.contains("on");
+        e.mh.setAttribute("transform", `rotate(${((mm + (hd !== "none" ? ss / 60 : 0)) * 6).toFixed(2)} ${C} ${C})`);
+        if (tick) e.sh.setAttribute("transform", `rotate(${ss * 6} ${C} ${C})`);
+        else e.sh.removeAttribute("transform");
       }
+      const st = this._st, ap = p.dayPeriod || "";
+      const hr = ap && p.hour.length === 2 && p.hour[0] === "0" ? " " + p.hour[1] : p.hour.padStart(2, " ");
+      if (st === "flip") {
+        const ch = [...hr, ...p.minute, ...c.show_seconds ? p.second : ""], anim = !!this._vis && !this._quiet;
+        e.flp.querySelectorAll(".fd").forEach((d, i) => flipSet(d, ch[i] ?? "", anim));
+        e.flp.querySelector(".ap").textContent = ap;
+      } else if (st === "retro") {
+        const svg = e.rt.firstElementChild;
+        if (svg) retroSet(svg, [...hr, ...p.minute, ...c.show_seconds ? p.second : ""], /pm|nachm/i.test(ap));
+      }
+      if (st === "glow" && !(this._sun && this._h.states[this._sun])) this._glow();
     }
     // Ein Zeitgeber: zum nächsten Sekunden- (mit Sekunden) bzw. Minutenwechsel; nur sichtbar und nicht in der Kartenauswahl
     _plan() {
       clearTimeout(this._t);
       this._t = null;
       if (!this._vis || !this._e) return;
-      const step = this._c.show_seconds ? 1e3 : 6e4, now = Date.now();
+      const c = this._c, an = this._st === "analog", step = (an ? handOf(c) === "tick" || handOf(c) === "sweep" && !this._e.sw.classList.contains("on") : c.show_seconds) ? 1e3 : 6e4, now = Date.now();
       this._t = setTimeout(() => {
         this._t = null;
         this._draw();
@@ -13468,13 +13662,14 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       }, step - now % step + 15);
     }
   };
-  define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit digital oder analog im Nova-Stil, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("nova-uhr-card") });
+  define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit im Nova-Stil: digital, Klappzahlen, analog, Leuchtziffern oder Radiowecker, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("nova-uhr-card") });
   var S_GEN6 = [
-    sel("mode", [["digital", "Digital"], ["analog", "Analog (Zifferblatt)"]]),
+    sel("style", [["default", "Standard (digital)"], ["flip", "Klappzahlen"], ["analog", "Analog (Zifferblatt)"], ["glow", "Leuchtziffern (Farbe nach Sonnenstand)"], ["retro", "Radiowecker (Sieben-Segment)"]]),
     { name: "name", selector: T }
   ];
+  var S_STYLE = (st) => st === "analog" ? [g2(sel("second_hand", [["sweep", "Gleitend"], ["tick", "Springend"], ["none", "Keiner"]]), { name: "analog_digital", selector: { boolean: {} } })] : st === "glow" ? [{ name: "sun_entity", selector: { entity: { domain: "sun" } } }] : st === "retro" ? [sel("retro_color", [["red", "Rot"], ["green", "Grün"], ["blue", "Blau"], ["amber", "Bernstein"]])] : [];
   var S_SHOW = (c) => [
-    g2({ name: "show_seconds", selector: { boolean: {} } }, ...c.mode === "analog" ? [{ name: "analog_digital", selector: { boolean: {} } }] : []),
+    ...styleOf(c) === "analog" ? [] : [{ name: "show_seconds", selector: { boolean: {} } }],
     g2({ name: "show_weekday", selector: { boolean: {} } }, { name: "show_date", selector: { boolean: {} } }),
     { name: "entities", selector: { entity: { multiple: true, domain: ["sensor", "binary_sensor", "input_number", "number", "input_text", "input_select"] } } },
     g2(sel("date_format", [["long", "2. November"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]), sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]]))
@@ -13482,7 +13677,10 @@ ${dialGlass("k", C, C, R2)}</svg>`;
   var S_LOOK4 = [g2(ROLE("color"), { name: "glass", selector: { boolean: {} } })];
   var S_ACT4 = [{ name: "tap_action", selector: A }, { name: "hold_action", selector: A }];
   var LABELS7 = {
-    mode: "Art der Uhr",
+    style: "Stil",
+    second_hand: "Sekundenzeiger",
+    sun_entity: "Sonne",
+    retro_color: "Farbe der Ziffern",
     name: "Überschrift (optional)",
     show_seconds: "Sekunden",
     analog_digital: "Zusätzlich digitale Zeit",
@@ -13497,6 +13695,9 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     entities: "Werte unter der Uhr"
   };
   var HELPERS7 = {
+    style: "Klappzahlen klappen bei jedem Wechsel um, Leuchtziffern färben sich nach dem Sonnenstand, der Radiowecker zeigt LED-Ziffern.",
+    second_hand: "Gleitend läuft ohne Zeitgeber per Animation, springend tickt jede Sekunde.",
+    sun_entity: "Standard sun.sun. Ohne Sonne wird der Sonnenstand aus der Uhrzeit geschätzt.",
     show_seconds: "Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.",
     color: "Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.",
     glass: "Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild.",
@@ -13506,17 +13707,26 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _build() {
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const data = () => ({ ...DEF6, ...this._config });
+      const data = () => ({ ...DEF6, ...this._config, style: styleOf(this._config) });
       const form = (s) => this._form(s, data(), (v) => {
-        const was = this._config.mode, c = merge(this._config, names(s), v);
+        const was = styleOf(this._config);
+        let c = merge(this._config, names(s), v);
+        if (c.style && c.style !== was && c.mode) {
+          if (c.style === "analog" && c.mode === "analog" && c.second_hand == null) c.second_hand = c.show_seconds ? "tick" : "none";
+          delete c.mode;
+        }
         Object.keys(DEF6).forEach((k) => {
           if (c[k] === DEF6[k]) delete c[k];
         });
         this._emit(c);
-        if ((c.mode || DEF6.mode) !== (was || DEF6.mode)) this._rebuild();
+        if (styleOf(c) !== was) this._rebuild();
       });
+      const st = styleOf(this._config);
       r.querySelector(".wrap").append(
-        this._section("general", "mdi:clock-outline", "Uhr", (b) => b.append(form(S_GEN6))),
+        this._section("general", "mdi:clock-outline", "Uhr", (b) => {
+          b.append(form(S_GEN6));
+          if (S_STYLE(st).length) b.append(form(S_STYLE(st)));
+        }),
         this._section("show", "mdi:calendar-today", "Anzeige", (b) => b.append(form(S_SHOW(data())))),
         this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK4))),
         this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT4)))
@@ -14245,16 +14455,16 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
     }
   };
   define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Mehrzeiliges Notizfeld mit Druck-Knopf (z. B. für einen Bondrucker); Notizen lassen sich in einer todo-Liste speichern und später wieder drucken oder löschen.", documentationURL: docUrl("nova-notiz-card") });
-  var H = (n) => ({ name: n, selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } });
+  var H2 = (n) => ({ name: n, selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } });
   var GEN5 = [
     g2({ name: "name", selector: T }, { name: "icon", selector: I }),
     { name: "show_header", selector: { boolean: {} } },
     { name: "placeholder", selector: T },
-    g2({ name: "show_clear", selector: { boolean: {} } }, H("height"))
+    g2({ name: "show_clear", selector: { boolean: {} } }, H2("height"))
   ];
   var NOTES = [
     { name: "notes_entity", selector: { entity: { domain: "todo" } } },
-    g2(H("notes_height"), { name: "clear_after_save", selector: { boolean: {} } })
+    g2(H2("notes_height"), { name: "clear_after_save", selector: { boolean: {} } })
   ];
   var PRINT2 = printSchema([g2({ name: "print_field", selector: T }, { name: "clear_after_print", selector: { boolean: {} } })]);
   var LABELS9 = {
@@ -14300,5 +14510,5 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
   define("note-card-editor", NovaNoteCardEditor);
 
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.11.1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.12.0"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();

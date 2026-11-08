@@ -171,6 +171,36 @@ Google TV (z. B. Xiaomi TV Box, Chromecast), Fire TV per ADB, Philips, Apple TV,
 
 <!-- Screenshot: Fernbedienung -->
 
+### Nova Uhr Card
+Die Uhrzeit in fünf Stilen: schlicht digital, als Klappzahl-Uhr wie am Bahnhof, als Zifferblatt mit gleitendem oder
+springendem Sekundenzeiger, als große Leuchtziffern, deren Farbe dem Sonnenstand folgt (morgens warm, mittags weiß,
+abends tiefblau), oder als Radiowecker mit LED-Ziffern in Rot, Grün, Blau oder Bernstein. Wochentag, Datum und Werte wie
+Temperatur stehen auf Wunsch darunter.
+
+➜ [Alle Optionen der Uhr Card](docs/clock-card.md)
+
+<!-- Screenshot: Uhr Card in allen Stilen -->
+
+### Nova Timer Card
+Ein Küchen-Timer als Stoppuhr im Nova-Stil: antippen, Zeit wählen, läuft – gesteuert über einen `timer.*`-Helfer.
+
+➜ [Alle Optionen der Timer Card](docs/timer-card.md)
+
+### Nova Swipe Card
+Mehrere Seiten in einer Karte zum Wischen, auf jeder Seite beliebige Karten – ideal für Wandtablets.
+
+➜ [Alle Optionen der Swipe Card](docs/swipe-card.md)
+
+### Nova Einkauf Card
+Einkaufsliste aus einer `todo.*`-Entität: eintippen, abhaken, auf Wunsch per Knopf drucken.
+
+➜ [Alle Optionen der Einkauf Card](docs/einkauf-card.md)
+
+### Nova Notiz Card
+Ein großes Notizfeld mit Druck-Knopf, Notizen werden in einer todo-Liste gespeichert.
+
+➜ [Alle Optionen der Notiz Card](docs/notiz-card.md)
+
 ---
 
 ## Lizenz

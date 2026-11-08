@@ -31,7 +31,8 @@ src/
   printer-messages.js Meldungen der 3D-Drucker Card: Druckphasen (stg_cur), HMS-/Druckfehler-Codes, Textmuster → Animation
   remote.js           Nova Fernbedienung + Editor (Tastenbelegung je Integration, App-Vorlagen)
   timer.js            Nova Timer Card + Editor (steuert einen timer.*-Helfer, Stoppuhr-Zeichnung, Hinweis beim Ablauf)
-  clock.js            Nova Uhr Card + Editor (digital/analog, ein einziger Zeitgeber)
+  clock.js            Nova Uhr Card + Editor (Stile default/flip/analog/glow/retro, ein einziger Zeitgeber)
+  clock-styles.js     Stile der Uhr: Klappzahlen, Leuchtziffern (Farbe nach Sonnenstand), Radiowecker (Sieben-Segment-SVG)
   shopping.js         Nova Einkauf Card + Editor (todo-Liste: Eingabefeld, abhaken, Druck-Knopf)
   note.js             Nova Notiz Card + Editor (mehrzeiliges Notizfeld, Entwurf im Browser, Druck-Knopf)
   shared/
@@ -61,6 +62,7 @@ src/
                       Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Nova Navi und Raum-Karte
 docs/
   <karte>.md          Alle Optionen je Karte (z. B. room-card.md, popup-card.md)
+  DESIGN.md           Design-Referenz: Grundlagen, Stil der Zeichnungen
 dev/
   nova-dev-cards.js   ERZEUGT von „npm run dev“ – gitignored, nur Zwischenablage
 nova-dev-cards.js     Kopie des Dev-Builds für jsDelivr – nur auf Feature-Branches, nie nach main mergen
@@ -68,6 +70,7 @@ build.mjs             esbuild-Build → nova-cards.js („npm run dev“ → dev
 package.json          Versionsnummer (einzige Stelle), „npm run build“ und „npm run dev [-- <karte>]“
 nova-cards.js         ERZEUGT – nicht von Hand bearbeiten
 README.md             Doku für Nutzer (ein Abschnitt pro Karte)
+CHANGELOG.md          Änderungen je Version (Keep a Changelog, SemVer)
 hacs.json             HACS-Metadaten
 ```
 
@@ -76,7 +79,7 @@ hacs.json             HACS-Metadaten
 - **Nur in `src/` arbeiten.** Danach `npm install` (einmalig) und `npm run build`. Die erzeugte `nova-cards.js`
   wird mit committet, weil HACS sie im Repo-Root braucht.
 - **`nova-cards.js` nie direkt ändern** – sie wird bei jedem Build überschrieben.
-- **Version** nur in `package.json` ändern; der Build setzt sie in Banner und Konsolen-Ausgabe ein.
+- **Version** nur in `package.json` ändern; der Build setzt sie in Banner und Konsolen-Ausgabe ein. Jede Änderung kommt in `CHANGELOG.md`.
 - **Neue Karte** = neue Datei in `src/` (Karte + Editor), Import in `src/index.js`, Registrierung über
   `define()` aus `src/shared/define.js` (mit Name, Beschreibung, `documentationURL: docUrl(...)`) und ein
   eigener Abschnitt in `README.md`.
@@ -103,34 +106,9 @@ hacs.json             HACS-Metadaten
 
 ## Stil der Zeichnungen
 
-Maßstab für alle animierten Gerätezeichnungen (Gerät, Saugroboter, künftige Karten) ist die Zeichnung der
-3D-Drucker Card. Gemeinsame Teile kommen aus `src/shared/scene.js` (`sceneDefs()`, `SCENE_CSS`, `frameGlow()`, `sweep()`,
-Palette `PAL`), nicht neu anlegen. Die Drucker-Card selbst bleibt unverändert und hat ihre eigene Kopie.
-
-- **Perspektive:** gerade Frontansicht, keine Schrägsicht und keine Fluchtpunkte. Tiefe nur über Verläufe: Gehäuse
-  oben hell → unten dunkel, Seitenglanz links hell → rechts dunkel (`s-sheen`), Lichtkante oben (`s-edge`), weicher
-  Bodenschatten als flache Ellipse (`s-shd`). Innenräume dunkler mit Vignette zum Rand.
-- **Detailgrad:** echte Bauteile statt Symbole – Schublade mit Griffmulde, Drehknopf mit Chromring und Markierungen,
-  Display mit Rahmen, Bildschirm und Touch-Tasten, Scharniere, Serviceklappe, Füße. Kleine Details (Beschriftungen,
-  Tasten) nur als dezente Striche (`#fff` mit 0,14–0,25 Deckkraft), keine Logos, keine Schrift außer Display-Werten.
-- **Raster:** `viewBox` mit 200–300 Einheiten Kantenlänge (Drucker 260 × 300, Waschmaschine 200 × 200), Gehäuse
-  `rx` 8–9, Anbauteile `rx` 1,5–3.
-- **Strichstärken:** Kanten 0,4–0,7 in `rgba(255,255,255,.12–.25)`, Trennfugen als 0,8 hohe Fläche in Schwarz
-  (0,25–0,3) mit 0,6 hoher Lichtfuge darunter (Weiß 0,06). Keine dicken Konturen, kein `currentColor` für Gehäuse.
-- **Farben:** Materialfarben nur aus `PAL` (Gehäuse dunkel `#3a4252`→`#191d26`, Theme: `--nova-device-color-light` /
-  `--nova-device-color`; Anbauteile `#3b4252`→`#20252f`; Display `#0a0e14`; Chrom `#a3adbf`→`#232833`).
-  Alles, was „lebt“ (Wasser, LEDs, Fortschritt, Haken, Innenlicht), nimmt die Farbrolle der Karte (`--dc`).
-  Warnungen/Fehler: `--nv-warn` / `--nv-error`.
-- **Glas:** Scheibe mit Verlauf `…-gl` (oben links bläulich 0,11 → unten rechts dunkel 0,38), Kante 0,7 in Weiß 0,22.
-  Spiegelung dezent: zwei schräge Streifen (`s-refl`, Weiß 0,035) im Glas-Clip, bei runden Scheiben zusätzlich ein
-  kurzer Lichtbogen oben links (Weiß ≤ 0,18). Nicht stärker – Marwin hat die kräftige Spiegelung verworfen.
-- **Lichtstreifen:** heller Verlaufsstreifen (`s-gls`, Verlauf `…-gs`, max. 0,45 × 0,7 Deckkraft), leicht schräg,
-  läuft einmal in 0,9 s durchs Glas – beim Reinscrollen (Übergang unsichtbar → sichtbar in `_tick()`, `sweep()`)
-  und beim Wechsel auf „fertig“. Weg per `--gx`. Nie in Dauerschleife.
-- **Glow:** Rahmen der Karte leuchtet in `--dc`, solange das Gerät arbeitet (`frameGlow()`); in der Zeichnung warmes
-  bzw. farbiges Innenlicht nur im aktiven Zustand.
-- **Zustände:** aus = ganze Zeichnung 0,55 Deckkraft, Display leer; fertig = Haken-Badge in `--dc` mit Pop-Animation, immer unten rechts an der Stelle aus `badgeAt()`;
-  Animationen nur mit `.anim`, stehen bei `.still`, respektieren `prefers-reduced-motion`.
+Steht in **`docs/DESIGN.md`** (feste Design-Referenz für alle Karten). Kurz: Maßstab ist die 3D-Drucker-Zeichnung, gemeinsame
+Teile aus `src/shared/scene.js`, gerade Frontansicht, Materialfarben aus `PAL`, „Lebendiges“ in `--dc`, Lichtstreifen nur
+einmal beim Reinscrollen.
 
 ## Abhängigkeiten von HA-Interna
 
