@@ -4,7 +4,7 @@
 
 Uhrzeit im Nova-Stil in fünf Stilen: digital mit großen, schlanken Ziffern wie die Uhr der Wetter Card, als Klappzahl-Uhr,
 analog als Zifferblatt mit Chromring und Glas, als Leuchtziffern mit Farbe nach Sonnenstand oder als Radiowecker. Wochentag,
-Datum und Werte auf Wunsch darunter. Die Größe passt sich der Kartenbreite an. Sprache und 12/24 Stunden kommen aus deinem Home-Assistant-Profil, die Zeitzone ist immer die von Home Assistant.
+Datum und Werte auf Wunsch darunter. Die Größe passt sich der Karte an und läuft nie über. Sprache und 12/24 Stunden kommen aus deinem Home-Assistant-Profil, die Zeitzone ist immer die von Home Assistant.
 
 ## Wenn du einfach nur eine Uhr willst, dann so
 
@@ -77,6 +77,38 @@ entities:
   - sensor.kuche_luftfeuchtigkeit
 ```
 
+## Wenn die Uhr kleiner oder größer sein soll, dann so
+
+Im Editor unter „Aussehen“ die „Größe“ wählen: Klein, Mittel (Standard) oder Groß. Wochentag, Datum und Werte wachsen mit.
+Für eine ganz bestimmte Größe trägst du bei „Schriftgröße“ einen festen Wert ein, z. B. `48px` oder `3rem` – der hat Vorrang.
+
+```yaml
+type: custom:nova-clock-card
+size: small
+```
+
+```yaml
+type: custom:nova-clock-card
+font_size: 3rem
+```
+
+Hat die Karte eine feste Höhe (z. B. `grid_options: rows: 2` im Abschnitts-Layout), passt sich die Uhr automatisch an:
+Sie wird so weit kleiner, dass nie etwas über die Karte läuft. Karten mit automatischer Höhe bleiben, wie sie sind.
+
+## Wenn die Karte breit und flach ist, dann so
+
+In einer breiten, flachen Karte stehen Uhrzeit und Datum automatisch nebeneinander – die Uhrzeit links so hoch wie die Karte,
+Überschrift, Datum und Werte rechts daneben. Das passiert nur, wenn untereinander nicht alles passt. Mit „Anordnung“ legst du
+es fest: `stacked` (immer untereinander) oder `row` (immer nebeneinander).
+
+```yaml
+type: custom:nova-clock-card
+layout: row
+grid_options:
+  columns: 30
+  rows: 2
+```
+
 ## Wenn die Uhr ohne Kartenhintergrund auf dem Dashboard stehen soll, dann so
 
 ```yaml
@@ -103,6 +135,9 @@ glass: false
 | `time_format` | `auto` | `auto` (wie im Profil), `24` oder `12` |
 | `color` | `accent-1` | Farbrolle für den Sekundenzeiger der analogen Uhr |
 | `glass` | `true` | Glas-Hintergrund der Karte |
+| `size` | `medium` | Größe der Uhr: `small`, `medium` oder `large`. Datum, Wochentag und Werte wachsen mit |
+| `font_size` | – | Feste Schriftgröße der Uhrzeit, z. B. `48px` oder `3rem` (Zahl = px). Hat Vorrang vor `size` |
+| `layout` | `auto` | `auto` (in flachen Karten nebeneinander, wenn untereinander nicht passt), `stacked` (untereinander) oder `row` (nebeneinander). Analog hat sein eigenes Layout |
 | `tap_action`, `hold_action` | – | Aktion beim Antippen bzw. langen Drücken |
 
 Theme-Variablen: `--nova-clock-morning`, `--nova-clock-noon`, `--nova-clock-night` – Farben der Leuchtziffern.

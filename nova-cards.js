@@ -13538,6 +13538,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
 
   // src/clock-styles.js
   var f2 = (n) => +n.toFixed(2);
+  var K = (v) => `calc(${v}*var(--kz,1)*var(--ks,1))`;
   var flipDigit = () => '<span class="fd"><span class="h t"><b></b></span><span class="h b"><b></b></span><span class="h t fl"><b></b></span><span class="h b fl"><b></b></span><i class="pin"></i><i class="pin r"></i></span>';
   function flipSet(el2, ch, anim) {
     const [t, b, ft, fb] = el2.querySelectorAll("b");
@@ -13564,7 +13565,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
     return true;
   }
   var FLIP_CSS = `
-.flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:clamp(34px,var(--nova-clock-size,19cqw),150px);line-height:1;font-weight:600;color:#eef1f6;font-variant-numeric:tabular-nums}
+.flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:${K("clamp(34px,var(--nova-clock-size,19cqw),150px)")};line-height:1;font-weight:600;color:#eef1f6;font-variant-numeric:tabular-nums}
 .flp .grp{display:flex;gap:.05em}.flp .grp.sec{font-size:.45em;align-self:flex-end;margin-left:.1em}
 .flp .sep{display:flex;flex-direction:column;gap:.22em;padding:0 .02em}.flp .sep i{width:.1em;height:.1em;border-radius:50%;background:#fff;opacity:.35}
 .flp .ap{font-size:.24em;font-weight:500;opacity:.7;align-self:flex-start;margin-left:.15em;letter-spacing:0}
@@ -13600,7 +13601,7 @@ box-shadow:0 .04em .1em rgba(0,0,0,.45),0 0 0 .5px rgba(255,255,255,.12)}
   }
   var sunGuess = (hour) => ({ elev: 45 * Math.sin(Math.PI * (hour - 6) / 12), rising: hour < 12 });
   var GLOW_CSS = `
-.tm.glow{font-weight:200;letter-spacing:-.02em;font-size:clamp(40px,var(--nova-clock-size,27cqw),190px);color:var(--gc);
+.tm.glow{font-weight:200;letter-spacing:-.02em;font-size:${K("clamp(40px,var(--nova-clock-size,27cqw),190px)")};color:var(--gc);
 text-shadow:0 0 .04em var(--gc),0 0 .18em color-mix(in srgb,var(--gc) 55%,transparent),0 0 .5em color-mix(in srgb,var(--gc) 30%,transparent);transition:color 90s linear,text-shadow 90s linear}
 .tm.glow .sc,.tm.glow .ap{opacity:.75}
 .tm.glow .cl{opacity:.8}`;
@@ -13663,7 +13664,7 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
   }
   var RETRO_COLORS = ["red", "green", "blue", "amber"];
   var RETRO_CSS = `
-.rt{width:100%;max-width:var(--nova-clock-size,520px)}.rt svg{display:block;width:100%;height:auto}
+.rt{width:100%;max-width:${K("var(--nova-clock-size,520px)")}}.rt svg{display:block;width:100%;height:auto}
 .rt{--led:var(--nv-led-red)}.rt.green{--led:var(--nv-led-green)}.rt.blue{--led:var(--nv-led-blue)}.rt.amber{--led:var(--nv-led-amber)}
 /* Ziffernfläche: fast schwarz hinter dunkler Plexiglasscheibe, ganz leicht in der LED-Farbe getönt */
 .scene .rt-scr{fill:color-mix(in srgb,var(--led) 4%,#030303);stroke:rgba(255,255,255,.16);stroke-width:.5}
@@ -13677,7 +13678,9 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 @media (prefers-reduced-motion:reduce){.scene .rt-col{animation:none!important}}`;
 
   // src/clock.js
-  var DEF6 = { style: "default", second_hand: "sweep", retro_color: "red", sun_entity: "sun.sun", mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true };
+  var DEF6 = { style: "default", second_hand: "sweep", retro_color: "red", sun_entity: "sun.sun", mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true, size: "medium", layout: "auto" };
+  var SIZES = { small: 0.75, medium: 1, large: 1.3 };
+  var fontSize = (v) => typeof v === "number" && v > 0 ? `${v}px` : typeof v === "string" && /^\s*\d+(\.\d+)?\s*(px|rem|em)?\s*$/.test(v) ? /[a-z]/.test(v) ? v.trim().replace(/\s+/g, "") : `${v.trim()}px` : null;
   var C = 100;
   var R2 = 92;
   var STYLES = ["default", "flip", "analog", "glow", "retro"];
@@ -13688,12 +13691,12 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 :host{container-type:inline-size}
 .g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
 .g.ck.flat{background:none;border-color:transparent;box-shadow:none}
-.nm{font-size:12.5px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
-.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
+.nm{font-size:${K("12.5px")};font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
+.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:${K("clamp(34px,var(--nova-clock-size,24cqw),160px)")}}
 .tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
 .tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
-.dt{font-size:clamp(13px,5cqw,22px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.ana{width:100%;max-width:var(--nova-clock-size,240px);aspect-ratio:1}
+.dt{font-size:${K("clamp(13px,5cqw,22px)")};opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ana{width:100%;max-width:${K("var(--nova-clock-size,240px)")};aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
 .scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
@@ -13703,11 +13706,28 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 @keyframes k-spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
 @container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}.row .inf{font-size:clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)}}
-.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:clamp(14px,var(--nova-clock-info-size,7.5cqw),26px);opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
+.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:${K("clamp(28px,var(--nova-clock-size,12cqw),100px)")}}.row .dt{font-size:${K("clamp(12px,3.6cqw,22px)")}}.row .inf{font-size:${K("clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)")}}}
+.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:${K("clamp(14px,var(--nova-clock-info-size,7.5cqw),26px)")};opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
 .inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
 .row .inf{justify-content:flex-start}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;max-width:100%}`;
+.txt{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;max-width:100%}
+.sub{display:contents}
+/* Breit und flach (layout: row bzw. automatisch, wenn untereinander nicht passt): Uhrzeit links, Überschrift, Datum und Werte rechts.
+   Die Größen folgen der Kartenhöhe (--kh, von _fit() gesetzt). */
+.g.ck.wide .txt{display:grid;grid-template-columns:auto auto;column-gap:calc(var(--kh,100px)*.22);row-gap:0;align-items:center;justify-content:center;text-align:left}
+.wide .tm,.wide .flp,.wide .rt{grid-area:1/1/3/2}
+.wide .nm{grid-area:1/2;align-self:end;font-size:${K("var(--kh,100px)*.12")}}
+.wide .sub{grid-area:2/2;display:flex;flex-direction:column;align-items:flex-start;gap:.15em;align-self:start;min-width:0}
+.wide.nn .sub{grid-area:1/2/3/3;align-self:center}
+.wide .tm{font-size:${K("var(--kh,100px)*.82")}}.wide .tm.glow{font-size:${K("var(--kh,100px)*.82")}}
+.wide .flp{font-size:${K("var(--kh,100px)*.74")}}
+.wide .rt{width:auto;max-width:none}.wide .rt svg{width:auto;height:${K("var(--kh,100px)*.88")}}
+.wide .dt{font-size:${K("var(--kh,100px)*.2")}}.wide .inf{font-size:${K("var(--kh,100px)*.22")};justify-content:flex-start}
+/* Feste Schriftgröße (font_size → --kf): Datum und Werte wachsen mit */
+.fs .tm,.fs .tm.glow{font-size:calc(var(--kf)*var(--ks,1))}.fs .flp{font-size:calc(var(--kf)*.8*var(--ks,1))}
+.fs .rt{max-width:none;width:calc(var(--kf)*3.25*var(--ks,1))}.fs.wide .rt svg{width:100%;height:auto}
+.fs .ana{max-width:calc(var(--kf)*1.5*var(--ks,1))}
+.fs .dt{font-size:calc(var(--kf)*.24*var(--ks,1))}.fs .inf{font-size:calc(var(--kf)*.3*var(--ks,1))}.fs .nm{font-size:calc(var(--kf)*.16*var(--ks,1))}`;
   var hand = (cls, w, len, back) => `<path class="${cls}" d="M${C - w / 2} ${C + back} L${C - w / 2 + 0.4} ${C - len} Q${C} ${C - len - w / 2} ${C + w / 2 - 0.4} ${C - len} L${C + w / 2} ${C + back} Z"/>`;
   var SVG2 = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("k", C, C, R2)}</defs>${dialBody("k", C, C, R2)}
 <g class="hh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 6, 44, 10)}</g>${hand("hd", 6, 44, 10)}</g>
@@ -13760,6 +13780,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     connectedCallback() {
       this._quiet = inPicker(this);
       if (!this._e && this._c && this._h) this._build();
+      this._observe();
       this._stopVis?.();
       this._stopVis = watchVisible(this, (v) => {
         const was = this._vis;
@@ -13777,6 +13798,10 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       this._vis = false;
       clearTimeout(this._t);
       this._t = null;
+      this._ro?.disconnect();
+      this._ro = null;
+      cancelAnimationFrame(this._fr);
+      this._fr = null;
     }
     getCardSize() {
       return this._st === "analog" ? 4 : this._st === "retro" || this._st === "flip" ? 3 : 2;
@@ -13787,12 +13812,13 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${CCSS2}</style><div class="g ck"><div class="ana">${SVG2}</div>
-<div class="txt"><div class="nm"></div><div class="tm"></div><div class="flp"></div><div class="rt"></div><div class="dt"></div><div class="inf"></div></div></div>`;
+<div class="txt"><div class="nm"></div><div class="tm"></div><div class="flp"></div><div class="rt"></div><div class="sub"><div class="dt"></div><div class="inf"></div></div></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = { g: q(".g"), ana: q(".ana"), nm: q(".nm"), tm: q(".tm"), dt: q(".dt"), inf: q(".inf"), flp: q(".flp"), rt: q(".rt"), sw: q(".sw"), hh: q(".hh"), mh: q(".mh"), sh: q(".sh") };
       const act = () => ({ tap_action: this._c.tap_action, hold_action: this._c.hold_action });
       press(this._e.g, { tap: () => runAction(this, act(), "tap", true), hold: () => runAction(this, act(), "hold") });
       this._layout();
+      this._observe();
     }
     _layout() {
       const c = this._c, e = this._e, rv = roleVars(c.color), st = this._st, an = st === "analog";
@@ -13820,7 +13846,69 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         return sp;
       }));
       e.g.classList.toggle("row", an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name || this._ents.length));
+      e.g.style.setProperty("--kz", SIZES[c.size] || 1);
+      const fs = fontSize(c.font_size);
+      e.g.classList.toggle("fs", !!fs);
+      if (fs) e.g.style.setProperty("--kf", fs);
+      else e.g.style.removeProperty("--kf");
+      e.g.classList.toggle("nn", !c.name);
       this._sync();
+      this._fitSoon();
+    }
+    // Kartengröße beobachten: bei jeder Änderung die Uhr neu einpassen
+    _observe() {
+      if (this._ro || !this._e || !window.ResizeObserver) return;
+      this._ro = new ResizeObserver(() => this._fitSoon());
+      this._ro.observe(this);
+    }
+    _fitSoon() {
+      if (!this._e || this._fr) return;
+      this._fr = requestAnimationFrame(() => {
+        this._fr = null;
+        this._fit();
+      });
+    }
+    // Einpassen: nichts darf über die Karte laufen. Passt der Inhalt untereinander nicht in eine breite, flache Karte,
+    // stehen Uhrzeit und Datum nebeneinander (layout: auto). Danach wird alles gemeinsam (--ks) verkleinert, bis es passt.
+    // Karten mit automatischer Höhe passen immer – dort bleibt alles wie gehabt.
+    _fit() {
+      const e = this._e, c = this._c;
+      if (!e || !this.isConnected) return;
+      const g = e.g, cs = getComputedStyle(g);
+      const H3 = g.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const W2 = g.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      if (!(H3 > 0 && W2 > 0)) return;
+      g.style.setProperty("--kh", `${Math.round(H3)}px`);
+      g.style.setProperty("--ks", 1);
+      const can = this._st !== "analog", lay = c.layout;
+      g.classList.toggle("wide", can && lay === "row");
+      const need = () => {
+        let t = Infinity, b = -Infinity, w2 = 0;
+        for (const k of g.children) {
+          if (k.hidden) continue;
+          const r = k.getBoundingClientRect();
+          if (!r.height) continue;
+          t = Math.min(t, r.top);
+          b = Math.max(b, r.bottom);
+          w2 = Math.max(w2, k.scrollWidth, r.width);
+        }
+        const tx = e.tm.parentElement;
+        for (const k of tx.children) if (!k.hidden) w2 = Math.max(w2, k.scrollWidth);
+        return [w2, b > t ? b - t : 0];
+      };
+      let [w, h] = need();
+      if (can && lay !== "row" && lay !== "stacked" && h > H3 + 1 && W2 / H3 >= 2.2 && !(e.dt.hidden && e.inf.hidden && e.nm.hidden)) {
+        g.classList.add("wide");
+        [w, h] = need();
+      }
+      let s = 1;
+      for (let i = 0; i < 4 && h; i++) {
+        const r = Math.min(H3 / h, W2 / (w || W2));
+        if (r >= 0.995) break;
+        s = Math.max(0.15, s * r * 0.98);
+        g.style.setProperty("--ks", +s.toFixed(3));
+        [w, h] = need();
+      }
     }
     // Leuchtziffern: Farbe aus dem Sonnenstand (sun.sun → elevation, rising); ohne Sonne grob aus der Uhrzeit
     _glow() {
@@ -13886,6 +13974,11 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         sp.lastChild.textContent = valueOf(h, s, o);
         sp.title = o.name ?? s?.attributes.friendly_name ?? o.entity;
       });
+      const n = e.inf.textContent.length;
+      if (n !== this._infN) {
+        this._infN = n;
+        this._fitSoon();
+      }
     }
     // Formatierer nur neu bauen, wenn sich Sprache/Zeitzone/Optionen ändern
     _fmts() {
@@ -13914,6 +14007,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       if (!e.tm.hidden) {
         const html = `${esc(p.hour)}<span class="cl">:</span>${esc(p.minute)}${c.show_seconds ? `<span class="sc">${esc(p.second)}</span>` : ""}${p.dayPeriod ? `<span class="ap">${esc(p.dayPeriod)}</span>` : ""}`;
         if (this._tmH !== html) {
+          if (this._tmH?.length !== html.length) this._fitSoon();
           this._tmH = html;
           e.tm.innerHTML = html;
         }
@@ -13924,6 +14018,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       if (this._dtH !== dh) {
         this._dtH = dh;
         e.dt.innerHTML = dh;
+        this._fitSoon();
       }
       if (!e.ana.hidden) {
         const h24 = +p.hour % 12, mm = +p.minute, ss = +p.second;
@@ -13974,7 +14069,11 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     { name: "entities", selector: { entity: { multiple: true, domain: ["sensor", "binary_sensor", "input_number", "number", "input_text", "input_select"] } } },
     g2(sel("date_format", [["long", "2. November"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]), sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]]))
   ];
-  var S_LOOK4 = [g2(ROLE("color"), { name: "glass", selector: { boolean: {} } })];
+  var S_LOOK4 = [
+    g2(sel("size", [["small", "Klein"], ["medium", "Mittel"], ["large", "Groß"]]), { name: "font_size", selector: T }),
+    sel("layout", [["auto", "Automatisch"], ["stacked", "Untereinander"], ["row", "Nebeneinander"]]),
+    g2(ROLE("color"), { name: "glass", selector: { boolean: {} } })
+  ];
   var S_ACT4 = [{ name: "tap_action", selector: A }, { name: "hold_action", selector: A }];
   var LABELS7 = {
     style: "Stil",
@@ -13990,6 +14089,9 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     time_format: "Zeitformat",
     color: "Akzentfarbe",
     glass: "Glas-Hintergrund",
+    size: "Größe",
+    font_size: "Schriftgröße (optional)",
+    layout: "Anordnung",
     tap_action: "Aktion beim Antippen",
     hold_action: "Aktion bei langem Drücken",
     entities: "Werte unter der Uhr"
@@ -14001,7 +14103,10 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     show_seconds: "Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.",
     color: "Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.",
     glass: "Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild.",
-    entities: "Optional: z. B. Temperatur und Luftfeuchte – erscheinen in einer Zeile unter der Uhrzeit."
+    entities: "Optional: z. B. Temperatur und Luftfeuchte – erscheinen in einer Zeile unter der Uhrzeit.",
+    size: "Datum, Wochentag und Werte wachsen mit. Ist die Karte zu klein, wird die Uhr automatisch kleiner – sie läuft nie über.",
+    font_size: "Feste Größe der Uhrzeit, z. B. 48px oder 3rem. Hat Vorrang vor der Größe.",
+    layout: "Automatisch: in breiten, flachen Karten steht das Datum neben der Uhrzeit, wenn es untereinander nicht passt."
   };
   var NovaClockCardEditor = class extends NovaEditorBase {
     _build() {

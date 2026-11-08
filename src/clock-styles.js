@@ -3,6 +3,8 @@
 import {sceneDefs, PAL} from './shared/scene.js';
 
 const f = n => +n.toFixed(2);
+// Schriftgröße mal Größe (size → --kz) mal Einpassung in die Kartenhöhe (--ks, 1 = passt)
+export const K = v => `calc(${v}*var(--kz,1)*var(--ks,1))`;
 
 /* ---------- Klappzahlen ----------
    Jede Ziffer besteht aus vier Hälften: obere und untere feste Hälfte sowie zwei Klappen. Beim Wechsel klappt die
@@ -25,7 +27,7 @@ export function flipSet(el, ch, anim) {
 }
 
 export const FLIP_CSS = `
-.flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:clamp(34px,var(--nova-clock-size,19cqw),150px);line-height:1;font-weight:600;color:#eef1f6;font-variant-numeric:tabular-nums}
+.flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:${K('clamp(34px,var(--nova-clock-size,19cqw),150px)')};line-height:1;font-weight:600;color:#eef1f6;font-variant-numeric:tabular-nums}
 .flp .grp{display:flex;gap:.05em}.flp .grp.sec{font-size:.45em;align-self:flex-end;margin-left:.1em}
 .flp .sep{display:flex;flex-direction:column;gap:.22em;padding:0 .02em}.flp .sep i{width:.1em;height:.1em;border-radius:50%;background:#fff;opacity:.35}
 .flp .ap{font-size:.24em;font-weight:500;opacity:.7;align-self:flex-start;margin-left:.15em;letter-spacing:0}
@@ -64,7 +66,7 @@ export function glowColor(elev, rising) {
 export const sunGuess = hour => ({elev: 45 * Math.sin(Math.PI * (hour - 6) / 12), rising: hour < 12});
 
 export const GLOW_CSS = `
-.tm.glow{font-weight:200;letter-spacing:-.02em;font-size:clamp(40px,var(--nova-clock-size,27cqw),190px);color:var(--gc);
+.tm.glow{font-weight:200;letter-spacing:-.02em;font-size:${K('clamp(40px,var(--nova-clock-size,27cqw),190px)')};color:var(--gc);
 text-shadow:0 0 .04em var(--gc),0 0 .18em color-mix(in srgb,var(--gc) 55%,transparent),0 0 .5em color-mix(in srgb,var(--gc) 30%,transparent);transition:color 90s linear,text-shadow 90s linear}
 .tm.glow .sc,.tm.glow .ap{opacity:.75}
 .tm.glow .cl{opacity:.8}`;
@@ -129,7 +131,7 @@ export function retroSet(svg, chars, pm, h12) {
 }
 export const RETRO_COLORS = ['red', 'green', 'blue', 'amber'];
 export const RETRO_CSS = `
-.rt{width:100%;max-width:var(--nova-clock-size,520px)}.rt svg{display:block;width:100%;height:auto}
+.rt{width:100%;max-width:${K('var(--nova-clock-size,520px)')}}.rt svg{display:block;width:100%;height:auto}
 .rt{--led:var(--nv-led-red)}.rt.green{--led:var(--nv-led-green)}.rt.blue{--led:var(--nv-led-blue)}.rt.amber{--led:var(--nv-led-amber)}
 /* Ziffernfläche: fast schwarz hinter dunkler Plexiglasscheibe, ganz leicht in der LED-Farbe getönt */
 .scene .rt-scr{fill:color-mix(in srgb,var(--led) 4%,#030303);stroke:rgba(255,255,255,.16);stroke-width:.5}
