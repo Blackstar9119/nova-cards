@@ -315,11 +315,22 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     return hh ? `${hh}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
   };
   var idleState = (s) => !s || ["off", "unavailable", "unknown", ""].includes(s.state) || NUMRE.test(s.state) && +s.state <= 0;
+  var NUM_LOCALE = { comma_decimal: "en-US", decimal_comma: "de", space_comma: "fr", system: void 0 };
+  var fmtNum = (h, v, d) => {
+    const f2 = h?.locale?.number_format;
+    if (f2 === "none") return v.toFixed(d);
+    const loc = f2 && f2 in NUM_LOCALE ? NUM_LOCALE[f2] : h?.locale?.language || h?.language;
+    try {
+      return new Intl.NumberFormat(loc, { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+    } catch {
+      return v.toFixed(d);
+    }
+  };
   function valueOf(h, s, o) {
     if (!s) return "–";
     if (o.format === "clock" && NUMRE.test(s.state)) return clockOf(+s.state * (DUR_U[o.unit ?? s.attributes.unit_of_measurement] ?? 1));
     if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
-      const n = o.decimals != null ? (+s.state).toFixed(o.decimals) : s.state;
+      const n = o.decimals != null ? fmtNum(h, +s.state, +o.decimals) : s.state;
       return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
     }
     return fmtState(h, s);

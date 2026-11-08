@@ -20,10 +20,19 @@ export const areaOf = (h, id) => { const e = h.entities?.[id]; return (e && (e.a
 // supported_features prüfen
 export const hasF = (s, f) => ((s?.attributes.supported_features || 0) & f) === f;
 
+// Zahl mit fester Anzahl Nachkommastellen im Zahlenformat des HA-Profils (z. B. 21,9 statt 21.9)
+const NUM_LOCALE = {comma_decimal: 'en-US', decimal_comma: 'de', space_comma: 'fr', system: undefined};
+export const fmtNum = (h, v, d) => {
+  const f = h?.locale?.number_format;
+  if (f === 'none') return v.toFixed(d);
+  const loc = f && f in NUM_LOCALE ? NUM_LOCALE[f] : h?.locale?.language || h?.language;
+  try { return new Intl.NumberFormat(loc, {minimumFractionDigits: d, maximumFractionDigits: d}).format(v); } catch { return v.toFixed(d); }
+};
+
 export function valueOf(h, s, o) {
   if (!s) return '–';
   if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
-    const n = o.decimals != null ? (+s.state).toFixed(o.decimals) : s.state;
+    const n = o.decimals != null ? fmtNum(h, +s.state, +o.decimals) : s.state;
     return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
   }
   return fmtState(h, s);

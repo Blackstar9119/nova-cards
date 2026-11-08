@@ -166,3 +166,6 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 - **Danach dem Nutzer sagen,** welche Karte (`custom:nova-dev-…`) er testen soll und dass er hart neu laden muss
   (Strg/Cmd+Shift+R bzw. App-Cache leeren).
 - **Keine Releases dafür.** Releases (Versionssprung, Tag, GitHub-Release) nur, wenn der Nutzer es ausdrücklich sagt.
+- **Offen nach dem nächsten Release:** Die Dashboards `nova-iphone` und `nova-macbook` laufen zum Testen mit Dev-Karten
+  (`custom:nova-dev-navi-card`, `-popup-card`, `-area-card`, `-shopping-card`, `-note-card`). Nach dem Release alle wieder
+  auf die normalen `custom:nova-*`-Typen zurückstellen (Einkauf/Notiz erst, wenn sie im Release enthalten sind).
