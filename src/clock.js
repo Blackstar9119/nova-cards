@@ -46,7 +46,7 @@ const CCSS = `${DIAL_CSS}${FLIP_CSS}${GLOW_CSS}${RETRO_CSS}
 .inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:clamp(14px,var(--nova-clock-info-size,7.5cqw),26px);opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
 .inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
 .row .inf{justify-content:flex-start}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0;max-width:100%}`;
+.txt{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;max-width:100%}`;
 
 // Zeiger: Stunde, Minute (Chrom), Sekunde (Farbrolle) mit Gegengewicht; Schatten leicht versetzt
 const hand = (cls, w, len, back) => `<path class="${cls}" d="M${C - w / 2} ${C + back} L${C - w / 2 + .4} ${C - len} Q${C} ${C - len - w / 2} ${C + w / 2 - .4} ${C - len} L${C + w / 2} ${C + back} Z"/>`;
@@ -215,7 +215,7 @@ class NovaClockCard extends HTMLElement {
       e.flp.querySelector('.ap').textContent = ap;
     } else if (st === 'retro') {
       const svg = e.rt.firstElementChild;
-      if (svg) retroSet(svg, [...hr, ...p.minute, ...(c.show_seconds ? p.second : '')], /pm|nachm/i.test(ap));
+      if (svg) retroSet(svg, [...hr, ...p.minute, ...(c.show_seconds ? p.second : '')], /pm|nachm/i.test(ap), !!ap);
     }
     if (st === 'glow' && !(this._sun && this._h.states[this._sun])) this._glow();
   }

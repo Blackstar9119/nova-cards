@@ -114,14 +114,16 @@ ${sec ? digit(secX, dy + H * .5, .5) + digit(secX + 21, dy + H * .5, .5) : ''}
 <rect class="s-part" x="14" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/><rect class="s-part" x="${bw - 30}" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/>
 </svg>`;
 }
-// Ziffern setzen: chars = Zeichen der vier Hauptziffern (+ zwei Sekunden), pm = PM-Punkt
-export function retroSet(svg, chars, pm) {
+// Ziffern setzen: chars = Zeichen der vier Hauptziffern (+ zwei Sekunden), pm = PM-Punkt leuchtet,
+// h12 = 12-Stunden-Anzeige (nur dann gibt es den PM-Punkt überhaupt, bei 24 h ist er ganz weg)
+export function retroSet(svg, chars, pm, h12) {
   svg.querySelectorAll('.rt-on .dg').forEach((g, i) => {
     const on = SEG[chars[i]] ?? '';
     if (g._ch === chars[i]) return;
     g._ch = chars[i];
     g.querySelectorAll('.sg').forEach(p => p.classList.toggle('on', on.includes(p.dataset.s)));
   });
+  svg.querySelectorAll('.rt-pm').forEach(c => { c.style.display = h12 ? '' : 'none'; });
   svg.querySelector('.rt-on .rt-pm')?.classList.toggle('on', !!pm);
 }
 export const RETRO_COLORS = ['red', 'green', 'blue', 'amber'];

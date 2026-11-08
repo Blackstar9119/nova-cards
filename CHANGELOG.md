@@ -16,6 +16,7 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 - `docs/DESIGN.md` als feste Design-Referenz, dieses Changelog.
 
 ### Behoben
+- Nova Uhr Card: Inhalt auf breiten Karten (ab 420 px) vertikal zentriert statt oben; Radiowecker ohne PM-Punkt bei 24 Stunden.
 - Nova Uhr Card: Uhrzeit immer in der Zeitzone von Home Assistant (`hass.config.time_zone`), nicht in der des Browsers.
 - Zahlen ohne Formatierung durch HA (z. B. Werte unter der Uhr) nach dem Zahlenformat des HA-Profils: `21,5 °C` statt `21.5 °C`.
 - Nova Swipe Card: Tippen in einem Eingabefeld (z. B. Einkaufsliste) hält „Zurück zu Seite 1 nach“ auf; solange ein Feld den

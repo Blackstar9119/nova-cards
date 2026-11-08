@@ -13403,12 +13403,15 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 <rect class="s-part" x="14" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/><rect class="s-part" x="${bw - 30}" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/>
 </svg>`;
   }
-  function retroSet(svg, chars, pm) {
+  function retroSet(svg, chars, pm, h12) {
     svg.querySelectorAll(".rt-on .dg").forEach((g, i) => {
       const on = SEG2[chars[i]] ?? "";
       if (g._ch === chars[i]) return;
       g._ch = chars[i];
       g.querySelectorAll(".sg").forEach((p) => p.classList.toggle("on", on.includes(p.dataset.s)));
+    });
+    svg.querySelectorAll(".rt-pm").forEach((c) => {
+      c.style.display = h12 ? "" : "none";
     });
     svg.querySelector(".rt-on .rt-pm")?.classList.toggle("on", !!pm);
   }
@@ -13458,7 +13461,7 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 .inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:clamp(14px,var(--nova-clock-info-size,7.5cqw),26px);opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
 .inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
 .row .inf{justify-content:flex-start}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0;max-width:100%}`;
+.txt{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;max-width:100%}`;
   var hand = (cls, w, len, back) => `<path class="${cls}" d="M${C - w / 2} ${C + back} L${C - w / 2 + 0.4} ${C - len} Q${C} ${C - len - w / 2} ${C + w / 2 - 0.4} ${C - len} L${C + w / 2} ${C + back} Z"/>`;
   var SVG2 = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("k", C, C, R2)}</defs>${dialBody("k", C, C, R2)}
 <g class="hh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 6, 44, 10)}</g>${hand("hd", 6, 44, 10)}</g>
@@ -13675,7 +13678,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         e.flp.querySelector(".ap").textContent = ap;
       } else if (st === "retro") {
         const svg = e.rt.firstElementChild;
-        if (svg) retroSet(svg, [...hr, ...p.minute, ...c.show_seconds ? p.second : ""], /pm|nachm/i.test(ap));
+        if (svg) retroSet(svg, [...hr, ...p.minute, ...c.show_seconds ? p.second : ""], /pm|nachm/i.test(ap), !!ap);
       }
       if (st === "glow" && !(this._sun && this._h.states[this._sun])) this._glow();
     }
