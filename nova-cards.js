@@ -1911,7 +1911,7 @@ ha-icon{--mdc-icon-size:20px;display:flex}
   };
   define("navi-popup", NovaNaviPopup);
   var DCSS = `
-:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px))}
+:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px));transition:height .3s ease}
 :host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
 :host([side]){height:0}
 ha-icon{--mdc-icon-size:22px;display:flex}
@@ -1960,17 +1960,29 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bc,var(--nv-accent));color:var(--bfg,#3a2a00);font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
 .d.bn .num{display:block}.d.bn .dot{display:none}
 .empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
-.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;align-self:center;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
-.mb[hidden]{display:none}
-.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.mbw{display:grid;grid-template-rows:0fr;margin-bottom:-8px;opacity:0;transform:translateY(14px);pointer-events:none;transition:grid-template-rows var(--mbd) ease,margin var(--mbd) ease,opacity var(--mbd) ease,transform var(--mbd) cubic-bezier(.2,.8,.2,1)}
+.mbw.on{grid-template-rows:1fr;margin-bottom:0;opacity:1;transform:none;pointer-events:auto}
+.top .mbw{margin-bottom:0;margin-top:-8px;transform:translateY(-14px)}.top .mbw.on{margin-top:0;transform:none}
+.side .mbw{transform:translateX(-14px)}.side.right .mbw{transform:translateX(14px)}.side .mbw.on{transform:none}
+.mbi{min-height:0;overflow:hidden;display:flex;justify-content:center}.mbw.open .mbi{overflow:visible}
+.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .mb .art.pic ha-icon{display:none}
 .mb .tx{flex:1;min-width:0;cursor:pointer}
 .mb .tx b,.mb .tx span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mb .tx b{font-size:13px;font-weight:600}.mb .tx span{font-size:11px;opacity:.7}
-.mb .pp{width:40px;height:40px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-active);color:var(--nv-active-fg);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.mb .pp:active{transform:scale(.9)}
+.mb .tx span.warn{opacity:1;color:var(--nova-warning-color,#f5b83d)}
+.mb .pp,.mb .sp{flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;transition:transform .15s}
+.mb .pp{width:40px;height:40px;background:var(--nv-active);color:var(--nv-active-fg)}
+.mb .sp{width:32px;height:32px;background:var(--nv-chip);color:var(--nv-fg);opacity:.85}.mb .sp ha-icon{--mdc-icon-size:18px}
+.mb .sp[hidden]{display:none}
+.mb .pp:active,.mb .sp:active{transform:scale(.9)}
+.mb .pp:focus-visible,.mb .sp:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .side .mb{width:auto;flex-direction:column;padding:6px;border-radius:28px}
 .side .mb .tx{display:none}
+.mi .tt{display:flex;flex-direction:column;min-width:0;line-height:1.25}.mi .tt span{font-size:12px;opacity:.7;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.mi .ic.pic{background:var(--nv-chip) center/cover no-repeat}.mi .ic.pic ha-icon{display:none}
+@media(prefers-reduced-motion:reduce){.mbw{transition:none}}
 .menu{position:fixed;z-index:8;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:22px;min-width:180px;max-width:calc(100vw - 16px);max-height:60vh;overflow-y:auto;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:mi .16s ease-out}
 .mi{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:999px;cursor:pointer;font-size:14px;white-space:nowrap;-webkit-tap-highlight-color:transparent;outline:none}
 .mi[hidden]{display:none}
@@ -2019,6 +2031,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     return Object.values(cond).some((v) => v != null) ? alertHit(cond, s) : isOn(s);
   };
   var MEDIA_ON = ["playing", "paused"];
+  var SEL = /* @__PURE__ */ new Map();
   var LAST = /* @__PURE__ */ new Map();
   var REDUCED = window.matchMedia?.("(prefers-reduced-motion: reduce)");
   var NovaNaviCard = class extends HTMLElement {
@@ -2102,6 +2115,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       this._mq?.removeEventListener("change", this._mqf);
       this._mq = null;
       this._close();
+      this._closePlayers();
+      clearTimeout(this._mpt);
+      clearTimeout(this._wt);
+      clearTimeout(this._pend?.t);
+      this._pend = null;
       if (this._hp) {
         this._hp.remove();
         this._hp = null;
@@ -2148,13 +2166,14 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       w.classList.toggle("right", s === "right");
       w.classList.toggle(this._cfg.position === "top" ? "top" : "bottom", !s);
       if (this._menu) this._close();
+      this._closePlayers();
       if (this._shown) this._shown = `${this._shown.split("|")[0]}|neu`;
       this._update();
     }
     _build() {
       this._built = true;
       const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""} ${{ true: "cmp", false: "nocmp" }[this._opt("compact")] || ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms"><div class="mb glass" hidden><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="pp" role="button" tabindex="0"><ha-icon></ha-icon></div></div><div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
+      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""} ${{ true: "cmp", false: "nocmp" }[this._opt("compact")] || ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms;--mbd:${this._opt("animation") === false ? 0 : 300}ms"><div class="mbw"><div class="mbi"><div class="mb glass"><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="sp" role="button" tabindex="0" title="Lautsprecher wählen" hidden><ha-icon icon="mdi:speaker"></ha-icon></div><div class="pp" role="button" tabindex="0" title="Play/Pause"><ha-icon></ha-icon></div></div></div></div><div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
       const dock = r.querySelector(".dock");
       this._dock = dock;
       this._bg = r.querySelector(".dk>.bg");
@@ -2166,20 +2185,24 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         this._edges();
       }, { passive: true });
       this._mb = r.querySelector(".mb");
-      this._mb.querySelector(".tx").addEventListener("click", () => this._mp && moreInfo(this, this._mp));
-      const pp = this._mb.querySelector(".pp");
-      const play = () => {
-        if (!this._mp) return;
-        if (this._haptic) haptic();
-        this._h.callService("media_player", "media_play_pause", { entity_id: this._mp });
-      };
-      pp.addEventListener("click", play);
-      pp.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          play();
-        }
+      this._mbw = r.querySelector(".mbw");
+      this._mbw.addEventListener("transitionend", (e) => {
+        if (e.target === this._mbw && e.propertyName === "grid-template-rows") this._mbw.classList.toggle("open", this._mbw.classList.contains("on"));
       });
+      const info = () => this._mp && moreInfo(this, this._mp);
+      this._mb.querySelector(".tx").addEventListener("click", info);
+      this._mb.querySelector(".art").addEventListener("click", info);
+      const key = (el2, fn) => {
+        el2.addEventListener("click", fn);
+        el2.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            fn();
+          }
+        });
+      };
+      key(this._mb.querySelector(".pp"), () => this._play());
+      key(this._mb.querySelector(".sp"), () => this._pm ? this._closePlayers() : this._openPlayers());
       this._applySide();
       if (this._hp) r.appendChild(this._hp);
       if (!this._items.length) {
@@ -2464,25 +2487,152 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         d.style.removeProperty("--bfg");
       }
     }
-    // Media-Leiste: spielt ein Player, wird er gezeigt, sonst ein pausierter (oder auf Wunsch immer der erste)
+    // Media-Leiste. Gezeigt wird sie nur, solange ein Player wirklich etwas abspielt; ein pausierter bleibt noch
+    // paused_timeout Minuten (an last_changed gemessen). Angezeigt wird der Player, der spielt – bei mehreren der zuletzt
+    // gestartete –, außer man hat über den Lautsprecher-Knopf selbst einen gewählt
+    get _players() {
+      return [].concat(this._cfg.media_players ?? this._srcCfg?.media_players ?? []).flatMap((x) => typeof x === "string" ? list(x) : [x]).map(toObj).filter((p) => typeof p.entity === "string" && p.entity);
+    }
+    get _pauseMs() {
+      const v = Number(this._opt("paused_timeout"));
+      return (Number.isFinite(v) && v >= 0 ? v : 10) * 6e4;
+    }
+    // Läuft der Player (true), ist er pausiert und noch in der Frist (Zahl = Ablaufzeitpunkt) oder läuft nicht (false)?
+    _live(s) {
+      if (!s || !s.attributes.media_title || !MEDIA_ON.includes(s.state)) return false;
+      if (s.state === "playing") return true;
+      const until = Date.parse(s.last_changed) + this._pauseMs;
+      return until > Date.now() ? until : false;
+    }
     _media() {
-      const mb = this._mb, ids = list(this._cfg.media_players ?? this._srcCfg?.media_players);
-      if (!mb) return;
-      const ss = ids.map((id) => this._h.states[id]).filter(Boolean);
-      const s = ss.find((x) => x.state === "playing") || ss.find((x) => MEDIA_ON.includes(x.state)) || (this._cfg.media_always ?? this._srcCfg?.media_always ? ss[0] : null);
-      mb.hidden = !s;
-      this.toggleAttribute("media", !!s && !this._side && !this._inline);
-      this._mp = s?.entity_id || null;
-      if (!s) return;
-      const a = s.attributes, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
+      const mb = this._mb;
+      if (!mb || !this._h) return;
+      const ps = this._players, h = this._h, key = ps.map((p) => p.entity).join("|");
+      const live = ps.map((p) => ({ ...p, s: h.states[p.entity] })).map((p) => ({ ...p, l: this._live(p.s) })).filter((p) => p.l);
+      const t = (p) => Date.parse(p.s.last_changed) || 0;
+      const playing = live.filter((p) => p.l === true).sort((x, y) => t(y) - t(x));
+      const pick = SEL.get(key);
+      const manual = pick && ps.find((p) => p.entity === pick.id) && !playing.some((p) => p.entity !== pick.id && t(p) > pick.at) && (live.some((p) => p.entity === pick.id) || Date.now() - pick.at < this._pauseMs);
+      let cur2 = manual ? ps.find((p) => p.entity === pick.id) : playing[0] || live.sort((x, y) => t(y) - t(x))[0] || null;
+      const show = !!live.length || !!this._opt("media_always") && !!ps.length;
+      if (!cur2 && show) cur2 = ps[0];
+      clearTimeout(this._mpt);
+      const next = Math.min(...live.filter((p) => p.l !== true).map((p) => p.l));
+      if (Number.isFinite(next)) this._mpt = setTimeout(() => this._media(), next - Date.now() + 50);
+      this._mbw.classList.toggle("on", show);
+      if (!show) this._mbw.classList.remove("open");
+      this.toggleAttribute("media", show && !this._side && !this._inline);
+      mb.querySelector(".sp").hidden = ps.length < 2;
+      this._mp = show ? cur2.entity : null;
+      if (!show) {
+        this._closePlayers();
+        return;
+      }
+      const s = h.states[cur2.entity], a = s?.attributes || {}, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
       if (art._pic !== pic) {
         art._pic = pic;
         art.style.backgroundImage = pic ? `url(${JSON.stringify(pic)})` : "";
         art.classList.toggle("pic", !!pic);
       }
-      mb.querySelector("b").textContent = a.media_title || a.friendly_name || s.entity_id;
-      mb.querySelector(".tx span").textContent = a.media_artist || a.app_name || (MEDIA_ON.includes(s.state) ? a.friendly_name || "" : fmtState(this._h, s));
-      mb.querySelector(".pp ha-icon").setAttribute("icon", s.state === "playing" ? "mdi:pause" : "mdi:play");
+      const name = cur2.name || a.friendly_name || cur2.entity;
+      mb.querySelector("b").textContent = a.media_title || name;
+      const ps0 = this._pend && h.states[this._pend.id];
+      if (ps0 && (ps0.state !== this._pend.st || ps0.last_changed !== this._pend.lc)) {
+        clearTimeout(this._pend.t);
+        this._pend = null;
+      }
+      const warn = this._warn && this._warn.id === cur2.entity && this._warn.until > Date.now();
+      const sub = mb.querySelector(".tx span");
+      sub.classList.toggle("warn", warn);
+      sub.textContent = warn ? "Lautsprecher reagiert nicht" : [a.media_artist || a.app_name, a.media_title ? name : ""].filter(Boolean).join(" · ") || (s ? fmtState(h, s) : "");
+      mb.querySelector(".pp ha-icon").setAttribute("icon", s?.state === "playing" ? "mdi:pause" : "mdi:play");
+      if (this._pm) this._fillPlayers();
+    }
+    // Play/Pause über media_play_pause; meldet der Player nach 3 s keine Änderung, kurzer Hinweis in der Leiste
+    _play() {
+      const id = this._mp, s = id && this._h.states[id];
+      if (!s) return;
+      if (this._haptic) haptic();
+      clearTimeout(this._pend?.t);
+      this._pend = { id, st: s.state, lc: s.last_changed, t: setTimeout(() => {
+        const n = this._h?.states[id];
+        if (this._pend?.id === id && n && n.state === this._pend.st && n.last_changed === this._pend.lc) {
+          this._warn = { id, until: Date.now() + 3e3 };
+          clearTimeout(this._wt);
+          this._wt = setTimeout(() => this._media(), 3050);
+        }
+        this._pend = null;
+        this._media();
+      }, 3e3) };
+      this._warn = null;
+      this._h.callService("media_player", "media_play_pause", { entity_id: id }).catch(() => {
+        this._warn = { id, until: Date.now() + 3e3 };
+        this._media();
+      });
+    }
+    // Auswahl der Lautsprecher (Nova-Menü über dem Knopf)
+    _openPlayers() {
+      this._close();
+      const m = document.createElement("div");
+      m.className = "menu glass";
+      m.setAttribute("role", "menu");
+      this.shadowRoot.appendChild(m);
+      this._pm = m;
+      this._fillPlayers();
+      const b = this._mb.querySelector(".sp");
+      this._place(m, b);
+      this._pout = (e) => {
+        const p = e.composedPath();
+        if (!p.includes(m) && !p.includes(b)) this._closePlayers();
+      };
+      this._pesc = (e) => {
+        if (e.key === "Escape") this._closePlayers();
+      };
+      window.addEventListener("pointerdown", this._pout, true);
+      window.addEventListener("keydown", this._pesc);
+      m.querySelector(".mi")?.focus({ preventScroll: true });
+    }
+    _fillPlayers() {
+      const m = this._pm, h = this._h, key = this._players.map((p) => p.entity).join("|");
+      const st = (s) => !s || ["off", "unavailable", "unknown", "standby"].includes(s.state) ? "aus" : s.state === "playing" ? "spielt" : s.state === "paused" ? "pausiert" : fmtState(h, s);
+      m.replaceChildren(...this._players.map((p) => {
+        const s = h.states[p.entity], a = s?.attributes || {}, pic = a.entity_picture_local || a.entity_picture;
+        const e = document.createElement("div");
+        e.className = "mi";
+        e.tabIndex = 0;
+        e.setAttribute("role", "menuitemradio");
+        e.classList.toggle("here", p.entity === this._mp);
+        e.setAttribute("aria-checked", String(p.entity === this._mp));
+        e.innerHTML = `<span class="ic"><ha-icon icon="${s?.state === "playing" ? "mdi:speaker-play" : "mdi:speaker"}"></ha-icon></span><span class="tt"><b></b><span></span></span>`;
+        if (pic && s?.attributes.media_title) {
+          const ic = e.querySelector(".ic");
+          ic.classList.add("pic");
+          ic.style.backgroundImage = `url(${JSON.stringify(pic)})`;
+        }
+        e.querySelector("b").textContent = p.name || a.friendly_name || p.entity;
+        e.querySelector(".tt span").textContent = [st(s), MEDIA_ON.includes(s?.state) ? a.media_title : ""].filter(Boolean).join(" · ");
+        const go = () => {
+          if (this._haptic) haptic();
+          SEL.set(key, { id: p.entity, at: Date.now() });
+          this._closePlayers();
+          this._media();
+        };
+        e.addEventListener("click", go);
+        e.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            go();
+          }
+        });
+        return e;
+      }));
+    }
+    _closePlayers() {
+      if (!this._pm) return;
+      this._pm.remove();
+      this._pm = null;
+      window.removeEventListener("pointerdown", this._pout, true);
+      window.removeEventListener("keydown", this._pesc);
     }
     _run(i, kind) {
       const it = this._items[i];
@@ -2608,7 +2758,8 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     g2({ name: "animation", selector: { boolean: {} } }, ...c.animation !== false ? [{ name: "animation_duration", selector: { number: { min: 100, max: 1500, step: 10, mode: "box", unit_of_measurement: "ms" } } }] : []),
     { name: "haptic", selector: { boolean: {} } }
   ];
-  var MEDIA = [{ name: "media_players", selector: { entity: { multiple: true, filter: { domain: "media_player" } } } }, { name: "media_always", selector: { boolean: {} } }];
+  var MEDIA = [g2({ name: "paused_timeout", selector: { number: { min: 0, max: 240, step: 1, mode: "box", unit_of_measurement: "min" } } }, { name: "media_always", selector: { boolean: {} } })];
+  var MPLAYER = [g2({ name: "entity", required: true, selector: { entity: { filter: { domain: "media_player" } } } }, { name: "name", selector: { text: {} } })];
   var I_MAIN = [g2({ name: "icon", required: true, selector: { icon: {} } }, { name: "label", selector: { text: {} } })];
   var I_TAP = (opts) => [
     { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
@@ -2646,6 +2797,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     animation_duration: "Dauer der Animation",
     media_players: "Media-Player",
     media_always: "Auch zeigen, wenn nichts läuft",
+    paused_timeout: "Pausiert noch zeigen für",
+    entity: "Media-Player",
+    name: "Name",
     icon: "Icon",
     label: "Name",
     tap_action: "Aktion beim Antippen",
@@ -2679,6 +2833,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     compact: "Kleinere Buttons und Abstände. Automatisch: auf Bildschirmen bis 600 px Breite.",
     haptic: "Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk).",
     media_players: "Zeigt über der Leiste den laufenden Player mit Play/Pause. Leer = keine Media-Leiste.",
+    paused_timeout: "So lange bleibt die Leiste nach einer Pause noch stehen (Standard 10 min, 0 = sofort ausblenden).",
+    media_always: "Alte Verhaltensweise: Leiste immer zeigen, auch wenn nichts läuft (dann der erste Player).",
+    name: "Leer = Name der Entität. Erscheint in der Lautsprecher-Auswahl.",
     popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion, dem Untermenü und dem einfachen Pop-up.",
     cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
     visible_users: "Leer = für alle sichtbar.",
@@ -2716,7 +2873,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap");
-      const data = { position: "bottom", button_size: 48, sidebar: "", active_label: true, animation: true, animation_duration: 280, ...this._config, compact: { true: "on", false: "off" }[this._config.compact] || "" };
+      const data = { position: "bottom", button_size: 48, sidebar: "", active_label: true, animation: true, animation_duration: 280, paused_timeout: 10, ...this._config, compact: { true: "on", false: "off" }[this._config.compact] || "" };
       const form = (schema) => this._form(schema, data, (v) => {
         const c = merge(this._config, names(schema), v);
         if (c.position === "bottom") delete c.position;
@@ -2732,6 +2889,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         if (c.animation !== false) delete c.animation;
         if (c.animation === false || c.animation_duration === 280) delete c.animation_duration;
         if (!c.media_always) delete c.media_always;
+        if (c.paused_timeout == null || c.paused_timeout === "" || +c.paused_timeout === 10) delete c.paused_timeout;
         const re = !!this._config.source !== !!c.source || !!this._config.sidebar !== !!c.sidebar || this._config.animation !== false !== (c.animation !== false);
         this._emit(c);
         if (re) this._rebuild();
@@ -2752,7 +2910,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
           }));
         }),
         this._section("look", "mdi:palette-outline", "Layout und Aussehen", (b) => b.append(form(LOOK3(data)))),
-        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => b.append(form(MEDIA)))
+        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => {
+          b.append(this._hint("Die Leiste erscheint nur, solange ein Player etwas abspielt. Bei mehreren Playern wechselt der Lautsprecher-Knopf neben Play das Gerät."));
+          this._itemList(b, "media_players", MPLAYER, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
+          b.append(form(MEDIA));
+        })
       );
     }
     get _opts() {

@@ -156,7 +156,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
   `resource_type` = `module`) auf den neuen Commit-Hash umstellen. **Immer dieselbe Ressource aktualisieren**
   (`resource_id`), nie eine neue anlegen. Laufen mehrere Feature-Branches parallel, alle getesteten Karten in einen
   Build packen (z. B. `npm run dev -- weather,popup,navi,info,room`), damit kein Test verloren geht.
-- **resource_id der Dev-Ressource:** `4cc06e00074c416590e298ace68fe3a7`
+- **resource_id der Dev-Ressource:** `5c4e80a5870942189b61f27d4c6b2bbd`
   Fehlt sie oder ist sie ungültig, zuerst per `ha_config_list_dashboard_resources` nach einer bestehenden
   Ressource suchen, die auf `nova-dev-cards.js` zeigt (oder inline mit `/* Nova Cards v… DEV` beginnt), und deren ID
   hier eintragen. Nur wenn es keine gibt, eine neue anlegen.
