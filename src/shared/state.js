@@ -7,7 +7,20 @@ export const DICON = {light: 'mdi:lightbulb', switch: 'mdi:power-socket-eu', fan
 export const TOGGLE = ['light', 'switch', 'input_boolean', 'fan', 'cover', 'group', 'siren', 'humidifier', 'automation', 'media_player', 'valve'];
 export const PRESS = {button: ['button', 'press'], input_button: ['input_button', 'press'], script: ['script', 'turn_on'], scene: ['scene', 'turn_on']};
 
-export const fmtState = (h, s) => { try { return h.formatEntityState ? h.formatEntityState(s) : s.state + (s.attributes.unit_of_measurement ? ' ' + s.attributes.unit_of_measurement : ''); } catch { return s.state; } };
+// Zahl nach dem Zahlenformat aus dem HA-Profil (Komma/Punkt); dec = feste Nachkommastellen, sonst wie im Zustand
+const NUMLOC = {comma_decimal: 'de', decimal_period: 'en-US', space_comma: 'fr', none: 'en-US'};
+export const fmtNum = (h, v, dec) => {
+  const nf = h?.locale?.number_format, loc = NUMLOC[nf] || (nf === 'system' ? undefined : h?.locale?.language || h?.language || 'de');
+  const d = dec ?? decOf(v);
+  try { return new Intl.NumberFormat(loc, {minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: nf !== 'none'}).format(+v); } catch { return String(v); }
+};
+export const fmtState = (h, s) => {
+  try {
+    if (h.formatEntityState) return h.formatEntityState(s);
+    const u = s.attributes.unit_of_measurement;
+    return (NUMRE.test(s.state) ? fmtNum(h, s.state) : s.state) + (u ? ' ' + u : '');
+  } catch { return s.state; }
+};
 export const unitJoin = (v, u) => !u ? `${v}` : u.startsWith('°') ? `${v}${u}` : `${v} ${u}`;
 export const decOf = st => (String(st).split('.')[1] || '').length;
 export const nameOf = (h, o) => o.name ?? h.states[o.entity]?.attributes.friendly_name ?? o.entity ?? '';
@@ -50,7 +63,7 @@ export function valueOf(h, s, o) {
   if (!s) return '–';
   if (o.format === 'clock' && NUMRE.test(s.state)) return clockOf(+s.state * (DUR_U[o.unit ?? s.attributes.unit_of_measurement] ?? 1));
   if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
-    const n = o.decimals != null ? (+s.state).toFixed(o.decimals) : s.state;
+    const n = fmtNum(h, s.state, o.decimals ?? undefined);
     return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
   }
   return fmtState(h, s);

@@ -72,7 +72,7 @@ text-shadow:0 0 .04em var(--gc),0 0 .18em color-mix(in srgb,var(--gc) 55%,transp
    Sieben-Segment-Ziffern als SVG. Segmente: a oben, b rechts oben, c rechts unten, d unten, e links unten, f links oben, g Mitte.
    Ausgeschaltete Segmente bleiben mit 8 % Deckkraft sichtbar, wie bei einer echten LED-Anzeige. */
 const SEG = {0: 'abcdef', 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc', 5: 'afgcd', 6: 'afgedc', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', ' ': ''};
-const W = 34, H = 64, T = 7.5, G = 1.3;
+const W = 34, H = 64, T = 8, G = 1.2;
 // Segment als Sechseck entlang der Mittellinie (x1,y1)→(x2,y2)
 const segPath = (x1, y1, x2, y2) => {
   const hz = y1 === y2, h = T / 2;
@@ -80,7 +80,8 @@ const segPath = (x1, y1, x2, y2) => {
   const a = y1 + G, b = y2 - G; return `M${x1} ${a}L${x1 + h} ${a + h}V${b - h}L${x1} ${b}L${x1 - h} ${b - h}V${a + h}Z`;
 };
 const SEGS = {a: [0, 0, W, 0], b: [W, 0, W, H / 2], c: [W, H / 2, W, H], d: [0, H, W, H], e: [0, H / 2, 0, H], f: [0, 0, 0, H / 2], g: [0, H / 2, W, H / 2]};
-// Eine Ziffer an Position x,y (leicht kursiv wie echte Anzeigen), Maßstab s
+// Eine Ziffer an Position x,y (leicht kursiv wie echte Anzeigen), Maßstab s. Jedes Segment ist ein Balken mit schräg
+// abgeschnittenen Enden (Sechseck), keine Schrift.
 const digit = (x, y, s = 1) => `<g class="dg" transform="translate(${x} ${y}) scale(${s}) skewX(-6)">${Object.entries(SEGS).map(([k, p]) => `<path class="sg" data-s="${k}" d="${segPath(...p)}"/>`).join('')}</g>`;
 
 // Gehäuse mit Snooze-Taste, Front, Anzeigefenster mit Glas. sec = Sekunden klein rechts unten
@@ -100,11 +101,11 @@ export function retroSvg(sec) {
 <rect class="s-body" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-bd)"/><rect class="s-sheen" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-sh)"/>
 <rect class="s-edge" x="9" y="10.4" width="${bw - 18}" height=".7" rx=".35"/>
 <rect class="s-part" x="${X - 6}" y="${Y - 6}" width="${dispW + 12}" height="${dispH + 12}" rx="3" fill="url(#r-pt)"/>
-<rect class="s-scr" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-vg)"/>
-<g class="rt-on" filter="url(#r-led)">${xs.map(x => digit(x, dy)).join('')}
-<g class="rt-col"><circle cx="${cx}" cy="${dy + H * .3}" r="3.4"/><circle cx="${cx}" cy="${dy + H * .7}" r="3.4"/></g>
+<rect class="rt-scr" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-vg)"/>
+${['off', 'on'].map(l => `<g class="rt-${l}"${l === 'on' ? ' filter="url(#r-led)"' : ''}>${xs.map(x => digit(x, dy)).join('')}
+<g class="rt-col"><circle cx="${cx}" cy="${dy + H * .3}" r="3.6"/><circle cx="${cx}" cy="${dy + H * .7}" r="3.6"/></g>
 ${sec ? digit(secX, dy + H * .5, .5) + digit(secX + 21, dy + H * .5, .5) : ''}
-<circle class="rt-pm" cx="${X + 11}" cy="${dy + 4}" r="2.6"/></g>
+<circle class="rt-pm" cx="${X + 11}" cy="${dy + 4}" r="2.6"/></g>`).join('')}
 <rect class="s-glass" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-gl)"/>
 <g clip-path="url(#r-gc)"><path class="s-refl" d="M${X} ${Y + dispH * .7}L${X + dispW * .3} ${Y}h${f(dispW * .08)}L${X} ${Y + dispH}z"/><path class="s-refl" d="M${X + dispW * .45} ${Y + dispH}L${X + dispW * .75} ${Y}h${f(dispW * .03)}L${X + dispW * .48} ${Y + dispH}z"/>
 <g transform="rotate(18 ${X + dispW / 2} ${Y + dispH / 2})"><rect class="s-gls" x="${X - 30}" y="${Y - 40}" width="22" height="${dispH + 80}" fill="url(#r-gs)"/></g></g>
@@ -115,21 +116,25 @@ ${sec ? digit(secX, dy + H * .5, .5) + digit(secX + 21, dy + H * .5, .5) : ''}
 }
 // Ziffern setzen: chars = Zeichen der vier Hauptziffern (+ zwei Sekunden), pm = PM-Punkt
 export function retroSet(svg, chars, pm) {
-  svg.querySelectorAll('.dg').forEach((g, i) => {
+  svg.querySelectorAll('.rt-on .dg').forEach((g, i) => {
     const on = SEG[chars[i]] ?? '';
     if (g._ch === chars[i]) return;
     g._ch = chars[i];
     g.querySelectorAll('.sg').forEach(p => p.classList.toggle('on', on.includes(p.dataset.s)));
   });
-  svg.querySelector('.rt-pm')?.classList.toggle('on', !!pm);
+  svg.querySelector('.rt-on .rt-pm')?.classList.toggle('on', !!pm);
 }
 export const RETRO_COLORS = ['red', 'green', 'blue', 'amber'];
 export const RETRO_CSS = `
 .rt{width:100%;max-width:var(--nova-clock-size,520px)}.rt svg{display:block;width:100%;height:auto}
 .rt{--led:var(--nv-led-red)}.rt.green{--led:var(--nv-led-green)}.rt.blue{--led:var(--nv-led-blue)}.rt.amber{--led:var(--nv-led-amber)}
-.scene .sg,.scene .rt-col circle,.scene .rt-pm{fill:var(--led);opacity:.08;transition:opacity .15s}
-.scene .sg.on,.scene .rt-pm.on{opacity:1}
-.scene .rt-col circle{opacity:1}
-.anim .scene .rt-col{animation:rt-blink 1s steps(1) infinite}
-@keyframes rt-blink{50%{opacity:.08}}
+/* Ziffernfläche: fast schwarz hinter dunkler Plexiglasscheibe, ganz leicht in der LED-Farbe getönt */
+.scene .rt-scr{fill:color-mix(in srgb,var(--led) 4%,#030303);stroke:rgba(255,255,255,.16);stroke-width:.5}
+/* Untere Ebene: alle Segmente mit 8 % („88:88“ zu erahnen), obere Ebene: nur leuchtende Segmente mit Glow */
+.scene .rt-off .sg,.scene .rt-off circle{fill:var(--led);opacity:.08}
+.scene .rt-on .sg,.scene .rt-on .rt-pm{fill:var(--led);opacity:0;transition:opacity .12s}
+.scene .rt-on .sg.on,.scene .rt-on .rt-pm.on{opacity:1}
+.scene .rt-on .rt-col circle{fill:var(--led)}
+.anim .scene .rt-on .rt-col{animation:rt-blink 1s steps(1,end) infinite}
+@keyframes rt-blink{50%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.scene .rt-col{animation:none!important}}`;

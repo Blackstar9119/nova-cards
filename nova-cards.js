@@ -64,9 +64,21 @@
   var DICON = { light: "mdi:lightbulb", switch: "mdi:power-socket-eu", fan: "mdi:fan", input_boolean: "mdi:toggle-switch-outline", button: "mdi:gesture-tap-button", input_button: "mdi:gesture-tap-button", script: "mdi:script-text-outline", scene: "mdi:palette", automation: "mdi:robot", climate: "mdi:thermostat", cover: "mdi:window-shutter", media_player: "mdi:speaker", number: "mdi:ray-vertex", input_number: "mdi:ray-vertex", select: "mdi:format-list-bulleted", binary_sensor: "mdi:checkbox-blank-circle-outline", sensor: "mdi:eye" };
   var TOGGLE = ["light", "switch", "input_boolean", "fan", "cover", "group", "siren", "humidifier", "automation", "media_player", "valve"];
   var PRESS = { button: ["button", "press"], input_button: ["input_button", "press"], script: ["script", "turn_on"], scene: ["scene", "turn_on"] };
+  var NUMLOC = { comma_decimal: "de", decimal_period: "en-US", space_comma: "fr", none: "en-US" };
+  var fmtNum = (h, v, dec) => {
+    const nf = h?.locale?.number_format, loc = NUMLOC[nf] || (nf === "system" ? void 0 : h?.locale?.language || h?.language || "de");
+    const d = dec ?? decOf(v);
+    try {
+      return new Intl.NumberFormat(loc, { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: nf !== "none" }).format(+v);
+    } catch {
+      return String(v);
+    }
+  };
   var fmtState = (h, s) => {
     try {
-      return h.formatEntityState ? h.formatEntityState(s) : s.state + (s.attributes.unit_of_measurement ? " " + s.attributes.unit_of_measurement : "");
+      if (h.formatEntityState) return h.formatEntityState(s);
+      const u = s.attributes.unit_of_measurement;
+      return (NUMRE.test(s.state) ? fmtNum(h, s.state) : s.state) + (u ? " " + u : "");
     } catch {
       return s.state;
     }
@@ -147,7 +159,7 @@
     if (!s) return "–";
     if (o.format === "clock" && NUMRE.test(s.state)) return clockOf(+s.state * (DUR_U[o.unit ?? s.attributes.unit_of_measurement] ?? 1));
     if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
-      const n = o.decimals != null ? (+s.state).toFixed(o.decimals) : s.state;
+      const n = fmtNum(h, s.state, o.decimals ?? void 0);
       return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
     }
     return fmtState(h, s);
@@ -268,7 +280,7 @@
 --nv-popup-backdrop:var(--nova-popup-backdrop,rgba(8,12,22,.5));
 --nv-popup-r:var(--nova-popup-radius,28px);
 --nv-clock-night:var(--nova-clock-night,#4d6bff);--nv-clock-morning:var(--nova-clock-morning,#ffb36b);--nv-clock-noon:var(--nova-clock-noon,#f4f7ff);
---nv-led-red:var(--nova-led-red,#ff3b30);--nv-led-green:var(--nova-led-green,#39ff7a);--nv-led-blue:var(--nova-led-blue,#3fa9ff);--nv-led-amber:var(--nova-led-amber,#ffb000)}`;
+--nv-led-red:var(--nova-led-red,#ff2414);--nv-led-green:var(--nova-led-green,#39ff7a);--nv-led-blue:var(--nova-led-blue,#3fa9ff);--nv-led-amber:var(--nova-led-amber,#ffb000)}`;
   var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
   var roleVars = (r) => {
     const k = ROLES[r] || ROLES.neutral;
@@ -13349,8 +13361,8 @@ text-shadow:0 0 .04em var(--gc),0 0 .18em color-mix(in srgb,var(--gc) 55%,transp
   var SEG2 = { 0: "abcdef", 1: "bc", 2: "abged", 3: "abgcd", 4: "fgbc", 5: "afgcd", 6: "afgedc", 7: "abc", 8: "abcdefg", 9: "abcdfg", " ": "" };
   var W = 34;
   var H = 64;
-  var T2 = 7.5;
-  var G = 1.3;
+  var T2 = 8;
+  var G = 1.2;
   var segPath = (x1, y1, x2, y2) => {
     const hz = y1 === y2, h = T2 / 2;
     if (hz) {
@@ -13378,11 +13390,11 @@ text-shadow:0 0 .04em var(--gc),0 0 .18em color-mix(in srgb,var(--gc) 55%,transp
 <rect class="s-body" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-bd)"/><rect class="s-sheen" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-sh)"/>
 <rect class="s-edge" x="9" y="10.4" width="${bw - 18}" height=".7" rx=".35"/>
 <rect class="s-part" x="${X - 6}" y="${Y - 6}" width="${dispW + 12}" height="${dispH + 12}" rx="3" fill="url(#r-pt)"/>
-<rect class="s-scr" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-vg)"/>
-<g class="rt-on" filter="url(#r-led)">${xs.map((x) => digit(x, dy)).join("")}
-<g class="rt-col"><circle cx="${cx}" cy="${dy + H * 0.3}" r="3.4"/><circle cx="${cx}" cy="${dy + H * 0.7}" r="3.4"/></g>
+<rect class="rt-scr" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-vg)"/>
+${["off", "on"].map((l) => `<g class="rt-${l}"${l === "on" ? ' filter="url(#r-led)"' : ""}>${xs.map((x) => digit(x, dy)).join("")}
+<g class="rt-col"><circle cx="${cx}" cy="${dy + H * 0.3}" r="3.6"/><circle cx="${cx}" cy="${dy + H * 0.7}" r="3.6"/></g>
 ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : ""}
-<circle class="rt-pm" cx="${X + 11}" cy="${dy + 4}" r="2.6"/></g>
+<circle class="rt-pm" cx="${X + 11}" cy="${dy + 4}" r="2.6"/></g>`).join("")}
 <rect class="s-glass" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-gl)"/>
 <g clip-path="url(#r-gc)"><path class="s-refl" d="M${X} ${Y + dispH * 0.7}L${X + dispW * 0.3} ${Y}h${f2(dispW * 0.08)}L${X} ${Y + dispH}z"/><path class="s-refl" d="M${X + dispW * 0.45} ${Y + dispH}L${X + dispW * 0.75} ${Y}h${f2(dispW * 0.03)}L${X + dispW * 0.48} ${Y + dispH}z"/>
 <g transform="rotate(18 ${X + dispW / 2} ${Y + dispH / 2})"><rect class="s-gls" x="${X - 30}" y="${Y - 40}" width="22" height="${dispH + 80}" fill="url(#r-gs)"/></g></g>
@@ -13392,23 +13404,27 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 </svg>`;
   }
   function retroSet(svg, chars, pm) {
-    svg.querySelectorAll(".dg").forEach((g, i) => {
+    svg.querySelectorAll(".rt-on .dg").forEach((g, i) => {
       const on = SEG2[chars[i]] ?? "";
       if (g._ch === chars[i]) return;
       g._ch = chars[i];
       g.querySelectorAll(".sg").forEach((p) => p.classList.toggle("on", on.includes(p.dataset.s)));
     });
-    svg.querySelector(".rt-pm")?.classList.toggle("on", !!pm);
+    svg.querySelector(".rt-on .rt-pm")?.classList.toggle("on", !!pm);
   }
   var RETRO_COLORS = ["red", "green", "blue", "amber"];
   var RETRO_CSS = `
 .rt{width:100%;max-width:var(--nova-clock-size,520px)}.rt svg{display:block;width:100%;height:auto}
 .rt{--led:var(--nv-led-red)}.rt.green{--led:var(--nv-led-green)}.rt.blue{--led:var(--nv-led-blue)}.rt.amber{--led:var(--nv-led-amber)}
-.scene .sg,.scene .rt-col circle,.scene .rt-pm{fill:var(--led);opacity:.08;transition:opacity .15s}
-.scene .sg.on,.scene .rt-pm.on{opacity:1}
-.scene .rt-col circle{opacity:1}
-.anim .scene .rt-col{animation:rt-blink 1s steps(1) infinite}
-@keyframes rt-blink{50%{opacity:.08}}
+/* Ziffernfläche: fast schwarz hinter dunkler Plexiglasscheibe, ganz leicht in der LED-Farbe getönt */
+.scene .rt-scr{fill:color-mix(in srgb,var(--led) 4%,#030303);stroke:rgba(255,255,255,.16);stroke-width:.5}
+/* Untere Ebene: alle Segmente mit 8 % („88:88“ zu erahnen), obere Ebene: nur leuchtende Segmente mit Glow */
+.scene .rt-off .sg,.scene .rt-off circle{fill:var(--led);opacity:.08}
+.scene .rt-on .sg,.scene .rt-on .rt-pm{fill:var(--led);opacity:0;transition:opacity .12s}
+.scene .rt-on .sg.on,.scene .rt-on .rt-pm.on{opacity:1}
+.scene .rt-on .rt-col circle{fill:var(--led)}
+.anim .scene .rt-on .rt-col{animation:rt-blink 1s steps(1,end) infinite}
+@keyframes rt-blink{50%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.scene .rt-col{animation:none!important}}`;
 
   // src/clock.js
@@ -13538,7 +13554,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       e.tm.classList.toggle("glow", st === "glow");
       this._tmH = null;
       e.flp.hidden = st !== "flip";
-      e.flp.innerHTML = st === "flip" ? `<div class="grp">${flipDigit()}${flipDigit()}</div><div class="sep"><i></i><i></i></div><div class="grp">${flipDigit()}${flipDigit()}</div>${c.show_seconds ? `<div class="grp sec">${flipDigit()}${flipDigit()}</div>` : ""}<div class="ap"></div>` : "";
+      e.flp.innerHTML = st === "flip" ? `<div class="grp">${flipDigit()}${flipDigit()}</div><div class="sep"><i></i><i></i></div><div class="grp">${flipDigit()}${flipDigit()}</div><div class="ap"></div>` : "";
       e.rt.hidden = st !== "retro";
       e.rt.className = `rt ${RETRO_COLORS.includes(c.retro_color) ? c.retro_color : "red"}`;
       e.rt.innerHTML = st === "retro" ? retroSvg(!!c.show_seconds) : "";
@@ -13555,6 +13571,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         return sp;
       }));
       e.g.classList.toggle("row", an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name || this._ents.length));
+      this._sync();
     }
     // Leuchtziffern: Farbe aus dem Sonnenstand (sun.sun → elevation, rising); ohne Sonne grob aus der Uhrzeit
     _glow() {
@@ -13564,11 +13581,21 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         return;
       }
       const s = this._h?.states[this._sun], a = s?.attributes;
-      const g = a && a.elevation != null ? { elev: +a.elevation, rising: !!a.rising } : sunGuess((/* @__PURE__ */ new Date()).getHours() + (/* @__PURE__ */ new Date()).getMinutes() / 60);
+      const g = a && a.elevation != null ? { elev: +a.elevation, rising: !!a.rising } : sunGuess(this._hour());
       const col = glowColor(g.elev, g.rising) || roleVars(this._c.color).c;
       if (col !== this._gc) {
         this._gc = col;
         e.tm.style.setProperty("--gc", col);
+      }
+    }
+    // Stunde (mit Bruchteil) in der Zeitzone von HA – für die geschätzte Sonne ohne sun.sun
+    _hour() {
+      try {
+        const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { hour: "numeric", minute: "numeric", hourCycle: "h23", timeZone: this._h?.config?.time_zone }).formatToParts(/* @__PURE__ */ new Date()).map((x) => [x.type, x.value]));
+        return +p.hour + p.minute / 60;
+      } catch {
+        const d = /* @__PURE__ */ new Date();
+        return d.getHours() + d.getMinutes() / 60;
       }
     }
     // Laufende Animationen (Sekundenzeiger „sweep“, blinkender Doppelpunkt) auf die echte Sekunde setzen
@@ -13579,7 +13606,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       const sw = this._st === "analog" && handOf(this._c) === "sweep" && !this._quiet && !reduced();
       e.sw.classList.toggle("on", sw);
       if (sw) e.sw.style.animationDelay = off2;
-      const col = e.rt.querySelector(".rt-col");
+      const col = e.rt.querySelector(".rt-on .rt-col");
       if (col) col.style.animationDelay = `-${now.getMilliseconds() / 1e3}s`;
     }
     // Werte-Zeile: nur neu schreiben, wenn sich eine der Entitäten ändert
@@ -13596,7 +13623,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     }
     // Formatierer nur neu bauen, wenn sich Sprache/Zeitzone/Optionen ändern
     _fmts() {
-      const h = this._h, c = this._c, lang = langOf(h), tz = tzOf(h), tf = c.time_format === "auto" ? h?.locale?.time_format : c.time_format;
+      const h = this._h, c = this._c, lang = langOf(h), tz = h?.config?.time_zone || tzOf(h), tf = c.time_format === "auto" ? h?.locale?.time_format : c.time_format;
       const key = JSON.stringify([lang, tz, tf, c.date_format, c.show_seconds]);
       if (key === this._fmtKey) return this._f;
       this._fmtKey = key;
@@ -13643,7 +13670,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       const st = this._st, ap = p.dayPeriod || "";
       const hr = ap && p.hour.length === 2 && p.hour[0] === "0" ? " " + p.hour[1] : p.hour.padStart(2, " ");
       if (st === "flip") {
-        const ch = [...hr, ...p.minute, ...c.show_seconds ? p.second : ""], anim = !!this._vis && !this._quiet;
+        const ch = [...hr, ...p.minute], anim = !!this._vis && !this._quiet;
         e.flp.querySelectorAll(".fd").forEach((d, i) => flipSet(d, ch[i] ?? "", anim));
         e.flp.querySelector(".ap").textContent = ap;
       } else if (st === "retro") {
@@ -13657,7 +13684,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       clearTimeout(this._t);
       this._t = null;
       if (!this._vis || !this._e) return;
-      const c = this._c, an = this._st === "analog", step = (an ? handOf(c) === "tick" || handOf(c) === "sweep" && !this._e.sw.classList.contains("on") : c.show_seconds) ? 1e3 : 6e4, now = Date.now();
+      const c = this._c, an = this._st === "analog", step = (an ? handOf(c) === "tick" || handOf(c) === "sweep" && !this._e.sw.classList.contains("on") : c.show_seconds && this._st !== "flip") ? 1e3 : 6e4, now = Date.now();
       this._t = setTimeout(() => {
         this._t = null;
         this._draw();
@@ -13672,7 +13699,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
   ];
   var S_STYLE = (st) => st === "analog" ? [g2(sel("second_hand", [["sweep", "Gleitend"], ["tick", "Springend"], ["none", "Keiner"]]), { name: "analog_digital", selector: { boolean: {} } })] : st === "glow" ? [{ name: "sun_entity", selector: { entity: { domain: "sun" } } }] : st === "retro" ? [sel("retro_color", [["red", "Rot"], ["green", "Grün"], ["blue", "Blau"], ["amber", "Bernstein"]])] : [];
   var S_SHOW = (c) => [
-    ...styleOf(c) === "analog" ? [] : [{ name: "show_seconds", selector: { boolean: {} } }],
+    ...["analog", "flip"].includes(styleOf(c)) ? [] : [{ name: "show_seconds", selector: { boolean: {} } }],
     g2({ name: "show_weekday", selector: { boolean: {} } }, { name: "show_date", selector: { boolean: {} } }),
     { name: "entities", selector: { entity: { multiple: true, domain: ["sensor", "binary_sensor", "input_number", "number", "input_text", "input_select"] } } },
     g2(sel("date_format", [["long", "2. November"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]), sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]]))

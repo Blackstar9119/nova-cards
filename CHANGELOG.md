@@ -6,15 +6,18 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 ## [0.12.0] – unveröffentlicht
 
 ### Hinzugefügt
-- Nova Uhr Card: Option `style` mit vier neuen Stilen neben `default` – `flip` (Klappzahlen, nur geänderte Ziffern klappen
-  in 600 ms um), `analog` (Zifferblatt, Sekundenzeiger per `second_hand`: `sweep`, `tick`, `none`), `glow` (Leuchtziffern,
-  Farbe folgt dem Sonnenstand aus `sun.sun`) und `retro` (Radiowecker mit Sieben-Segment-Ziffern, `retro_color`: `red`,
+- Nova Uhr Card: Option `style` mit vier neuen Stilen neben `default` – `flip` (Klappzahlen, nur Stunden und Minuten, nur geänderte
+  Ziffern klappen in 600 ms um), `analog` (Zifferblatt, Sekundenzeiger per `second_hand`: `sweep`, `tick`, `none`), `glow` (Leuchtziffern,
+  Farbe folgt dem Sonnenstand aus `sun.sun`) und `retro` (Radiowecker mit Sieben-Segment-Ziffern als SVG, ausgeschaltete Segmente mit 8 %,
+  Doppelpunkt blinkt im Sekundentakt, `retro_color`: `red`,
   `green`, `blue`, `amber`). Stil im Editor wählbar.
 - Theme-Variablen `--nova-clock-morning`, `--nova-clock-noon`, `--nova-clock-night` und `--nova-led-red|green|blue|amber`.
 - Nova Uhr, Timer und Swipe Card sowie Nova Einkauf und Notiz Card aus den Feature-Branches zusammengeführt.
 - `docs/DESIGN.md` als feste Design-Referenz, dieses Changelog.
 
 ### Behoben
+- Nova Uhr Card: Uhrzeit immer in der Zeitzone von Home Assistant (`hass.config.time_zone`), nicht in der des Browsers.
+- Zahlen ohne Formatierung durch HA (z. B. Werte unter der Uhr) nach dem Zahlenformat des HA-Profils: `21,5 °C` statt `21.5 °C`.
 - Nova Swipe Card: Tippen in einem Eingabefeld (z. B. Einkaufsliste) hält „Zurück zu Seite 1 nach“ auf; solange ein Feld den
   Fokus hat, springt die Karte nicht zurück.
 

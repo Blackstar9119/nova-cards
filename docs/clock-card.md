@@ -4,7 +4,7 @@
 
 Uhrzeit im Nova-Stil in fünf Stilen: digital mit großen, schlanken Ziffern wie die Uhr der Wetter Card, als Klappzahl-Uhr,
 analog als Zifferblatt mit Chromring und Glas, als Leuchtziffern mit Farbe nach Sonnenstand oder als Radiowecker. Wochentag,
-Datum und Werte auf Wunsch darunter. Die Größe passt sich der Kartenbreite an. Sprache, 12/24 Stunden und Zeitzone kommen aus deinem Home-Assistant-Profil.
+Datum und Werte auf Wunsch darunter. Die Größe passt sich der Kartenbreite an. Sprache und 12/24 Stunden kommen aus deinem Home-Assistant-Profil, die Zeitzone ist immer die von Home Assistant.
 
 ## Wenn du einfach nur eine Uhr willst, dann so
 
@@ -17,7 +17,7 @@ type: custom:nova-clock-card
 ## Wenn du eine Klappzahl-Uhr wie am Bahnhof willst, dann so
 
 Im Editor „Stil“ auf „Klappzahlen“ stellen. Bei jedem Wechsel klappt die obere Hälfte der Ziffer um (600 ms) – nur die
-Ziffern, die sich ändern. Mit „Sekunden“ laufen kleine Klappen für die Sekunden mit.
+Ziffern, die sich ändern. Gezeigt werden nur Stunden und Minuten.
 
 ```yaml
 type: custom:nova-clock-card
@@ -94,7 +94,7 @@ glass: false
 | `sun_entity` | `sun.sun` | Nur `style: glow`: Sonne für die Farbe. Fehlt sie, wird der Sonnenstand aus der Uhrzeit geschätzt |
 | `mode` | `digital` | Alte Schreibweise: `mode: analog` entspricht `style: analog` mit Sekundenzeiger über `show_seconds` |
 | `name` | – | Kleine Überschrift über der Uhr, z. B. „Küche“ |
-| `show_seconds` | `false` | Sekunden anzeigen (digital, Klappzahlen und Radiowecker klein hinter der Zeit) |
+| `show_seconds` | `false` | Sekunden anzeigen (digital und Radiowecker klein hinter der Zeit; nicht bei Klappzahlen) |
 | `analog_digital` | `false` | Nur analog: zusätzlich die digitale Zeit neben dem Zifferblatt |
 | `show_weekday` | `true` | Wochentag |
 | `show_date` | `true` | Datum |
@@ -113,4 +113,4 @@ Theme-Variablen: `--nova-clock-morning`, `--nova-clock-noon`, `--nova-clock-nigh
 - Die Uhr hat genau einen Zeitgeber. Er feuert nur zum nächsten Minutenwechsel (mit Sekunden: Sekundenwechsel) und nur,
   solange die Karte zu sehen ist. Wird die Karte entfernt oder der Tab versteckt, läuft nichts weiter.
 - Der gleitende Sekundenzeiger läuft als Animation ohne Zeitgeber. Ist „Bewegung reduzieren“ eingestellt, springt er stattdessen.
-- Die Zeit kommt vom Gerät, auf dem das Dashboard läuft. Geht dessen Uhr falsch, geht auch die Karte falsch.
+- Die Zeit kommt vom Gerät, auf dem das Dashboard läuft, angezeigt in der Zeitzone von Home Assistant. Geht die Uhr des Geräts falsch, geht auch die Karte falsch.

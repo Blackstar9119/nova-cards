@@ -41,7 +41,7 @@ export const NOVA_VARS = `:host{
 --nv-popup-backdrop:var(--nova-popup-backdrop,rgba(8,12,22,.5));
 --nv-popup-r:var(--nova-popup-radius,28px);
 --nv-clock-night:var(--nova-clock-night,#4d6bff);--nv-clock-morning:var(--nova-clock-morning,#ffb36b);--nv-clock-noon:var(--nova-clock-noon,#f4f7ff);
---nv-led-red:var(--nova-led-red,#ff3b30);--nv-led-green:var(--nova-led-green,#39ff7a);--nv-led-blue:var(--nova-led-blue,#3fa9ff);--nv-led-amber:var(--nova-led-amber,#ffb000)}`;
+--nv-led-red:var(--nova-led-red,#ff2414);--nv-led-green:var(--nova-led-green,#39ff7a);--nv-led-blue:var(--nova-led-blue,#3fa9ff);--nv-led-amber:var(--nova-led-amber,#ffb000)}`;
 
 // Farbrollen: Karten wählen nur eine Rolle, die Farbe selbst kommt aus den Variablen oben (Theme-fähig)
 export const ROLES = {neutral: 'neutral', 'accent-1': 'a1', 'accent-2': 'a2', 'accent-3': 'a3', 'accent-4': 'a4'};

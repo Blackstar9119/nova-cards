@@ -117,7 +117,7 @@ class NovaClockCard extends HTMLElement {
     this._tmH = null;
     // Klappzahlen: zwei Gruppen (+ Sekunden), Trenner als zwei Punkte
     e.flp.hidden = st !== 'flip';
-    e.flp.innerHTML = st === 'flip' ? `<div class="grp">${flipDigit()}${flipDigit()}</div><div class="sep"><i></i><i></i></div><div class="grp">${flipDigit()}${flipDigit()}</div>${c.show_seconds ? `<div class="grp sec">${flipDigit()}${flipDigit()}</div>` : ''}<div class="ap"></div>` : '';
+    e.flp.innerHTML = st === 'flip' ? `<div class="grp">${flipDigit()}${flipDigit()}</div><div class="sep"><i></i><i></i></div><div class="grp">${flipDigit()}${flipDigit()}</div><div class="ap"></div>` : '';
     // Radiowecker: SVG nur neu bauen, wenn er gebraucht wird
     e.rt.hidden = st !== 'retro';
     e.rt.className = `rt ${RETRO_COLORS.includes(c.retro_color) ? c.retro_color : 'red'}`;
@@ -131,15 +131,23 @@ class NovaClockCard extends HTMLElement {
     e.inf.hidden = !this._ents.length;
     e.inf.replaceChildren(...this._ents.map(() => { const sp = document.createElement('span'); sp.innerHTML = '<i></i><b></b>'; return sp; }));
     e.g.classList.toggle('row', an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name || this._ents.length));
+    this._sync();
   }
   // Leuchtziffern: Farbe aus dem Sonnenstand (sun.sun → elevation, rising); ohne Sonne grob aus der Uhrzeit
   _glow() {
     const e = this._e;
     if (!e || this._st !== 'glow') { e?.tm.style.removeProperty('--gc'); return; }
     const s = this._h?.states[this._sun], a = s?.attributes;
-    const g = a && a.elevation != null ? {elev: +a.elevation, rising: !!a.rising} : sunGuess(new Date().getHours() + new Date().getMinutes() / 60);
+    const g = a && a.elevation != null ? {elev: +a.elevation, rising: !!a.rising} : sunGuess(this._hour());
     const col = glowColor(g.elev, g.rising) || roleVars(this._c.color).c;
     if (col !== this._gc) { this._gc = col; e.tm.style.setProperty('--gc', col); }
+  }
+  // Stunde (mit Bruchteil) in der Zeitzone von HA – für die geschätzte Sonne ohne sun.sun
+  _hour() {
+    try {
+      const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {hour: 'numeric', minute: 'numeric', hourCycle: 'h23', timeZone: this._h?.config?.time_zone}).formatToParts(new Date()).map(x => [x.type, x.value]));
+      return +p.hour + p.minute / 60;
+    } catch { const d = new Date(); return d.getHours() + d.getMinutes() / 60; }
   }
   // Laufende Animationen (Sekundenzeiger „sweep“, blinkender Doppelpunkt) auf die echte Sekunde setzen
   _sync() {
@@ -149,7 +157,7 @@ class NovaClockCard extends HTMLElement {
     const sw = this._st === 'analog' && handOf(this._c) === 'sweep' && !this._quiet && !reduced();
     e.sw.classList.toggle('on', sw);
     if (sw) e.sw.style.animationDelay = off;
-    const col = e.rt.querySelector('.rt-col');
+    const col = e.rt.querySelector('.rt-on .rt-col');
     if (col) col.style.animationDelay = `-${now.getMilliseconds() / 1000}s`;
   }
   // Werte-Zeile: nur neu schreiben, wenn sich eine der Entitäten ändert
@@ -166,7 +174,7 @@ class NovaClockCard extends HTMLElement {
   }
   // Formatierer nur neu bauen, wenn sich Sprache/Zeitzone/Optionen ändern
   _fmts() {
-    const h = this._h, c = this._c, lang = langOf(h), tz = tzOf(h), tf = c.time_format === 'auto' ? h?.locale?.time_format : c.time_format;
+    const h = this._h, c = this._c, lang = langOf(h), tz = h?.config?.time_zone || tzOf(h), tf = c.time_format === 'auto' ? h?.locale?.time_format : c.time_format;
     const key = JSON.stringify([lang, tz, tf, c.date_format, c.show_seconds]);
     if (key === this._fmtKey) return this._f;
     this._fmtKey = key;
@@ -202,7 +210,7 @@ class NovaClockCard extends HTMLElement {
     // 12 h: führende Null der Stunde weglassen (wie bei echten Klapp- und Radioweckern)
     const hr = ap && p.hour.length === 2 && p.hour[0] === '0' ? ' ' + p.hour[1] : p.hour.padStart(2, ' ');
     if (st === 'flip') {
-      const ch = [...hr, ...p.minute, ...(c.show_seconds ? p.second : '')], anim = !!this._vis && !this._quiet;
+      const ch = [...hr, ...p.minute], anim = !!this._vis && !this._quiet;
       e.flp.querySelectorAll('.fd').forEach((d, i) => flipSet(d, ch[i] ?? '', anim));
       e.flp.querySelector('.ap').textContent = ap;
     } else if (st === 'retro') {
@@ -215,7 +223,7 @@ class NovaClockCard extends HTMLElement {
   _plan() {
     clearTimeout(this._t); this._t = null;
     if (!this._vis || !this._e) return;
-    const c = this._c, an = this._st === 'analog', step = (an ? handOf(c) === 'tick' || (handOf(c) === 'sweep' && !this._e.sw.classList.contains('on')) : c.show_seconds) ? 1000 : 60000, now = Date.now();
+    const c = this._c, an = this._st === 'analog', step = (an ? handOf(c) === 'tick' || (handOf(c) === 'sweep' && !this._e.sw.classList.contains('on')) : c.show_seconds && this._st !== 'flip') ? 1000 : 60000, now = Date.now();
     this._t = setTimeout(() => { this._t = null; this._draw(); this._plan(); }, step - (now % step) + 15);
   }
 }
@@ -231,7 +239,7 @@ const S_STYLE = st => st === 'analog' ? [g2(sel('second_hand', [['sweep', 'Gleit
   : st === 'glow' ? [{name: 'sun_entity', selector: {entity: {domain: 'sun'}}}]
   : st === 'retro' ? [sel('retro_color', [['red', 'Rot'], ['green', 'Grün'], ['blue', 'Blau'], ['amber', 'Bernstein']])] : [];
 const S_SHOW = c => [
-  ...(styleOf(c) === 'analog' ? [] : [{name: 'show_seconds', selector: {boolean: {}}}]),
+  ...(['analog', 'flip'].includes(styleOf(c)) ? [] : [{name: 'show_seconds', selector: {boolean: {}}}]),
   g2({name: 'show_weekday', selector: {boolean: {}}}, {name: 'show_date', selector: {boolean: {}}}),
   {name: 'entities', selector: {entity: {multiple: true, domain: ['sensor', 'binary_sensor', 'input_number', 'number', 'input_text', 'input_select']}}},
   g2(sel('date_format', [['long', '2. November'], ['short', '2. Nov.'], ['numeric', '02.11.2026']]), sel('time_format', [['auto', 'Wie im Profil'], ['24', '24 Stunden'], ['12', '12 Stunden (AM/PM)']])),
