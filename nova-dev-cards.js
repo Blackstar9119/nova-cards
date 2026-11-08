@@ -3145,13 +3145,13 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   function flipSet(el2, ch, anim) {
     const [t, b, ft, fb] = el2.querySelectorAll("b");
     const old = el2._ch;
-    if (old === ch) return;
+    if (old === ch) return false;
     el2._ch = ch;
     clearTimeout(el2._ft);
     if (!anim || old == null) {
       t.textContent = b.textContent = ft.textContent = fb.textContent = ch;
       el2.classList.remove("go");
-      return;
+      return false;
     }
     t.textContent = ch;
     b.textContent = old;
@@ -3164,6 +3164,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       b.textContent = ch;
       el2.classList.remove("go");
     }, 640);
+    return true;
   }
   var FLIP_CSS = `
 .flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:clamp(34px,var(--nova-clock-size,19cqw),150px);line-height:1;font-weight:600;color:#eef1f6;font-variant-numeric:tabular-nums}
@@ -3439,7 +3440,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         e.tm.style.setProperty("--gc", col);
       }
     }
-    // Nur Dev-Build: Bildrate der ersten drei Klapp-Animationen messen und ins HA-Log schreiben (Test auf echten Geräten)
+    // Nur Dev-Build: Bildrate der ersten drei echten Klapp-Animationen messen und ins HA-Log schreiben (Test auf echten Geräten)
     _measure() {
       if ((this._ms = (this._ms || 0) + 1) > 3 || !this._h?.callService) return;
       const t = [];
@@ -3450,7 +3451,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       };
       const done = () => {
         const gaps = t.slice(1).map((x, i) => x - t[i]), fps = Math.round((t.length - 1) / ((t[t.length - 1] - t[0]) / 1e3));
-        const msg = `Nova Dev Uhr (flip): ${fps} Bilder/s während der Klappe, längste Pause ${Math.round(Math.max(...gaps))} ms, Fenster ${innerWidth}×${innerHeight}`;
+        const msg = `Nova Dev Uhr (flip, echte Klappe): ${fps} Bilder/s, längste Pause ${Math.round(Math.max(...gaps))} ms, Fenster ${innerWidth}×${innerHeight}`;
         this._h.callService("system_log", "write", { message: msg, level: "warning", logger: "nova_cards.dev" })?.catch?.(() => {
         });
       };
@@ -3539,8 +3540,11 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       const hr = ap && p.hour.length === 2 && p.hour[0] === "0" ? " " + p.hour[1] : p.hour.padStart(2, " ");
       if (st === "flip") {
         const ch = [...hr, ...p.minute], anim = !!this._vis && !this._quiet;
-        e.flp.querySelectorAll(".fd").forEach((d, i) => flipSet(d, ch[i] ?? "", anim));
-        if (DEV && anim) this._measure();
+        let flipped = false;
+        e.flp.querySelectorAll(".fd").forEach((d, i) => {
+          if (flipSet(d, ch[i] ?? "", anim)) flipped = true;
+        });
+        if (DEV && flipped) this._measure();
         e.flp.querySelector(".ap").textContent = ap;
       } else if (st === "retro") {
         const svg = e.rt.firstElementChild;
@@ -5964,7 +5968,7 @@ transition:background-color .2s,color .2s,border-color .2s,transform .2s,opacity
 .ab[disabled]{opacity:.4;cursor:default}
 .ab:active:not([disabled]){transform:scale(.92)}
 .ab:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
-.items{flex:1 1 0;min-height:var(--lh,200px);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:6px;
+.items{flex:1 1 0;min-height:var(--lh,200px);overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:6px;
 scrollbar-width:thin;margin:0 -4px;padding:0 4px;-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent);padding-bottom:10px}
 .it{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;min-width:0;flex:none;
 background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transition:background-color .25s,border-color .25s,opacity .4s}
@@ -6208,7 +6212,7 @@ transition:background-color .25s,border-color .25s,box-shadow .25s}
   var NCSS = `
 .g.nt{gap:10px}
 .fld.ta{flex:1 1 0;min-height:var(--th,180px);resize:none;border-radius:18px;padding:14px 16px;line-height:1.5;
-overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;white-space:pre-wrap}
+overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:thin;white-space:pre-wrap}
 .ft{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;container-type:inline-size;width:100%}
 .ft[hidden]{display:none}
 .cnt{flex:1;min-width:0;font-size:12px;opacity:.55;white-space:nowrap;overflow:hidden}
@@ -6226,7 +6230,7 @@ transition:opacity .2s,transform .2s,background-color .2s,border-color .2s,color
 .ns{flex:1 1 0;min-height:var(--nh,180px);display:flex;flex-direction:column;gap:6px}
 .ns[hidden]{display:none}
 .ns .bt{margin:2px 2px 0}
-.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;
+.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;
 margin:0 -4px;padding:0 4px 10px;-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent)}
 .nr{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:16px;flex:none;min-width:0;
 background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
@@ -8874,7 +8878,7 @@ box-shadow:inset 0 0 0 1px rgba(110,80,40,.25),inset 0 0 30px rgba(140,95,40,.22
 .pg.r::before,.leaf .face.f::before{content:"";position:absolute;inset:0 auto 0 0;width:14%;background:linear-gradient(90deg,rgba(60,35,10,.28),rgba(60,35,10,.06) 45%,transparent);pointer-events:none;z-index:2}
 .pg.l::before,.leaf .face.b::before{content:"";position:absolute;inset:0 0 0 auto;width:14%;background:linear-gradient(270deg,rgba(60,35,10,.3),rgba(60,35,10,.06) 45%,transparent);pointer-events:none;z-index:2}
 .single .pg.r::before,.single .leaf .face.f::before{width:5%}
-.in{position:absolute;inset:0;padding:calc(var(--pw) * .09) calc(var(--pw) * .1) calc(var(--pw) * .11);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;
+.in{position:absolute;inset:0;padding:calc(var(--pw) * .09) calc(var(--pw) * .1) calc(var(--pw) * .11);overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:none;
 font-size:clamp(12px,calc(var(--pw) * .036),19px);line-height:1.45}
 .in::-webkit-scrollbar{display:none}
 .no{position:absolute;bottom:calc(var(--pw) * .035);left:0;right:0;text-align:center;font-style:italic;font-size:clamp(10px,calc(var(--pw) * .026),14px);opacity:.55;pointer-events:none}

@@ -15,7 +15,7 @@ import {PRINT_CSS, PRINT_DEF, printButton, printPaint, paintBtn, runPrint, runFe
 const NCSS = `
 .g.nt{gap:10px}
 .fld.ta{flex:1 1 0;min-height:var(--th,180px);resize:none;border-radius:18px;padding:14px 16px;line-height:1.5;
-overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;white-space:pre-wrap}
+overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:thin;white-space:pre-wrap}
 .ft{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;container-type:inline-size;width:100%}
 .ft[hidden]{display:none}
 .cnt{flex:1;min-width:0;font-size:12px;opacity:.55;white-space:nowrap;overflow:hidden}
@@ -33,7 +33,7 @@ transition:opacity .2s,transform .2s,background-color .2s,border-color .2s,color
 .ns{flex:1 1 0;min-height:var(--nh,180px);display:flex;flex-direction:column;gap:6px}
 .ns[hidden]{display:none}
 .ns .bt{margin:2px 2px 0}
-.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;
+.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;
 margin:0 -4px;padding:0 4px 10px;-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent)}
 .nr{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:16px;flex:none;min-width:0;
 background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}

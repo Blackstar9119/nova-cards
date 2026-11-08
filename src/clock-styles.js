@@ -9,18 +9,19 @@ const f = n => +n.toFixed(2);
    obere Klappe (alte Ziffer) nach unten weg, danach fällt die untere Klappe (neue Ziffer) auf den Anschlag – zusammen 600 ms. */
 export const flipDigit = () => '<span class="fd"><span class="h t"><b></b></span><span class="h b"><b></b></span><span class="h t fl"><b></b></span><span class="h b fl"><b></b></span><i class="pin"></i><i class="pin r"></i></span>';
 
-// Ziffer setzen: animiert nur, wenn sich das Zeichen ändert und anim = true ist
+// Ziffer setzen: animiert nur, wenn sich das Zeichen ändert und anim = true ist. Liefert true, wenn eine Klappe fällt.
 export function flipSet(el, ch, anim) {
   const [t, b, ft, fb] = el.querySelectorAll('b');
   const old = el._ch;
-  if (old === ch) return;
+  if (old === ch) return false;
   el._ch = ch;
   clearTimeout(el._ft);
-  if (!anim || old == null) { t.textContent = b.textContent = ft.textContent = fb.textContent = ch; el.classList.remove('go'); return; }
+  if (!anim || old == null) { t.textContent = b.textContent = ft.textContent = fb.textContent = ch; el.classList.remove('go'); return false; }
   // feste obere Hälfte zeigt sofort die neue Ziffer, die untere bleibt bis zum Aufschlag der Klappe alt
   t.textContent = ch; b.textContent = old; ft.textContent = old; fb.textContent = ch;
   el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
   el._ft = setTimeout(() => { b.textContent = ch; el.classList.remove('go'); }, 640);
+  return true;
 }
 
 export const FLIP_CSS = `

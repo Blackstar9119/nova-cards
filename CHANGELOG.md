@@ -26,6 +26,8 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 - Chips: Nachkommastellen (`decimals`) im Editor, Einheit wie in HA (21,9 °C, 62 %).
 
 ### Behoben
+- Einkauf und Notiz Card: In der Nova Swipe Card lässt sich auf der Liste wieder seitlich wischen
+  (`overscroll-behavior` nur noch senkrecht, vorher blockierte es auch die Wischgeste zur nächsten Seite).
 - Nova Uhr Card: Inhalt auf breiten Karten (ab 420 px) vertikal zentriert statt oben; Radiowecker ohne PM-Punkt bei 24 Stunden.
 - Nova Uhr Card: Uhrzeit immer in der Zeitzone von Home Assistant (`hass.config.time_zone`), nicht in der des Browsers.
 - Zahlen nach dem Zahlenformat des HA-Profils (`language`, `comma_decimal`, `decimal_comma`, `space_comma`, `none`), auch
