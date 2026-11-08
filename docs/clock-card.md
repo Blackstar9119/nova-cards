@@ -95,6 +95,20 @@ font_size: 3rem
 Hat die Karte eine feste Höhe (z. B. `grid_options: rows: 2` im Abschnitts-Layout), passt sich die Uhr automatisch an:
 Sie wird so weit kleiner, dass nie etwas über die Karte läuft. Karten mit automatischer Höhe bleiben, wie sie sind.
 
+## Wenn Wochentag und Datum größer oder kleiner sein sollen als die Uhrzeit, dann so
+
+Im Editor unter „Aussehen“ bei „Größe von Wochentag und Datum“ Klein, Mittel oder Groß wählen – oder einen eigenen Wert wie
+`18px` oder `1.2rem` eintippen. Das gilt nur für Wochentag und Datum, die Uhrzeit bleibt, wie sie ist. Bei fester Kartenhöhe
+wird trotzdem alles zusammen so eingepasst, dass nichts übersteht – auch bei `style: flip` und `layout: row`.
+Dort steht auch das Datumsformat, z. B. „8. November“ (`long`) oder „8. November 2026“ (`long_year`).
+
+```yaml
+type: custom:nova-clock-card
+style: flip
+date_size: large
+date_format: long
+```
+
 ## Wenn die Karte breit und flach ist, dann so
 
 In einer breiten, flachen Karte stehen Uhrzeit und Datum automatisch nebeneinander – die Uhrzeit links so hoch wie die Karte,
@@ -131,12 +145,13 @@ glass: false
 | `show_weekday` | `true` | Wochentag |
 | `show_date` | `true` | Datum |
 | `entities` | – | Werte unter der Uhr, z. B. Temperatur und Feuchte. Einträge als Entität oder `{entity, name, icon, unit, decimals}` |
-| `date_format` | `long` | `long` (2. November), `short` (2. Nov.) oder `numeric` (02.11.2026) |
+| `date_format` | `long` | `long` (2. November), `long_year` (2. November 2026), `short` (2. Nov.) oder `numeric` (02.11.2026) |
 | `time_format` | `auto` | `auto` (wie im Profil), `24` oder `12` |
 | `color` | `accent-1` | Farbrolle für den Sekundenzeiger der analogen Uhr |
 | `glass` | `true` | Glas-Hintergrund der Karte |
 | `size` | `medium` | Größe der Uhr: `small`, `medium` oder `large`. Datum, Wochentag und Werte wachsen mit |
 | `font_size` | – | Feste Schriftgröße der Uhrzeit, z. B. `48px` oder `3rem` (Zahl = px). Hat Vorrang vor `size` |
+| `date_size` | `medium` | Größe von Wochentag und Datum, unabhängig von der Uhrzeit: `small`, `medium`, `large` oder ein Wert wie `18px` / `1.2rem` |
 | `layout` | `auto` | `auto` (in flachen Karten nebeneinander, wenn untereinander nicht passt), `stacked` (untereinander) oder `row` (nebeneinander). Analog hat sein eigenes Layout |
 | `tap_action`, `hold_action` | – | Aktion beim Antippen bzw. langen Drücken |
 

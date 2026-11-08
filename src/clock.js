@@ -10,11 +10,13 @@ import {g2, T, A, sel, ROLE} from './shared/editor-schema.js';
 import {sweep} from './shared/scene.js';
 import {dialDefs, dialBody, dialGlass, DIAL_CSS} from './shared/dial.js';
 import {flipDigit, flipSet, FLIP_CSS, glowColor, sunGuess, GLOW_CSS, retroSvg, retroSet, RETRO_COLORS, RETRO_CSS, K} from './clock-styles.js';
+// Wochentag und Datum: zusätzlich mal date_size (--kd), damit sie sich unabhängig von der Uhrzeit einstellen lassen
+const KD = v => K(`${v}*var(--kd,1)`);
 
 /* ---------- Nova Uhr Card ----------
    Uhrzeit in fünf Stilen (Standard, Klappzahlen, Analog, Leuchtziffern, Radiowecker), optional mit Sekunden, Wochentag, Datum und einer dezenten Werte-Zeile (z. B. Temperatur, Feuchte). Sprache, 12/24 h und Zeitzone wie im HA-Profil.
    Ein einziger Zeitgeber, der genau zum nächsten Sekunden- bzw. Minutenwechsel feuert – und nur, solange die Karte zu sehen ist. */
-const DEF = {style: 'default', second_hand: 'sweep', retro_color: 'red', sun_entity: 'sun.sun', mode: 'digital', show_seconds: false, show_weekday: true, show_date: true, date_format: 'long', time_format: 'auto', color: 'accent-1', glass: true, size: 'medium', layout: 'auto'};
+const DEF = {style: 'default', second_hand: 'sweep', retro_color: 'red', sun_entity: 'sun.sun', mode: 'digital', show_seconds: false, show_weekday: true, show_date: true, date_format: 'long', time_format: 'auto', color: 'accent-1', glass: true, size: 'medium', date_size: 'medium', layout: 'auto'};
 const SIZES = {small: .75, medium: 1, large: 1.3};
 // Freie Schriftgröße: Zahl = px, sonst Text mit px, rem oder em
 const fontSize = v => typeof v === 'number' && v > 0 ? `${v}px` : typeof v === 'string' && /^\s*\d+(\.\d+)?\s*(px|rem|em)?\s*$/.test(v) ? (/[a-z]/.test(v) ? v.trim().replace(/\s+/g, '') : `${v.trim()}px`) : null;
@@ -34,7 +36,7 @@ const CCSS = `${DIAL_CSS}${FLIP_CSS}${GLOW_CSS}${RETRO_CSS}
 .tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:${K('clamp(34px,var(--nova-clock-size,24cqw),160px)')}}
 .tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
 .tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
-.dt{font-size:${K('clamp(13px,5cqw,22px)')};opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dt{font-size:${KD('clamp(13px,5cqw,22px)')};opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .ana{width:100%;max-width:${K('var(--nova-clock-size,240px)')};aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
@@ -45,7 +47,7 @@ const CCSS = `${DIAL_CSS}${FLIP_CSS}${GLOW_CSS}${RETRO_CSS}
 @keyframes k-spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
 @container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:${K('clamp(28px,var(--nova-clock-size,12cqw),100px)')}}.row .dt{font-size:${K('clamp(12px,3.6cqw,22px)')}}.row .inf{font-size:${K('clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)')}}}
+.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:${K('clamp(28px,var(--nova-clock-size,12cqw),100px)')}}.row .dt{font-size:${KD('clamp(12px,3.6cqw,22px)')}}.row .inf{font-size:${K('clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)')}}}
 .inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:${K('clamp(14px,var(--nova-clock-info-size,7.5cqw),26px)')};opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
 .inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
 .row .inf{justify-content:flex-start}
@@ -64,12 +66,14 @@ const CCSS = `${DIAL_CSS}${FLIP_CSS}${GLOW_CSS}${RETRO_CSS}
 .wide .tm{font-size:${K('var(--kh,100px)*.82')}}.wide .tm.glow{font-size:${K('var(--kh,100px)*.82')}}
 .wide .flp{font-size:${K('var(--kh,100px)*.74')}}
 .wide .rt{width:auto;max-width:none}.wide .rt svg{width:auto;height:${K('var(--kh,100px)*.88')}}
-.wide .dt{font-size:${K('var(--kh,100px)*.24')}}.wide .inf{font-size:${K('var(--kh,100px)*.26')};justify-content:flex-start}
+.wide .dt{font-size:${KD('var(--kh,100px)*.24')}}.wide .inf{font-size:${K('var(--kh,100px)*.26')};justify-content:flex-start}
 /* Feste Schriftgröße (font_size → --kf): Datum und Werte wachsen mit */
 .fs .tm,.fs .tm.glow{font-size:calc(var(--kf)*var(--ks,1))}.fs .flp{font-size:calc(var(--kf)*.8*var(--ks,1))}
 .fs .rt{max-width:none;width:calc(var(--kf)*3.25*var(--ks,1))}.fs.wide .rt svg{width:100%;height:auto}
 .fs .ana{max-width:calc(var(--kf)*1.5*var(--ks,1))}
-.fs .dt{font-size:calc(var(--kf)*.3*var(--ks,1))}.fs .inf{font-size:calc(var(--kf)*.34*var(--ks,1))}.fs .nm{font-size:calc(var(--kf)*.16*var(--ks,1))}`;
+.fs .dt{font-size:calc(var(--kf)*.3*var(--kd,1)*var(--ks,1))}.fs .inf{font-size:calc(var(--kf)*.34*var(--ks,1))}.fs .nm{font-size:calc(var(--kf)*.16*var(--ks,1))}
+/* Feste Schriftgröße für Wochentag und Datum (date_size als px/rem → --kdf), schrumpft beim Einpassen mit */
+.g.dfs .dt{font-size:calc(var(--kdf)*var(--ks,1))}`;
 
 // Zeiger: Stunde, Minute (Chrom), Sekunde (Farbrolle) mit Gegengewicht; Schatten leicht versetzt
 const hand = (cls, w, len, back) => `<path class="${cls}" d="M${C - w / 2} ${C + back} L${C - w / 2 + .4} ${C - len} Q${C} ${C - len - w / 2} ${C + w / 2 - .4} ${C - len} L${C + w / 2} ${C + back} Z"/>`;
@@ -164,6 +168,11 @@ class NovaClockCard extends HTMLElement {
     const fs = fontSize(c.font_size);
     e.g.classList.toggle('fs', !!fs);
     if (fs) e.g.style.setProperty('--kf', fs); else e.g.style.removeProperty('--kf');
+    // Wochentag und Datum: date_size als Stufe (Faktor --kd) oder fester Wert (--kdf)
+    const ds = SIZES[c.date_size] ? null : fontSize(c.date_size);
+    e.g.style.setProperty('--kd', SIZES[c.date_size] || 1);
+    e.g.classList.toggle('dfs', !!ds);
+    if (ds) e.g.style.setProperty('--kdf', ds); else e.g.style.removeProperty('--kdf');
     e.g.classList.toggle('nn', !c.name);
     this._sync();
     this._fitSoon();
@@ -200,7 +209,7 @@ class NovaClockCard extends HTMLElement {
     g.style.setProperty('--kfix', `${Math.round(H)}px`);
     // Platzbedarf: Umriss aller sichtbaren Teile (der Inhalt ist zentriert und kann nach oben und unten herausragen)
     const need = () => {
-      let t = Infinity, b = -Infinity, w = 0;
+      let t = Infinity, b = -Infinity, w = 0, rw = 1;
       for (const k of g.children) {
         if (k.hidden) continue;
         const r = k.getBoundingClientRect();
@@ -208,21 +217,27 @@ class NovaClockCard extends HTMLElement {
         t = Math.min(t, r.top); b = Math.max(b, r.bottom); w = Math.max(w, k.scrollWidth, r.width);
       }
       const tx = e.tm.parentElement;
-      for (const k of tx.children) if (!k.hidden) w = Math.max(w, k.scrollWidth);
-      return [w, b > t ? b - t : 0];
+      // auch Datum und Werte in .sub: abgeschnittener Text (scrollWidth > Breite) zählt als zu breit
+      for (const k of [...tx.children, ...e.dt.parentElement.children]) {
+        if (k.hidden) continue;
+        w = Math.max(w, k.scrollWidth);
+        // abgeschnittener Text (z. B. Datum mit „…“): Verhältnis sichtbar/benötigt
+        if (k.clientWidth && k.scrollWidth > k.clientWidth + 1) rw = Math.min(rw, k.clientWidth / k.scrollWidth);
+      }
+      return [w, b > t ? b - t : 0, rw];
     };
-    let [w, h] = need();
+    let [w, h, rw] = need();
     if (can && lay !== 'row' && lay !== 'stacked' && h > H + 1 && W / H >= 2.2 && !(e.dt.hidden && e.inf.hidden && e.nm.hidden)) {
       g.classList.add('wide');
-      [w, h] = need();
+      [w, h, rw] = need();
     }
     let s = 1;
     for (let i = 0; i < 4 && h; i++) {
-      const r = Math.min(H / h, W / (w || W));
+      const r = Math.min(H / h, W / (w || W), rw);
       if (r >= .995) break;
       s = Math.max(.15, s * r * .98);
       g.style.setProperty('--ks', +s.toFixed(3));
-      [w, h] = need();
+      [w, h, rw] = need();
     }
   }
   // Leuchtziffern: Farbe aus dem Sonnenstand (sun.sun → elevation, rising); ohne Sonne grob aus der Uhrzeit
@@ -287,7 +302,7 @@ class NovaClockCard extends HTMLElement {
     const mk = o => { try { return new Intl.DateTimeFormat(lang, {...o, timeZone: tz}); } catch { return new Intl.DateTimeFormat(lang, o); } };
     const h12 = tf === '12' ? true : tf === '24' ? false : undefined;
     const time = mk({hour: '2-digit', minute: '2-digit', second: '2-digit', ...(h12 != null ? {hour12: h12} : {})});
-    const DF = {long: {day: 'numeric', month: 'long'}, short: {day: 'numeric', month: 'short'}, numeric: {day: '2-digit', month: '2-digit', year: 'numeric'}};
+    const DF = {long: {day: 'numeric', month: 'long'}, long_year: {day: 'numeric', month: 'long', year: 'numeric'}, short: {day: 'numeric', month: 'short'}, numeric: {day: '2-digit', month: '2-digit', year: 'numeric'}};
     this._f = {time, wd: mk({weekday: 'long'}), date: mk(DF[c.date_format] || DF.long)};
     return this._f;
   }
@@ -350,17 +365,19 @@ const S_SHOW = c => [
   ...(['analog', 'flip'].includes(styleOf(c)) ? [] : [{name: 'show_seconds', selector: {boolean: {}}}]),
   g2({name: 'show_weekday', selector: {boolean: {}}}, {name: 'show_date', selector: {boolean: {}}}),
   {name: 'entities', selector: {entity: {multiple: true, domain: ['sensor', 'binary_sensor', 'input_number', 'number', 'input_text', 'input_select']}}},
-  g2(sel('date_format', [['long', '2. November'], ['short', '2. Nov.'], ['numeric', '02.11.2026']]), sel('time_format', [['auto', 'Wie im Profil'], ['24', '24 Stunden'], ['12', '12 Stunden (AM/PM)']])),
+  sel('time_format', [['auto', 'Wie im Profil'], ['24', '24 Stunden'], ['12', '12 Stunden (AM/PM)']]),
 ];
 const S_LOOK = [
   g2(sel('size', [['small', 'Klein'], ['medium', 'Mittel'], ['large', 'Groß']]), {name: 'font_size', selector: T}),
+  g2(sel('date_format', [['long', '2. November'], ['long_year', '2. November 2026'], ['short', '2. Nov.'], ['numeric', '02.11.2026']]),
+  {name: 'date_size', selector: {select: {mode: 'dropdown', custom_value: true, options: [{value: 'small', label: 'Klein'}, {value: 'medium', label: 'Mittel'}, {value: 'large', label: 'Groß'}]}}}),
   sel('layout', [['auto', 'Automatisch'], ['stacked', 'Untereinander'], ['row', 'Nebeneinander']]),
   g2(ROLE('color'), {name: 'glass', selector: {boolean: {}}}),
 ];
 const S_ACT = [{name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}];
 const LABELS = {
   style: 'Stil', second_hand: 'Sekundenzeiger', sun_entity: 'Sonne', retro_color: 'Farbe der Ziffern', name: 'Überschrift (optional)', show_seconds: 'Sekunden', analog_digital: 'Zusätzlich digitale Zeit', show_weekday: 'Wochentag',
-  show_date: 'Datum', date_format: 'Datumsformat', time_format: 'Zeitformat', color: 'Akzentfarbe', glass: 'Glas-Hintergrund', size: 'Größe', font_size: 'Schriftgröße (optional)', layout: 'Anordnung',
+  show_date: 'Datum', date_format: 'Datumsformat', time_format: 'Zeitformat', color: 'Akzentfarbe', glass: 'Glas-Hintergrund', size: 'Größe', font_size: 'Schriftgröße (optional)', date_size: 'Größe von Wochentag und Datum', layout: 'Anordnung',
   tap_action: 'Aktion beim Antippen', hold_action: 'Aktion bei langem Drücken', entities: 'Werte unter der Uhr',
 };
 const HELPERS = {
@@ -373,6 +390,7 @@ const HELPERS = {
   entities: 'Optional: z. B. Temperatur und Luftfeuchte – erscheinen in einer Zeile unter der Uhrzeit.',
   size: 'Datum, Wochentag und Werte wachsen mit. Ist die Karte zu klein, wird die Uhr automatisch kleiner – sie läuft nie über.',
   font_size: 'Feste Größe der Uhrzeit, z. B. 48px oder 3rem. Hat Vorrang vor der Größe.',
+  date_size: 'Klein, Mittel, Groß oder ein eigener Wert wie 18px oder 1.2rem – unabhängig von der Uhrzeit. Bei fester Kartenhöhe wird trotzdem alles so eingepasst, dass nichts übersteht.',
   layout: 'Automatisch: in breiten, flachen Karten steht das Datum neben der Uhrzeit, wenn es untereinander nicht passt.',
 };
 

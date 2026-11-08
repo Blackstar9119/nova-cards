@@ -3281,7 +3281,8 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 @media (prefers-reduced-motion:reduce){.scene .rt-col{animation:none!important}}`;
 
   // src/clock.js
-  var DEF3 = { style: "default", second_hand: "sweep", retro_color: "red", sun_entity: "sun.sun", mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true, size: "medium", layout: "auto" };
+  var KD = (v) => K(`${v}*var(--kd,1)`);
+  var DEF3 = { style: "default", second_hand: "sweep", retro_color: "red", sun_entity: "sun.sun", mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true, size: "medium", date_size: "medium", layout: "auto" };
   var SIZES = { small: 0.75, medium: 1, large: 1.3 };
   var fontSize = (v) => typeof v === "number" && v > 0 ? `${v}px` : typeof v === "string" && /^\s*\d+(\.\d+)?\s*(px|rem|em)?\s*$/.test(v) ? /[a-z]/.test(v) ? v.trim().replace(/\s+/g, "") : `${v.trim()}px` : null;
   var C = 100;
@@ -3298,7 +3299,7 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 .tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:${K("clamp(34px,var(--nova-clock-size,24cqw),160px)")}}
 .tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
 .tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
-.dt{font-size:${K("clamp(13px,5cqw,22px)")};opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dt{font-size:${KD("clamp(13px,5cqw,22px)")};opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .ana{width:100%;max-width:${K("var(--nova-clock-size,240px)")};aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
@@ -3309,7 +3310,7 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 @keyframes k-spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
 @container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:${K("clamp(28px,var(--nova-clock-size,12cqw),100px)")}}.row .dt{font-size:${K("clamp(12px,3.6cqw,22px)")}}.row .inf{font-size:${K("clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)")}}}
+.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:${K("clamp(28px,var(--nova-clock-size,12cqw),100px)")}}.row .dt{font-size:${KD("clamp(12px,3.6cqw,22px)")}}.row .inf{font-size:${K("clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)")}}}
 .inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:${K("clamp(14px,var(--nova-clock-info-size,7.5cqw),26px)")};opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
 .inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
 .row .inf{justify-content:flex-start}
@@ -3328,12 +3329,14 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 .wide .tm{font-size:${K("var(--kh,100px)*.82")}}.wide .tm.glow{font-size:${K("var(--kh,100px)*.82")}}
 .wide .flp{font-size:${K("var(--kh,100px)*.74")}}
 .wide .rt{width:auto;max-width:none}.wide .rt svg{width:auto;height:${K("var(--kh,100px)*.88")}}
-.wide .dt{font-size:${K("var(--kh,100px)*.24")}}.wide .inf{font-size:${K("var(--kh,100px)*.26")};justify-content:flex-start}
+.wide .dt{font-size:${KD("var(--kh,100px)*.24")}}.wide .inf{font-size:${K("var(--kh,100px)*.26")};justify-content:flex-start}
 /* Feste Schriftgröße (font_size → --kf): Datum und Werte wachsen mit */
 .fs .tm,.fs .tm.glow{font-size:calc(var(--kf)*var(--ks,1))}.fs .flp{font-size:calc(var(--kf)*.8*var(--ks,1))}
 .fs .rt{max-width:none;width:calc(var(--kf)*3.25*var(--ks,1))}.fs.wide .rt svg{width:100%;height:auto}
 .fs .ana{max-width:calc(var(--kf)*1.5*var(--ks,1))}
-.fs .dt{font-size:calc(var(--kf)*.3*var(--ks,1))}.fs .inf{font-size:calc(var(--kf)*.34*var(--ks,1))}.fs .nm{font-size:calc(var(--kf)*.16*var(--ks,1))}`;
+.fs .dt{font-size:calc(var(--kf)*.3*var(--kd,1)*var(--ks,1))}.fs .inf{font-size:calc(var(--kf)*.34*var(--ks,1))}.fs .nm{font-size:calc(var(--kf)*.16*var(--ks,1))}
+/* Feste Schriftgröße für Wochentag und Datum (date_size als px/rem → --kdf), schrumpft beim Einpassen mit */
+.g.dfs .dt{font-size:calc(var(--kdf)*var(--ks,1))}`;
   var hand = (cls, w, len, back) => `<path class="${cls}" d="M${C - w / 2} ${C + back} L${C - w / 2 + 0.4} ${C - len} Q${C} ${C - len - w / 2} ${C + w / 2 - 0.4} ${C - len} L${C + w / 2} ${C + back} Z"/>`;
   var SVG2 = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("k", C, C, R2)}</defs>${dialBody("k", C, C, R2)}
 <g class="hh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 6, 44, 10)}</g>${hand("hd", 6, 44, 10)}</g>
@@ -3457,6 +3460,11 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       e.g.classList.toggle("fs", !!fs);
       if (fs) e.g.style.setProperty("--kf", fs);
       else e.g.style.removeProperty("--kf");
+      const ds = SIZES[c.date_size] ? null : fontSize(c.date_size);
+      e.g.style.setProperty("--kd", SIZES[c.date_size] || 1);
+      e.g.classList.toggle("dfs", !!ds);
+      if (ds) e.g.style.setProperty("--kdf", ds);
+      else e.g.style.removeProperty("--kdf");
       e.g.classList.toggle("nn", !c.name);
       this._sync();
       this._fitSoon();
@@ -3496,7 +3504,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       g.style.setProperty("--kh", `${Math.round(H3)}px`);
       g.style.setProperty("--kfix", `${Math.round(H3)}px`);
       const need = () => {
-        let t = Infinity, b = -Infinity, w2 = 0;
+        let t = Infinity, b = -Infinity, w2 = 0, rw2 = 1;
         for (const k of g.children) {
           if (k.hidden) continue;
           const r = k.getBoundingClientRect();
@@ -3506,21 +3514,25 @@ ${dialGlass("k", C, C, R2)}</svg>`;
           w2 = Math.max(w2, k.scrollWidth, r.width);
         }
         const tx = e.tm.parentElement;
-        for (const k of tx.children) if (!k.hidden) w2 = Math.max(w2, k.scrollWidth);
-        return [w2, b > t ? b - t : 0];
+        for (const k of [...tx.children, ...e.dt.parentElement.children]) {
+          if (k.hidden) continue;
+          w2 = Math.max(w2, k.scrollWidth);
+          if (k.clientWidth && k.scrollWidth > k.clientWidth + 1) rw2 = Math.min(rw2, k.clientWidth / k.scrollWidth);
+        }
+        return [w2, b > t ? b - t : 0, rw2];
       };
-      let [w, h] = need();
+      let [w, h, rw] = need();
       if (can && lay !== "row" && lay !== "stacked" && h > H3 + 1 && W2 / H3 >= 2.2 && !(e.dt.hidden && e.inf.hidden && e.nm.hidden)) {
         g.classList.add("wide");
-        [w, h] = need();
+        [w, h, rw] = need();
       }
       let s = 1;
       for (let i = 0; i < 4 && h; i++) {
-        const r = Math.min(H3 / h, W2 / (w || W2));
+        const r = Math.min(H3 / h, W2 / (w || W2), rw);
         if (r >= 0.995) break;
         s = Math.max(0.15, s * r * 0.98);
         g.style.setProperty("--ks", +s.toFixed(3));
-        [w, h] = need();
+        [w, h, rw] = need();
       }
     }
     // Leuchtziffern: Farbe aus dem Sonnenstand (sun.sun → elevation, rising); ohne Sonne grob aus der Uhrzeit
@@ -3608,7 +3620,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       };
       const h12 = tf === "12" ? true : tf === "24" ? false : void 0;
       const time = mk({ hour: "2-digit", minute: "2-digit", second: "2-digit", ...h12 != null ? { hour12: h12 } : {} });
-      const DF = { long: { day: "numeric", month: "long" }, short: { day: "numeric", month: "short" }, numeric: { day: "2-digit", month: "2-digit", year: "numeric" } };
+      const DF = { long: { day: "numeric", month: "long" }, long_year: { day: "numeric", month: "long", year: "numeric" }, short: { day: "numeric", month: "short" }, numeric: { day: "2-digit", month: "2-digit", year: "numeric" } };
       this._f = { time, wd: mk({ weekday: "long" }), date: mk(DF[c.date_format] || DF.long) };
       return this._f;
     }
@@ -3680,10 +3692,14 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     ...["analog", "flip"].includes(styleOf(c)) ? [] : [{ name: "show_seconds", selector: { boolean: {} } }],
     g2({ name: "show_weekday", selector: { boolean: {} } }, { name: "show_date", selector: { boolean: {} } }),
     { name: "entities", selector: { entity: { multiple: true, domain: ["sensor", "binary_sensor", "input_number", "number", "input_text", "input_select"] } } },
-    g2(sel("date_format", [["long", "2. November"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]), sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]]))
+    sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]])
   ];
   var S_LOOK2 = [
     g2(sel("size", [["small", "Klein"], ["medium", "Mittel"], ["large", "Groß"]]), { name: "font_size", selector: T }),
+    g2(
+      sel("date_format", [["long", "2. November"], ["long_year", "2. November 2026"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]),
+      { name: "date_size", selector: { select: { mode: "dropdown", custom_value: true, options: [{ value: "small", label: "Klein" }, { value: "medium", label: "Mittel" }, { value: "large", label: "Groß" }] } } }
+    ),
     sel("layout", [["auto", "Automatisch"], ["stacked", "Untereinander"], ["row", "Nebeneinander"]]),
     g2(ROLE("color"), { name: "glass", selector: { boolean: {} } })
   ];
@@ -3704,6 +3720,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     glass: "Glas-Hintergrund",
     size: "Größe",
     font_size: "Schriftgröße (optional)",
+    date_size: "Größe von Wochentag und Datum",
     layout: "Anordnung",
     tap_action: "Aktion beim Antippen",
     hold_action: "Aktion bei langem Drücken",
@@ -3719,6 +3736,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     entities: "Optional: z. B. Temperatur und Luftfeuchte – erscheinen in einer Zeile unter der Uhrzeit.",
     size: "Datum, Wochentag und Werte wachsen mit. Ist die Karte zu klein, wird die Uhr automatisch kleiner – sie läuft nie über.",
     font_size: "Feste Größe der Uhrzeit, z. B. 48px oder 3rem. Hat Vorrang vor der Größe.",
+    date_size: "Klein, Mittel, Groß oder ein eigener Wert wie 18px oder 1.2rem – unabhängig von der Uhrzeit. Bei fester Kartenhöhe wird trotzdem alles so eingepasst, dass nichts übersteht.",
     layout: "Automatisch: in breiten, flachen Karten steht das Datum neben der Uhrzeit, wenn es untereinander nicht passt."
   };
   var NovaClockCardEditor = class extends NovaEditorBase {

@@ -21,6 +21,9 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 - Nova Uhr Card: Optionen `size` (`small`, `medium`, `large`), `font_size` (feste Schriftgröße, z. B. `48px` oder `3rem`) und `layout`
   (`auto`, `stacked`, `row`). Bei fester Kartenhöhe passt sich die Uhr automatisch an und läuft nie über; in breiten, flachen Karten
   stehen Uhrzeit und Datum nebeneinander. Datum, Wochentag und Werte skalieren mit.
+- Nova Uhr Card: Option `date_size` (`small`, `medium`, `large` oder `px`/`rem`) für Wochentag und Datum unabhängig von der Uhrzeit;
+  Datumsformat `long_year` (8. November 2026). Datumsformat und Datumsgröße im Editor unter „Aussehen“. Die Einpassung bei fester
+  Kartenhöhe berücksichtigt beides, auch bei `flip` und `layout: row`.
 - Theme-Variablen `--nova-clock-morning`, `--nova-clock-noon`, `--nova-clock-night` und `--nova-led-red|green|blue|amber`.
 - Nova Uhr, Timer und Swipe Card sowie Nova Einkauf und Notiz Card aus den Feature-Branches zusammengeführt.
 - `docs/DESIGN.md` als feste Design-Referenz, dieses Changelog.
