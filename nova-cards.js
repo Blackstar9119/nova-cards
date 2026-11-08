@@ -8106,6 +8106,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       this._sc.addEventListener("pointerdown", lock, true);
       this._sc.addEventListener("touchstart", lock, { capture: true, passive: true });
       this._sc.addEventListener("keydown", () => this._poke());
+      this._sc.addEventListener("input", () => this._poke());
+      this._sc.addEventListener("focusin", () => this._poke());
       this._ro = new ResizeObserver(() => {
         this._fit();
         this._pages.forEach((p) => p._stack());
@@ -8268,7 +8270,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       if (!(s > 0) || this._i === 0 || this._quiet || this._prev || !this.isConnected) return;
       this._rt = setTimeout(() => {
         this._rt = null;
-        this.go(0);
+        if (this.matches(":focus-within")) this._poke();
+        else this.go(0);
       }, s * 1e3);
     }
   };

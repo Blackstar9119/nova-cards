@@ -14,6 +14,10 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 - Nova Uhr, Timer und Swipe Card sowie Nova Einkauf und Notiz Card aus den Feature-Branches zusammengeführt.
 - `docs/DESIGN.md` als feste Design-Referenz, dieses Changelog.
 
+### Behoben
+- Nova Swipe Card: Tippen in einem Eingabefeld (z. B. Einkaufsliste) hält „Zurück zu Seite 1 nach“ auf; solange ein Feld den
+  Fokus hat, springt die Karte nicht zurück.
+
 ### Geändert
 - Nova Uhr Card: `mode: analog` gilt als ältere Schreibweise von `style: analog` und funktioniert unverändert weiter.
 
