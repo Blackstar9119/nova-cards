@@ -28,8 +28,6 @@ await build({
   target: 'es2021',
   charset: 'utf8',
   legalComments: 'none',
-  // Schriften (z. B. im Rezeptbuch) werden als Daten-URL eingebaut – nichts wird von fremden Servern geladen
-  loader: {'.woff2': 'dataurl'},
   define: {__VERSION__: JSON.stringify(version), __DEV__: JSON.stringify(dev)},
   banner: {js: dev
     ? `/* Nova Cards v${version} DEV${card ? ` (nur ${cards.join(', ')})` : ''} – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */`

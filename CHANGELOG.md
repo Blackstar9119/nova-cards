@@ -8,10 +8,11 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 ### Hinzugefügt
 - Nova Recipe Book (`custom:nova-recipe-book-card`): Rezeptbuch im Stil eines alten Kochbuchs mit Ledereinband,
   Aufklapp- und Umblätter-Animation, Inhaltsverzeichnis, Rezeptseiten mit eingeklebtem Foto, Formular für neue Rezepte,
-  Bearbeiten, Löschen und „Zutaten auf Einkaufsliste“. Schriften (Caveat, EB Garamond, SIL OFL) lokal im Bundle.
+  Bearbeiten, Löschen und „Zutaten auf Einkaufsliste“. Schriften (Caveat, EB Garamond, SIL OFL) als Latin-Subset über die
+  Nova-Integration (`/nova/static/fonts`), geladen erst, wenn das Buch zu sehen ist – nicht im Haupt-Bundle.
 - Nova-Integration `custom_components/nova` 0.1.0 (Domain `nova`, modular) mit Modul Rezepte: `.storage/nova_recipes`,
   Bilder unter `/config/www/nova-recipes`, WebSocket `nova/recipes/list|subscribe|save|delete|upload`, HTTP-Upload
-  `POST /api/nova/recipes/image`. Mit Tests (pytest).
+  `POST /api/nova/recipes/image`; Modul Static liefert `/nova/static/` aus. Mit Tests (pytest).
 - Nova Uhr Card: Option `style` mit vier neuen Stilen neben `default` – `flip` (Klappzahlen, nur Stunden und Minuten, nur geänderte
   Ziffern klappen in 600 ms um), `analog` (Zifferblatt, Sekundenzeiger per `second_hand`: `sweep`, `tick`, `none`), `glow` (Leuchtziffern,
   Farbe folgt dem Sonnenstand aus `sun.sun`) und `retro` (Radiowecker mit Sieben-Segment-Ziffern als SVG, ausgeschaltete Segmente mit 8 %,

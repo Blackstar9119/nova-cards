@@ -16,7 +16,8 @@ Die Rezepte liegen in Home Assistant, nicht im Browser – auf allen Geräten gl
 die [Nova-Integration](nova-integration.md). Fehlt sie, steht im Buch, wie man sie einrichtet.
 
 Auf einem breiten Platz (ab 560 px) zeigt das Buch Doppelseiten: links Titel, Foto und Zutaten, rechts die Anleitung.
-Schmaler gibt es eine Seite pro Rezept. Schriften und Papier sind in der Karte enthalten – nichts wird aus dem Internet geladen.
+Schmaler gibt es eine Seite pro Rezept. Die Schriften (Caveat und EB Garamond) liefert die Nova-Integration aus Home
+Assistant selbst aus, erst wenn das Buch zu sehen ist – nichts wird aus dem Internet geladen.
 
 ## Wenn du einfach nur ein Rezeptbuch willst, dann so
 

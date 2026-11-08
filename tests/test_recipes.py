@@ -126,3 +126,12 @@ async def test_config_flow_single(hass: HomeAssistant) -> None:
     assert result["type"] == "create_entry"
     result = await hass.config_entries.flow.async_init("nova", context={"source": "user"})
     assert result["type"] == "abort"
+
+
+async def test_static_fonts(hass: HomeAssistant, hass_client_no_auth) -> None:
+    """Schriften kommen unter /nova/static/fonts/ von HA selbst."""
+    await _setup(hass)
+    client = await hass_client_no_auth()
+    resp = await client.get("/nova/static/fonts/nova-hand-400.woff2")
+    assert resp.status == 200
+    assert (await resp.read())[:4] == b"wOF2"

@@ -48,5 +48,6 @@ Palette `PAL`), nicht neu anlegen. Die Drucker-Card selbst bleibt unverändert u
 ## Themenkarten
 
 Karten mit eigenem Motiv (z. B. Nova Recipe Book als altes Kochbuch) dürfen vom Glas-Stil abweichen, folgen aber denselben
-Regeln für Größe, Bewegung, Editor und Sprache. Schriften und Texturen werden lokal eingebunden (im Build oder als SVG/CSS
-erzeugt), nie von fremden Servern geladen.
+Regeln für Größe, Bewegung, Editor und Sprache. Texturen werden im Code erzeugt (SVG/CSS). Schriften kommen als Latin-Subset (woff2) von Home Assistant selbst
+(Nova-Integration, `/nova/static/fonts`) und werden erst geladen, wenn die Karte zu sehen ist – nie von fremden Servern,
+nie im Haupt-Bundle.

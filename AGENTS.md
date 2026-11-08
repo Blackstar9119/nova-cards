@@ -66,7 +66,8 @@ docs/
   <karte>.md          Alle Optionen je Karte (z. B. room-card.md, popup-card.md)
   DESIGN.md           Design-Referenz: Grundlagen, Stil der Zeichnungen
 custom_components/nova/  Hilfsintegration (Domain nova): __init__.py lädt die Module aus const.MODULES,
-                      modules/recipes.py = Rezepte (.storage/nova_recipes, Bilder /config/www/nova-recipes, WebSocket nova/recipes/*)
+                      modules/recipes.py = Rezepte (.storage/nova_recipes, Bilder /config/www/nova-recipes, WebSocket nova/recipes/*),
+                      modules/static.py = static/ unter /nova/static (Schriften des Rezeptbuchs, Latin-Subset woff2)
 tests/                pytest für die Integration (pytest-homeassistant-custom-component), pytest.ini im Root
 dev/
   nova-dev-cards.js   ERZEUGT von „npm run dev“ – gitignored, nur Zwischenablage

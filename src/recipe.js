@@ -1,13 +1,9 @@
 import {define, docUrl, tag} from './shared/define.js';
 import {esc} from './shared/utils.js';
 import {NOVA_VARS, SECTION_EDITOR_CSS} from './shared/styles.js';
-import {inPicker} from './shared/lifecycle.js';
+import {inPicker, watchVisible} from './shared/lifecycle.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, sel} from './shared/editor-schema.js';
-import caveat400 from '@fontsource/caveat/files/caveat-latin-400-normal.woff2';
-import caveat700 from '@fontsource/caveat/files/caveat-latin-700-normal.woff2';
-import garamond400 from '@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2';
-import garamondItalic from '@fontsource/eb-garamond/files/eb-garamond-latin-400-italic.woff2';
 
 /* ---------- Nova Recipe Book ----------
    Ein altes, abgegriffenes Kochbuch: Ledereinband, vergilbte Seiten, Handschrift. Tippen öffnet das Buch, Wischen blättert.
@@ -18,15 +14,19 @@ const DEF = {title: 'Rezepte', subtitle: '', layout: 'auto', cover_color: 'brown
 const COVERS = ['brown', 'red', 'green', 'blue'];
 const OPEN_MS = 1100, TURN_MS = 800, PAGE_RATIO = .72;
 
-// Schriften lokal: als Daten-URL im Bundle (siehe build.mjs). @font-face wirkt nur im Dokument, nicht im Shadow DOM.
+// Schriften: Caveat (Handschrift) und EB Garamond, Latin-Subset als woff2. Sie liegen in der Nova-Integration und kommen
+// von Home Assistant selbst (/nova/static/fonts) – nichts von fremden Servern, nichts im Haupt-Bundle. @font-face wird erst
+// gesetzt, wenn ein Rezeptbuch eingehängt wird, und der Browser lädt eine Schrift erst, wenn Text in ihr erscheint.
+// Ohne Integration greifen Georgia bzw. die Ersatzschriften. @font-face wirkt nur im Dokument, nicht im Shadow DOM.
+const FONT_URL = '/nova/static/fonts';
 let fontsLoaded = false;
 const loadFonts = () => {
   if (fontsLoaded) return;
   fontsLoaded = true;
   const st = document.createElement('style');
   st.dataset.nova = 'recipe-fonts';
-  const ff = (fam, src, w, s = 'normal') => `@font-face{font-family:'${fam}';src:url(${src}) format('woff2');font-weight:${w};font-style:${s};font-display:swap}`;
-  st.textContent = ff('Nova Hand', caveat400, 400) + ff('Nova Hand', caveat700, 700) + ff('Nova Serif', garamond400, 400) + ff('Nova Serif', garamondItalic, 400, 'italic');
+  const ff = (fam, file, w, s = 'normal') => `@font-face{font-family:'${fam}';src:url(${FONT_URL}/${file}.woff2?v=1) format('woff2');font-weight:${w};font-style:${s};font-display:swap}`;
+  st.textContent = ff('Nova Hand', 'nova-hand-400', 400) + ff('Nova Hand', 'nova-hand-700', 700) + ff('Nova Serif', 'nova-serif-400', 400) + ff('Nova Serif', 'nova-serif-400-italic', 400, 'italic');
   document.head.append(st);
 };
 
@@ -226,13 +226,16 @@ class NovaRecipeBookCard extends HTMLElement {
   getCardSize() { return 8; }
   getGridOptions() { return {columns: 12, rows: 8, min_columns: 6, min_rows: 5}; }
   connectedCallback() {
-    loadFonts();
     this._quiet = inPicker(this);
+    // Schriften erst, wenn das Buch wirklich zu sehen ist (z. B. nicht auf einer anderen Seite der Swipe Card)
+    this._stopVis?.();
+    this._stopVis = watchVisible(this, v => { if (v) { loadFonts(); this._stopVis?.(); this._stopVis = null; } });
     if (!this._e && this._c && this._h) this._build();
     if (this._e) { this._ro?.observe(this); this._subscribe(); }
   }
   disconnectedCallback() {
     this._ro?.disconnect();
+    this._stopVis?.(); this._stopVis = null;
     this._unsub?.then?.(u => typeof u === 'function' && u()).catch(() => {});
     this._unsub = null; this._subKey = null;
     clearTimeout(this._idle); clearTimeout(this._tt); clearTimeout(this._delT); clearTimeout(this._retry);
@@ -240,7 +243,6 @@ class NovaRecipeBookCard extends HTMLElement {
 
   /* ---------- Aufbau ---------- */
   _build() {
-    loadFonts();
     const r = this.shadowRoot || this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${NOVA_VARS}${CSS}</style><div class="rb"><div class="stage"><div class="book closed">
 <div class="block l"></div><div class="block r"></div>
