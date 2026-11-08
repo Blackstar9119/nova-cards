@@ -48,6 +48,7 @@ src/
     card-grid-editor.js  Editorseite dazu: Vorlagen, Miniatur-Raster, Kartenauswahl, Karteneditor, YAML (Mixin GridEditor)
     chips.js          Nova Chips: Wert- und Knopf-Chips (Darstellung, Schnellauswahl wie „Alle Lichter im Raum aus“,
                       Editor-Schema) – für die Chips Card, später auch Pop-up
+    marquee.js        Laufschrift für zu lange Namen (Titel von Pop-up und Bereich): läuft hin und her, sonst „…“
     popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
                       Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Nova Navi und Raum-Karte
 docs/

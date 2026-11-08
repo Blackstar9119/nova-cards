@@ -3,7 +3,8 @@ import {setIcon, list} from './shared/utils.js';
 import {iconOf, nameOf, valueOf} from './shared/state.js';
 import {moreInfo} from './shared/actions.js';
 import {NOVA_VARS, roleVars, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS} from './shared/styles.js';
-import {hassChanged, entityIds} from './shared/lifecycle.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
+import {MARQUEE_CSS, marquee, stopMarquee} from './shared/marquee.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, ENT, sel, ROLE, NAMEICON} from './shared/editor-schema.js';
 import {register, unregister, curHash, cleanHash, clearHash, cameByNav, lockScroll, hasPopup, followContent} from './shared/popup-hub.js';
@@ -33,7 +34,7 @@ box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:trans
 .hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
 background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px}${MARQUEE_CSS}
 .bdg{display:flex;gap:6px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.bdg::-webkit-scrollbar{display:none}.bdg:empty{display:none}
 .bd{display:inline-flex;align-items:center;gap:5px;flex:none;padding:5px 10px;border-radius:999px;background:var(--c,var(--nv-chip));color:var(--cf,inherit);font-size:12px;white-space:nowrap;cursor:pointer;outline:none}
 .bd ha-icon{--mdc-icon-size:15px}.bd img{width:15px;height:15px}.bd:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.bd:active{transform:scale(.95)}
@@ -117,10 +118,13 @@ class NovaPopupCard extends GridCard(HTMLElement) {
     ['hashchange', 'popstate', 'location-changed'].forEach(ev => window.addEventListener(ev, this._sync));
     this._detect();
     requestAnimationFrame(() => this._detect());
+    const tt = this.shadowRoot?.querySelector('.tt');
+    if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
   }
   disconnectedCallback() {
     ['hashchange', 'popstate', 'location-changed'].forEach(ev => window.removeEventListener(ev, this._sync));
     this._ro.disconnect();
+    stopMarquee(this.shadowRoot?.querySelector('.tt'));
     this._unreg(this._cfg?.hash);
     if (this._isOpen) this._hide(true);
     // Vorschau: Zellen an die Nachfolgerin weitergeben
@@ -231,7 +235,8 @@ class NovaPopupCard extends GridCard(HTMLElement) {
   /* --- Kopfzeile --- */
   _head() {
     const c = this._cfg, r = this.shadowRoot;
-    r.querySelector('.tt').textContent = c.title || '';
+    // Zu lange Titel laufen langsam durch
+    marquee(r.querySelector('.tt'), c.title || '', inPicker(this));
     const hi = r.querySelector('.hi');
     if (c.icon) setIcon(hi, c.icon); else { hi.innerHTML = ''; hi._ic = null; }
     r.querySelector('.ph .t').textContent = c.title || (c.hash ? `#${c.hash}` : 'Kein Hash eingestellt');

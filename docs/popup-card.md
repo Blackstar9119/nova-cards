@@ -28,6 +28,7 @@ Schließen: X oben rechts, Tipp auf den dunklen Hintergrund, nach unten wischen 
 
 **Badges** sitzen in der Kopfzeile rechts neben dem Titel. Pro Badge: Entität, eigener Name, Icon, Zustand anzeigen
 ja/nein, Farbe (Nova-Farbrolle) und optional „Nur anzeigen bei Zustand“ (z. B. `on` für ein offenes Fenster).
+Ist der Titel zu lang, läuft er langsam hin und her (bei „Bewegung reduzieren“ steht er mit „…“).
 Auf schmalen Bildschirmen zeigen Badges nur Icon und Zustand und scrollen bei Platzmangel, Titel und X bleiben frei.
 
 Unter **Kopfzeile & Info-Leiste** Entitäten hinzufügen, z. B. Temperatur, Luftfeuchtigkeit, Fenster, Tür.

@@ -1,7 +1,8 @@
 import {define, docUrl, tag} from './shared/define.js';
 import {setIcon} from './shared/utils.js';
 import {hassAction} from './shared/actions.js';
-import {hassChanged, entityIds} from './shared/lifecycle.js';
+import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
+import {MARQUEE_CSS, marquee, stopMarquee} from './shared/marquee.js';
 import {CARD_CSS, roleVars, SECTION_EDITOR_CSS} from './shared/styles.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, A, ROLE, sel} from './shared/editor-schema.js';
@@ -13,14 +14,14 @@ import {normChips, renderNovaChips, NOVA_CHIPS_CSS, chipSchema, chipView, CHIP_L
    Raumansicht als Glasrahmen: Kopfzeile (Zurück, Icon, Name der Area, rechts Chips aus shared/chips.js) und darunter ein Raster aus beliebigen Karten wie in der Pop-up Card (rows). */
 const DEF = {stack_below: 500, chips_layout: 'wrap'};
 
-const ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}
+const ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
 :host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:12px;padding:14px}
 .hd{display:flex;align-items:center;gap:10px;padding:6px;border-radius:999px;background:var(--nv-chip)}
 .hd.nb{padding-left:14px}
 .hi{display:flex}.hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:0;font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.tt{flex:1 1 auto;min-width:min(35%,110px);font-weight:600;font-size:15px}
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
 .x:focus-visible{outline:none;box-shadow:0 0 0 2px var(--nv-active)}
@@ -77,9 +78,12 @@ class NovaAreaCard extends GridCard(HTMLElement) {
     this._detect();
     requestAnimationFrame(() => this._detect());
     if (this._dirty && this._cfg) this._grid();
+    const tt = this.shadowRoot?.querySelector('.tt');
+    if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
   }
   disconnectedCallback() {
     this._ro.disconnect();
+    stopMarquee(this.shadowRoot?.querySelector('.tt'));
     // Vorschau im Karteneditor: Zellen an die Nachfolgerin weitergeben
     if (this._prev) this._handOffCells();
   }
@@ -106,7 +110,8 @@ class NovaAreaCard extends GridCard(HTMLElement) {
     const r = this.shadowRoot, noBack = c.back_action?.action === 'none';
     this._bk.hidden = noBack;
     this._hd.classList.toggle('nb', noBack);
-    r.querySelector('.tt').textContent = c.name || ar?.name || (c.area ? c.area : 'Keine Area gewählt');
+    // Zu lange Namen laufen langsam durch statt umzubrechen
+    marquee(r.querySelector('.tt'), c.name || ar?.name || (c.area ? c.area : 'Keine Area gewählt'), inPicker(this));
     setIcon(r.querySelector('.hi'), c.icon || ar?.icon || 'mdi:texture-box');
     const tint = c.tint;
     this.classList.toggle('tint', !!tint);

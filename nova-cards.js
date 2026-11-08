@@ -6495,6 +6495,52 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   __publicField(NovaWeatherCardEditor, "openSections", ["general"]);
   define("weather-card-editor", NovaWeatherCardEditor);
 
+  // src/shared/marquee.js
+  var MARQUEE_CSS = `
+.mq{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mq>.mqi{display:inline}
+.mq.run{text-overflow:clip;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent)}
+.mq.run>.mqi{display:inline-block;padding-left:4px;animation:nv-mq var(--mqd,8s) ease-in-out infinite alternate;will-change:transform}
+@keyframes nv-mq{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--mqx,0))}}
+@media(prefers-reduced-motion:reduce){.mq.run{text-overflow:ellipsis;-webkit-mask-image:none;mask-image:none}.mq.run>.mqi{display:inline;padding-left:0;animation:none}}`;
+  var SPEED = 28;
+  var MIN = 5;
+  var marquee = (el2, text, still = false) => {
+    if (!el2) return;
+    el2.classList.add("mq");
+    let span = el2.querySelector(":scope>.mqi");
+    if (!span) {
+      el2.textContent = "";
+      span = document.createElement("span");
+      span.className = "mqi";
+      el2.appendChild(span);
+    }
+    if (span.textContent !== text) span.textContent = text;
+    el2._mqStill = still;
+    if (!el2._mqRo && typeof ResizeObserver !== "undefined") {
+      el2._mqRo = new ResizeObserver(() => fit(el2));
+      el2._mqRo.observe(el2);
+    }
+    fit(el2);
+  };
+  var fit = (el2) => {
+    const span = el2.querySelector(":scope>.mqi");
+    if (!span) return;
+    el2.classList.remove("run");
+    const over = span.getBoundingClientRect().width - el2.clientWidth;
+    if (el2._mqStill || !el2.isConnected || el2.clientWidth <= 0 || over <= 1) return;
+    const dist = Math.ceil(over) + 18;
+    el2.style.setProperty("--mqx", `-${dist}px`);
+    el2.style.setProperty("--mqd", `${Math.max(MIN, dist / SPEED / 0.64).toFixed(1)}s`);
+    el2.classList.add("run");
+  };
+  var stopMarquee = (el2) => {
+    if (!el2?._mqRo) return;
+    el2._mqRo.disconnect();
+    el2._mqRo = null;
+    el2.classList.remove("run");
+  };
+
   // src/shared/card-grid.js
   var WIDTHS = [["auto", "Auto"], ["1/4", "1/4"], ["1/3", "1/3"], ["1/2", "1/2"], ["2/3", "2/3"], ["3/4", "3/4"], ["1", "Voll"]];
   var FR = { "1/4": 1 / 4, "1/3": 1 / 3, "1/2": 1 / 2, "2/3": 2 / 3, "3/4": 3 / 4, "1": 1 };
@@ -7324,7 +7370,7 @@ box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:trans
 .hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
 background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px}${MARQUEE_CSS}
 .bdg{display:flex;gap:6px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.bdg::-webkit-scrollbar{display:none}.bdg:empty{display:none}
 .bd{display:inline-flex;align-items:center;gap:5px;flex:none;padding:5px 10px;border-radius:999px;background:var(--c,var(--nv-chip));color:var(--cf,inherit);font-size:12px;white-space:nowrap;cursor:pointer;outline:none}
 .bd ha-icon{--mdc-icon-size:15px}.bd img{width:15px;height:15px}.bd:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.bd:active{transform:scale(.95)}
@@ -7421,10 +7467,13 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.addEventListener(ev, this._sync));
       this._detect();
       requestAnimationFrame(() => this._detect());
+      const tt = this.shadowRoot?.querySelector(".tt");
+      if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
     }
     disconnectedCallback() {
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.removeEventListener(ev, this._sync));
       this._ro.disconnect();
+      stopMarquee(this.shadowRoot?.querySelector(".tt"));
       this._unreg(this._cfg?.hash);
       if (this._isOpen) this._hide(true);
       if (this._mode === "preview") this._handOffCells();
@@ -7554,7 +7603,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     /* --- Kopfzeile --- */
     _head() {
       const c = this._cfg, r = this.shadowRoot;
-      r.querySelector(".tt").textContent = c.title || "";
+      marquee(r.querySelector(".tt"), c.title || "", inPicker(this));
       const hi = r.querySelector(".hi");
       if (c.icon) setIcon(hi, c.icon);
       else {
@@ -7856,14 +7905,14 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 
   // src/area.js
   var DEF2 = { stack_below: 500, chips_layout: "wrap" };
-  var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}
+  var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
 :host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:12px;padding:14px}
 .hd{display:flex;align-items:center;gap:10px;padding:6px;border-radius:999px;background:var(--nv-chip)}
 .hd.nb{padding-left:14px}
 .hi{display:flex}.hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:0;font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.tt{flex:1 1 auto;min-width:min(35%,110px);font-weight:600;font-size:15px}
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
 .x:focus-visible{outline:none;box-shadow:0 0 0 2px var(--nv-active)}
@@ -7927,9 +7976,12 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       this._detect();
       requestAnimationFrame(() => this._detect());
       if (this._dirty && this._cfg) this._grid();
+      const tt = this.shadowRoot?.querySelector(".tt");
+      if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
     }
     disconnectedCallback() {
       this._ro.disconnect();
+      stopMarquee(this.shadowRoot?.querySelector(".tt"));
       if (this._prev) this._handOffCells();
     }
     // Editor-Vorschau (Zellen übernehmen) bzw. Bearbeitungsmodus (leere Plätze zeigen)
@@ -7959,7 +8011,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       const r = this.shadowRoot, noBack = c.back_action?.action === "none";
       this._bk.hidden = noBack;
       this._hd.classList.toggle("nb", noBack);
-      r.querySelector(".tt").textContent = c.name || ar?.name || (c.area ? c.area : "Keine Area gewählt");
+      marquee(r.querySelector(".tt"), c.name || ar?.name || (c.area ? c.area : "Keine Area gewählt"), inPicker(this));
       setIcon(r.querySelector(".hi"), c.icon || ar?.icon || "mdi:texture-box");
       const tint = c.tint;
       this.classList.toggle("tint", !!tint);
