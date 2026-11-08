@@ -84,11 +84,18 @@
       return v.toFixed(d);
     }
   };
+  var PCT_BLANK = ["cs", "de", "fi", "fr", "sk", "sv"];
+  var haUnitJoin = (h, v, u) => {
+    if (!u) return `${v}`;
+    if (u === "°") return `${v}${u}`;
+    if (u === "%") return PCT_BLANK.includes(String(h?.locale?.language || h?.language || "").split("-")[0]) ? `${v} %` : `${v}%`;
+    return `${v} ${u}`;
+  };
   function valueOf(h, s, o) {
     if (!s) return "–";
     if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
       const n = o.decimals != null ? fmtNum(h, +s.state, +o.decimals) : s.state;
-      return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
+      return o.decimals != null ? haUnitJoin(h, n, o.unit ?? s.attributes.unit_of_measurement) : unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
     }
     return fmtState(h, s);
   }
@@ -7908,6 +7915,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       sel("type", CHIP_TYPES),
       ...btn ? [] : [ENT],
       NAMEICON,
+      ...btn ? [] : [{ name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }],
       ROLE("color"),
       ...btn && presets.length ? [sel("preset", [["custom", "Eigene Aktion"], ...presets.map(([k, p]) => [k, p.label])])] : [],
       ...btn && CHIP_PRESETS[o.preset] ? [] : [{ name: "tap_action", selector: A }],
@@ -7924,12 +7932,14 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     color: "Farbe",
     preset: "Aktion",
     tap_action: "Aktion beim Antippen",
-    state: "Nur anzeigen bei Zustand"
+    state: "Nur anzeigen bei Zustand",
+    decimals: "Nachkommastellen"
   };
   var CHIP_HELPERS = {
     color: "Leer = neutral.",
     state: "z. B. on, mehrere mit Komma. Leer = immer anzeigen. Bei Knöpfen bezieht es sich auf die gewählte Entität.",
-    tap_action: "Bei Wert-Chips: leer = Details öffnen."
+    tap_action: "Bei Wert-Chips: leer = Details öffnen.",
+    decimals: "Nur bei Zahlenwerten. Leer = wie in Home Assistant. Beispiel: 1 → 21,9 °C."
   };
 
   // src/area.js

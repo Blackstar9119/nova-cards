@@ -29,11 +29,20 @@ export const fmtNum = (h, v, d) => {
   try { return new Intl.NumberFormat(loc, {minimumFractionDigits: d, maximumFractionDigits: d}).format(v); } catch { return v.toFixed(d); }
 };
 
+// Einheit anhängen wie HA: kein Leerzeichen bei „°“ allein, bei „%“ je nach Sprache, sonst immer (21,9 °C, 62 %)
+const PCT_BLANK = ['cs', 'de', 'fi', 'fr', 'sk', 'sv'];
+export const haUnitJoin = (h, v, u) => {
+  if (!u) return `${v}`;
+  if (u === '°') return `${v}${u}`;
+  if (u === '%') return PCT_BLANK.includes(String(h?.locale?.language || h?.language || '').split('-')[0]) ? `${v} %` : `${v}%`;
+  return `${v} ${u}`;
+};
+
 export function valueOf(h, s, o) {
   if (!s) return '–';
   if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
     const n = o.decimals != null ? fmtNum(h, +s.state, +o.decimals) : s.state;
-    return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
+    return o.decimals != null ? haUnitJoin(h, n, o.unit ?? s.attributes.unit_of_measurement) : unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
   }
   return fmtState(h, s);
 }

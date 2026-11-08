@@ -1,4 +1,4 @@
-/* Nova Cards v0.11.1 DEV (nur swipe, timer, clock, modular, appliance, shopping, note, area, navi, popup) – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
+/* Nova Cards v0.11.1 DEV (nur swipe, timer, clock, modular, appliance, shopping, note, area, navi, popup, chips) – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -326,12 +326,19 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
       return v.toFixed(d);
     }
   };
+  var PCT_BLANK = ["cs", "de", "fi", "fr", "sk", "sv"];
+  var haUnitJoin = (h, v, u) => {
+    if (!u) return `${v}`;
+    if (u === "°") return `${v}${u}`;
+    if (u === "%") return PCT_BLANK.includes(String(h?.locale?.language || h?.language || "").split("-")[0]) ? `${v} %` : `${v}%`;
+    return `${v} ${u}`;
+  };
   function valueOf(h, s, o) {
     if (!s) return "–";
     if (o.format === "clock" && NUMRE.test(s.state)) return clockOf(+s.state * (DUR_U[o.unit ?? s.attributes.unit_of_measurement] ?? 1));
     if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
       const n = o.decimals != null ? fmtNum(h, +s.state, +o.decimals) : s.state;
-      return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
+      return o.decimals != null ? haUnitJoin(h, n, o.unit ?? s.attributes.unit_of_measurement) : unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
     }
     return fmtState(h, s);
   }
@@ -6434,6 +6441,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       sel("type", CHIP_TYPES),
       ...btn ? [] : [ENT],
       NAMEICON,
+      ...btn ? [] : [{ name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }],
       ROLE("color"),
       ...btn && presets.length ? [sel("preset", [["custom", "Eigene Aktion"], ...presets.map(([k, p]) => [k, p.label])])] : [],
       ...btn && CHIP_PRESETS[o.preset] ? [] : [{ name: "tap_action", selector: A }],
@@ -6450,12 +6458,14 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     color: "Farbe",
     preset: "Aktion",
     tap_action: "Aktion beim Antippen",
-    state: "Nur anzeigen bei Zustand"
+    state: "Nur anzeigen bei Zustand",
+    decimals: "Nachkommastellen"
   };
   var CHIP_HELPERS = {
     color: "Leer = neutral.",
     state: "z. B. on, mehrere mit Komma. Leer = immer anzeigen. Bei Knöpfen bezieht es sich auf die gewählte Entität.",
-    tap_action: "Bei Wert-Chips: leer = Details öffnen."
+    tap_action: "Bei Wert-Chips: leer = Details öffnen.",
+    decimals: "Nur bei Zahlenwerten. Leer = wie in Home Assistant. Beispiel: 1 → 21,9 °C."
   };
 
   // src/area.js
@@ -8453,4 +8463,83 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
   __publicField(NovaPopupCardEditor, "labels", LABELS8);
   __publicField(NovaPopupCardEditor, "helpers", HELPERS8);
   define("popup-card-editor", NovaPopupCardEditor);
+
+  // src/chips.js
+  var DEF6 = { layout: "wrap", size: "normal" };
+  var CSS = `${NOVA_VARS}${NOVA_CHIPS_CSS}
+:host{display:block;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.nchips:empty{display:flex;min-height:34px}
+.hint{font-size:13px;opacity:.7;padding:8px 2px}
+/* Groß: für kleine Touch-Displays (z. B. Echo Show) – höhere Chips, die die Zeile gleichmäßig füllen */
+.nchips.lg{gap:8px}.nchips.lg .nchip{min-height:var(--nova-chip-large-height,50px);padding:0 16px;font-size:15px;border-radius:16px;flex:1 1 auto;justify-content:center}
+.nchips.lg .nchip ha-icon{--mdc-icon-size:21px}.nchips.lg .nchip img{width:21px;height:21px}`;
+  var NovaChipsCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("chips-card-editor"));
+    }
+    static getStubConfig(h) {
+      const t = Object.keys(h?.states || {}).find((id) => h.states[id].attributes.device_class === "temperature");
+      return { chips: t ? [{ type: "value", entity: t }] : [] };
+    }
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${CSS}</style><div class="nchips"></div>`;
+      this._box = r.querySelector(".nchips");
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._cfg = { ...DEF6, ...c, chips: normChips(c.chips) };
+      this._ids = entityIds(this._cfg.chips);
+      this._box.classList.toggle("scroll", this._cfg.layout === "scroll");
+      this._box.classList.toggle("lg", this._cfg.size === "large");
+      if (this._h) this._render();
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (this._cfg && hassChanged(old, h, this._ids)) this._render();
+    }
+    getCardSize() {
+      return 1;
+    }
+    getGridOptions() {
+      return { columns: "full", rows: "auto" };
+    }
+    _render() {
+      renderNovaChips(this, this._box, this._cfg.chips, this._h, { area: this._cfg.area });
+    }
+  };
+  define("chips-card", NovaChipsCard, { name: "Nova Chips Card", description: "Eine Reihe frei belegbarer Chips: Werte von Entitäten oder Knöpfe mit Aktion, z. B. „Alle Lichter im Raum aus“.", documentationURL: docUrl("nova-chips-card") });
+  var S_GEN4 = [
+    { name: "area", selector: { area: {} } },
+    sel("layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]]),
+    sel("size", [["normal", "Normal"], ["large", "Groß (für kleine Touch-Displays)"]])
+  ];
+  var LABELS9 = { ...CHIP_LABELS, area: "Area (für „Alle Lichter im Raum aus“)", layout: "Bei vielen Chips", size: "Größe" };
+  var HELPERS9 = { ...CHIP_HELPERS, area: "Nur nötig für die Schnellauswahl „Alle Lichter im Raum aus“." };
+  var NovaChipsCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      r.querySelector(".wrap").append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(this._form(S_GEN4, { ...DEF6, ...this._config }, (v) => {
+          const c = merge(this._config, names(S_GEN4), v);
+          if (c.layout === DEF6.layout) delete c.layout;
+          if (c.size === DEF6.size) delete c.size;
+          this._emit(c);
+          if (!!c.area !== !!this._built) this._rebuild();
+        }))),
+        this._section("chips", "mdi:label-multiple-outline", "Chips", (b) => {
+          b.append(this._hint("Wert-Chips zeigen den Zustand einer Entität, Knopf-Chips führen eine Aktion aus (Szene, Skript, Dienst …). „Alle Lichter im Raum aus“ gibt es, sobald unter „Allgemein“ eine Area gewählt ist."));
+          this._itemList(b, "chips", (o) => chipSchema(o, { area: !!this._config.area }), { item: "Chip", icon: "mdi:label-outline" }, "Chip hinzufügen", chipView);
+        })
+      );
+      this._built = !!this._config.area;
+    }
+  };
+  __publicField(NovaChipsCardEditor, "labels", LABELS9);
+  __publicField(NovaChipsCardEditor, "helpers", HELPERS9);
+  __publicField(NovaChipsCardEditor, "openSections", ["chips"]);
+  define("chips-card-editor", NovaChipsCardEditor);
 })();
