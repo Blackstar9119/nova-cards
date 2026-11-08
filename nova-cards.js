@@ -1,5 +1,5 @@
 /* Nova Cards v0.11.1 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
   var __defProp = Object.defineProperty;
@@ -366,6 +366,11 @@ summary .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow
 details.item details.item>summary{background:none}
 h4{margin:4px 0 0;font-size:13px;font-weight:600;opacity:.8}`;
   var SECTION_EDITOR_CSS = `${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}`;
+  var FIELD_CSS = `
+.fld{box-sizing:border-box;width:100%;min-width:0;margin:0;border:1px solid var(--nv-box-border);background:var(--nv-box);color:var(--nv-fg);
+font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none;transition:border-color .2s,box-shadow .2s,background-color .2s}
+.fld::placeholder{color:var(--nv-fg);opacity:.45}
+.fld:focus{border-color:color-mix(in srgb,var(--nv-active) 75%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,var(--nv-active) 22%,transparent);background:color-mix(in srgb,var(--nv-box) 70%,rgba(255,255,255,.06))}`;
 
   // src/shared/lifecycle.js
   var GLOBAL = ["entities", "devices", "areas", "floors", "localize", "locale", "language", "themes", "selectedTheme", "config", "user", "connected"];
@@ -2643,11 +2648,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     }
     // Menü neben dem Button: über der Leiste unten, darunter oben, daneben als Seitenleiste
     _place(m, b) {
-      const r = b.getBoundingClientRect(), W = innerWidth, H = innerHeight, g = 10, side = this._side;
+      const r = b.getBoundingClientRect(), W = innerWidth, H2 = innerHeight, g = 10, side = this._side;
       const w = m.offsetWidth, ht = m.offsetHeight, clamp2 = (v, max) => Math.max(8, Math.min(v, max - 8));
       if (side) {
         m.style.left = `${side === "right" ? r.left - g - w : r.right + g}px`;
-        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H - ht)}px`;
+        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H2 - ht)}px`;
       } else {
         m.style.left = `${clamp2(r.left + r.width / 2 - w / 2, W - w)}px`;
         m.style.top = `${this._cfg.position === "top" ? r.bottom + g : r.top - g - ht}px`;
@@ -7828,6 +7833,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .hd .nchips{flex:0 1 auto;justify-content:flex-end}
 .hd .nchip{min-height:36px}
 .body{display:flex;flex-direction:column;gap:12px}
+/* Ohne Karten nur die Kopfzeile (z. B. als Titelleiste mit Zurück); im Editor bleibt der Hinweis sichtbar */
+.g:not(.prev) .body:has(>.hint:only-child){display:none}
 .cell>*{min-width:0}
 .prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
 .prev .cell.empty::after{content:'Leerer Platz'}
@@ -9725,8 +9732,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _atCalc() {
       const c = this._c;
       if (!this._at || c.start_at !== "home_connect") return null;
-      const [H, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
-      start.setHours(H, M, 0, 0);
+      const [H2, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
+      start.setHours(H2, M, 0, 0);
       if (start <= now) start.setDate(start.getDate() + 1);
       const ds = this._S(c.duration), dur = secsOf(ds);
       if (!dur) return { start, err: "Programmdauer unbekannt (Editor → Programm und Zeit → Gesamtdauer)" };
@@ -10026,14 +10033,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       c.hints.forEach((a) => {
         const s = this._S(a.entity);
         if (!alertHit(a, s)) return;
-        const an = can.includes(a.anim) ? a.anim : null, H = HANIM[an];
+        const an = can.includes(a.anim) ? a.anim : null, H2 = HANIM[an];
         if (an) on.add(an);
         const fd = an === "filter" ? this._S(c.filter_days) : null, fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
         const fx = fdn != null ? `noch ${fdn} ${fdn === 1 ? "Tag" : "Tage"}` : "";
         add(
           ["error", "info"].includes(a.level) ? a.level : "warning",
-          a.icon || (H && an !== "warning" ? H[2] : s?.attributes.icon) || "mdi:information-outline",
-          [a.message || H && H[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
+          a.icon || (H2 && an !== "warning" ? H2[2] : s?.attributes.icon) || "mdi:information-outline",
+          [a.message || H2 && H2[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
           a.entity,
           !!an,
           a.reset && { id: a.reset, name: a.reset_name || "Zurücksetzen" }
@@ -12809,14 +12816,14 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         this._sec = sec > 0 ? Math.min(sec, this._vals.at(-1)) : 300;
         return;
       }
-      const t = Math.max(0, Math.round(sec)), u = this._units(), H = u.includes("h"), M = u.includes("m"), S = u.includes("s");
+      const t = Math.max(0, Math.round(sec)), u = this._units(), H2 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
       const c = { h: 0, m: 0, s: 0 };
-      if (H) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
-      if (M) c.m = Math.min(this._max("m"), Math.floor((H ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
-      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H ? t % 3600 : t) / 5) * 5);
+      if (H2) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
+      if (M) c.m = Math.min(this._max("m"), Math.floor((H2 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
+      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H2 ? t % 3600 : t) / 5) * 5);
       if (!c.h && !c.m && !c.s) {
         if (M) c.m = 5;
-        else if (H) c.h = 1;
+        else if (H2) c.h = 1;
         else c.s = 30;
       }
       this._cust = c;
@@ -13520,6 +13527,777 @@ ${dialGlass("k", C, C, R2)}</svg>`;
   __publicField(NovaClockCardEditor, "helpers", HELPERS7);
   __publicField(NovaClockCardEditor, "openSections", ["general", "show"]);
   define("clock-card-editor", NovaClockCardEditor);
+
+  // src/shared/todo.js
+  var TodoFeed = class {
+    // onChange() wird nach jeder Änderung von items/err aufgerufen
+    constructor(card, onChange) {
+      this.card = card;
+      this.onChange = onChange;
+      this.id = null;
+      this.items = null;
+      this.err = null;
+    }
+    // Liste wechseln (null = keine)
+    setEntity(id) {
+      if (id === this.id) return;
+      this.stop();
+      this.id = id || null;
+      this.items = null;
+      this.err = null;
+    }
+    // Bei jedem hass-Update aufrufen: startet das Abo bzw. holt im Ersatzweg neu, wenn sich die Liste geändert hat
+    update(h, old) {
+      const id = this.id;
+      if (!id || !h?.states[id]) return;
+      if (this.fallback) {
+        if (old?.states[id] !== h.states[id] || !this.items) this.fetch(h);
+        return;
+      }
+      if (this.sub || !this.card.isConnected) return;
+      if (inPicker(this.card)) {
+        this.fallback = true;
+        this.fetch(h);
+        return;
+      }
+      this.sub = h.connection.subscribeMessage((m) => {
+        if (this.id !== id) return;
+        this.items = Array.isArray(m?.items) ? m.items : [];
+        this.err = null;
+        this.onChange();
+      }, { type: "todo/item/subscribe", entity_id: id }).catch((err) => {
+        console.warn("[nova-cards] todo: Abo nicht möglich, hole Einträge über todo.get_items", id, err);
+        this.sub = null;
+        this.fallback = true;
+        this.fetch(h);
+        return null;
+      });
+    }
+    stop() {
+      const s = this.sub;
+      this.sub = null;
+      this.fallback = false;
+      s?.then((u) => typeof u === "function" && u()).catch(() => {
+      });
+    }
+    async fetch(h) {
+      const id = this.id;
+      if (!h || !id || !h.states[id]) return;
+      const n = this._n = (this._n || 0) + 1;
+      try {
+        const res = await h.callService("todo", "get_items", {}, { entity_id: id }, false, true);
+        if (n !== this._n || id !== this.id) return;
+        this.items = res?.response?.[id]?.items || [];
+        this.err = null;
+      } catch (err) {
+        this.err = err?.message || "Liste konnte nicht geladen werden";
+      }
+      this.onChange();
+    }
+    call(h, service, data) {
+      return h.callService("todo", service, data, { entity_id: this.id });
+    }
+  };
+
+  // src/shared/print-button.js
+  var PRINT_CSS = `
+.pb{--ok:var(--nova-success-color,var(--nv-a4));display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;box-sizing:border-box;
+height:44px;min-width:44px;padding:0;border-radius:999px;border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;
+font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:none;
+transition:background-color .25s,color .25s,border-color .25s,box-shadow .25s,transform .2s,opacity .25s}
+.pb.pill{flex:1 1 auto;padding:0 18px;min-width:0}
+.pb .pl{white-space:nowrap;overflow:hidden}
+.pb ha-icon{--mdc-icon-size:22px;display:flex}
+.pb:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.pb:active:not([disabled]){transform:scale(.94)}
+.pb[disabled]{opacity:.4;cursor:default}
+.pb.busy{pointer-events:none}
+.pb.busy ha-icon{animation:pb-spin 1s linear infinite}
+.pb.ok{border-color:color-mix(in srgb,var(--ok) 70%,transparent);background:color-mix(in srgb,var(--ok) 26%,transparent);
+box-shadow:0 0 16px color-mix(in srgb,var(--ok) 45%,transparent);opacity:1}
+.pb.ok ha-icon{color:var(--ok);animation:pb-pop .35s ease-out}
+.pb.err{border-color:color-mix(in srgb,var(--nv-error) 70%,transparent);background:color-mix(in srgb,var(--nv-error) 22%,transparent);opacity:1}
+.pb.err ha-icon{color:var(--nv-error)}
+@keyframes pb-spin{to{transform:rotate(360deg)}}
+@keyframes pb-pop{0%{transform:scale(.4)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.pb.busy ha-icon,.pb.ok ha-icon{animation:none}}
+@container (max-width:220px){.pb.pill .pl{display:none}.pb.pill{padding:0}}`;
+  var PRINT_DEF = { print_icon: "mdi:printer-pos", print_label: "Drucken", print_style: "pill" };
+  var FEEDBACK = 2500;
+  function printButton(onTap) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pb";
+    b.innerHTML = '<ha-icon></ha-icon><span class="pl"></span>';
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onTap();
+    });
+    return b;
+  }
+  function paintBtn(b, look, state, enabled) {
+    const icon2 = { busy: "mdi:loading", ok: "mdi:check-bold", err: "mdi:alert-circle-outline" }[state] || look.icon;
+    const label = state && state !== "idle" && look[state] || look.label;
+    b.className = `pb${look.pill ? " pill" : ""}${state && state !== "idle" ? ` ${state}` : ""}`;
+    b.disabled = (!state || state === "idle") && !enabled;
+    const ic = b.firstChild;
+    if (ic.getAttribute("icon") !== icon2) ic.setAttribute("icon", icon2);
+    b.lastChild.textContent = look.pill ? label : "";
+    b.title = label;
+    b.setAttribute("aria-label", label);
+  }
+  var printPaint = (b, c, state, enabled) => paintBtn(b, {
+    icon: c.print_icon || PRINT_DEF.print_icon,
+    label: c.print_label || PRINT_DEF.print_label,
+    pill: c.print_style !== "round",
+    busy: "Druckt …",
+    ok: "Gedruckt",
+    err: "Fehler"
+  }, state, enabled);
+  async function runFeedback(card, key, fn, set) {
+    const t = card._pbTs ||= {};
+    clearTimeout(t[key]);
+    set("busy");
+    let ok3 = true;
+    try {
+      await fn();
+    } catch (e) {
+      ok3 = false;
+      console.warn("[nova-cards] Aktion fehlgeschlagen", key, e);
+    }
+    set(ok3 ? "ok" : "err");
+    t[key] = setTimeout(() => set("idle"), FEEDBACK);
+    return ok3;
+  }
+  var stopFeedback = (card) => Object.values(card._pbTs || {}).forEach(clearTimeout);
+  async function runPrint(card, hass, script, data, set, key = "") {
+    const name = String(script || "").replace(/^script\./, "");
+    if (!name || !hass) return false;
+    return runFeedback(card, `print:${name}:${key}`, () => hass.callService("script", name, data || {}), set);
+  }
+  var printSchema = (extra) => [
+    { name: "print_script", selector: { entity: { domain: "script" } } },
+    ...extra || [],
+    g2({ name: "print_label", selector: T }, { name: "print_icon", selector: I }),
+    sel("print_style", [["pill", "Länglich mit Text"], ["round", "Klein und rund"]])
+  ];
+  var PRINT_LABELS = { print_script: "Druck-Skript", print_label: "Beschriftung", print_icon: "Icon", print_style: "Form des Knopfs" };
+  var PRINT_HELPERS = { print_script: "Leer = kein Druck-Knopf. Das Skript wird aufgerufen und die Karte wartet, bis es fertig ist." };
+
+  // src/shopping.js
+  var SCSS2 = `
+.g.sh{gap:10px}
+.add{display:flex;gap:8px;align-items:center;flex:none}
+.add .fld{height:44px;border-radius:999px;padding:0 16px}
+.ab{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
+border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;outline:none;-webkit-tap-highlight-color:transparent;
+transition:background-color .2s,color .2s,border-color .2s,transform .2s,opacity .2s}
+.ab ha-icon{--mdc-icon-size:22px}
+.ab:not([disabled]){color:var(--nv-active);border-color:color-mix(in srgb,var(--nv-active) 45%,transparent)}
+.ab[disabled]{opacity:.4;cursor:default}
+.ab:active:not([disabled]){transform:scale(.92)}
+.ab:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.items{flex:1 1 0;min-height:var(--lh,200px);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:6px;
+scrollbar-width:thin;margin:0 -4px;padding:0 4px;-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent);padding-bottom:10px}
+.it{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;min-width:0;flex:none;
+background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transition:background-color .25s,border-color .25s,opacity .4s}
+.it:active{transform:scale(.985)}
+.ck{width:22px;height:22px;border-radius:50%;flex:none;box-sizing:border-box;border:2px solid rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center;
+transition:background-color .25s,border-color .25s,box-shadow .25s}
+.ck ha-icon{--mdc-icon-size:15px;opacity:0;transform:scale(.4);transition:opacity .2s,transform .25s}
+.it .tx{flex:1;min-width:0;font-size:14px;overflow-wrap:anywhere;transition:opacity .25s}
+.it .tx small{display:block;font-size:11.5px;opacity:.6;margin-top:2px}
+.it.done .ck{background:var(--nv-active);border-color:var(--nv-active);color:var(--nv-active-fg);box-shadow:0 0 12px color-mix(in srgb,var(--nv-active) 50%,transparent)}
+.it.done .ck ha-icon{opacity:1;transform:scale(1)}
+.it.done .tx{text-decoration:line-through;opacity:.5}
+.it.leave{opacity:.35}
+.msg{display:flex;align-items:center;gap:8px;font-size:13px;opacity:.6;padding:10px 4px}
+.msg ha-icon{--mdc-icon-size:18px}
+.ft{display:flex;justify-content:flex-end;gap:8px;flex:none}
+.ft[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.it,.ck,.ck ha-icon,.it .tx{transition:none}}`;
+  var SDEF = { icon: "mdi:cart-outline", placeholder: "Neuer Eintrag …", show_header: true, show_completed: false, height: 200, ...PRINT_DEF };
+  var LEAVE = 900;
+  var NovaShoppingCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("shopping-card-editor"));
+    }
+    static getStubConfig(h) {
+      const ids = Object.keys(h.states);
+      const todo = ids.find((id) => /^todo\..*einkauf/.test(id)) || ids.find((id) => id === "todo.shopping_list") || ids.find((id) => id.startsWith("todo."));
+      const script = ids.find((id) => /^script\..*einkauf.*druck/.test(id));
+      return { ...todo ? { entity: todo } : {}, ...script ? { print_script: script } : {} };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._c = { ...SDEF, ...c };
+      (this._feed ||= new TodoFeed(this, () => this._render())).setEntity(this._c.entity);
+      this._ids = [this._c.entity, this._c.print_script].filter(Boolean);
+      if (this._e) this._apply();
+      if (this._h) this._feed.update(this._h);
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) this._build();
+      this._feed.update(h, old);
+      if (hassChanged(old, h, this._ids)) this._render();
+    }
+    getCardSize() {
+      return 5;
+    }
+    getGridOptions() {
+      return { columns: 6, rows: "auto", min_columns: 3 };
+    }
+    connectedCallback() {
+      if (this._h && this._c) this._feed.update(this._h);
+    }
+    disconnectedCallback() {
+      this._feed?.stop();
+      stopFeedback(this);
+      this._leaving?.forEach((x) => clearTimeout(x.t));
+      this._leaving = /* @__PURE__ */ new Map();
+    }
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${SCSS2}</style><div class="g sh">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
+<form class="add"><input class="fld" type="text" enterkeyhint="done" autocomplete="off"><button class="ab" type="submit" title="Hinzufügen" aria-label="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button></form>
+<div class="items"></div><div class="ft"></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = { g: q(".g"), hd: q(".hd"), ic: q(".hd .ic"), name: q(".hd b"), sub: q(".hd small"), form: q("form"), inp: q("input"), ab: q(".ab"), items: q(".items"), ft: q(".ft") };
+      this._leaving = /* @__PURE__ */ new Map();
+      this._pstate = "idle";
+      const e = this._e;
+      e.form.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        this._add();
+      });
+      e.inp.addEventListener("input", () => {
+        e.ab.disabled = !e.inp.value.trim();
+      });
+      e.inp.addEventListener("keydown", (ev) => ev.stopPropagation());
+      press(e.ic, { tap: () => this._c.entity && moreInfo(this, this._c.entity) });
+      this._pb = printButton(() => this._print());
+      e.ft.append(this._pb);
+      this._apply();
+    }
+    _apply() {
+      const c = this._c, e = this._e;
+      e.hd.hidden = c.show_header === false;
+      e.inp.placeholder = c.placeholder || "";
+      e.ab.disabled = !e.inp.value.trim();
+      e.g.style.setProperty("--lh", `${Math.max(60, +c.height || SDEF.height)}px`);
+      this._render();
+    }
+    _open() {
+      return (this._feed.items || []).filter((i) => i.status === "needs_action");
+    }
+    _render() {
+      const h = this._h, c = this._c, e = this._e;
+      if (!h || !c || !e) return;
+      const s = c.entity && h.states[c.entity];
+      setIcon(e.ic, c.icon);
+      e.name.textContent = c.name || s?.attributes.friendly_name || "Einkaufsliste";
+      const open = this._open(), n = open.filter((i) => !this._leaving.has(i.uid)).length;
+      e.sub.textContent = !s ? "" : this._feed.items ? n ? `${n} offen` : "Alles erledigt" : "Wird geladen …";
+      e.inp.disabled = !s;
+      let msg = null;
+      if (!c.entity) msg = ["mdi:format-list-checks", "Keine Liste gewählt – im Editor eine todo-Entität auswählen."];
+      else if (!s) msg = ["mdi:alert-circle-outline", `Liste nicht gefunden: ${c.entity}`];
+      else if (this._feed.err && !this._feed.items) msg = ["mdi:alert-circle-outline", this._feed.err];
+      else if (!this._feed.items) msg = ["mdi:timer-sand", "Wird geladen …"];
+      const rows = [...open.map((i) => ({ ...i, done: this._leaving.has(i.uid) }))];
+      this._leaving.forEach((x, uid) => {
+        if (!rows.some((r) => r.uid === uid)) rows.push({ ...x.item, done: true, leave: true });
+      });
+      if (c.show_completed) rows.push(...(this._feed.items || []).filter((i) => i.status === "completed" && !this._leaving.has(i.uid)).map((i) => ({ ...i, done: true })));
+      if (!msg && !rows.length) msg = ["mdi:cart-check", "Nichts auf der Liste"];
+      const key = JSON.stringify([msg, rows.map((r) => [r.uid, r.summary, r.description, r.done, r.leave])]);
+      if (key !== this._key) {
+        this._key = key;
+        if (msg) {
+          const m = document.createElement("div");
+          m.className = "msg";
+          m.innerHTML = `<ha-icon></ha-icon><span></span>`;
+          m.firstChild.setAttribute("icon", msg[0]);
+          m.lastChild.textContent = msg[1];
+          e.items.replaceChildren(m);
+        } else e.items.replaceChildren(...rows.map((r) => this._row(r)));
+      }
+      e.ft.hidden = !c.print_script;
+      printPaint(this._pb, c, this._pstate, !!s && n > 0 && !!h.states[c.print_script]);
+    }
+    _row(it) {
+      const el2 = document.createElement("div");
+      el2.className = `it${it.done ? " done" : ""}${it.leave ? " leave" : ""}`;
+      el2.innerHTML = '<span class="ck"><ha-icon icon="mdi:check-bold"></ha-icon></span><span class="tx"></span>';
+      const tx = el2.lastChild;
+      tx.textContent = it.summary;
+      if (it.description) {
+        const sm = document.createElement("small");
+        sm.textContent = it.description;
+        tx.append(sm);
+      }
+      el2.setAttribute("aria-checked", it.done ? "true" : "false");
+      press(el2, { tap: () => this._toggle(it, el2) });
+      el2.setAttribute("role", "checkbox");
+      return el2;
+    }
+    _toggle(it, el2) {
+      const h = this._h, id = this._c.entity;
+      if (!h || !id || it.leave) return;
+      if (it.status === "needs_action" && !this._leaving.has(it.uid)) {
+        el2.classList.add("done");
+        const t = setTimeout(() => {
+          this._leaving.delete(it.uid);
+          this._render();
+        }, LEAVE);
+        this._leaving.set(it.uid, { item: it, t });
+        h.callService("todo", "update_item", { item: it.uid, status: "completed" }, { entity_id: id }).catch((err) => {
+          console.warn("[nova-cards] Einkauf: Abhaken fehlgeschlagen", err);
+          clearTimeout(t);
+          this._leaving.delete(it.uid);
+          this._render();
+        });
+        this._render();
+      } else if (it.status === "completed") {
+        h.callService("todo", "update_item", { item: it.uid, status: "needs_action" }, { entity_id: id });
+      }
+    }
+    _add() {
+      const h = this._h, id = this._c.entity, e = this._e, v = e.inp.value.trim();
+      if (!h || !id || !v) return;
+      e.inp.value = "";
+      e.ab.disabled = true;
+      h.callService("todo", "add_item", { item: v }, { entity_id: id }).catch((err) => {
+        console.warn("[nova-cards] Einkauf: Hinzufügen fehlgeschlagen", err);
+        if (!e.inp.value) {
+          e.inp.value = v;
+          e.ab.disabled = false;
+        }
+      });
+      e.inp.focus();
+    }
+    _print() {
+      runPrint(this, this._h, this._c.print_script, {}, (st) => {
+        this._pstate = st;
+        this._render();
+      });
+    }
+  };
+  define("shopping-card", NovaShoppingCard, { name: "Nova Einkauf Card", description: "Einkaufsliste aus einer todo-Liste: Einträge direkt in der Karte hinzufügen, offene Punkte abhaken und die Liste per Skript drucken (z. B. auf einem Bondrucker).", documentationURL: docUrl("nova-einkauf-card") });
+  var GEN4 = [
+    { name: "entity", required: true, selector: { entity: { domain: "todo" } } },
+    g2({ name: "name", selector: T }, { name: "icon", selector: I }),
+    { name: "show_header", selector: { boolean: {} } }
+  ];
+  var LIST = [
+    { name: "placeholder", selector: T },
+    { name: "show_completed", selector: { boolean: {} } },
+    { name: "height", selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } }
+  ];
+  var PRINT = printSchema();
+  var LABELS8 = {
+    ...BASE_LABELS,
+    ...PRINT_LABELS,
+    entity: "Einkaufsliste (todo)",
+    name: "Name",
+    show_header: "Kopfzeile anzeigen",
+    placeholder: "Platzhalter im Eingabefeld",
+    show_completed: "Erledigte Einträge anzeigen",
+    height: "Mindesthöhe der Liste"
+  };
+  var HELPERS8 = {
+    ...PRINT_HELPERS,
+    name: "Leer = Name der Liste",
+    show_completed: "Erledigte stehen durchgestrichen unten, Antippen holt sie zurück.",
+    height: "So hoch ist die Liste mindestens; mehr Einträge lassen sich scrollen. Im Raster füllt die Liste den Platz aus."
+  };
+  var NovaShoppingCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot, c0 = this._config;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), data = { ...SDEF, ...c0 };
+      const strip3 = (c) => {
+        Object.entries(SDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
+        return c;
+      };
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN4))),
+        this._section("list", "mdi:format-list-checks", "Liste", (b) => b.append(form(LIST))),
+        this._section("print", "mdi:printer-pos", "Drucken", (b) => b.append(form(PRINT)))
+      );
+    }
+  };
+  __publicField(NovaShoppingCardEditor, "labels", LABELS8);
+  __publicField(NovaShoppingCardEditor, "helpers", HELPERS8);
+  __publicField(NovaShoppingCardEditor, "openSections", ["general"]);
+  define("shopping-card-editor", NovaShoppingCardEditor);
+
+  // src/note.js
+  var NCSS = `
+.g.nt{gap:10px}
+.fld.ta{flex:1 1 0;min-height:var(--th,180px);resize:none;border-radius:18px;padding:14px 16px;line-height:1.5;
+overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;white-space:pre-wrap}
+.ft{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;container-type:inline-size;width:100%}
+.ft[hidden]{display:none}
+.cnt{flex:1;min-width:0;font-size:12px;opacity:.55;white-space:nowrap;overflow:hidden}
+.ft .pb.pill{flex:0 1 auto;min-width:44px}
+.ft.wide .cnt{display:none}.ft.wide .pb.pill{flex:1 1 0}
+.cl,.nb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
+border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;outline:none;-webkit-tap-highlight-color:transparent;
+transition:opacity .2s,transform .2s,background-color .2s,border-color .2s,color .2s}
+.cl ha-icon{--mdc-icon-size:20px}
+.cl[disabled]{opacity:.35;cursor:default}
+.cl:active:not([disabled]),.nb:active{transform:scale(.92)}
+.cl:focus-visible,.nb:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+@container (max-width:420px){.cnt{display:none}}
+@container (max-width:330px){.ft .pb.pill .pl{display:none}.ft .pb.pill{padding:0;flex:0 0 44px}}
+.ns{flex:1 1 0;min-height:var(--nh,180px);display:flex;flex-direction:column;gap:6px}
+.ns[hidden]{display:none}
+.ns .bt{margin:2px 2px 0}
+.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;
+margin:0 -4px;padding:0 4px 10px;-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent)}
+.nr{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:16px;flex:none;min-width:0;
+background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
+.nr .tx{flex:1;min-width:0}
+.nr b{display:block;font-weight:500;font-size:14px;overflow-wrap:anywhere}
+.nr small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;opacity:.6;margin-top:2px;white-space:pre-line;overflow-wrap:anywhere}
+.nr .pb,.nr .nb{width:38px;height:38px;min-width:38px}
+.nr .pb ha-icon,.nr .nb ha-icon{--mdc-icon-size:19px}
+.nb.arm{border-color:color-mix(in srgb,var(--nv-error) 70%,transparent);background:color-mix(in srgb,var(--nv-error) 22%,transparent);color:var(--nv-error)}
+.msg{display:flex;align-items:center;gap:8px;font-size:13px;opacity:.6;padding:8px 4px}
+.msg ha-icon{--mdc-icon-size:18px}`;
+  var NDEF = {
+    name: "Notiz",
+    icon: "mdi:note-edit-outline",
+    placeholder: "Notiz schreiben …",
+    show_header: true,
+    show_clear: true,
+    clear_after_print: true,
+    clear_after_save: true,
+    height: 180,
+    notes_height: 180,
+    print_field: "text",
+    ...PRINT_DEF
+  };
+  var STORE = "nova-note:";
+  var SHORT = 60;
+  var ARM = 3e3;
+  var shortOf = (txt) => {
+    const line = txt.split("\n").map((s) => s.trim()).find(Boolean) || "";
+    if (line.length <= SHORT) return line;
+    const cut = line.slice(0, SHORT), sp = cut.lastIndexOf(" ");
+    return `${(sp > SHORT / 2 ? cut.slice(0, sp) : cut).trimEnd()} …`;
+  };
+  var textOf = (it) => (it.description || it.summary || "").replace(/\s+$/, "");
+  var NovaNoteCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("note-card-editor"));
+    }
+    static getStubConfig(h) {
+      const ids = Object.keys(h.states);
+      const script = ids.find((id) => /^script\..*notiz.*druck/.test(id)), notes = ids.find((id) => /^todo\..*notiz/.test(id));
+      return { ...script ? { print_script: script } : {}, ...notes ? { notes_entity: notes } : {} };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._c = { ...NDEF, ...c };
+      (this._feed ||= new TodoFeed(this, () => this._render())).setEntity(this._c.notes_entity);
+      this._ids = [this._c.print_script, this._c.notes_entity].filter(Boolean);
+      if (this._e) this._apply();
+      if (this._h) this._feed.update(this._h);
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) this._build();
+      this._feed.update(h, old);
+      if (hassChanged(old, h, this._ids)) this._render();
+    }
+    getCardSize() {
+      return this._c?.notes_entity ? 8 : 4;
+    }
+    getGridOptions() {
+      return { columns: 6, rows: "auto", min_columns: 3 };
+    }
+    connectedCallback() {
+      if (this._h && this._c) this._feed.update(this._h);
+    }
+    disconnectedCallback() {
+      this._feed?.stop();
+      stopFeedback(this);
+      clearTimeout(this._st);
+      clearTimeout(this._armT);
+      this._armed = null;
+      this._save();
+    }
+    // Entwurf je Karte (Name + Skript), nur in diesem Browser
+    _key() {
+      return `${STORE}${this._c.storage_key || `${this._c.print_script || ""}|${this._c.name || ""}`}`;
+    }
+    _load() {
+      try {
+        return localStorage.getItem(this._key()) || "";
+      } catch {
+        return "";
+      }
+    }
+    _save() {
+      if (!this._e) return;
+      const v = this._e.ta.value;
+      try {
+        if (v) localStorage.setItem(this._key(), v);
+        else localStorage.removeItem(this._key());
+      } catch {
+      }
+    }
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${NCSS}</style><div class="g nt">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
+<textarea class="fld ta" spellcheck="true"></textarea>
+<div class="ft"><span class="cnt"></span><button class="cl" type="button" title="Leeren" aria-label="Leeren"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
+<div class="ns"><div class="bt">Gespeichert</div><div class="nl"></div></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = {
+        g: q(".g"),
+        hd: q(".hd"),
+        ic: q(".hd .ic"),
+        name: q(".hd b"),
+        sub: q(".hd small"),
+        ta: q("textarea"),
+        ft: q(".ft"),
+        cnt: q(".cnt"),
+        cl: q(".cl"),
+        ns: q(".ns"),
+        nt: q(".ns .bt"),
+        nl: q(".nl")
+      };
+      const e = this._e;
+      this._pstate = "idle";
+      this._sstate = "idle";
+      this._nstate = {};
+      e.ta.value = this._load();
+      e.ta.addEventListener("input", () => {
+        this._render();
+        clearTimeout(this._st);
+        this._st = setTimeout(() => this._save(), 400);
+      });
+      e.ta.addEventListener("keydown", (ev) => {
+        ev.stopPropagation();
+        if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
+          ev.preventDefault();
+          this._print();
+        }
+      });
+      e.cl.addEventListener("click", () => {
+        e.ta.value = "";
+        this._save();
+        this._render();
+        e.ta.focus();
+      });
+      this._sb = printButton(() => this._store());
+      this._pb = printButton(() => this._print());
+      e.ft.append(this._sb, this._pb);
+      this._apply();
+    }
+    _apply() {
+      const c = this._c, e = this._e;
+      e.hd.hidden = c.show_header === false;
+      e.ta.placeholder = c.placeholder || "";
+      e.g.style.setProperty("--th", `${Math.max(60, +c.height || NDEF.height)}px`);
+      e.g.style.setProperty("--nh", `${Math.max(60, +c.notes_height || NDEF.notes_height)}px`);
+      if (!e.ta.value) e.ta.value = this._load();
+      this._key2 = null;
+      this._render();
+    }
+    _render() {
+      const h = this._h, c = this._c, e = this._e;
+      if (!h || !c || !e) return;
+      setIcon(e.ic, c.icon);
+      e.name.textContent = c.name || NDEF.name;
+      const txt = e.ta.value, n = txt.trim().length, lines = txt ? txt.split("\n").length : 0;
+      const missing = c.print_script && !h.states[c.print_script];
+      const notes = c.notes_entity && h.states[c.notes_entity];
+      const saved2 = this._feed.items?.filter((i) => i.status !== "completed") || [];
+      e.sub.textContent = missing ? `Skript nicht gefunden: ${c.print_script}` : n ? "Bereit" : notes ? `${saved2.length} gespeichert` : "Leer";
+      e.cnt.textContent = n ? `${txt.length} Zeichen · ${lines} ${lines === 1 ? "Zeile" : "Zeilen"}` : "";
+      e.cl.hidden = c.show_clear === false;
+      e.cl.disabled = !txt;
+      const pill = c.print_style !== "round";
+      this._pb.hidden = !c.print_script;
+      this._sb.hidden = !c.notes_entity;
+      e.ft.hidden = !c.print_script && !c.notes_entity && c.show_clear === false;
+      printPaint(this._pb, c, this._pstate, n > 0 && !missing);
+      paintBtn(this._sb, { icon: "mdi:content-save-outline", label: "Speichern", pill, busy: "Speichert …", ok: "Gespeichert", err: "Fehler" }, this._sstate, n > 0 && !!notes);
+      e.ft.classList.toggle("wide", pill && c.show_clear === false);
+      this._renderNotes(saved2, notes, missing);
+    }
+    // Gespeicherte Notizen, neueste oben (todo.add_item hängt hinten an)
+    _renderNotes(saved2, notes, missing) {
+      const c = this._c, e = this._e;
+      e.ns.hidden = !c.notes_entity;
+      if (!c.notes_entity) return;
+      let msg = null;
+      if (!notes) msg = ["mdi:alert-circle-outline", `Liste nicht gefunden: ${c.notes_entity}`];
+      else if (this._feed.err && !this._feed.items) msg = ["mdi:alert-circle-outline", this._feed.err];
+      else if (!this._feed.items) msg = ["mdi:timer-sand", "Wird geladen …"];
+      else if (!saved2.length) msg = ["mdi:note-outline", "Noch keine Notizen gespeichert"];
+      const rows = [...saved2].reverse();
+      e.nt.textContent = rows.length ? `Gespeichert · ${rows.length}` : "Gespeichert";
+      const key = JSON.stringify([msg, rows.map((r) => [r.uid, r.summary, r.description, this._nstate[r.uid], this._armed === r.uid]), !!c.print_script, missing, c.print_icon]);
+      if (key === this._key2) return;
+      this._key2 = key;
+      if (msg) {
+        const m = document.createElement("div");
+        m.className = "msg";
+        m.innerHTML = "<ha-icon></ha-icon><span></span>";
+        m.firstChild.setAttribute("icon", msg[0]);
+        m.lastChild.textContent = msg[1];
+        e.nl.replaceChildren(m);
+        return;
+      }
+      e.nl.replaceChildren(...rows.map((it) => this._noteRow(it, missing)));
+    }
+    _noteRow(it, missing) {
+      const c = this._c, el2 = document.createElement("div");
+      el2.className = "nr";
+      el2.innerHTML = '<div class="tx"><b></b><small></small></div>';
+      el2.querySelector("b").textContent = it.summary;
+      const sm = el2.querySelector("small"), full = textOf(it), rest = full.startsWith(it.summary.replace(/ …$/, "")) ? full.slice(it.summary.replace(/ …$/, "").length).trim() : full;
+      sm.textContent = it.description ? rest : "";
+      sm.hidden = !sm.textContent;
+      if (c.print_script) {
+        const pb = printButton(() => this._printNote(it));
+        paintBtn(pb, { icon: c.print_icon || PRINT_DEF.print_icon, label: "Drucken", pill: false, busy: "Druckt …", ok: "Gedruckt", err: "Fehler" }, this._nstate[it.uid], !missing);
+        el2.append(pb);
+      }
+      const del = document.createElement("button");
+      del.type = "button";
+      const armed = this._armed === it.uid;
+      del.className = `nb${armed ? " arm" : ""}`;
+      del.title = armed ? "Nochmal tippen zum Löschen" : "Löschen";
+      del.setAttribute("aria-label", del.title);
+      del.innerHTML = `<ha-icon icon="${armed ? "mdi:delete-alert-outline" : "mdi:delete-outline"}"></ha-icon>`;
+      del.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        this._delete(it);
+      });
+      el2.append(del);
+      return el2;
+    }
+    async _print() {
+      const c = this._c, e = this._e, txt = e.ta.value.replace(/\s+$/, "");
+      if (!txt.trim() || this._pstate === "busy") return;
+      const ok3 = await runPrint(this, this._h, c.print_script, { [c.print_field || "text"]: txt }, (st) => {
+        this._pstate = st;
+        this._render();
+      });
+      if (ok3 && c.clear_after_print !== false && e.ta.value.replace(/\s+$/, "") === txt) {
+        e.ta.value = "";
+        this._save();
+        this._render();
+      }
+    }
+    _printNote(it) {
+      const c = this._c, txt = textOf(it);
+      if (!txt || this._nstate[it.uid] === "busy") return;
+      runPrint(this, this._h, c.print_script, { [c.print_field || "text"]: txt }, (st) => {
+        if (st === "idle") delete this._nstate[it.uid];
+        else this._nstate[it.uid] = st;
+        this._render();
+      }, it.uid);
+    }
+    async _store() {
+      const c = this._c, e = this._e, h = this._h, txt = e.ta.value.replace(/\s+$/, "").replace(/^\s*\n/, "");
+      if (!txt.trim() || !c.notes_entity || this._sstate === "busy") return;
+      const summary = shortOf(txt), data = { item: summary, ...txt !== summary ? { description: txt } : {} };
+      const ok3 = await runFeedback(this, "save", () => this._feed.call(h, "add_item", data), (st) => {
+        this._sstate = st;
+        this._render();
+      });
+      if (ok3 && c.clear_after_save !== false && e.ta.value.replace(/\s+$/, "").replace(/^\s*\n/, "") === txt) {
+        e.ta.value = "";
+        this._save();
+        this._render();
+      }
+    }
+    // Löschen in zwei Schritten: erstes Antippen färbt den Knopf rot, zweites (innerhalb von 3 s) löscht
+    _delete(it) {
+      clearTimeout(this._armT);
+      if (this._armed !== it.uid) {
+        this._armed = it.uid;
+        this._armT = setTimeout(() => {
+          this._armed = null;
+          this._render();
+        }, ARM);
+        this._render();
+        return;
+      }
+      this._armed = null;
+      this._feed.call(this._h, "remove_item", { item: [it.uid] }).catch((err) => console.warn("[nova-cards] Notiz: Löschen fehlgeschlagen", err));
+      this._render();
+    }
+  };
+  define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Mehrzeiliges Notizfeld mit Druck-Knopf (z. B. für einen Bondrucker); Notizen lassen sich in einer todo-Liste speichern und später wieder drucken oder löschen.", documentationURL: docUrl("nova-notiz-card") });
+  var H = (n) => ({ name: n, selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } });
+  var GEN5 = [
+    g2({ name: "name", selector: T }, { name: "icon", selector: I }),
+    { name: "show_header", selector: { boolean: {} } },
+    { name: "placeholder", selector: T },
+    g2({ name: "show_clear", selector: { boolean: {} } }, H("height"))
+  ];
+  var NOTES = [
+    { name: "notes_entity", selector: { entity: { domain: "todo" } } },
+    g2(H("notes_height"), { name: "clear_after_save", selector: { boolean: {} } })
+  ];
+  var PRINT2 = printSchema([g2({ name: "print_field", selector: T }, { name: "clear_after_print", selector: { boolean: {} } })]);
+  var LABELS9 = {
+    ...BASE_LABELS,
+    ...PRINT_LABELS,
+    name: "Name",
+    show_header: "Kopfzeile anzeigen",
+    placeholder: "Platzhalter im Textfeld",
+    show_clear: "Knopf „Leeren“",
+    height: "Mindesthöhe des Textfelds",
+    print_field: "Feldname im Skript",
+    clear_after_print: "Nach dem Druck leeren",
+    notes_entity: "Liste für gespeicherte Notizen (todo)",
+    notes_height: "Mindesthöhe der Liste",
+    clear_after_save: "Nach dem Speichern leeren"
+  };
+  var HELPERS9 = {
+    ...PRINT_HELPERS,
+    print_field: "Unter diesem Namen bekommt das Skript den Text (Standard: text).",
+    height: "Im Raster füllt das Textfeld den Platz aus.",
+    notes_entity: "Leer = ohne Speichern. Z. B. eine lokale To-do-Liste „Notizen“. Erste Zeile = Titel, ganzer Text in der Beschreibung."
+  };
+  var NovaNoteCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot, c0 = this._config;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), data = { ...NDEF, ...c0 };
+      const strip3 = (c) => {
+        Object.entries(NDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
+        return c;
+      };
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN5))),
+        this._section("notes", "mdi:note-multiple-outline", "Gespeicherte Notizen", (b) => b.append(form(NOTES))),
+        this._section("print", "mdi:printer-pos", "Drucken", (b) => b.append(form(PRINT2)))
+      );
+    }
+  };
+  __publicField(NovaNoteCardEditor, "labels", LABELS9);
+  __publicField(NovaNoteCardEditor, "helpers", HELPERS9);
+  __publicField(NovaNoteCardEditor, "openSections", ["general"]);
+  define("note-card-editor", NovaNoteCardEditor);
 
   // src/index.js
   console.info(`%c NOVA-CARDS %c v${"0.11.1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
