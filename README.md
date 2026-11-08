@@ -201,6 +201,16 @@ Ein großes Notizfeld mit Druck-Knopf, Notizen werden in einer todo-Liste gespei
 
 ➜ [Alle Optionen der Notiz Card](docs/notiz-card.md)
 
+### Nova Recipe Book
+Ein Rezeptbuch wie ein altes, abgegriffenes Kochbuch: Ledereinband, vergilbte Seiten, Handschrift. Antippen schlägt es
+auf, Wischen blättert um. Inhaltsverzeichnis, Rezepte mit eingeklebtem Foto, Zutaten und Anleitung, neue Rezepte direkt
+in der Karte eintragen – und alle Zutaten mit einem Tipp auf die Einkaufsliste. Die Rezepte speichert die kleine
+[Nova-Integration](docs/nova-integration.md) in Home Assistant, damit sie auf allen Geräten gleich sind.
+
+➜ [Alle Optionen des Recipe Book](docs/recipe-book-card.md)
+
+<!-- Screenshot: Recipe Book zugeklappt und aufgeschlagen -->
+
 ---
 
 ## Lizenz

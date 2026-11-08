@@ -28,11 +28,13 @@ await build({
   target: 'es2021',
   charset: 'utf8',
   legalComments: 'none',
+  // Schriften (z. B. im Rezeptbuch) werden als Daten-URL eingebaut – nichts wird von fremden Servern geladen
+  loader: {'.woff2': 'dataurl'},
   define: {__VERSION__: JSON.stringify(version), __DEV__: JSON.stringify(dev)},
   banner: {js: dev
     ? `/* Nova Cards v${version} DEV${card ? ` (nur ${cards.join(', ')})` : ''} – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */`
     : `/* Nova Cards v${version} | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezeptbuch – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */`},
   logLevel: 'info',
 });

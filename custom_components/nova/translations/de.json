@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nova",
+        "description": "Hilfsintegration für die Nova Cards. Speichert unter anderem die Rezepte der Karte Nova Recipe Book dauerhaft in Home Assistant."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Nova ist bereits eingerichtet."
+    }
+  }
+}

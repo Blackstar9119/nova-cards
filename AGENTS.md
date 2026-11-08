@@ -3,7 +3,8 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Navi,
-Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf und Notiz – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz und Recipe Book – alle als `custom:nova-*`, jede mit grafischem Editor.
+Dazu die Hilfsintegration `custom_components/nova` (Domain `nova`, modular; erstes Modul: Rezepte).
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -35,6 +36,7 @@ src/
   clock-styles.js     Stile der Uhr: Klappzahlen, Leuchtziffern (Farbe nach Sonnenstand), Radiowecker (Sieben-Segment-SVG)
   shopping.js         Nova Einkauf Card + Editor (todo-Liste: Eingabefeld, abhaken, Druck-Knopf)
   note.js             Nova Notiz Card + Editor (mehrzeiliges Notizfeld, Entwurf im Browser, Druck-Knopf)
+  recipe.js           Nova Recipe Book + Editor (altes Kochbuch, Rezepte über die Nova-Integration, Schriften lokal)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
                       tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
@@ -63,6 +65,9 @@ src/
 docs/
   <karte>.md          Alle Optionen je Karte (z. B. room-card.md, popup-card.md)
   DESIGN.md           Design-Referenz: Grundlagen, Stil der Zeichnungen
+custom_components/nova/  Hilfsintegration (Domain nova): __init__.py lädt die Module aus const.MODULES,
+                      modules/recipes.py = Rezepte (.storage/nova_recipes, Bilder /config/www/nova-recipes, WebSocket nova/recipes/*)
+tests/                pytest für die Integration (pytest-homeassistant-custom-component), pytest.ini im Root
 dev/
   nova-dev-cards.js   ERZEUGT von „npm run dev“ – gitignored, nur Zwischenablage
 nova-dev-cards.js     Kopie des Dev-Builds für jsDelivr – nur auf Feature-Branches, nie nach main mergen
@@ -110,6 +115,15 @@ Steht in **`docs/DESIGN.md`** (feste Design-Referenz für alle Karten). Kurz: Ma
 Teile aus `src/shared/scene.js`, gerade Frontansicht, Materialfarben aus `PAL`, „Lebendiges“ in `--dc`, Lichtstreifen nur
 einmal beim Reinscrollen.
 
+## Nova-Integration (custom_components/nova)
+
+- Python, Domain `nova`, ein Config-Eintrag (`single_config_entry`). Neue Funktionen kommen als Modul `modules/<name>.py` mit
+  `async_setup_module(hass, entry)` / `async_unload_module(hass, entry)` und Eintrag in `const.MODULES`.
+- WebSocket-Befehle heißen `nova/<modul>/<befehl>`. Feldname `id` ist für die Nachrichten-ID reserviert (`recipe_id` usw.).
+- Fehlt die Integration, zeigen Karten einen freundlichen Hinweis statt eines Fehlers (`hass.config.components`).
+- `hacs.json` bleibt beim Typ „Dashboard“; die Integration wird vorerst von Hand kopiert (`docs/nova-integration.md`).
+- Tests: `pytest` im Repo-Root (siehe `docs/nova-integration.md`).
+
 ## Abhängigkeiten von HA-Interna
 
 Alles, was nicht zur dokumentierten Custom-Card-API gehört, ist im Code mit `// HA-INTERN:` markiert. Jede Stelle prüft
@@ -131,6 +145,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | Elementname `hui-card-picker` (Vorschau in der Kartenauswahl erkennen) | `lifecycle.js` (`inPicker`) | Karte läuft wie normal eingebunden |
 | WebSocket `config/auth/list` (Benutzerliste, nur Admins) | `navi.js` (Editor, Sichtbarkeit) | nur der eigene Benutzer in der Auswahl |
 | Event `card-visibility-changed` + `element.hidden` (Karte ausblenden) | `appliance.js` | Karte ist leer (`:host([hidden])`), Platz im Raster bleibt |
+| `hass.fetchWithAuth` (Bild-Upload per HTTP) | `recipe.js` (`_upload`) | Bild geht als Base64 über WebSocket `nova/recipes/upload` |
 | WebSocket `todo/item/subscribe` (Einträge einer todo-Liste) | `shopping.js` | Dienst `todo.get_items` bei jeder Zustandsänderung der Liste |
 | `home-assistant` → `home-assistant-main` → `partial-panel-resolver` (Inhaltsbereich neben der Seitenleiste) | `popup-hub.js` (`followContent`, Pop-up Card und Navi-Pop-up) | Pop-up deckt das ganze Fenster ab |
 

@@ -1,0 +1,14 @@
+{
+  "domain": "nova",
+  "name": "Nova",
+  "codeowners": ["@Blackstar9119"],
+  "config_flow": true,
+  "dependencies": ["http", "websocket_api"],
+  "documentation": "https://github.com/Blackstar9119/nova-cards/blob/main/docs/nova-integration.md",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Blackstar9119/nova-cards/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

@@ -1,4 +1,4 @@
-import {define, docUrl, tag} from './shared/define.js';
+import {define, docUrl, tag, DEV} from './shared/define.js';
 import {esc, setIcon} from './shared/utils.js';
 import {langOf, tzOf, iconOf, valueOf} from './shared/state.js';
 import {runAction} from './shared/actions.js';
@@ -142,6 +142,18 @@ class NovaClockCard extends HTMLElement {
     const col = glowColor(g.elev, g.rising) || roleVars(this._c.color).c;
     if (col !== this._gc) { this._gc = col; e.tm.style.setProperty('--gc', col); }
   }
+  // Nur Dev-Build: Bildrate der ersten drei Klapp-Animationen messen und ins HA-Log schreiben (Test auf echten Geräten)
+  _measure() {
+    if ((this._ms = (this._ms || 0) + 1) > 3 || !this._h?.callService) return;
+    const t = [];
+    const step = ts => { t.push(ts); if (ts - t[0] < 650) requestAnimationFrame(step); else done(); };
+    const done = () => {
+      const gaps = t.slice(1).map((x, i) => x - t[i]), fps = Math.round((t.length - 1) / ((t[t.length - 1] - t[0]) / 1000));
+      const msg = `Nova Dev Uhr (flip): ${fps} Bilder/s während der Klappe, längste Pause ${Math.round(Math.max(...gaps))} ms, Fenster ${innerWidth}×${innerHeight}`;
+      this._h.callService('system_log', 'write', {message: msg, level: 'warning', logger: 'nova_cards.dev'})?.catch?.(() => {});
+    };
+    requestAnimationFrame(step);
+  }
   // Stunde (mit Bruchteil) in der Zeitzone von HA – für die geschätzte Sonne ohne sun.sun
   _hour() {
     try {
@@ -212,6 +224,7 @@ class NovaClockCard extends HTMLElement {
     if (st === 'flip') {
       const ch = [...hr, ...p.minute], anim = !!this._vis && !this._quiet;
       e.flp.querySelectorAll('.fd').forEach((d, i) => flipSet(d, ch[i] ?? '', anim));
+      if (DEV && anim) this._measure();
       e.flp.querySelector('.ap').textContent = ap;
     } else if (st === 'retro') {
       const svg = e.rt.firstElementChild;

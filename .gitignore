@@ -1,2 +1,4 @@
 node_modules/
 dev/
+__pycache__/
+.pytest_cache/

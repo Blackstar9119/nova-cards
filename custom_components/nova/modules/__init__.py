@@ -1,0 +1,1 @@
+"""Module der Nova-Integration."""
