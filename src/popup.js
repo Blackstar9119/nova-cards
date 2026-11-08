@@ -12,7 +12,7 @@ import {normRows, PREV, EDIT, GRID_CSS, CHIP_CSS, renderChips, GridCard} from '.
 import {GridEditor, GRID_ED_CSS, GRID_LABELS, GRID_HELPERS, INFO} from './shared/card-grid-editor.js';
 
 // Raster (rows) und Info-Chips liegen in shared/card-grid.js bzw. shared/card-grid-editor.js
-const DEF = {width: 1180, stack_below: 500, info_layout: 'wrap'};
+const DEF = {width: 1180, stack_below: 500, info_layout: 'wrap', info_position: 'header'};
 
 /* ---------- Nova Pop-up Card ---------- */
 const PCSS = `${NOVA_VARS}${GRID_CSS}${CHIP_CSS}
@@ -43,6 +43,11 @@ background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filt
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
 .info{padding:0 14px 12px}
+/* Info-Chips in der Kopfzeile (info_position: header): rechtsbündig vor dem X, gleiche Höhe wie das X, bei Platzmangel waagrecht scrollbar */
+.hd .info{padding:0;flex:0 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.hd .info::-webkit-scrollbar{display:none}
+.hd .chip{min-height:36px;box-sizing:border-box;padding:0 12px}
+/* Chips haben Vorrang: der Titel nimmt nur den Rest (bis zu seiner Mindestbreite, dann Laufschrift) */
+.hd:has(>.info:not([hidden])) .tt{flex:1 1 0;min-width:min(24%,88px)}
 .body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box;
 padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
 .pop.inline .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
@@ -51,7 +56,8 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
 .pop{align-items:flex-end}
 .bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
 .sh{width:100%;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
-.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
+.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}.hd .info{padding:0}
+.hd .chip{padding:0 10px}.hd .chip .ci:not(:empty)~.cn{display:none}.hd .chip .ci:not(:empty)~.cv::before{content:none}
 .body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
 .pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
 .pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
@@ -246,7 +252,11 @@ class NovaPopupCard extends GridCard(HTMLElement) {
     this._sh.classList.toggle('tint', !!tint);
     if (tint) this._sh.style.setProperty('--tc', roleVars(tint).c);
     if (c.title || c.hash) this._sh.setAttribute('aria-label', c.title || c.hash); else this._sh.removeAttribute('aria-label');
-    this._infoEl.classList.toggle('scroll', c.info_layout === 'scroll');
+    // Info-Chips in die Kopfzeile (vor das X) oder als eigene Zeile darunter
+    const inHead = (c.info_position || DEF.info_position) !== 'below', x = r.querySelector('.hd .x');
+    if (inHead && this._infoEl.parentNode !== x.parentNode) x.before(this._infoEl);
+    else if (!inHead && this._infoEl.parentNode === x.parentNode) r.querySelector('.hd').after(this._infoEl);
+    this._infoEl.classList.toggle('scroll', !inHead && c.info_layout === 'scroll');
     this._bds = null;
     if (this._h) this._info();
   }
@@ -300,16 +310,18 @@ const BADGE = [
   g2({name: 'show_state', selector: {boolean: {}}}, ROLE('color')),
   {name: 'state', selector: T},
 ];
-const HEAD = [sel('info_layout', [['wrap', 'Umbrechen'], ['scroll', 'Waagrecht scrollen']])];
+const HEAD = c => [sel('info_position', [['header', 'In der Kopfzeile'], ['below', 'Eigene Zeile darunter']]),
+  ...((c.info_position || DEF.info_position) === 'below' ? [sel('info_layout', [['wrap', 'Umbrechen'], ['scroll', 'Waagrecht scrollen']])] : [])];
 const LABELS = {
   ...GRID_LABELS,
   hash: 'Hash (ohne #)', title: 'Titel', icon: 'Icon', tint: 'Farbton (leer = Nova-Glas)', color: 'Farbe', show_state: 'Zustand anzeigen', state: 'Nur anzeigen bei Zustand', width: 'Max. Breite (Desktop)', stack_below: 'Untereinander unter Breite',
-  info_layout: 'Info-Leiste bei vielen Einträgen', entity: 'Entität', name: 'Eigener Name (optional)', decimals: 'Nachkommastellen',
+  info_layout: 'Info-Leiste bei vielen Einträgen', info_position: 'Info-Chips anzeigen', entity: 'Entität', name: 'Eigener Name (optional)', decimals: 'Nachkommastellen',
   alert: 'Bei Achtung hervorheben', alert_state: 'Achtung bei Zustand', alert_color: 'Farbe', alert_above: 'Achtung über', alert_below: 'Achtung unter',
 };
 const HELPERS = {
   ...GRID_HELPERS,
   hash: 'Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.',
+  info_position: 'In der Kopfzeile: rechts vor dem X, bei wenig Platz waagrecht scrollbar. Darunter: eigene Zeile wie früher.',
   title: 'Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Nova Navi und Raum-Karte.',
   stack_below: 'Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).',
   state: 'Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.',
@@ -354,11 +366,15 @@ class NovaPopupCardEditor extends GridEditor(NovaEditorBase) {
   }
   _secHead() {
     const [d, b] = this._sec('sec.header', 'mdi:information-outline', 'Kopfzeile & Info-Leiste');
-    b.append(this._hint('Titel und Icon stehen unter „Allgemein“. Badges sitzen in der Kopfzeile, Info-Entitäten als Chips darunter. Antippen öffnet die Details.'));
-    b.append(this._form(HEAD, {info_layout: DEF.info_layout, ...this._config}, v => {
-      const c = merge(this._config, names(HEAD), v);
+    b.append(this._hint('Titel und Icon stehen unter „Allgemein“. Badges und Info-Chips sitzen in der Kopfzeile (oder die Info-Chips als eigene Zeile darunter). Antippen öffnet die Details.'));
+    const head = HEAD(this._config);
+    b.append(this._form(head, {info_layout: DEF.info_layout, info_position: DEF.info_position, ...this._config}, v => {
+      const c = merge(this._config, names(head), v);
       if (c.info_layout === DEF.info_layout) delete c.info_layout;
+      if (c.info_position === DEF.info_position) delete c.info_position;
+      const re = (c.info_position || DEF.info_position) !== (this._config.info_position || DEF.info_position);
       this._emit(c);
+      if (re) this._rebuild();
     }));
     b.append(Object.assign(document.createElement('h4'), {textContent: 'Badges'}));
     b.append(this._hint('Kleine Anzeigen rechts neben dem Titel. Auf schmalen Bildschirmen nur Icon und Zustand, bei Platzmangel waagrecht scrollbar.'));

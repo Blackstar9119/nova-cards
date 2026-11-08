@@ -140,6 +140,20 @@ z. B. „Hauptbürste blockiert“, auch für die Station. Vieles findet die Kar
 Ein Pop-up mit beliebigen Karten in Zeilen und Spalten, geöffnet über eine Adresse wie `#wohnzimmer`, zum Beispiel von Nova Navi
 oder von der Raum Card. Kopfzeile mit Badges und Info-Leiste, auf dem Handy per Wischen schließbar.
 
+Temperatur, Luftfeuchte & Co. stehen als Info-Chips direkt in der Kopfzeile neben dem Titel (oder mit
+`info_position: below` in einer eigenen Zeile darunter):
+
+```yaml
+type: custom:nova-popup-card
+hash: wohnzimmer
+title: Wohnzimmer
+icon: mdi:sofa
+info_position: header
+info:
+  - entity: sensor.wohnzimmer_temperatur
+  - entity: sensor.wohnzimmer_luftfeuchtigkeit
+```
+
 ➜ [Alle Optionen der Pop-up Card](docs/popup-card.md)
 
 <!-- Screenshot/GIF: Pop-up Card -->

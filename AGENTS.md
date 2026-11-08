@@ -22,7 +22,8 @@ src/
   vacuum.js           Nova Saugroboter Card + Editor
   waste.js            Nova Müllkalender Card + Editor (Termine aus calendar.*-Entitäten)
   weather.js          Nova Wetter Card + Editor (aktuelles Wetter + Vorhersage per weather/subscribe_forecast)
-  popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten)
+  popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten; Info-Chips per
+                      info_position in der Kopfzeile wie bei der Bereich Card oder als Zeile darunter)
   area.js             Nova Bereich Card + Editor (Raumansicht: Kopfzeile, Raster aus beliebigen Karten)
   chips.js            Nova Chips Card + Editor (Reihe aus Wert- und Knopf-Chips)
   appliance.js        Nova Gerät Card + Editor (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Allgemein)
