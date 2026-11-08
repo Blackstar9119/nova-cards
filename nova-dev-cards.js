@@ -1,4 +1,4 @@
-/* Nova Cards v0.11.1 DEV (nur swipe, timer, clock, modular, appliance, shopping, note, area) – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
+/* Nova Cards v0.12.0 DEV (nur swipe, timer, clock, modular, appliance, shopping, note, area, navi, popup, chips, recipe) – Testbuild, alle Karten als custom:nova-dev-*. Nicht veröffentlichen. */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -20,6 +20,20 @@
   var docUrl = (anchor) => `${REPO}#${anchor}`;
 
   // src/shared/styles.js
+  var NAVI_VARS = `:host{
+--nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
+--nv-border:var(--nova-border-color,rgba(255,255,255,.16));
+--nv-fg:var(--nova-text-color,#fff);
+--nv-accent:var(--nova-accent-color,#f5b83d);
+--nv-active:var(--nova-active-color,#3d8bf5);
+--nv-chip:var(--nova-chip-color,rgba(255,255,255,.1));
+--nv-blur:var(--nova-blur,22px);
+--nv-active-fg:var(--nova-active-text-color,#fff);
+--nv-a1:var(--nova-accent-1,#3d8bf5);--nv-a1-fg:var(--nova-accent-1-text,#fff);
+--nv-a2:var(--nova-accent-2,#f5b83d);--nv-a2-fg:var(--nova-accent-2-text,#3a2a00);
+--nv-a3:var(--nova-accent-3,#b5794a);--nv-a3-fg:var(--nova-accent-3-text,#fff);
+--nv-a4:var(--nova-accent-4,#4caf6a);--nv-a4-fg:var(--nova-accent-4-text,#fff);
+--nv-neutral:var(--nova-neutral,#7b8794);--nv-neutral-fg:var(--nova-neutral-text,#fff)}`;
   var NOVA_VARS = `:host{
 --nv-bg:var(--nova-background,linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62)));
 --nv-border:var(--nova-border-color,rgba(255,255,255,.14));
@@ -43,7 +57,11 @@
 --nv-popup-base:var(--nova-popup-base-color,rgba(22,27,42,.88));
 --nv-popup-head:var(--nova-popup-header-color,rgba(60,72,100,.85));
 --nv-popup-backdrop:var(--nova-popup-backdrop,rgba(8,12,22,.5));
---nv-popup-r:var(--nova-popup-radius,28px)}`;
+--nv-popup-r:var(--nova-popup-radius,28px);
+--nv-clock-night:var(--nova-clock-night,#4d6bff);--nv-clock-morning:var(--nova-clock-morning,#ffb36b);--nv-clock-noon:var(--nova-clock-noon,#f4f7ff);
+--nv-led-red:var(--nova-led-red,#ff2414);--nv-led-green:var(--nova-led-green,#39ff7a);--nv-led-blue:var(--nova-led-blue,#3fa9ff);--nv-led-amber:var(--nova-led-amber,#ffb000);
+--nv-book-paper:var(--nova-book-paper,#efe0bb);--nv-book-ink:var(--nova-book-ink,#3a2814);--nv-book-gold:var(--nova-book-gold,#c9a14a);
+--nv-book-brown:var(--nova-book-brown,#6b3b1e);--nv-book-red:var(--nova-book-red,#5e1a1d);--nv-book-green:var(--nova-book-green,#2e4630);--nv-book-blue:var(--nova-book-blue,#1f2c48)}`;
   var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
   var roleVars = (r) => {
     const k = ROLES[r] || ROLES.neutral;
@@ -157,11 +175,11 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     } else if (o && typeof o === "object") Object.values(o).forEach((v) => entityIds(v, out));
     return out;
   };
-  var hassChanged = (prev, next, ids) => {
-    if (prev === next) return false;
-    if (!prev || !next) return true;
-    if (GLOBAL.some((k) => prev[k] !== next[k])) return true;
-    const a = prev.states, b = next.states;
+  var hassChanged = (prev2, next, ids) => {
+    if (prev2 === next) return false;
+    if (!prev2 || !next) return true;
+    if (GLOBAL.some((k) => prev2[k] !== next[k])) return true;
+    const a = prev2.states, b = next.states;
     if (a === b) return false;
     for (const id of ids || []) if (a?.[id] !== b?.[id]) return true;
     return false;
@@ -229,7 +247,9 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
   var PRESS = { button: ["button", "press"], input_button: ["input_button", "press"], script: ["script", "turn_on"], scene: ["scene", "turn_on"] };
   var fmtState = (h, s) => {
     try {
-      return h.formatEntityState ? h.formatEntityState(s) : s.state + (s.attributes.unit_of_measurement ? " " + s.attributes.unit_of_measurement : "");
+      if (h.formatEntityState) return h.formatEntityState(s);
+      const u = s.attributes.unit_of_measurement;
+      return NUMRE.test(s.state) ? haUnitJoin(h, fmtNum(h, s.state), u) : s.state + (u ? " " + u : "");
     } catch {
       return s.state;
     }
@@ -301,12 +321,30 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     return hh ? `${hh}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
   };
   var idleState = (s) => !s || ["off", "unavailable", "unknown", ""].includes(s.state) || NUMRE.test(s.state) && +s.state <= 0;
+  var NUM_LOCALE = { comma_decimal: "en-US", decimal_comma: "de", space_comma: "fr", system: void 0 };
+  var fmtNum = (h, v, d) => {
+    const n = +v, dd = d ?? decOf(v), f3 = h?.locale?.number_format;
+    if (f3 === "none") return n.toFixed(dd);
+    const loc = f3 && f3 in NUM_LOCALE ? NUM_LOCALE[f3] : h?.locale?.language || h?.language;
+    try {
+      return new Intl.NumberFormat(loc, { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(n);
+    } catch {
+      return n.toFixed(dd);
+    }
+  };
+  var PCT_BLANK = ["cs", "de", "fi", "fr", "sk", "sv"];
+  var haUnitJoin = (h, v, u) => {
+    if (!u) return `${v}`;
+    if (u === "°") return `${v}${u}`;
+    if (u === "%") return PCT_BLANK.includes(String(h?.locale?.language || h?.language || "").split("-")[0]) ? `${v} %` : `${v}%`;
+    return `${v} ${u}`;
+  };
   function valueOf(h, s, o) {
     if (!s) return "–";
     if (o.format === "clock" && NUMRE.test(s.state)) return clockOf(+s.state * (DUR_U[o.unit ?? s.attributes.unit_of_measurement] ?? 1));
     if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
-      const n = o.decimals != null ? (+s.state).toFixed(o.decimals) : s.state;
-      return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
+      const n = fmtNum(h, s.state, o.decimals != null ? +o.decimals : void 0);
+      return haUnitJoin(h, n, o.unit ?? s.attributes.unit_of_measurement);
     }
     return fmtState(h, s);
   }
@@ -338,6 +376,10 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
   var fire = (el2, type, detail) => el2.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
   var moreInfo = (el2, entityId) => fire(el2, "hass-more-info", { entityId });
   var hassAction = (el2, config, action) => fire(el2, "hass-action", { config, action });
+  var navigate = (p) => {
+    history.pushState(null, "", p);
+    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+  };
   function runAction(card, o, kind, info) {
     const a = o[`${kind}_action`], id = o.entity;
     if (a?.action === "none") return;
@@ -363,8 +405,8 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
   })();
   var names = (s) => s.flatMap((x) => x.schema ? names(x.schema) : x.name ? [x.name] : []);
   var empty = (v) => v == null || v === "" || Array.isArray(v) && !v.length;
-  var merge = (base, keys, val) => {
-    const o = { ...base };
+  var merge = (base2, keys, val) => {
+    const o = { ...base2 };
     keys.forEach((k) => empty(val[k]) ? delete o[k] : o[k] = val[k]);
     return o;
   };
@@ -383,8 +425,8 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     set hass(h) {
       const old = this._hass;
       this._hass = h;
-      if (hassChanged(old, h, this._ids)) this._forms.forEach((f2) => {
-        f2.hass = h;
+      if (hassChanged(old, h, this._ids)) this._forms.forEach((f3) => {
+        f3.hass = h;
       });
     }
     setConfig(c) {
@@ -438,36 +480,36 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
       return el2;
     }
     _form(schema, data, cb) {
-      const f2 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
-        const f3 = document.createElement("ha-form");
-        f3.schema = schema;
-        f3.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
-        f3.computeHelper = (s) => this.constructor.helpers?.[s.name];
-        f3.addEventListener("value-changed", (e) => {
+      const f3 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
+        const f4 = document.createElement("ha-form");
+        f4.schema = schema;
+        f4.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f4.computeHelper = (s) => this.constructor.helpers?.[s.name];
+        f4.addEventListener("value-changed", (e) => {
           e.stopPropagation();
-          f3.data = e.detail.value;
-          f3._dk = JSON.stringify(f3.data);
-          f3._cb(e.detail.value);
+          f4.data = e.detail.value;
+          f4._dk = JSON.stringify(f4.data);
+          f4._cb(e.detail.value);
         });
-        return f3;
+        return f4;
       });
-      if (f2.hass !== this._hass) f2.hass = this._hass;
+      if (f3.hass !== this._hass) f3.hass = this._hass;
       const dk = JSON.stringify(data);
-      if (f2._dk !== dk) {
-        f2.data = data;
-        f2._dk = dk;
+      if (f3._dk !== dk) {
+        f3.data = data;
+        f3._dk = dk;
       }
-      f2._cb = cb;
-      this._forms.push(f2);
-      return f2;
+      f3._cb = cb;
+      this._forms.push(f3);
+      return f3;
     }
     // Runder Icon-Button (Verschieben, Löschen …)
-    _btn(icon, title, fn, dis) {
+    _btn(icon2, title, fn, dis) {
       const b = document.createElement("button");
       b.className = "ib";
       b.title = title;
       b.disabled = !!dis;
-      b.innerHTML = `<ha-icon icon="${icon}"></ha-icon>`;
+      b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon>`;
       b.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -499,7 +541,7 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     }
     // Aufklapp-Eintrag; key merkt sich, ob er offen ist. Liefert [details, summary, body].
     // Mit fill(body, summary) wird der Inhalt erst beim ersten Aufklappen gebaut – zugeklappte Einträge kosten dann nichts
-    _details(key, icon, label, btns, fill) {
+    _details(key, icon2, label, btns, fill) {
       const d = document.createElement("details");
       d.className = "item";
       d.open = this._open.has(key);
@@ -508,7 +550,7 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
         d.open ? this._open.add(key) : this._open.delete(key);
       });
       const s = document.createElement("summary");
-      s.innerHTML = `<ha-icon icon="${esc(icon)}"></ha-icon><span class="lbl"></span>`;
+      s.innerHTML = `<ha-icon icon="${esc(icon2)}"></ha-icon><span class="lbl"></span>`;
       s.querySelector(".lbl").textContent = label;
       s.append(...btns);
       const body = document.createElement("div");
@@ -529,11 +571,11 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     }
     // Aufklappbarer Bereich im Stil des Pop-up-Editors (Icon + Überschrift, Inhalt erst beim Aufklappen).
     // Welche Bereiche offen sind, bleibt beim Neuaufbau erhalten; anfangs offen: static openSections der Unterklasse.
-    _section(key, icon, label, fill) {
+    _section(key, icon2, label, fill) {
       const open = this._openSecs ||= new Set(this.constructor.openSections || []), k = `sec.${key}`;
       if (open.has(key)) this._open.add(k);
       else this._open.delete(k);
-      const [d] = this._details(k, icon, label, [], fill);
+      const [d] = this._details(k, icon2, label, [], fill);
       d.classList.add("sec");
       d.addEventListener("toggle", () => {
         if (d.open) open.add(key);
@@ -585,8 +627,8 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
             }
           ),
           (body) => {
-            const cur = this._items(k)[j] || it;
-            body.append(this._form(sch(cur), view(cur), (v) => {
+            const cur2 = this._items(k)[j] || it;
+            body.append(this._form(sch(cur2), view(cur2), (v) => {
               const arr = this._items(k), was = JSON.stringify(sch(arr[j]));
               arr[j] = merge(arr[j], names(sch(arr[j])), v);
               this._setItems(k, arr);
@@ -709,6 +751,53 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
 background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid color-mix(in srgb,var(--nv-error) 50%,transparent)}
 .err ha-icon{color:var(--nv-error);flex:none}
 .hint{font-size:13px;opacity:.7;padding:8px 2px}`;
+  var CHIP_CSS = `
+.info{display:flex;flex-wrap:wrap;gap:7px;flex:none}
+.info.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.info.scroll::-webkit-scrollbar{display:none}
+.info[hidden]{display:none}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:12.5px;white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
+.chip ha-icon{--mdc-icon-size:16px}.chip img{width:16px;height:16px}.chip:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.chip:active{transform:scale(.95)}
+.chip .cn:empty{display:none}.chip .cn:not(:empty)::after{content:' ·'}
+.chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}`;
+  function renderChips(card, bar, items, h) {
+    bar.hidden = !items.length;
+    const key = JSON.stringify(items);
+    if (bar._key !== key) {
+      bar._key = key;
+      bar.innerHTML = "";
+      bar._chips = items.map((o) => {
+        const d = document.createElement("div");
+        d.className = "chip";
+        d.tabIndex = 0;
+        d.setAttribute("role", "button");
+        d.innerHTML = '<span class="ci"></span><span class="cn"></span><span class="cv"></span>';
+        const open = () => o.entity && moreInfo(card, o.entity);
+        d.addEventListener("click", open);
+        d.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            open();
+          }
+        });
+        bar.appendChild(d);
+        return d;
+      });
+    }
+    items.forEach((o, i) => {
+      const d = bar._chips[i], s = h.states[o.entity];
+      setIcon(d.querySelector(".ci"), iconOf(h, o, "mdi:information-outline"));
+      d.querySelector(".cn").textContent = o.name || "";
+      d.querySelector(".cv").textContent = s ? valueOf(h, s, o) : "Nicht gefunden";
+      d.title = nameOf(h, o);
+      const al = !!o.alert && alertHit({ state: o.alert_state, above: o.alert_above, below: o.alert_below }, s);
+      d.classList.toggle("al", al);
+      if (al) {
+        const v = roleVars(o.alert_color || "accent-2");
+        d.style.setProperty("--c", v.c);
+        d.style.setProperty("--cf", v.fg);
+      }
+    });
+  }
   var GridCard = (Base) => class extends Base {
     _cells() {
       return [...this._body.querySelectorAll(":scope>.rw>.cell>*")].filter((el2) => !el2.classList.contains("err"));
@@ -1513,6 +1602,8 @@ hui-card-picker{flex:1;min-height:0}`;
       this._sc.addEventListener("pointerdown", lock, true);
       this._sc.addEventListener("touchstart", lock, { capture: true, passive: true });
       this._sc.addEventListener("keydown", () => this._poke());
+      this._sc.addEventListener("input", () => this._poke());
+      this._sc.addEventListener("focusin", () => this._poke());
       this._ro = new ResizeObserver(() => {
         this._fit();
         this._pages.forEach((p) => p._stack());
@@ -1569,17 +1660,17 @@ hui-card-picker{flex:1;min-height:0}`;
     }
     // Editor-Vorschau (Zellen übernehmen, Seite folgt dem Editor) bzw. Bearbeitungsmodus (leere Plätze zeigen)
     _detect() {
-      let prev = false, edit = !!(this.preview || this.editMode);
+      let prev2 = false, edit = !!(this.preview || this.editMode);
       for (let n = this, i = 0; n && i < 80; i++) {
         if (PREV.has(n.tagName) || n.tagName?.includes("DIALOG")) {
-          prev = true;
+          prev2 = true;
           break;
         }
         if (EDIT.has(n.tagName)) edit = true;
         n = n.parentElement || n.getRootNode?.().host;
       }
-      this._prev = prev;
-      this._w.classList.toggle("prev", prev || edit);
+      this._prev = prev2;
+      this._w.classList.toggle("prev", prev2 || edit);
     }
     _render() {
       this._dirty = false;
@@ -1675,7 +1766,8 @@ hui-card-picker{flex:1;min-height:0}`;
       if (!(s > 0) || this._i === 0 || this._quiet || this._prev || !this.isConnected) return;
       this._rt = setTimeout(() => {
         this._rt = null;
-        this.go(0);
+        if (this.matches(":focus-within")) this._poke();
+        else this.go(0);
       }, s * 1e3);
     }
   };
@@ -1787,13 +1879,13 @@ hui-card-picker{flex:1;min-height:0}`;
         this._section("swipe", "mdi:gesture-swipe-horizontal", "Wischen und Anzeige", (b) => b.append(this._form(S_SWIPE, data, (v) => this._emit(strip(merge(this._config, names(S_SWIPE), v))))))
       );
     }
-    _pagesBody(b, pages, cur) {
+    _pagesBody(b, pages, cur2) {
       b.append(this._hint("Jede Seite ist ein eigenes Raster aus Karten. Antippen wählt die Seite zum Bearbeiten (die Vorschau springt mit), am Griff ziehen sortiert."));
       const box = document.createElement("div");
       box.className = "pgs";
       this._pgEls = pages.map((p, k) => {
         const e = document.createElement("div");
-        e.className = `pgb${k === cur ? " sel" : ""}`;
+        e.className = `pgb${k === cur2 ? " sel" : ""}`;
         e.tabIndex = 0;
         e.setAttribute("role", "button");
         e.innerHTML = '<span class="drag"><ha-icon icon="mdi:drag"></ha-icon></span><span class="num"></span><span class="pi"></span><span class="bl"><b></b><small></small></span>';
@@ -1805,7 +1897,7 @@ hui-card-picker{flex:1;min-height:0}`;
         const mv = (d) => {
           const ps = this._list();
           ps.splice(k + d, 0, ...ps.splice(k, 1));
-          this._setPages(ps, cur === k ? k + d : cur === k + d ? k : cur);
+          this._setPages(ps, cur2 === k ? k + d : cur2 === k + d ? k : cur2);
         };
         e.append(
           this._btn("mdi:plus-box-outline", "Karte hinzufügen", () => this._addCard(k)),
@@ -1819,7 +1911,7 @@ hui-card-picker{flex:1;min-height:0}`;
           this._btn("mdi:delete-outline", "Seite löschen", () => {
             const ps = this._list();
             ps.splice(k, 1);
-            this._setPages(ps.length ? ps : [{ rows: [] }], Math.min(cur, ps.length - 1));
+            this._setPages(ps.length ? ps : [{ rows: [] }], Math.min(cur2, ps.length - 1));
           }, pages.length < 2)
         );
         const pick = () => {
@@ -1898,7 +1990,7 @@ hui-card-picker{flex:1;min-height:0}`;
           if (!on) return;
           this._pgDragged = Date.now();
           if (!drop || to == null || to === k || to === k + 1) return this._rebuild();
-          const ps = this._list(), cur = this._cur(), x = ps[k], selPage = ps[cur];
+          const ps = this._list(), cur2 = this._cur(), x = ps[k], selPage = ps[cur2];
           ps.splice(k, 1);
           ps.splice(to > k ? to - 1 : to, 0, x);
           this._setPages(ps, ps.indexOf(selPage));
@@ -2470,7 +2562,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
     }
     _buttons(st, al, v) {
       const c = this._c, e = this._e, b = [];
-      const B = (cls, icon, label, fn) => b.push([cls, icon, label, fn]);
+      const B = (cls, icon2, label, fn) => b.push([cls, icon2, label, fn]);
       if (!this._S()) {
       } else if (al) {
         B("pri", ICON.ok, "OK", () => this._dismiss());
@@ -2496,11 +2588,11 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       }
       e.main.innerHTML = "";
       e.main.classList.toggle("n3", b.length > 2);
-      b.forEach(([cls, icon, label, fn]) => {
+      b.forEach(([cls, icon2, label, fn]) => {
         const d = document.createElement("div");
         d.className = `bt2 ${cls}`;
         d.title = label;
-        d.innerHTML = `<ha-icon icon="${icon}"></ha-icon><span>${esc(label)}</span>`;
+        d.innerHTML = `<ha-icon icon="${icon2}"></ha-icon><span>${esc(label)}</span>`;
         press(d, { tap: fn });
         e.main.append(d);
       });
@@ -2589,14 +2681,14 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         this._sec = sec > 0 ? Math.min(sec, this._vals.at(-1)) : 300;
         return;
       }
-      const t = Math.max(0, Math.round(sec)), u = this._units(), H2 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
+      const t = Math.max(0, Math.round(sec)), u = this._units(), H3 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
       const c = { h: 0, m: 0, s: 0 };
-      if (H2) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
-      if (M) c.m = Math.min(this._max("m"), Math.floor((H2 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
-      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H2 ? t % 3600 : t) / 5) * 5);
+      if (H3) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
+      if (M) c.m = Math.min(this._max("m"), Math.floor((H3 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
+      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H3 ? t % 3600 : t) / 5) * 5);
       if (!c.h && !c.m && !c.s) {
         if (M) c.m = 5;
-        else if (H2) c.h = 1;
+        else if (H3) c.h = 1;
         else c.s = 30;
       }
       this._cust = c;
@@ -3047,11 +3139,154 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   __publicField(NovaTimerCardEditor, "openSections", ["general"]);
   define("timer-card-editor", NovaTimerCardEditor);
 
+  // src/clock-styles.js
+  var f2 = (n) => +n.toFixed(2);
+  var flipDigit = () => '<span class="fd"><span class="h t"><b></b></span><span class="h b"><b></b></span><span class="h t fl"><b></b></span><span class="h b fl"><b></b></span><i class="pin"></i><i class="pin r"></i></span>';
+  function flipSet(el2, ch, anim) {
+    const [t, b, ft, fb] = el2.querySelectorAll("b");
+    const old = el2._ch;
+    if (old === ch) return;
+    el2._ch = ch;
+    clearTimeout(el2._ft);
+    if (!anim || old == null) {
+      t.textContent = b.textContent = ft.textContent = fb.textContent = ch;
+      el2.classList.remove("go");
+      return;
+    }
+    t.textContent = ch;
+    b.textContent = old;
+    ft.textContent = old;
+    fb.textContent = ch;
+    el2.classList.remove("go");
+    void el2.offsetWidth;
+    el2.classList.add("go");
+    el2._ft = setTimeout(() => {
+      b.textContent = ch;
+      el2.classList.remove("go");
+    }, 640);
+  }
+  var FLIP_CSS = `
+.flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:clamp(34px,var(--nova-clock-size,19cqw),150px);line-height:1;font-weight:600;color:#eef1f6;font-variant-numeric:tabular-nums}
+.flp .grp{display:flex;gap:.05em}.flp .grp.sec{font-size:.45em;align-self:flex-end;margin-left:.1em}
+.flp .sep{display:flex;flex-direction:column;gap:.22em;padding:0 .02em}.flp .sep i{width:.1em;height:.1em;border-radius:50%;background:#fff;opacity:.35}
+.flp .ap{font-size:.24em;font-weight:500;opacity:.7;align-self:flex-start;margin-left:.15em;letter-spacing:0}
+.fd{position:relative;display:block;width:.7em;height:1.12em;border-radius:.08em;perspective:2.6em;
+box-shadow:0 .04em .1em rgba(0,0,0,.45),0 0 0 .5px rgba(255,255,255,.12)}
+.fd .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.fd .t{top:0;border-radius:.08em .08em 0 0;background:linear-gradient(180deg,${PAL.part},#2b313d)}
+.fd .b{bottom:0;border-radius:0 0 .08em .08em;background:linear-gradient(180deg,#232833,${PAL.partDark})}
+.fd .t::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 40%)}
+.fd b{position:absolute;left:0;right:0;height:200%;line-height:1.12em;text-align:center;font-weight:inherit;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.fd .t b{top:0}.fd .b b{bottom:0}
+/* Trennfuge in der Mitte und die Achsstifte links und rechts */
+.fd::after{content:"";position:absolute;left:0;right:0;top:calc(50% - .012em);height:.024em;background:rgba(0,0,0,.65);box-shadow:0 .012em 0 rgba(255,255,255,.06);z-index:3}
+.fd .pin{position:absolute;top:calc(50% - .05em);left:-.015em;width:.035em;height:.1em;border-radius:.02em;background:linear-gradient(90deg,${PAL.chromeDark},${PAL.chrome});z-index:4}.fd .pin.r{left:auto;right:-.015em;transform:scaleX(-1)}
+.fd .fl{visibility:hidden;z-index:2}
+.fd.go .t.fl{visibility:visible;transform-origin:50% 100%;animation:fl-t .3s cubic-bezier(.55,.06,.68,.19) forwards}
+.fd.go .b.fl{visibility:visible;transform-origin:50% 0;animation:fl-b .3s .3s cubic-bezier(.22,.61,.36,1) both}
+/* Schatten der fallenden Klappe auf der unteren Hälfte */
+.fd .b:not(.fl)::after{content:"";position:absolute;inset:0;background:#000;opacity:0}
+.fd.go .b:not(.fl)::after{animation:fl-sh .6s ease-out}
+@keyframes fl-t{0%{transform:rotateX(0);filter:brightness(1)}100%{transform:rotateX(-90deg);filter:brightness(.55)}}
+@keyframes fl-b{0%{transform:rotateX(90deg);filter:brightness(1.35)}80%{transform:rotateX(-7deg);filter:brightness(1)}100%{transform:rotateX(0)}}
+@keyframes fl-sh{0%{opacity:0}45%{opacity:.35}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.fd *,.fd::after{animation:none!important}}`;
+  var mix = (a, b, t) => {
+    t = Math.min(1, Math.max(0, t));
+    return `color-mix(in srgb,var(--nv-clock-${a}) ${f2((1 - t) * 100)}%,var(--nv-clock-${b}))`;
+  };
+  function glowColor(elev, rising) {
+    if (elev == null || isNaN(elev)) return null;
+    if (rising) return elev < 0 ? mix("night", "morning", (elev + 10) / 10) : elev < 10 ? "var(--nv-clock-morning)" : mix("morning", "noon", (elev - 10) / 25);
+    return elev > 34 ? "var(--nv-clock-noon)" : mix("noon", "night", (34 - elev) / 40);
+  }
+  var sunGuess = (hour) => ({ elev: 45 * Math.sin(Math.PI * (hour - 6) / 12), rising: hour < 12 });
+  var GLOW_CSS = `
+.tm.glow{font-weight:200;letter-spacing:-.02em;font-size:clamp(40px,var(--nova-clock-size,27cqw),190px);color:var(--gc);
+text-shadow:0 0 .04em var(--gc),0 0 .18em color-mix(in srgb,var(--gc) 55%,transparent),0 0 .5em color-mix(in srgb,var(--gc) 30%,transparent);transition:color 90s linear,text-shadow 90s linear}
+.tm.glow .sc,.tm.glow .ap{opacity:.75}
+.tm.glow .cl{opacity:.8}`;
+  var SEG = { 0: "abcdef", 1: "bc", 2: "abged", 3: "abgcd", 4: "fgbc", 5: "afgcd", 6: "afgedc", 7: "abc", 8: "abcdefg", 9: "abcdfg", " ": "" };
+  var W = 34;
+  var H = 64;
+  var T2 = 8;
+  var G = 1.2;
+  var segPath = (x1, y1, x2, y2) => {
+    const hz = y1 === y2, h = T2 / 2;
+    if (hz) {
+      const a2 = x1 + G, b2 = x2 - G;
+      return `M${a2} ${y1}L${a2 + h} ${y1 - h}H${b2 - h}L${b2} ${y1}L${b2 - h} ${y1 + h}H${a2 + h}Z`;
+    }
+    const a = y1 + G, b = y2 - G;
+    return `M${x1} ${a}L${x1 + h} ${a + h}V${b - h}L${x1} ${b}L${x1 - h} ${b - h}V${a + h}Z`;
+  };
+  var SEGS = { a: [0, 0, W, 0], b: [W, 0, W, H / 2], c: [W, H / 2, W, H], d: [0, H, W, H], e: [0, H / 2, 0, H], f: [0, 0, 0, H / 2], g: [0, H / 2, W, H / 2] };
+  var digit = (x, y, s = 1) => `<g class="dg" transform="translate(${x} ${y}) scale(${s}) skewX(-6)">${Object.entries(SEGS).map(([k, p]) => `<path class="sg" data-s="${k}" d="${segPath(...p)}"/>`).join("")}</g>`;
+  function retroSvg(sec) {
+    const pad = 22, step = W + 16, colon = 22, sw = sec ? 2 * 21 + 10 : 0;
+    const dispW = 4 * step - 16 + colon + sw + 2 * pad, dispH = H + 2 * pad - 6;
+    const bw = dispW + 36, bh = dispH + 44, X = 18, Y = 26, vw = bw, vh = bh + 16;
+    const xs = [0, step, 2 * step + colon, 3 * step + colon].map((v) => X + pad + 6 + v), dy = Y + (dispH - H) / 2;
+    const cx = X + pad + 6 + 2 * step - 16 / 2 + colon / 2 - 2;
+    const secX = xs[3] + step + 4;
+    return `<svg class="scene rt-svg" viewBox="0 0 ${vw} ${vh}" aria-hidden="true"><defs>${sceneDefs("r")}
+<filter id="r-led" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<radialGradient id="r-vg" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<clipPath id="r-gc"><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/></clipPath></defs>
+<ellipse class="s-shd" cx="${vw / 2}" cy="${bh + 12}" rx="${f2(bw * 0.42)}" ry="4"/>
+<rect class="s-part" x="${f2(bw * 0.3)}" y="4" width="${f2(bw * 0.4)}" height="8" rx="2" fill="url(#r-pt)"/><rect x="${f2(bw * 0.3 + 2)}" y="5" width="${f2(bw * 0.4 - 4)}" height=".6" fill="#fff" opacity=".18"/>
+<rect class="s-body" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-bd)"/><rect class="s-sheen" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-sh)"/>
+<rect class="s-edge" x="9" y="10.4" width="${bw - 18}" height=".7" rx=".35"/>
+<rect class="s-part" x="${X - 6}" y="${Y - 6}" width="${dispW + 12}" height="${dispH + 12}" rx="3" fill="url(#r-pt)"/>
+<rect class="rt-scr" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-vg)"/>
+${["off", "on"].map((l) => `<g class="rt-${l}"${l === "on" ? ' filter="url(#r-led)"' : ""}>${xs.map((x) => digit(x, dy)).join("")}
+<g class="rt-col"><circle cx="${cx}" cy="${dy + H * 0.3}" r="3.6"/><circle cx="${cx}" cy="${dy + H * 0.7}" r="3.6"/></g>
+${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : ""}
+<circle class="rt-pm" cx="${X + 11}" cy="${dy + 4}" r="2.6"/></g>`).join("")}
+<rect class="s-glass" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-gl)"/>
+<g clip-path="url(#r-gc)"><path class="s-refl" d="M${X} ${Y + dispH * 0.7}L${X + dispW * 0.3} ${Y}h${f2(dispW * 0.08)}L${X} ${Y + dispH}z"/><path class="s-refl" d="M${X + dispW * 0.45} ${Y + dispH}L${X + dispW * 0.75} ${Y}h${f2(dispW * 0.03)}L${X + dispW * 0.48} ${Y + dispH}z"/>
+<g transform="rotate(18 ${X + dispW / 2} ${Y + dispH / 2})"><rect class="s-gls" x="${X - 30}" y="${Y - 40}" width="22" height="${dispH + 80}" fill="url(#r-gs)"/></g></g>
+<g opacity=".2" stroke="#fff" stroke-width=".6">${[0, 1, 2, 3, 4].map((i) => `<path d="M${bw - 60 + i * 9} ${Y + dispH + 14}v8"/>`).join("")}</g>
+<circle class="s-part" cx="${X + 8}" cy="${Y + dispH + 18}" r="4" fill="url(#r-cr)"/><circle class="s-part" cx="${X + 22}" cy="${Y + dispH + 18}" r="4" fill="url(#r-cr)"/>
+<rect class="s-part" x="14" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/><rect class="s-part" x="${bw - 30}" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/>
+</svg>`;
+  }
+  function retroSet(svg, chars, pm, h12) {
+    svg.querySelectorAll(".rt-on .dg").forEach((g, i) => {
+      const on = SEG[chars[i]] ?? "";
+      if (g._ch === chars[i]) return;
+      g._ch = chars[i];
+      g.querySelectorAll(".sg").forEach((p) => p.classList.toggle("on", on.includes(p.dataset.s)));
+    });
+    svg.querySelectorAll(".rt-pm").forEach((c) => {
+      c.style.display = h12 ? "" : "none";
+    });
+    svg.querySelector(".rt-on .rt-pm")?.classList.toggle("on", !!pm);
+  }
+  var RETRO_COLORS = ["red", "green", "blue", "amber"];
+  var RETRO_CSS = `
+.rt{width:100%;max-width:var(--nova-clock-size,520px)}.rt svg{display:block;width:100%;height:auto}
+.rt{--led:var(--nv-led-red)}.rt.green{--led:var(--nv-led-green)}.rt.blue{--led:var(--nv-led-blue)}.rt.amber{--led:var(--nv-led-amber)}
+/* Ziffernfläche: fast schwarz hinter dunkler Plexiglasscheibe, ganz leicht in der LED-Farbe getönt */
+.scene .rt-scr{fill:color-mix(in srgb,var(--led) 4%,#030303);stroke:rgba(255,255,255,.16);stroke-width:.5}
+/* Untere Ebene: alle Segmente mit 8 % („88:88“ zu erahnen), obere Ebene: nur leuchtende Segmente mit Glow */
+.scene .rt-off .sg,.scene .rt-off circle{fill:var(--led);opacity:.08}
+.scene .rt-on .sg,.scene .rt-on .rt-pm{fill:var(--led);opacity:0;transition:opacity .12s}
+.scene .rt-on .sg.on,.scene .rt-on .rt-pm.on{opacity:1}
+.scene .rt-on .rt-col circle{fill:var(--led)}
+.anim .scene .rt-on .rt-col{animation:rt-blink 1s steps(1,end) infinite}
+@keyframes rt-blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.scene .rt-col{animation:none!important}}`;
+
   // src/clock.js
-  var DEF3 = { mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true };
+  var DEF3 = { style: "default", second_hand: "sweep", retro_color: "red", sun_entity: "sun.sun", mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true };
   var C = 100;
   var R2 = 92;
-  var CCSS = `${DIAL_CSS}
+  var STYLES = ["default", "flip", "analog", "glow", "retro"];
+  var styleOf = (c) => STYLES.includes(c.style) && c.style !== "default" ? c.style : c.mode === "analog" ? "analog" : "default";
+  var handOf = (c) => c.style === "analog" ? ["sweep", "tick", "none"].includes(c.second_hand) ? c.second_hand : "sweep" : c.show_seconds ? "tick" : "none";
+  var reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  var CCSS = `${DIAL_CSS}${FLIP_CSS}${GLOW_CSS}${RETRO_CSS}
 :host{container-type:inline-size}
 .g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
 .g.ck.flat{background:none;border-color:transparent;box-shadow:none}
@@ -3066,18 +3301,20 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
 .scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
 .scene .cap{fill:url(#k-cr);stroke:rgba(255,255,255,.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
 .scene .hsh{fill:#000;opacity:.25}
+.scene .sw{transform-box:view-box;transform-origin:100px 100px}.anim .scene .sw.on{animation:k-spin 60s linear infinite}
+@keyframes k-spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
 @container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}
 .txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}.row .inf{font-size:clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)}}
 .inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:clamp(14px,var(--nova-clock-info-size,7.5cqw),26px);opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
 .inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
 .row .inf{justify-content:flex-start}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0;max-width:100%}`;
+.txt{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;max-width:100%}`;
   var hand = (cls, w, len, back) => `<path class="${cls}" d="M${C - w / 2} ${C + back} L${C - w / 2 + 0.4} ${C - len} Q${C} ${C - len - w / 2} ${C + w / 2 - 0.4} ${C - len} L${C + w / 2} ${C + back} Z"/>`;
   var SVG2 = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("k", C, C, R2)}</defs>${dialBody("k", C, C, R2)}
 <g class="hh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 6, 44, 10)}</g>${hand("hd", 6, 44, 10)}</g>
 <g class="mh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 4.2, 64, 12)}</g>${hand("md", 4.2, 64, 12)}</g>
-<g class="sh">${hand("sd", 1.6, 70, 18)}<circle class="sd" cx="${C}" cy="${C + 14}" r="3"/></g>
+<g class="sh"><g class="sw">${hand("sd", 1.6, 70, 18)}<circle class="sd" cx="${C}" cy="${C + 14}" r="3"/></g></g>
 <circle class="cap" cx="${C}" cy="${C}" r="5"/><circle class="cap2" cx="${C}" cy="${C}" r="1.8"/>
 ${dialGlass("k", C, C, R2)}</svg>`;
   var NovaClockCard = class extends HTMLElement {
@@ -3092,9 +3329,12 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       this._c = { ...DEF3, ...c };
       this._ents = (Array.isArray(c.entities) ? c.entities : []).map((x) => typeof x === "string" ? { entity: x } : { ...x }).filter((x) => x.entity);
       this._ids = this._ents.map((x) => x.entity);
+      this._st = styleOf(this._c);
+      this._sun = this._st === "glow" ? this._c.sun_entity || DEF3.sun_entity : null;
       this._fmtKey = null;
       if (this._e) {
         this._layout();
+        this._sync();
         this._draw();
         this._vals();
         this._plan();
@@ -3117,6 +3357,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         this._draw();
       }
       if (this._ents.length && hassChanged(old, h, this._ids)) this._vals();
+      if (this._sun && old?.states[this._sun] !== h.states[this._sun]) this._glow();
     }
     connectedCallback() {
       this._quiet = inPicker(this);
@@ -3125,7 +3366,9 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       this._stopVis = watchVisible(this, (v) => {
         const was = this._vis;
         this._vis = v && !this._quiet;
-        if (this._vis && !was && this._c?.mode === "analog" && this._c.animation !== false) sweep(this._e?.g);
+        if (this._vis && !was && ["analog", "retro"].includes(this._st) && this._c.animation !== false) sweep(this._e?.g);
+        this._e?.g.classList.toggle("anim", !!this._vis);
+        this._sync();
         this._draw();
         this._plan();
       });
@@ -3138,7 +3381,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       this._t = null;
     }
     getCardSize() {
-      return this._c?.mode === "analog" ? 4 : 2;
+      return this._st === "analog" ? 4 : this._st === "retro" || this._st === "flip" ? 3 : 2;
     }
     getGridOptions() {
       return { columns: 6, rows: "auto", min_columns: 3 };
@@ -3146,18 +3389,28 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${CCSS}</style><div class="g ck"><div class="ana">${SVG2}</div>
-<div class="txt"><div class="nm"></div><div class="tm"></div><div class="dt"></div><div class="inf"></div></div></div>`;
+<div class="txt"><div class="nm"></div><div class="tm"></div><div class="flp"></div><div class="rt"></div><div class="dt"></div><div class="inf"></div></div></div>`;
       const q = (s) => r.querySelector(s);
-      this._e = { g: q(".g"), ana: q(".ana"), nm: q(".nm"), tm: q(".tm"), dt: q(".dt"), inf: q(".inf"), hh: q(".hh"), mh: q(".mh"), sh: q(".sh") };
+      this._e = { g: q(".g"), ana: q(".ana"), nm: q(".nm"), tm: q(".tm"), dt: q(".dt"), inf: q(".inf"), flp: q(".flp"), rt: q(".rt"), sw: q(".sw"), hh: q(".hh"), mh: q(".mh"), sh: q(".sh") };
       const act = () => ({ tap_action: this._c.tap_action, hold_action: this._c.hold_action });
       press(this._e.g, { tap: () => runAction(this, act(), "tap", true), hold: () => runAction(this, act(), "hold") });
       this._layout();
     }
     _layout() {
-      const c = this._c, e = this._e, rv = roleVars(c.color), an = c.mode === "analog";
+      const c = this._c, e = this._e, rv = roleVars(c.color), st = this._st, an = st === "analog";
       e.g.style.setProperty("--kc", rv.c);
+      e.g.classList.toggle("still", !!this._quiet);
       e.ana.hidden = !an;
-      e.tm.hidden = an && !c.analog_digital;
+      e.tm.hidden = an && !c.analog_digital || st === "flip" || st === "retro";
+      e.tm.classList.toggle("glow", st === "glow");
+      this._tmH = null;
+      e.flp.hidden = st !== "flip";
+      e.flp.innerHTML = st === "flip" ? `<div class="grp">${flipDigit()}${flipDigit()}</div><div class="sep"><i></i><i></i></div><div class="grp">${flipDigit()}${flipDigit()}</div><div class="ap"></div>` : "";
+      e.rt.hidden = st !== "retro";
+      e.rt.className = `rt ${RETRO_COLORS.includes(c.retro_color) ? c.retro_color : "red"}`;
+      e.rt.innerHTML = st === "retro" ? retroSvg(!!c.show_seconds) : "";
+      e.sh.style.display = an && handOf(c) !== "none" ? "" : "none";
+      this._glow();
       e.g.classList.toggle("flat", c.glass === false);
       this.classList.toggle("nv-flat", c.glass === false);
       e.nm.hidden = !c.name;
@@ -3169,6 +3422,60 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         return sp;
       }));
       e.g.classList.toggle("row", an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name || this._ents.length));
+      this._sync();
+    }
+    // Leuchtziffern: Farbe aus dem Sonnenstand (sun.sun → elevation, rising); ohne Sonne grob aus der Uhrzeit
+    _glow() {
+      const e = this._e;
+      if (!e || this._st !== "glow") {
+        e?.tm.style.removeProperty("--gc");
+        return;
+      }
+      const s = this._h?.states[this._sun], a = s?.attributes;
+      const g = a && a.elevation != null ? { elev: +a.elevation, rising: !!a.rising } : sunGuess(this._hour());
+      const col = glowColor(g.elev, g.rising) || roleVars(this._c.color).c;
+      if (col !== this._gc) {
+        this._gc = col;
+        e.tm.style.setProperty("--gc", col);
+      }
+    }
+    // Nur Dev-Build: Bildrate der ersten drei Klapp-Animationen messen und ins HA-Log schreiben (Test auf echten Geräten)
+    _measure() {
+      if ((this._ms = (this._ms || 0) + 1) > 3 || !this._h?.callService) return;
+      const t = [];
+      const step = (ts) => {
+        t.push(ts);
+        if (ts - t[0] < 650) requestAnimationFrame(step);
+        else done();
+      };
+      const done = () => {
+        const gaps = t.slice(1).map((x, i) => x - t[i]), fps = Math.round((t.length - 1) / ((t[t.length - 1] - t[0]) / 1e3));
+        const msg = `Nova Dev Uhr (flip): ${fps} Bilder/s während der Klappe, längste Pause ${Math.round(Math.max(...gaps))} ms, Fenster ${innerWidth}×${innerHeight}`;
+        this._h.callService("system_log", "write", { message: msg, level: "warning", logger: "nova_cards.dev" })?.catch?.(() => {
+        });
+      };
+      requestAnimationFrame(step);
+    }
+    // Stunde (mit Bruchteil) in der Zeitzone von HA – für die geschätzte Sonne ohne sun.sun
+    _hour() {
+      try {
+        const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { hour: "numeric", minute: "numeric", hourCycle: "h23", timeZone: this._h?.config?.time_zone }).formatToParts(/* @__PURE__ */ new Date()).map((x) => [x.type, x.value]));
+        return +p.hour + p.minute / 60;
+      } catch {
+        const d = /* @__PURE__ */ new Date();
+        return d.getHours() + d.getMinutes() / 60;
+      }
+    }
+    // Laufende Animationen (Sekundenzeiger „sweep“, blinkender Doppelpunkt) auf die echte Sekunde setzen
+    _sync() {
+      const e = this._e;
+      if (!e) return;
+      const now = /* @__PURE__ */ new Date(), off = `-${now.getSeconds() + now.getMilliseconds() / 1e3}s`;
+      const sw = this._st === "analog" && handOf(this._c) === "sweep" && !this._quiet && !reduced();
+      e.sw.classList.toggle("on", sw);
+      if (sw) e.sw.style.animationDelay = off;
+      const col = e.rt.querySelector(".rt-on .rt-col");
+      if (col) col.style.animationDelay = `-${now.getMilliseconds() / 1e3}s`;
     }
     // Werte-Zeile: nur neu schreiben, wenn sich eine der Entitäten ändert
     _vals() {
@@ -3184,7 +3491,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     }
     // Formatierer nur neu bauen, wenn sich Sprache/Zeitzone/Optionen ändern
     _fmts() {
-      const h = this._h, c = this._c, lang = langOf(h), tz = tzOf(h), tf = c.time_format === "auto" ? h?.locale?.time_format : c.time_format;
+      const h = this._h, c = this._c, lang = langOf(h), tz = h?.config?.time_zone || tzOf(h), tf = c.time_format === "auto" ? h?.locale?.time_format : c.time_format;
       const key = JSON.stringify([lang, tz, tf, c.date_format, c.show_seconds]);
       if (key === this._fmtKey) return this._f;
       this._fmtKey = key;
@@ -3204,8 +3511,8 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _draw() {
       const e = this._e, c = this._c;
       if (!e || !this._h) return;
-      const f2 = this._fmts(), now = /* @__PURE__ */ new Date();
-      const p = Object.fromEntries(f2.time.formatToParts(now).map((x) => [x.type, x.value]));
+      const f3 = this._fmts(), now = /* @__PURE__ */ new Date();
+      const p = Object.fromEntries(f3.time.formatToParts(now).map((x) => [x.type, x.value]));
       if (!e.tm.hidden) {
         const html = `${esc(p.hour)}<span class="cl">:</span>${esc(p.minute)}${c.show_seconds ? `<span class="sc">${esc(p.second)}</span>` : ""}${p.dayPeriod ? `<span class="ap">${esc(p.dayPeriod)}</span>` : ""}`;
         if (this._tmH !== html) {
@@ -3213,7 +3520,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
           e.tm.innerHTML = html;
         }
       }
-      const wd = c.show_weekday ? f2.wd.format(now) : "", dt = c.show_date ? f2.date.format(now) : "";
+      const wd = c.show_weekday ? f3.wd.format(now) : "", dt = c.show_date ? f3.date.format(now) : "";
       const dh = [wd && esc(wd), dt && esc(dt)].filter(Boolean).join(", ");
       e.dt.hidden = !dh;
       if (this._dtH !== dh) {
@@ -3223,17 +3530,30 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       if (!e.ana.hidden) {
         const h24 = +p.hour % 12, mm = +p.minute, ss = +p.second;
         e.hh.setAttribute("transform", `rotate(${((h24 + mm / 60) * 30).toFixed(2)} ${C} ${C})`);
-        e.mh.setAttribute("transform", `rotate(${((mm + (c.show_seconds ? ss / 60 : 0)) * 6).toFixed(2)} ${C} ${C})`);
-        e.sh.style.display = c.show_seconds ? "" : "none";
-        if (c.show_seconds) e.sh.setAttribute("transform", `rotate(${ss * 6} ${C} ${C})`);
+        const hd = handOf(c), tick = hd === "tick" || hd === "sweep" && !e.sw.classList.contains("on");
+        e.mh.setAttribute("transform", `rotate(${((mm + (hd !== "none" ? ss / 60 : 0)) * 6).toFixed(2)} ${C} ${C})`);
+        if (tick) e.sh.setAttribute("transform", `rotate(${ss * 6} ${C} ${C})`);
+        else e.sh.removeAttribute("transform");
       }
+      const st = this._st, ap = p.dayPeriod || "";
+      const hr = ap && p.hour.length === 2 && p.hour[0] === "0" ? " " + p.hour[1] : p.hour.padStart(2, " ");
+      if (st === "flip") {
+        const ch = [...hr, ...p.minute], anim = !!this._vis && !this._quiet;
+        e.flp.querySelectorAll(".fd").forEach((d, i) => flipSet(d, ch[i] ?? "", anim));
+        if (DEV && anim) this._measure();
+        e.flp.querySelector(".ap").textContent = ap;
+      } else if (st === "retro") {
+        const svg = e.rt.firstElementChild;
+        if (svg) retroSet(svg, [...hr, ...p.minute, ...c.show_seconds ? p.second : ""], /pm|nachm/i.test(ap), !!ap);
+      }
+      if (st === "glow" && !(this._sun && this._h.states[this._sun])) this._glow();
     }
     // Ein Zeitgeber: zum nächsten Sekunden- (mit Sekunden) bzw. Minutenwechsel; nur sichtbar und nicht in der Kartenauswahl
     _plan() {
       clearTimeout(this._t);
       this._t = null;
       if (!this._vis || !this._e) return;
-      const step = this._c.show_seconds ? 1e3 : 6e4, now = Date.now();
+      const c = this._c, an = this._st === "analog", step = (an ? handOf(c) === "tick" || handOf(c) === "sweep" && !this._e.sw.classList.contains("on") : c.show_seconds && this._st !== "flip") ? 1e3 : 6e4, now = Date.now();
       this._t = setTimeout(() => {
         this._t = null;
         this._draw();
@@ -3241,13 +3561,14 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       }, step - now % step + 15);
     }
   };
-  define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit digital oder analog im Nova-Stil, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("nova-uhr-card") });
+  define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit im Nova-Stil: digital, Klappzahlen, analog, Leuchtziffern oder Radiowecker, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("nova-uhr-card") });
   var S_GEN2 = [
-    sel("mode", [["digital", "Digital"], ["analog", "Analog (Zifferblatt)"]]),
+    sel("style", [["default", "Standard (digital)"], ["flip", "Klappzahlen"], ["analog", "Analog (Zifferblatt)"], ["glow", "Leuchtziffern (Farbe nach Sonnenstand)"], ["retro", "Radiowecker (Sieben-Segment)"]]),
     { name: "name", selector: T }
   ];
+  var S_STYLE = (st) => st === "analog" ? [g2(sel("second_hand", [["sweep", "Gleitend"], ["tick", "Springend"], ["none", "Keiner"]]), { name: "analog_digital", selector: { boolean: {} } })] : st === "glow" ? [{ name: "sun_entity", selector: { entity: { domain: "sun" } } }] : st === "retro" ? [sel("retro_color", [["red", "Rot"], ["green", "Grün"], ["blue", "Blau"], ["amber", "Bernstein"]])] : [];
   var S_SHOW = (c) => [
-    g2({ name: "show_seconds", selector: { boolean: {} } }, ...c.mode === "analog" ? [{ name: "analog_digital", selector: { boolean: {} } }] : []),
+    ...["analog", "flip"].includes(styleOf(c)) ? [] : [{ name: "show_seconds", selector: { boolean: {} } }],
     g2({ name: "show_weekday", selector: { boolean: {} } }, { name: "show_date", selector: { boolean: {} } }),
     { name: "entities", selector: { entity: { multiple: true, domain: ["sensor", "binary_sensor", "input_number", "number", "input_text", "input_select"] } } },
     g2(sel("date_format", [["long", "2. November"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]), sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]]))
@@ -3255,7 +3576,10 @@ ${dialGlass("k", C, C, R2)}</svg>`;
   var S_LOOK2 = [g2(ROLE("color"), { name: "glass", selector: { boolean: {} } })];
   var S_ACT2 = [{ name: "tap_action", selector: A }, { name: "hold_action", selector: A }];
   var LABELS3 = {
-    mode: "Art der Uhr",
+    style: "Stil",
+    second_hand: "Sekundenzeiger",
+    sun_entity: "Sonne",
+    retro_color: "Farbe der Ziffern",
     name: "Überschrift (optional)",
     show_seconds: "Sekunden",
     analog_digital: "Zusätzlich digitale Zeit",
@@ -3270,6 +3594,9 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     entities: "Werte unter der Uhr"
   };
   var HELPERS3 = {
+    style: "Klappzahlen klappen bei jedem Wechsel um, Leuchtziffern färben sich nach dem Sonnenstand, der Radiowecker zeigt LED-Ziffern.",
+    second_hand: "Gleitend läuft ohne Zeitgeber per Animation, springend tickt jede Sekunde.",
+    sun_entity: "Standard sun.sun. Ohne Sonne wird der Sonnenstand aus der Uhrzeit geschätzt.",
     show_seconds: "Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.",
     color: "Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.",
     glass: "Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild.",
@@ -3279,17 +3606,26 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _build() {
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const data = () => ({ ...DEF3, ...this._config });
+      const data = () => ({ ...DEF3, ...this._config, style: styleOf(this._config) });
       const form = (s) => this._form(s, data(), (v) => {
-        const was = this._config.mode, c = merge(this._config, names(s), v);
+        const was = styleOf(this._config);
+        let c = merge(this._config, names(s), v);
+        if (c.style && c.style !== was && c.mode) {
+          if (c.style === "analog" && c.mode === "analog" && c.second_hand == null) c.second_hand = c.show_seconds ? "tick" : "none";
+          delete c.mode;
+        }
         Object.keys(DEF3).forEach((k) => {
           if (c[k] === DEF3[k]) delete c[k];
         });
         this._emit(c);
-        if ((c.mode || DEF3.mode) !== (was || DEF3.mode)) this._rebuild();
+        if (styleOf(c) !== was) this._rebuild();
       });
+      const st = styleOf(this._config);
       r.querySelector(".wrap").append(
-        this._section("general", "mdi:clock-outline", "Uhr", (b) => b.append(form(S_GEN2))),
+        this._section("general", "mdi:clock-outline", "Uhr", (b) => {
+          b.append(form(S_GEN2));
+          if (S_STYLE(st).length) b.append(form(S_STYLE(st)));
+        }),
         this._section("show", "mdi:calendar-today", "Anzeige", (b) => b.append(form(S_SHOW(data())))),
         this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK2))),
         this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT2)))
@@ -3908,7 +4244,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
   var qTumb = (x) => `<path class="qgl" d="M${x - 4} 104 L${x - 3.2} 91 h6.4 L${x + 4} 104 Z"/><path class="qgh" d="M${x - 2.6} 102 L${x - 2} 93"/>`;
   var qCup = (x, c) => `<path class="qcup${c ? " c2" : ""}" d="M${x - 5} 104 v-9.5 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v9.5 Z"/><path class="qcuh" d="M${x + 5} 95.6 h1.4 a2.5 2.5 0 0 1 0 5 h-1.4"/><path class="qgh" d="M${x - 3.4} 102 v-7"/>`;
   var qWire = (y1, y2) => `<path class="qwire" d="${Array.from({ length: 19 }, (_, i) => `M${46 + i * 6} ${y1} V${y2}`).join(" ")}"/><rect class="qrl" x="45" y="${y2 - 0.6}" width="110" height="1.4" rx=".7"/><rect class="qrl t" x="45" y="${y1 - 0.4}" width="110" height=".9" rx=".45"/><circle class="qrol" cx="47" cy="${y2 + 1.6}" r="1.6"/><circle class="qrol" cx="153" cy="${y2 + 1.6}" r="1.6"/>`;
-  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f2) => `<circle class="qnz" cx="${100 + f2 * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
+  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f3) => `<circle class="qnz" cx="${100 + f3 * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
   var qJets = (y, xs) => `<g class="qjet">${xs.map((x, i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1 : 1.3}" style="--dx:${x < 100 ? -4 : 4}px;animation-delay:${(i * 0.27).toFixed(2)}s"/>`).join("")}</g>`;
   var QIN = `<g class="qtop"><path class="qcut" d="M58 37.4 h18 M82 36.6 h16 M118 37.4 h20"/><ellipse class="qcuts" cx="76.6" cy="37.4" rx="2.2" ry="1.2"/><path class="qcutk" d="M98 36.6 h6 q-1 1.4 -6 1.2 Z"/>${qWire(33, 40.5)}</g>
 <g class="qup">${[58, 70].map(qWine).join("")}${qTumb(82)}${qCup(96)}${qCup(110, 1)}${qTumb(124)}${[136, 146].map(qWine).join("")}${qWire(88, 104.5)}</g>
@@ -3928,13 +4264,13 @@ ${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" 
   }).join("");
   function kibble(x0, x1, y1, top, rMin, rMax, seed) {
     let q = seed;
-    const rnd = () => (q = q * 16807 % 2147483647) / 2147483647, out = [];
+    const rnd2 = () => (q = q * 16807 % 2147483647) / 2147483647, out = [];
     for (let y = Math.min(...[x0, (x0 + x1) / 2, x1].map(top)) - 2; y < y1 + 3; y += 2.6 + rMax * 0.55) {
-      for (let x = x0 - 1 + rnd() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd() * rMax * 0.6) {
-        const r = rMin + rnd() * (rMax - rMin), cx = x + (rnd() - 0.5) * 1.6, cy = y + (rnd() - 0.5) * 1.8;
-        if (cy < top(cx) + r * 0.2 || rnd() < 0.1) continue;
-        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f2 = (n) => n.toFixed(1);
-        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f2(cx)} ${f2(cy)})"><path d="M${f2(cx - a[0])} ${f2(cy)}Q${f2(cx - a[0])} ${f2(cy - a[1])} ${f2(cx)} ${f2(cy - a[1])}Q${f2(cx + a[2])} ${f2(cy - a[1])} ${f2(cx + a[2])} ${f2(cy)}Q${f2(cx + a[2])} ${f2(cy + a[3])} ${f2(cx)} ${f2(cy + a[3])}Q${f2(cx - a[0])} ${f2(cy + a[3])} ${f2(cx - a[0])} ${f2(cy)}Z"/><ellipse cx="${f2(cx - r * 0.3)}" cy="${f2(cy - r * 0.38)}" rx="${f2(r * 0.38)}" ry="${f2(r * 0.24)}"/></g>`);
+      for (let x = x0 - 1 + rnd2() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd2() * rMax * 0.6) {
+        const r = rMin + rnd2() * (rMax - rMin), cx = x + (rnd2() - 0.5) * 1.6, cy = y + (rnd2() - 0.5) * 1.8;
+        if (cy < top(cx) + r * 0.2 || rnd2() < 0.1) continue;
+        const k = 1 + Math.floor(rnd2() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd2() * 0.36)), f3 = (n) => n.toFixed(1);
+        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd2() * 180)} ${f3(cx)} ${f3(cy)})"><path d="M${f3(cx - a[0])} ${f3(cy)}Q${f3(cx - a[0])} ${f3(cy - a[1])} ${f3(cx)} ${f3(cy - a[1])}Q${f3(cx + a[2])} ${f3(cy - a[1])} ${f3(cx + a[2])} ${f3(cy)}Q${f3(cx + a[2])} ${f3(cy + a[3])} ${f3(cx)} ${f3(cy + a[3])}Q${f3(cx - a[0])} ${f3(cy + a[3])} ${f3(cx - a[0])} ${f3(cy)}Z"/><ellipse cx="${f3(cx - r * 0.3)}" cy="${f3(cy - r * 0.38)}" rx="${f3(r * 0.38)}" ry="${f3(r * 0.24)}"/></g>`);
       }
     }
     return out.join("");
@@ -4792,10 +5128,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         const step = (dir) => {
           const s = S();
           if (!ok(s)) return;
-          const a = s.attributes, st = +o.step || +a.step || 1, cur = this._pend[o.entity]?.v ?? +s.state;
+          const a = s.attributes, st = +o.step || +a.step || 1, cur2 = this._pend[o.entity]?.v ?? +s.state;
           const mn = a.min != null ? +a.min : -Infinity, mx = a.max != null ? +a.max : Infinity;
-          if (cur < mn || cur > mx) return this._setNum(o, isFinite(mn) ? mn : mx);
-          this._setNum(o, Math.min(mx, Math.max(mn, Math.round((cur + dir * st) / st) * st)));
+          if (cur2 < mn || cur2 > mx) return this._setNum(o, isFinite(mn) ? mn : mx);
+          this._setNum(o, Math.min(mx, Math.max(mn, Math.round((cur2 + dir * st) / st) * st)));
         };
         if (sl) {
           up.rng = el2.querySelector("input");
@@ -4851,8 +5187,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       return (this._S(this._c.start)?.attributes.options || []).filter((x) => x !== "" && x != null);
     }
     _picked() {
-      const o = this._pickOpts(), cur = this._S(this._c.start)?.state;
-      return o.includes(this._pk) ? this._pk : o.includes(cur) ? cur : o[0];
+      const o = this._pickOpts(), cur2 = this._S(this._c.start)?.state;
+      return o.includes(this._pk) ? this._pk : o.includes(cur2) ? cur2 : o[0];
     }
     _pick(d) {
       const o = this._pickOpts(), i = o.indexOf(this._picked());
@@ -4872,8 +5208,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _atCalc() {
       const c = this._c;
       if (!this._at || c.start_at !== "home_connect") return null;
-      const [H2, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
-      start.setHours(H2, M, 0, 0);
+      const [H3, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
+      start.setHours(H3, M, 0, 0);
       if (start <= now) start.setDate(start.getDate() + 1);
       const ds = this._S(c.duration), dur = secsOf(ds);
       if (!dur) return { start, err: "Programmdauer unbekannt (Editor → Programm und Zeit → Gesamtdauer)" };
@@ -4986,9 +5322,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.g.classList.toggle("last", cls === "run" && rem != null && rem <= 60);
       if (e.kp) {
         const r = secsOf(this._S(c.remaining)), tot = secsOf(this._S(c.duration));
-        const f2 = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
-        e.g.classList.toggle("kring", f2 != null);
-        e.kp.style.strokeDashoffset = String(100 - (f2 ?? 0) * 100);
+        const f3 = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
+        e.g.classList.toggle("kring", f3 != null);
+        e.kp.style.strokeDashoffset = String(100 - (f3 ?? 0) * 100);
         if (e.kt) e.kt.textContent = r > 0 ? fmtDisp(r) : "";
       }
       if (e.wd) e.wd.textContent = cls === "done" ? "End" : cls === "off" ? "" : rem != null ? fmtDisp(rem) : "– –";
@@ -5050,12 +5386,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         el2.querySelector(".k").textContent = o.name ?? a.friendly_name ?? o.entity;
         const v = el2.querySelector(".v");
         if (u.kind === "sel") {
-          const opts = (a.options || []).map(String), cur = ok(s) ? s.state : null;
+          const opts = (a.options || []).map(String), cur2 = ok(s) ? s.state : null;
           u.mode = o.display === "pills" || o.display === "list" ? o.display : opts.length <= 5 ? "pills" : "list";
           el2.querySelector(".cv").hidden = u.mode !== "list";
           if (u.mode === "pills") u.pills.hidden = false;
           else u.pills.hidden = !el2.classList.contains("open");
-          v.textContent = cur != null ? fmtOpt(h, s, cur) : "–";
+          v.textContent = cur2 != null ? fmtOpt(h, s, cur2) : "–";
           v.hidden = u.mode === "pills";
           const key = opts.join("|");
           if (u.key !== key) {
@@ -5076,7 +5412,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           }
           [...u.pills.children].forEach((p) => {
             p.textContent = fmtOpt(h, s, p.dataset.o);
-            p.classList.toggle("on", p.dataset.o === cur);
+            p.classList.toggle("on", p.dataset.o === cur2);
           });
         } else if (u.kind === "num") {
           const pv = this._pend[o.entity]?.v, raw = pv ?? (ok(s) ? +s.state : null), bad = raw != null && pv == null && (a.min != null && raw < a.min || a.max != null && raw > a.max);
@@ -5149,10 +5485,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       DRINKS.forEach(([x]) => g.classList.toggle(`k-${x}`, x === k));
       ["--cc", "--cr", "--cm"].forEach((v, i) => g.style.setProperty(v, col[i]));
       g.classList.toggle("milk", milk);
-      const prog = cls === "run" && p != null, f2 = cls === "done" ? 1 : prog ? p / 100 : 0;
+      const prog = cls === "run" && p != null, f3 = cls === "done" ? 1 : prog ? p / 100 : 0;
       g.classList.toggle("cprog", prog);
-      g.style.setProperty("--cl", f2.toFixed(2));
-      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f2 - 0.45) / 0.55)).toFixed(2) : "0");
+      g.style.setProperty("--cl", f3.toFixed(2));
+      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f3 - 0.45) / 0.55)).toFixed(2) : "0");
       if (this._e.cx) this._e.cx.textContent = { off: "", err: "Störung", done: "Fertig", heat: "Heizt auf", warm: "Warm", wait: "Später" }[cls] ?? (src ? D[2] : cls === "run" ? TY.run : "Bereit");
     }
     _alerts(cls, stx) {
@@ -5173,14 +5509,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       c.hints.forEach((a) => {
         const s = this._S(a.entity);
         if (!alertHit(a, s)) return;
-        const an = can.includes(a.anim) ? a.anim : null, H2 = HANIM[an];
+        const an = can.includes(a.anim) ? a.anim : null, H3 = HANIM[an];
         if (an) on.add(an);
         const fd = an === "filter" ? this._S(c.filter_days) : null, fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
         const fx = fdn != null ? `noch ${fdn} ${fdn === 1 ? "Tag" : "Tage"}` : "";
         add(
           ["error", "info"].includes(a.level) ? a.level : "warning",
-          a.icon || (H2 && an !== "warning" ? H2[2] : s?.attributes.icon) || "mdi:information-outline",
-          [a.message || H2 && H2[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
+          a.icon || (H3 && an !== "warning" ? H3[2] : s?.attributes.icon) || "mdi:information-outline",
+          [a.message || H3 && H3[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
           a.entity,
           !!an,
           a.reset && { id: a.reset, name: a.reset_name || "Zurücksetzen" }
@@ -5567,12 +5903,12 @@ box-shadow:0 0 16px color-mix(in srgb,var(--ok) 45%,transparent);opacity:1}
     return b;
   }
   function paintBtn(b, look, state, enabled) {
-    const icon = { busy: "mdi:loading", ok: "mdi:check-bold", err: "mdi:alert-circle-outline" }[state] || look.icon;
+    const icon2 = { busy: "mdi:loading", ok: "mdi:check-bold", err: "mdi:alert-circle-outline" }[state] || look.icon;
     const label = state && state !== "idle" && look[state] || look.label;
     b.className = `pb${look.pill ? " pill" : ""}${state && state !== "idle" ? ` ${state}` : ""}`;
     b.disabled = (!state || state === "idle") && !enabled;
     const ic = b.firstChild;
-    if (ic.getAttribute("icon") !== icon) ic.setAttribute("icon", icon);
+    if (ic.getAttribute("icon") !== icon2) ic.setAttribute("icon", icon2);
     b.lastChild.textContent = look.pill ? label : "";
     b.title = label;
     b.setAttribute("aria-label", label);
@@ -6055,8 +6391,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
       const txt = e.ta.value, n = txt.trim().length, lines = txt ? txt.split("\n").length : 0;
       const missing = c.print_script && !h.states[c.print_script];
       const notes = c.notes_entity && h.states[c.notes_entity];
-      const saved = this._feed.items?.filter((i) => i.status !== "completed") || [];
-      e.sub.textContent = missing ? `Skript nicht gefunden: ${c.print_script}` : n ? "Bereit" : notes ? `${saved.length} gespeichert` : "Leer";
+      const saved2 = this._feed.items?.filter((i) => i.status !== "completed") || [];
+      e.sub.textContent = missing ? `Skript nicht gefunden: ${c.print_script}` : n ? "Bereit" : notes ? `${saved2.length} gespeichert` : "Leer";
       e.cnt.textContent = n ? `${txt.length} Zeichen · ${lines} ${lines === 1 ? "Zeile" : "Zeilen"}` : "";
       e.cl.hidden = c.show_clear === false;
       e.cl.disabled = !txt;
@@ -6067,10 +6403,10 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
       printPaint(this._pb, c, this._pstate, n > 0 && !missing);
       paintBtn(this._sb, { icon: "mdi:content-save-outline", label: "Speichern", pill, busy: "Speichert …", ok: "Gespeichert", err: "Fehler" }, this._sstate, n > 0 && !!notes);
       e.ft.classList.toggle("wide", pill && c.show_clear === false);
-      this._renderNotes(saved, notes, missing);
+      this._renderNotes(saved2, notes, missing);
     }
     // Gespeicherte Notizen, neueste oben (todo.add_item hängt hinten an)
-    _renderNotes(saved, notes, missing) {
+    _renderNotes(saved2, notes, missing) {
       const c = this._c, e = this._e;
       e.ns.hidden = !c.notes_entity;
       if (!c.notes_entity) return;
@@ -6078,8 +6414,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
       if (!notes) msg = ["mdi:alert-circle-outline", `Liste nicht gefunden: ${c.notes_entity}`];
       else if (this._feed.err && !this._feed.items) msg = ["mdi:alert-circle-outline", this._feed.err];
       else if (!this._feed.items) msg = ["mdi:timer-sand", "Wird geladen …"];
-      else if (!saved.length) msg = ["mdi:note-outline", "Noch keine Notizen gespeichert"];
-      const rows = [...saved].reverse();
+      else if (!saved2.length) msg = ["mdi:note-outline", "Noch keine Notizen gespeichert"];
+      const rows = [...saved2].reverse();
       e.nt.textContent = rows.length ? `Gespeichert · ${rows.length}` : "Gespeichert";
       const key = JSON.stringify([msg, rows.map((r) => [r.uid, r.summary, r.description, this._nstate[r.uid], this._armed === r.uid]), !!c.print_script, missing, c.print_icon]);
       if (key === this._key2) return;
@@ -6176,16 +6512,16 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
     }
   };
   define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Mehrzeiliges Notizfeld mit Druck-Knopf (z. B. für einen Bondrucker); Notizen lassen sich in einer todo-Liste speichern und später wieder drucken oder löschen.", documentationURL: docUrl("nova-notiz-card") });
-  var H = (n) => ({ name: n, selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } });
+  var H2 = (n) => ({ name: n, selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } });
   var GEN2 = [
     g2({ name: "name", selector: T }, { name: "icon", selector: I }),
     { name: "show_header", selector: { boolean: {} } },
     { name: "placeholder", selector: T },
-    g2({ name: "show_clear", selector: { boolean: {} } }, H("height"))
+    g2({ name: "show_clear", selector: { boolean: {} } }, H2("height"))
   ];
   var NOTES = [
     { name: "notes_entity", selector: { entity: { domain: "todo" } } },
-    g2(H("notes_height"), { name: "clear_after_save", selector: { boolean: {} } })
+    g2(H2("notes_height"), { name: "clear_after_save", selector: { boolean: {} } })
   ];
   var PRINT2 = printSchema([g2({ name: "print_field", selector: T }, { name: "clear_after_print", selector: { boolean: {} } })]);
   var LABELS5 = {
@@ -6229,6 +6565,52 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
   __publicField(NovaNoteCardEditor, "helpers", HELPERS5);
   __publicField(NovaNoteCardEditor, "openSections", ["general"]);
   define("note-card-editor", NovaNoteCardEditor);
+
+  // src/shared/marquee.js
+  var MARQUEE_CSS = `
+.mq{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mq>.mqi{display:inline}
+.mq.run{text-overflow:clip;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent)}
+.mq.run>.mqi{display:inline-block;padding-left:4px;animation:nv-mq var(--mqd,8s) ease-in-out infinite alternate;will-change:transform}
+@keyframes nv-mq{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--mqx,0))}}
+@media(prefers-reduced-motion:reduce){.mq.run{text-overflow:ellipsis;-webkit-mask-image:none;mask-image:none}.mq.run>.mqi{display:inline;padding-left:0;animation:none}}`;
+  var SPEED2 = 28;
+  var MIN = 5;
+  var marquee = (el2, text, still = false) => {
+    if (!el2) return;
+    el2.classList.add("mq");
+    let span = el2.querySelector(":scope>.mqi");
+    if (!span) {
+      el2.textContent = "";
+      span = document.createElement("span");
+      span.className = "mqi";
+      el2.appendChild(span);
+    }
+    if (span.textContent !== text) span.textContent = text;
+    el2._mqStill = still;
+    if (!el2._mqRo && typeof ResizeObserver !== "undefined") {
+      el2._mqRo = new ResizeObserver(() => fit(el2));
+      el2._mqRo.observe(el2);
+    }
+    fit(el2);
+  };
+  var fit = (el2) => {
+    const span = el2.querySelector(":scope>.mqi");
+    if (!span) return;
+    el2.classList.remove("run");
+    const over = span.getBoundingClientRect().width - el2.clientWidth;
+    if (el2._mqStill || !el2.isConnected || el2.clientWidth <= 0 || over <= 1) return;
+    const dist = Math.ceil(over) + 18;
+    el2.style.setProperty("--mqx", `-${dist}px`);
+    el2.style.setProperty("--mqd", `${Math.max(MIN, dist / SPEED2 / 0.64).toFixed(1)}s`);
+    el2.classList.add("run");
+  };
+  var stopMarquee = (el2) => {
+    if (!el2?._mqRo) return;
+    el2._mqRo.disconnect();
+    el2._mqRo = null;
+    el2.classList.remove("run");
+  };
 
   // src/shared/chips.js
   var CHIP_TYPES = [["value", "Wert (zeigt den Zustand)"], ["button", "Knopf (führt eine Aktion aus)"]];
@@ -6312,6 +6694,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       sel("type", CHIP_TYPES),
       ...btn ? [] : [ENT],
       NAMEICON,
+      ...btn ? [] : [{ name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }],
       ROLE("color"),
       ...btn && presets.length ? [sel("preset", [["custom", "Eigene Aktion"], ...presets.map(([k, p]) => [k, p.label])])] : [],
       ...btn && CHIP_PRESETS[o.preset] ? [] : [{ name: "tap_action", selector: A }],
@@ -6328,24 +6711,26 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     color: "Farbe",
     preset: "Aktion",
     tap_action: "Aktion beim Antippen",
-    state: "Nur anzeigen bei Zustand"
+    state: "Nur anzeigen bei Zustand",
+    decimals: "Nachkommastellen"
   };
   var CHIP_HELPERS = {
     color: "Leer = neutral.",
     state: "z. B. on, mehrere mit Komma. Leer = immer anzeigen. Bei Knöpfen bezieht es sich auf die gewählte Entität.",
-    tap_action: "Bei Wert-Chips: leer = Details öffnen."
+    tap_action: "Bei Wert-Chips: leer = Details öffnen.",
+    decimals: "Nur bei Zahlenwerten. Leer = wie in Home Assistant. Beispiel: 1 → 21,9 °C."
   };
 
   // src/area.js
   var DEF4 = { stack_below: 500, chips_layout: "wrap" };
-  var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}
+  var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
 :host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:12px;padding:14px}
 .hd{display:flex;align-items:center;gap:10px;padding:6px;border-radius:999px;background:var(--nv-chip)}
 .hd.nb{padding-left:14px}
 .hi{display:flex}.hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:0;font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.tt{flex:1 1 auto;min-width:min(35%,110px);font-weight:600;font-size:15px}
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
 .x:focus-visible{outline:none;box-shadow:0 0 0 2px var(--nv-active)}
@@ -6411,24 +6796,27 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       this._detect();
       requestAnimationFrame(() => this._detect());
       if (this._dirty && this._cfg) this._grid();
+      const tt = this.shadowRoot?.querySelector(".tt");
+      if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
     }
     disconnectedCallback() {
       this._ro.disconnect();
+      stopMarquee(this.shadowRoot?.querySelector(".tt"));
       if (this._prev) this._handOffCells();
     }
     // Editor-Vorschau (Zellen übernehmen) bzw. Bearbeitungsmodus (leere Plätze zeigen)
     _detect() {
-      let prev = false, edit = !!(this.preview || this.editMode);
+      let prev2 = false, edit = !!(this.preview || this.editMode);
       for (let n = this, i = 0; n && i < 80; i++) {
         if (PREV.has(n.tagName) || n.tagName?.includes("DIALOG")) {
-          prev = true;
+          prev2 = true;
           break;
         }
         if (EDIT.has(n.tagName)) edit = true;
         n = n.parentElement || n.getRootNode?.().host;
       }
-      this._prev = prev;
-      this._g.classList.toggle("prev", prev || edit);
+      this._prev = prev2;
+      this._g.classList.toggle("prev", prev2 || edit);
     }
     _handoff() {
       return this._prev;
@@ -6443,7 +6831,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       const r = this.shadowRoot, noBack = c.back_action?.action === "none";
       this._bk.hidden = noBack;
       this._hd.classList.toggle("nb", noBack);
-      r.querySelector(".tt").textContent = c.name || ar?.name || (c.area ? c.area : "Keine Area gewählt");
+      marquee(r.querySelector(".tt"), c.name || ar?.name || (c.area ? c.area : "Keine Area gewählt"), inPicker(this));
       setIcon(r.querySelector(".hi"), c.icon || ar?.icon || "mdi:texture-box");
       const tint = c.tint;
       this.classList.toggle("tint", !!tint);
@@ -6455,9 +6843,9 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   };
   __publicField(NovaAreaCard, "gridKind", "area");
   define("area-card", NovaAreaCard, { name: "Nova Bereich Card", description: "Raumansicht als Glasrahmen: Kopfzeile mit Zurück, Icon, Raumname und Chips, darunter beliebige Karten in Zeilen und Spalten.", documentationURL: docUrl("nova-bereich-card") });
-  var S_GEN3 = (icon) => [
+  var S_GEN3 = (icon2) => [
     { name: "area", selector: { area: {} } },
-    g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon ? { placeholder: icon } : {} } }),
+    g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon2 ? { placeholder: icon2 } : {} } }),
     { name: "back_action", selector: A },
     g2(ROLE("tint"), { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } })
   ];
@@ -6529,4 +6917,2685 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   __publicField(NovaAreaCardEditor, "helpers", HELPERS6);
   __publicField(NovaAreaCardEditor, "openSections", ["general"]);
   define("area-card-editor", NovaAreaCardEditor);
+
+  // src/shared/popup-hub.js
+  var KEY = `__${tag("popups")}`;
+  var popups = () => window[KEY] ||= /* @__PURE__ */ new Map();
+  var register = (h, card) => {
+    const m = popups();
+    (m.get(h) || m.set(h, /* @__PURE__ */ new Set()).get(h)).add(card);
+  };
+  var unregister = (h, card) => {
+    const s = popups().get(h);
+    if (s) {
+      s.delete(card);
+      if (!s.size) popups().delete(h);
+    }
+  };
+  var hasPopup = (h) => [...popups().get(h) || []].some((p) => !p._fallback && p.isConnected);
+  var cleanHash = (h) => String(h ?? "").trim().replace(/^#+/, "").replace(/\s+/g, "-");
+  var curHash = () => {
+    const s = location.hash.slice(1);
+    try {
+      return decodeURIComponent(s);
+    } catch {
+      return s;
+    }
+  };
+  var openPopup = (h) => {
+    if (h && curHash() !== h) navigate(`#${encodeURIComponent(h)}`);
+  };
+  var prev = null;
+  var cur = location.href;
+  var track = () => {
+    if (location.href !== cur) {
+      prev = cur;
+      cur = location.href;
+    }
+  };
+  ["popstate", "hashchange", "location-changed"].forEach((ev) => window.addEventListener(ev, track));
+  var base = (u) => {
+    try {
+      const x = new URL(u);
+      return x.origin + x.pathname + x.search;
+    } catch {
+      return "";
+    }
+  };
+  var cameByNav = () => {
+    track();
+    return !!prev && base(prev) === base(location.href) && !new URL(prev).hash;
+  };
+  var clearHash = (back) => {
+    if (back) return history.back();
+    history.replaceState(history.state, "", location.pathname + location.search);
+    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: true } }));
+  };
+  var closePopup = (h) => {
+    const p = [...popups().get(h) || []].find((x) => x._isOpen);
+    if (p) p.close();
+    else if (curHash() === h) clearHash(false);
+  };
+  var locks = 0;
+  var saved = null;
+  var lockScroll = (on) => {
+    const els = [document.documentElement, document.body];
+    if (on && locks++ === 0) {
+      saved = els.map((e) => e.style.overflow);
+      els.forEach((e) => {
+        e.style.overflow = "hidden";
+      });
+    }
+    if (!on && locks > 0 && --locks === 0) els.forEach((e, i) => {
+      e.style.overflow = saved?.[i] || "";
+    });
+  };
+  var panelEl = () => document.querySelector("home-assistant")?.shadowRoot?.querySelector("home-assistant-main")?.shadowRoot?.querySelector("partial-panel-resolver");
+  var followContent = (el2) => {
+    const p = panelEl();
+    const set = () => {
+      const b = p?.isConnected ? p.getBoundingClientRect() : null;
+      const l = b ? Math.max(0, Math.round(b.left)) : 0, r = b ? Math.max(0, Math.round(innerWidth - b.right)) : 0;
+      el2.style.setProperty("--nv-pop-l", `${l}px`);
+      el2.style.setProperty("--nv-pop-r", `${r}px`);
+    };
+    set();
+    const ro = p ? new ResizeObserver(set) : null;
+    ro?.observe(p);
+    addEventListener("resize", set);
+    return () => {
+      ro?.disconnect();
+      removeEventListener("resize", set);
+    };
+  };
+  var findPopups = (o, out = []) => {
+    if (!o || typeof o !== "object") return out;
+    if (o.type === `custom:${tag("popup-card")}` && o.hash) out.push(o);
+    else Object.values(o).forEach((v) => findPopups(v, out));
+    return out;
+  };
+  var dashPath = () => {
+    const p = location.pathname.split("/")[1];
+    return !p || p === "lovelace" ? null : p;
+  };
+  var CACHE = {};
+  var dashPopups = (hass, path = dashPath(), fresh) => {
+    const k = path ?? "", c = CACHE[k];
+    if (c && !fresh && Date.now() - c.t < 15e3) return c.p;
+    const p = Promise.resolve().then(() => hass.callWS({ type: "lovelace/config", url_path: path })).then((cfg) => findPopups(cfg)).catch(() => []);
+    CACHE[k] = { t: Date.now(), p };
+    return p;
+  };
+  var findPopup = async (hass, h, alt) => {
+    const paths = [dashPath()];
+    if (alt) paths.push(alt === "default" ? null : alt);
+    for (const p of paths) {
+      const hit = (await dashPopups(hass, p)).find((c) => cleanHash(c.hash) === h);
+      if (hit) return hit;
+    }
+    return null;
+  };
+  var popupLabel = (c) => c.title || `#${cleanHash(c.hash)}`;
+  var popupOptions = async (hass) => [
+    { value: "", label: "– keins –" },
+    ...(await dashPopups(hass, void 0, true)).map((c) => ({ value: cleanHash(c.hash), label: popupLabel(c) }))
+  ];
+  async function togglePopup(host, hass, h, alt) {
+    if (curHash() === h) return closePopup(h);
+    openPopup(h);
+    if (hasPopup(h) || !hass) return;
+    const cfg = await findPopup(hass, h, alt);
+    if (!cfg || curHash() !== h || hasPopup(h) || !customElements.get(tag("popup-card"))) return;
+    const key = JSON.stringify(cfg);
+    if (host._hp?._cfgKey !== key) {
+      host._hp?.remove();
+      const p = document.createElement(tag("popup-card"));
+      p._fallback = true;
+      p._cfgKey = key;
+      p.setConfig(cfg);
+      host._hp = p;
+    }
+    host._hp.hass = hass;
+    if (!host._hp.isConnected) host.shadowRoot.appendChild(host._hp);
+  }
+
+  // src/navi.js
+  var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
+  var PCSS2 = `
+:host{position:fixed;inset:0 var(--nv-pop-r,0px) 0 var(--nv-pop-l,0px);z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(8,12,22,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fi .2s}
+.root{width:min(var(--nova-popup-width,1180px),96%);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:14px;border-radius:28px;
+background:linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9));border:1px solid var(--nv-border);box-shadow:0 20px 60px rgba(0,0,0,.45);color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:up .28s cubic-bezier(.2,.8,.2,1)}
+.hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(60,72,100,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.tt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);cursor:pointer;flex:none}
+ha-icon{--mdc-icon-size:20px;display:flex}
+.body{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-popup-min-col,300px),1fr));gap:12px;align-items:start}
+.body.one{grid-template-columns:1fr}
+.empty{opacity:.6;font-size:13px;padding:8px}
+@media(max-width:600px){:host{align-items:flex-end}.root{width:100%;max-height:86vh;border-radius:28px 28px 0 0;padding:12px 12px calc(90px + env(safe-area-inset-bottom))}.body{grid-template-columns:1fr}}
+@keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fi{from{opacity:0}}`;
+  var NovaNaviPopup = class extends HTMLElement {
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NAVI_VARS}${PCSS2}</style><div class="root"><div class="hd"><ha-icon class="hi"></ha-icon><span class="tt"></span><div class="x" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></div></div><div class="body"></div></div>`;
+      this._body = r.querySelector(".body");
+      this._cards = [];
+      r.querySelector(".x").addEventListener("click", () => this.onclose?.());
+      this.addEventListener("click", (e) => {
+        if (e.composedPath()[0] === this) this.onclose?.();
+      });
+    }
+    connectedCallback() {
+      this._unfollow?.();
+      this._unfollow = followContent(this);
+    }
+    disconnectedCallback() {
+      this._unfollow?.();
+      this._unfollow = null;
+    }
+    set cfg(c) {
+      this._cfg = c;
+      const r = this.shadowRoot;
+      r.querySelector(".tt").textContent = c.title || "";
+      r.querySelector(".hi").setAttribute("icon", c.icon || "mdi:dots-horizontal");
+      this._body.classList.toggle("one", (c.cards || []).length === 1);
+      this._load();
+    }
+    async _load() {
+      const helpers2 = await window.loadCardHelpers();
+      this._body.innerHTML = "";
+      this._cards = (this._cfg.cards || []).map((cc) => {
+        const el2 = helpers2.createCardElement(cc);
+        if (this._h) el2.hass = this._h;
+        this._body.appendChild(el2);
+        return el2;
+      });
+      if (!this._cards.length) this._body.innerHTML = '<div class="empty">Noch keine Karten in diesem Pop-up – im Navi-Editor unter „Einfaches Pop-up: Karten“ eintragen.</div>';
+    }
+    set hass(h) {
+      this._h = h;
+      this._cards.forEach((c) => {
+        c.hass = h;
+      });
+    }
+  };
+  define("navi-popup", NovaNaviPopup);
+  var DCSS2 = `
+:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px));transition:height .3s ease}
+:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
+:host([side]){height:0}
+ha-icon{--mdc-icon-size:22px;display:flex}
+.wrap{position:fixed;left:50%;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:stretch;gap:8px;max-width:calc(100vw - 24px)}
+.wrap.bottom{bottom:calc(14px + env(safe-area-inset-bottom))}.wrap.top{top:14px;flex-direction:column-reverse}
+.wrap.side{top:50%;bottom:auto;left:14px;right:auto;transform:translateY(-50%);max-width:none;max-height:calc(100vh - 28px);flex-direction:column}
+.wrap.side.right{left:auto;right:14px}
+.wrap.inline{position:static;transform:none;margin:0 auto;width:max-content;max-width:100%}
+.glass{background:var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(160%);border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(0,0,0,.4)}
+.dk{position:relative;display:flex;border-radius:999px;max-width:100%;min-width:0;min-height:0}
+.side .dk{flex-direction:column}
+.dock{--g:8px;--o:6px;position:relative;z-index:1;flex:1 1 auto;min-width:0;min-height:0;margin:calc(-1 * var(--o));display:flex;align-items:center;gap:var(--g);padding:calc(8px + var(--o));border-radius:999px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-sizing:border-box;--a1:1;--a2:1;--md:to right}
+.side .dock{flex-direction:column;overflow-x:hidden;overflow-y:auto;--md:to bottom}
+.dock.fs{--a1:0}.dock.fe{--a2:0}
+.dock.fs,.dock.fe{-webkit-mask-image:linear-gradient(var(--md),rgba(0,0,0,var(--a1)) var(--o),#000 calc(var(--o) + 22px),#000 calc(100% - var(--o) - 22px),rgba(0,0,0,var(--a2)) calc(100% - var(--o)));mask-image:linear-gradient(var(--md),rgba(0,0,0,var(--a1)) var(--o),#000 calc(var(--o) + 22px),#000 calc(100% - var(--o) - 22px),rgba(0,0,0,var(--a2)) calc(100% - var(--o)))}
+.dock::-webkit-scrollbar{display:none}
+.d{--s:var(--sz);z-index:1;width:var(--s);height:var(--s);box-sizing:border-box;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:var(--nv-fg);cursor:pointer;position:relative;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s;-webkit-tap-highlight-color:transparent;outline:none;user-select:none;-webkit-user-select:none}
+.d[hidden]{display:none}
+.d:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.d:active{transform:scale(.9)}
+.d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 60%,transparent)}
+/* Aktiver Eintrag: runde Markierung .hl gleitet unter die Buttons; Farbe nur übers Theme (--nova-navi-active-color), Standard Akzent 2.
+   Animiert werden nur transform, opacity und max-width – schont schwache Tablets. */
+.dk{--hc:var(--nova-navi-active-color,var(--nv-a2));--ease:cubic-bezier(.25,.8,.25,1)}
+/* Glas der Leiste als eigene Ebene: gleitet beim Wechsel per transform auf die neue Breite (Blur bleibt unverändert) */
+.dk>.bg{position:absolute;inset:0;border-radius:inherit;z-index:0;pointer-events:none;transform-origin:0 50%}
+.hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:var(--hc);box-shadow:0 0 14px color-mix(in srgb,var(--hc) 50%,transparent);pointer-events:none;opacity:0;will-change:transform}
+.hl.on{opacity:1}
+.d.here{color:var(--nova-navi-active-text-color,var(--nv-a2-fg))}
+/* Inaktiv-Farbe bleibt immer die Grundfarbe des Buttons; Gelb liegt als eigene Ebene darüber (unter dem Icon).
+   So geht der alte Button direkt von Gelb zu Blau über, nie über transparent */
+.d::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:50%;background:var(--hc);opacity:0;pointer-events:none}
+.d.lit::before{opacity:1}
+/* Während einer Animation: nur transform und opacity, gleiche Dauer und Kurve für alle Teile */
+.run .d,.run .d::before,.run .nm,.run+.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
+/* Messen und Startlage setzen: ohne Übergang */
+.hold .d,.hold .d::before,.hold .nm,.hold+.bg,.hold .hl{transition:none!important}
+.ghost{position:absolute;left:0;top:0;z-index:1;pointer-events:none;white-space:nowrap;color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
+.d img{width:calc(var(--s) * .6);height:calc(var(--s) * .6);object-fit:contain}
+.nm{flex:none;z-index:1;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;margin-left:calc(-1 * var(--g));color:var(--nv-fg);font:600 14px/1.2 var(--ha-font-family-body,Roboto,sans-serif)}
+.nm.on{max-width:180px;opacity:1;margin-left:0;padding-right:6px}
+.nm[hidden],.side .nm{display:none}
+@media(prefers-reduced-motion:reduce){.dock,.dock *{transition:none!important}}
+.dot{position:absolute;top:14%;right:14%;width:8px;height:8px;border-radius:50%;background:var(--bc,var(--nv-accent));box-shadow:0 0 6px var(--bc,var(--nv-accent));display:none}
+.d.bd .dot{display:block}
+.num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bc,var(--nv-accent));color:var(--bfg,#3a2a00);font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
+.d.bn .num{display:block}.d.bn .dot{display:none}
+.empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
+.mbw{display:grid;grid-template-rows:0fr;margin-bottom:-8px;opacity:0;transform:translateY(14px);pointer-events:none;transition:grid-template-rows var(--mbd) ease,margin var(--mbd) ease,opacity var(--mbd) ease,transform var(--mbd) cubic-bezier(.2,.8,.2,1)}
+.mbw.on{grid-template-rows:1fr;margin-bottom:0;opacity:1;transform:none;pointer-events:auto}
+.top .mbw{margin-bottom:0;margin-top:-8px;transform:translateY(-14px)}.top .mbw.on{margin-top:0;transform:none}
+.side .mbw{transform:translateX(-14px)}.side.right .mbw{transform:translateX(14px)}.side .mbw.on{transform:none}
+.mbi{min-height:0;overflow:hidden;display:flex;justify-content:center}.mbw.open .mbi{overflow:visible}
+.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mb .art.pic ha-icon{display:none}
+.mb .tx{flex:1;min-width:0;cursor:pointer}
+.mb .tx b,.mb .tx span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb .tx b{font-size:13px;font-weight:600}.mb .tx span{font-size:11px;opacity:.7}
+.mb .tx span.warn{opacity:1;color:var(--nova-warning-color,#f5b83d)}
+.mb .pp,.mb .sp{flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;transition:transform .15s}
+.mb .pp{width:40px;height:40px;background:var(--nv-active);color:var(--nv-active-fg)}
+.mb .sp{width:32px;height:32px;background:var(--nv-chip);color:var(--nv-fg);opacity:.85}.mb .sp ha-icon{--mdc-icon-size:18px}
+.mb .sp[hidden]{display:none}
+.mb .pp:active,.mb .sp:active{transform:scale(.9)}
+.mb .pp:focus-visible,.mb .sp:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.side .mb{width:auto;flex-direction:column;padding:6px;border-radius:28px}
+.side .mb .tx{display:none}
+.mi .tt{display:flex;flex-direction:column;min-width:0;line-height:1.25}.mi .tt span{font-size:12px;opacity:.7;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.mi .ic.pic{background:var(--nv-chip) center/cover no-repeat}.mi .ic.pic ha-icon{display:none}
+@media(prefers-reduced-motion:reduce){.mbw{transition:none}}
+.menu{position:fixed;z-index:8;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:22px;min-width:180px;max-width:calc(100vw - 16px);max-height:60vh;overflow-y:auto;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:mi .16s ease-out}
+.mi{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:999px;cursor:pointer;font-size:14px;white-space:nowrap;-webkit-tap-highlight-color:transparent;outline:none}
+.mi[hidden]{display:none}
+.mi:hover,.mi:focus-visible{background:var(--nv-chip)}
+.mi.here{background:var(--nv-chip);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+.mi .ic{width:32px;height:32px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
+.mi .ic img{width:60%;height:60%;object-fit:contain}
+.mi ha-icon{--mdc-icon-size:18px}
+@keyframes mi{from{opacity:0;transform:scale(.96)}}
+/* Kompakt (schmale Bildschirme automatisch, oder per compact: true): kleinere Buttons und Abstände, Name nur am aktiven Eintrag */
+@media(max-width:600px){.wrap:not(.nocmp) .d,.wrap:not(.nocmp) .hl{--s:calc(var(--sz) * .875)}.wrap:not(.nocmp) .hl{width:var(--s);height:var(--s)}.wrap:not(.nocmp) .dock{--g:5px;padding:calc(6px + var(--o))}.wrap:not(.nocmp) .nm,.wrap:not(.nocmp) .ghost{font-size:13px}}
+.cmp .d,.cmp .hl{--s:calc(var(--sz) * .875)}.cmp .hl{width:var(--s);height:var(--s)}.cmp .dock{--g:5px;padding:calc(6px + var(--o))}.cmp .nm,.cmp .ghost{font-size:13px}`;
+  var SRC = {};
+  var TYPES2 = ["navi-card", "dock-card"];
+  var findNavi = (o) => {
+    if (!o || typeof o !== "object") return null;
+    if ((TYPES2.some((t) => o.type === `custom:${tag(t)}`) || o.type === "custom:nz-dock-card") && Array.isArray(o.items) && o.items.length) return o;
+    for (const v of Object.values(o)) {
+      const r = findNavi(v);
+      if (r) return r;
+    }
+    return null;
+  };
+  var normPath = (p) => {
+    p = String(p || "").split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+    try {
+      return decodeURI(p);
+    } catch {
+      return p;
+    }
+  };
+  var pathOf = (it) => it.tap_action?.action === "navigate" ? it.tap_action.navigation_path : it.navigation_path;
+  var icon = (ic) => isImg(ic) ? `<img src="${esc(ic)}" alt="">` : `<ha-icon icon="${esc(ic)}"></ha-icon>`;
+  var haptic = () => {
+    window.dispatchEvent(new CustomEvent("haptic", { detail: "light" }));
+    if (!window.externalApp && !window.webkit?.messageHandlers?.externalBus) try {
+      navigator.vibrate?.(12);
+    } catch {
+    }
+  };
+  var visible = (h, it) => {
+    if (list(it.visible_users).length && !list(it.visible_users).includes(h.user?.id)) return false;
+    if (!it.visible_entity) return true;
+    const s = h.states[it.visible_entity];
+    const cond = { state: it.visible_state, state_not: it.visible_state_not, above: it.visible_above, below: it.visible_below };
+    return Object.values(cond).some((v) => v != null) ? alertHit(cond, s) : isOn(s);
+  };
+  var MEDIA_ON = ["playing", "paused"];
+  var SEL = /* @__PURE__ */ new Map();
+  var LAST = /* @__PURE__ */ new Map();
+  var REDUCED = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+  var NovaNaviCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("navi-card-editor"));
+    }
+    static getStubConfig() {
+      return { items: [
+        { icon: "mdi:home", label: "Start", tap_action: { action: "navigate", navigation_path: location.pathname } },
+        { icon: "mdi:lightbulb-group", label: "Licht", popup_title: "Licht", cards: [{ type: "markdown", content: "Hier deine Licht-Karten eintragen" }] }
+      ] };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (!c.items && !c.source) throw new Error("items oder source angeben");
+      this._cfg = { position: "bottom", button_size: 48, ...c };
+      this._ids = entityIds(c);
+      this._close();
+      this._items = null;
+      this._btns = null;
+      this._built = false;
+      this._cur = -1;
+      this._watchSide();
+      if (this._h) this.hass = this._h;
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._cfg) return;
+      if (this._pop) this._pop.hass = h;
+      if (this._hp) this._hp.hass = h;
+      if (!this._items) {
+        if (this._cfg.items) this._items = this._cfg.items;
+        else {
+          this._loadSource();
+          return;
+        }
+      }
+      if (!this._built) this._build();
+      else if (!hassChanged(old, h, this._watch(old))) return;
+      this._update();
+    }
+    // Entitäten der Einträge (auch im Untermenü) und Media-Player, bei Zählern auch die Mitglieder der Gruppe
+    _watch(h) {
+      if (this._srcIds?.items !== this._items) this._srcIds = { items: this._items, ids: entityIds([this._items, this._srcCfg?.media_players]) };
+      const ids = [...this._ids, ...this._srcIds.ids];
+      (this._items || []).forEach((it) => {
+        if (it.badge_count_of) ids.push(...h?.states[it.badge_count_of]?.attributes.entity_id || []);
+      });
+      return ids;
+    }
+    async _loadSource() {
+      if (this._loading) return;
+      this._loading = true;
+      const k = this._cfg.source;
+      SRC[k] = SRC[k] || this._h.callWS({ type: "lovelace/config", url_path: k === "default" ? null : k }).then(findNavi).catch(() => null);
+      const d = await SRC[k];
+      this._loading = false;
+      this._items = d ? d.items : [];
+      this._srcCfg = d || {};
+      this.hass = this._h;
+    }
+    connectedCallback() {
+      this._applyInline();
+      requestAnimationFrame(() => this._applyInline());
+      this._loc = () => {
+        if (this._menu) this._close();
+        this._update();
+      };
+      window.addEventListener("location-changed", this._loc);
+      window.addEventListener("popstate", this._loc);
+      window.addEventListener("hashchange", this._loc);
+      this._watchSide();
+      this._shown = null;
+      this._update();
+    }
+    disconnectedCallback() {
+      window.removeEventListener("location-changed", this._loc);
+      window.removeEventListener("popstate", this._loc);
+      window.removeEventListener("hashchange", this._loc);
+      this._mq?.removeEventListener("change", this._mqf);
+      this._mq = null;
+      this._close();
+      this._closePlayers();
+      clearTimeout(this._mpt);
+      clearTimeout(this._wt);
+      clearTimeout(this._pend?.t);
+      this._pend = null;
+      if (this._hp) {
+        this._hp.remove();
+        this._hp = null;
+      }
+    }
+    getCardSize() {
+      return 1;
+    }
+    getGridOptions() {
+      return { columns: "full", rows: 1 };
+    }
+    get _inline() {
+      if (this.preview || this.editMode || this.hasAttribute("preview") || this._cfg?.inline) return true;
+      const PREV2 = /* @__PURE__ */ new Set(["HUI-CARD-PICKER", "HUI-CARD-PREVIEW", "HUI-DIALOG-EDIT-CARD", "HUI-DIALOG-CREATE-CARD", "HUI-CARD-ELEMENT-EDITOR"]);
+      let n = this;
+      for (let i = 0; i < 40 && n; i++) {
+        if (PREV2.has(n.tagName)) return true;
+        n = n.parentElement || n.getRootNode?.().host;
+      }
+      return false;
+    }
+    _applyInline() {
+      this.shadowRoot?.querySelector(".wrap")?.classList.toggle("inline", this._inline);
+    }
+    // Seitenleiste ab einer Mindestbreite (z. B. Tablet quer, PC), darunter Leiste unten bzw. oben
+    _watchSide() {
+      this._mq?.removeEventListener("change", this._mqf);
+      this._mq = null;
+      const c = this._cfg;
+      if (!c || !this.isConnected || !["left", "right"].includes(c.sidebar)) return this._applySide();
+      this._mq = window.matchMedia(`(min-width: ${+c.sidebar_min_width || 1024}px)`);
+      this._mqf = () => this._applySide();
+      this._mq.addEventListener("change", this._mqf);
+      this._applySide();
+    }
+    get _side() {
+      return this._mq?.matches ? this._cfg.sidebar : null;
+    }
+    _applySide() {
+      const w = this.shadowRoot?.querySelector(".wrap"), s = this._side;
+      this.toggleAttribute("side", !!s && !this._inline);
+      if (!w) return;
+      w.classList.toggle("side", !!s);
+      w.classList.toggle("right", s === "right");
+      w.classList.toggle(this._cfg.position === "top" ? "top" : "bottom", !s);
+      if (this._menu) this._close();
+      this._closePlayers();
+      if (this._shown) this._shown = `${this._shown.split("|")[0]}|neu`;
+      this._update();
+    }
+    _build() {
+      this._built = true;
+      const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NAVI_VARS}${DCSS2}</style><div class="wrap ${this._inline ? "inline" : ""} ${{ true: "cmp", false: "nocmp" }[this._opt("compact")] || ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms;--mbd:${this._opt("animation") === false ? 0 : 300}ms"><div class="mbw"><div class="mbi"><div class="mb glass"><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="sp" role="button" tabindex="0" title="Lautsprecher wählen" hidden><ha-icon icon="mdi:speaker"></ha-icon></div><div class="pp" role="button" tabindex="0" title="Play/Pause"><ha-icon></ha-icon></div></div></div></div><div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
+      const dock = r.querySelector(".dock");
+      this._dock = dock;
+      this._bg = r.querySelector(".dk>.bg");
+      this._hl = dock.firstChild;
+      this._shown = null;
+      dock.addEventListener("scroll", () => {
+        const rec = LAST.get(this._key);
+        if (rec) rec.sl = [dock.scrollLeft, dock.scrollTop];
+        this._edges();
+      }, { passive: true });
+      this._mb = r.querySelector(".mb");
+      this._mbw = r.querySelector(".mbw");
+      this._mbw.addEventListener("transitionend", (e) => {
+        if (e.target === this._mbw && e.propertyName === "grid-template-rows") this._mbw.classList.toggle("open", this._mbw.classList.contains("on"));
+      });
+      const info = () => this._mp && moreInfo(this, this._mp);
+      this._mb.querySelector(".tx").addEventListener("click", info);
+      this._mb.querySelector(".art").addEventListener("click", info);
+      const key = (el2, fn) => {
+        el2.addEventListener("click", fn);
+        el2.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            fn();
+          }
+        });
+      };
+      key(this._mb.querySelector(".pp"), () => this._play());
+      key(this._mb.querySelector(".sp"), () => this._pm ? this._closePlayers() : this._openPlayers());
+      this._applySide();
+      if (this._hp) r.appendChild(this._hp);
+      if (!this._items.length) {
+        this._dock = null;
+        dock.innerHTML = `<span class="empty">${c.source ? `Kein Navi in „${esc(c.source)}“ gefunden` : "Noch keine Einträge"}</span>`;
+        this._btns = [];
+        return;
+      }
+      this._btns = this._items.map((it, i) => {
+        const d = document.createElement("div");
+        d.className = "d";
+        d.tabIndex = 0;
+        d.setAttribute("role", "button");
+        d.title = it.label || it.popup_title || "";
+        d.innerHTML = `${icon(it.icon || "mdi:circle-outline")}<span class="dot"></span><span class="num"></span>`;
+        this._bind(d, it, (kind) => this._run(i, kind));
+        d._nm = document.createElement("span");
+        d._nm.className = "nm";
+        dock.append(d, d._nm);
+        return d;
+      });
+    }
+    get _haptic() {
+      return !!(this._cfg.haptic ?? this._srcCfg?.haptic);
+    }
+    // Antippen, doppelt antippen (wartet kurz auf den zweiten Tipp) und lange drücken
+    _bind(el2, it, run) {
+      let t, wait2;
+      const hold = it.hold_action && it.hold_action.action !== "none", dbl = it.double_tap_action && it.double_tap_action.action !== "none";
+      if (hold) {
+        el2.addEventListener("pointerdown", () => {
+          el2._held = false;
+          clearTimeout(t);
+          t = setTimeout(() => {
+            el2._held = true;
+            run("hold");
+          }, 500);
+        });
+        ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => el2.addEventListener(ev, () => clearTimeout(t)));
+        el2.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
+      el2.addEventListener("click", () => {
+        if (el2._held) {
+          el2._held = false;
+          return;
+        }
+        if (!dbl) return run("tap");
+        if (wait2) {
+          clearTimeout(wait2);
+          wait2 = null;
+          return run("double_tap");
+        }
+        wait2 = setTimeout(() => {
+          wait2 = null;
+          run("tap");
+        }, 250);
+      });
+      el2.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          run("tap");
+        }
+      });
+    }
+    _update() {
+      if (!this._btns || !this._h) return;
+      const h = this._h, here = normPath(location.pathname);
+      const isHere = (it) => {
+        const p = pathOf(it);
+        return !!p && normPath(p) === here;
+      };
+      let cur2 = -1;
+      this._items.forEach((it, i) => {
+        const d = this._btns[i];
+        if (!d) return;
+        d.hidden = d._nm.hidden = !visible(h, it);
+        d.classList.toggle("act", i === this._cur || !!it.popup_hash && curHash() === cleanHash(it.popup_hash));
+        const hit = isHere(it) ? it : Array.isArray(it.menu) && it.menu.find(isHere) || null;
+        if (hit && cur2 < 0 && !d.hidden) cur2 = i;
+        d._nm.textContent = hit && hit.label || it.label || "";
+        this._badge(d, it);
+      });
+      this._setActive(cur2);
+      this._menu?.querySelectorAll(".mi").forEach((m) => {
+        m.hidden = !visible(h, m._it);
+        m.classList.toggle("here", isHere(m._it));
+      });
+      this._media();
+    }
+    _opt(k) {
+      return this._cfg[k] ?? this._srcCfg?.[k];
+    }
+    get _dur() {
+      const v = +this._opt("animation_duration");
+      return v > 0 ? v : 280;
+    }
+    get _key() {
+      return (this._items || []).map(pathOf).join("|");
+    }
+    // Aktiven Eintrag zeigen: Markierung und Name. Wechselt er, gleitet alles vom alten Zustand (auch aus der
+    // vorherigen Karte, siehe LAST) zum neuen – erst Endlage messen, dann im Ausgangszustand starten (FLIP)
+    _setActive(cur2) {
+      const dock = this._dock;
+      if (!dock) return;
+      const lbl = this._opt("active_label") !== false && !this._side, lay = this._btns.map((d) => (d.hidden ? 0 : 1) + d._nm.textContent).join(",");
+      const sig = `${cur2}|${lbl}|${this._side}|${this._dur}|${lay}`;
+      if (this._shown === sig) return;
+      const rec = LAST.get(this._key), fresh = rec && Date.now() - rec.t < 1500;
+      const from = this._shown != null ? +this._shown.split("|")[0] : !rec ? -1 : rec.i !== cur2 ? rec.i : fresh && !rec.played ? rec.from : cur2;
+      const first = this._shown == null;
+      this._shown = sig;
+      if (!rec || rec.i !== cur2) LAST.set(this._key, { i: cur2, from, t: Date.now(), sl: rec?.sl });
+      const anim = this._opt("animation") !== false && !REDUCED?.matches && this.isConnected && !inPicker(this) && from !== cur2;
+      if (first && rec?.sl) [dock.scrollLeft, dock.scrollTop] = rec.sl;
+      if (anim && first) {
+        this._apply(from, lbl);
+        this._pillTo(from, from >= 0);
+      }
+      if (!anim) {
+        this._jump(cur2, lbl);
+        return this._reveal(cur2, false);
+      }
+      const go = () => {
+        if (this._shown === sig) this._flip(cur2, lbl, sig);
+      };
+      requestAnimationFrame(() => document.fonts?.status === "loaded" ? go() : document.fonts.ready.then(go));
+    }
+    // Klassen für aktiven Eintrag i setzen (ohne Animation)
+    _apply(i, lbl, lit = true) {
+      this._btns.forEach((d, k) => {
+        d.classList.toggle("here", k === i);
+        d._nm.classList.toggle("on", k === i && lbl && !!d._nm.textContent);
+      });
+      if (lit) this._lit(i);
+    }
+    // Gelbe Ebene auf Button i (beim Wechsel gleichzeitig mit der Markierung übergeblendet)
+    _lit(i) {
+      this._btns.forEach((d, k) => d.classList.toggle("lit", k === i));
+    }
+    // Aktiven Eintrag (samt Name) in die Mitte des Scroll-Bereichs holen, wenn die Leiste nicht ganz passt.
+    // Mit den Maßen aus dem Layout (ohne transforms); Pille und Buttons scrollen als Inhalt einfach mit
+    // Weicher Rand nur dort, wo noch mehr zum Scrollen ist
+    _edges() {
+      const d = this._dock;
+      if (!d) return;
+      const v = !!this._side, x = v ? d.scrollTop : d.scrollLeft, max = v ? d.scrollHeight - d.clientHeight : d.scrollWidth - d.clientWidth;
+      d.classList.toggle("fs", x > 1);
+      d.classList.toggle("fe", x < max - 1);
+    }
+    _reveal(i, smooth, l) {
+      this._edges();
+      const dock = this._dock, d = this._btns[i];
+      if (!dock || !d || dock.scrollWidth <= dock.clientWidth && dock.scrollHeight <= dock.clientHeight) return;
+      const o = this._origin(), b = l || d.getBoundingClientRect(), nm = d._nm.classList.contains("on") ? d._nm.offsetWidth : 0;
+      const left = b.left - o.x + (b.width + nm) / 2 - dock.clientWidth / 2, top = b.top - o.y + b.height / 2 - dock.clientHeight / 2;
+      const x = this._side ? dock.scrollLeft : Math.max(0, left), y = this._side ? Math.max(0, top) : dock.scrollTop;
+      if (Math.abs(x - dock.scrollLeft) < 1 && Math.abs(y - dock.scrollTop) < 1) return;
+      dock.scrollTo({ left: x, top: y, behavior: smooth ? "smooth" : "auto" });
+      const rec = LAST.get(this._key);
+      if (rec) rec.sl = [x, y];
+    }
+    // Ursprung der absolut positionierten Ebenen (Innenkante der Leiste)
+    _origin() {
+      const r = this._dock.getBoundingClientRect();
+      return { x: r.left + this._dock.clientLeft - this._dock.scrollLeft, y: r.top + this._dock.clientTop - this._dock.scrollTop };
+    }
+    _pillTo(i, show) {
+      const d = this._btns[i], o = this._origin();
+      if (d) {
+        const b = d.getBoundingClientRect();
+        this._hl.style.transform = `translate(${b.left - o.x}px,${b.top - o.y}px)`;
+      }
+      this._hl.classList.toggle("on", !!show && i >= 0);
+    }
+    _stop() {
+      clearTimeout(this._ft);
+      this._ghost?.remove();
+      this._ghost = null;
+      this._dock.classList.remove("run");
+      this._dock.classList.add("hold");
+      [this._bg, ...this._btns, ...this._btns.map((d) => d._nm)].forEach((e) => {
+        e.style.transform = "";
+        e.style.opacity = "";
+      });
+    }
+    // Ohne Animation direkt in den Endzustand
+    _jump(cur2, lbl) {
+      this._stop();
+      this._apply(cur2, lbl);
+      this._pillTo(cur2, true);
+      this._release();
+    }
+    // Nach dem Zeichnen wieder normale Übergänge (z. B. Drücken)
+    _release() {
+      const dock = this._dock;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (dock === this._dock && !dock.classList.contains("run")) dock.classList.remove("hold");
+      }));
+    }
+    // FLIP: aktuelle (sichtbare) Lage merken, Endlage einmal messen, dann per transform/opacity vom Alten zum Neuen gleiten.
+    // Pro Frame wird nichts neu berechnet; bei schnellem Mehrfachwechsel startet die nächste Animation von der aktuellen Zwischenlage
+    _flip(cur2, lbl, sig) {
+      const dock = this._dock, btns = this._btns;
+      const rect = (e) => e.getBoundingClientRect();
+      const f3 = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
+      const oldNm = btns.map((d) => d._nm).find((n) => n.classList.contains("on") && !n.hidden);
+      const fn = oldNm && { r: rect(oldNm), t: oldNm.textContent, o: +getComputedStyle(oldNm).opacity };
+      this._stop();
+      this._apply(cur2, lbl, false);
+      const o = this._origin(), l = { bg: rect(this._bg), b: btns.map(rect) }, newNm = btns[cur2]?._nm.classList.contains("on") ? btns[cur2]._nm : null;
+      btns.forEach((d, k) => {
+        if (!d.hidden && f3.b[k].width) d.style.transform = `translate(${f3.b[k].left - l.b[k].left}px,${f3.b[k].top - l.b[k].top}px)`;
+      });
+      if (l.bg.width) this._bg.style.transform = `translate(${f3.bg.left - l.bg.left}px,${f3.bg.top - l.bg.top}px) scale(${f3.bg.width / l.bg.width},${f3.bg.height / l.bg.height})`;
+      if (f3.hlOn) this._hl.style.transform = `translate(${f3.hl.left - o.x}px,${f3.hl.top - o.y}px)`;
+      else this._pillTo(cur2, false);
+      if (newNm) {
+        newNm.style.opacity = "0";
+        newNm.style.transform = `translate(${f3.b[cur2].left - l.b[cur2].left - 12}px,0)`;
+      }
+      if (fn) {
+        const g = this._ghost = document.createElement("span");
+        g.className = "ghost";
+        g.textContent = fn.t;
+        g.style.opacity = fn.o;
+        g.style.transform = `translate(${fn.r.left - o.x}px,${fn.r.top - o.y}px)`;
+        dock.appendChild(g);
+        g._dx = fn.r.left - o.x;
+        g._dy = fn.r.top - o.y;
+      }
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (this._shown !== sig) return;
+        const rec = LAST.get(this._key);
+        if (rec && rec.i === cur2 && this.isConnected) rec.played = true;
+        dock.classList.remove("hold");
+        dock.classList.add("run");
+        this._lit(cur2);
+        this._reveal(cur2, true, l.b[cur2]);
+        btns.forEach((d) => {
+          d.style.transform = "";
+        });
+        this._bg.style.transform = "";
+        if (l.b[cur2]) this._hl.style.transform = `translate(${l.b[cur2].left - o.x}px,${l.b[cur2].top - o.y}px)`;
+        this._hl.classList.toggle("on", cur2 >= 0);
+        if (newNm) {
+          newNm.style.opacity = "";
+          newNm.style.transform = "";
+        }
+        const g = this._ghost, ob = fn && btns.findIndex((d) => d._nm === oldNm);
+        if (g) {
+          g.style.opacity = "0";
+          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f3.b[ob].left : 0) - 8}px,${g._dy}px)`;
+        }
+        this._ft = setTimeout(() => {
+          if (this._shown === sig) {
+            this._stop();
+            this._release();
+          }
+        }, this._dur + 60);
+      }));
+    }
+    // Punkt oder Zahl; Farbe als Farbrolle, bei erfüllter Bedingung eine zweite Farbrolle
+    _badge(d, it) {
+      const h = this._h, s = it.badge && h.states[it.badge];
+      let n = 0, dot = false;
+      if (it.badge_count_of) n = countOn(h, it.badge_count_of, it.badge_exclude);
+      else if (s && it.badge_show_number && NUMRE.test(s.state)) n = Math.round(+s.state);
+      else if (s) dot = isOn(s);
+      const showNum = n > 0 && it.badge_show_number;
+      d.classList.toggle("bd", dot || n > 0 && !showNum);
+      d.classList.toggle("bn", showNum);
+      if (showNum) d.querySelector(".num").textContent = n > 99 ? "99+" : n;
+      const cond = { state: it.badge_alert_state, state_not: it.badge_alert_state_not, above: it.badge_alert_above, below: it.badge_alert_below };
+      const alert = it.badge_alert_color && Object.values(cond).some((v) => v != null) && alertHit(cond, h.states[it.badge || it.badge_count_of]);
+      const role = alert ? it.badge_alert_color : it.badge_color;
+      if (role) {
+        const v = roleVars(role);
+        d.style.setProperty("--bc", v.c);
+        d.style.setProperty("--bfg", v.fg);
+      } else {
+        d.style.removeProperty("--bc");
+        d.style.removeProperty("--bfg");
+      }
+    }
+    // Media-Leiste. Gezeigt wird sie nur, solange ein Player wirklich etwas abspielt; ein pausierter bleibt noch
+    // paused_timeout Minuten (an last_changed gemessen). Angezeigt wird der Player, der spielt – bei mehreren der zuletzt
+    // gestartete –, außer man hat über den Lautsprecher-Knopf selbst einen gewählt
+    get _players() {
+      return [].concat(this._cfg.media_players ?? this._srcCfg?.media_players ?? []).flatMap((x) => typeof x === "string" ? list(x) : [x]).map(toObj).filter((p) => typeof p.entity === "string" && p.entity);
+    }
+    get _pauseMs() {
+      const v = Number(this._opt("paused_timeout"));
+      return (Number.isFinite(v) && v >= 0 ? v : 10) * 6e4;
+    }
+    // Läuft der Player (true), ist er pausiert und noch in der Frist (Zahl = Ablaufzeitpunkt) oder läuft nicht (false)?
+    _live(s) {
+      if (!s || !s.attributes.media_title || !MEDIA_ON.includes(s.state)) return false;
+      if (s.state === "playing") return true;
+      const until = Date.parse(s.last_changed) + this._pauseMs;
+      return until > Date.now() ? until : false;
+    }
+    _media() {
+      const mb = this._mb;
+      if (!mb || !this._h) return;
+      const ps = this._players, h = this._h, key = ps.map((p) => p.entity).join("|");
+      const live = ps.map((p) => ({ ...p, s: h.states[p.entity] })).map((p) => ({ ...p, l: this._live(p.s) })).filter((p) => p.l);
+      const t = (p) => Date.parse(p.s.last_changed) || 0;
+      const playing = live.filter((p) => p.l === true).sort((x, y) => t(y) - t(x));
+      const pick = SEL.get(key);
+      const manual = pick && ps.find((p) => p.entity === pick.id) && !playing.some((p) => p.entity !== pick.id && t(p) > pick.at) && (live.some((p) => p.entity === pick.id) || Date.now() - pick.at < this._pauseMs);
+      let cur2 = manual ? ps.find((p) => p.entity === pick.id) : playing[0] || live.sort((x, y) => t(y) - t(x))[0] || null;
+      const show = !!live.length || !!this._opt("media_always") && !!ps.length;
+      if (!cur2 && show) cur2 = ps[0];
+      clearTimeout(this._mpt);
+      const next = Math.min(...live.filter((p) => p.l !== true).map((p) => p.l));
+      if (Number.isFinite(next)) this._mpt = setTimeout(() => this._media(), next - Date.now() + 50);
+      this._mbw.classList.toggle("on", show);
+      if (!show) this._mbw.classList.remove("open");
+      this.toggleAttribute("media", show && !this._side && !this._inline);
+      mb.querySelector(".sp").hidden = ps.length < 2;
+      this._mp = show ? cur2.entity : null;
+      if (!show) {
+        this._closePlayers();
+        return;
+      }
+      const s = h.states[cur2.entity], a = s?.attributes || {}, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
+      if (art._pic !== pic) {
+        art._pic = pic;
+        art.style.backgroundImage = pic ? `url(${JSON.stringify(pic)})` : "";
+        art.classList.toggle("pic", !!pic);
+      }
+      const name = cur2.name || a.friendly_name || cur2.entity;
+      mb.querySelector("b").textContent = a.media_title || name;
+      const ps0 = this._pend && h.states[this._pend.id];
+      if (ps0 && (ps0.state !== this._pend.st || ps0.last_changed !== this._pend.lc)) {
+        clearTimeout(this._pend.t);
+        this._pend = null;
+      }
+      const warn = this._warn && this._warn.id === cur2.entity && this._warn.until > Date.now();
+      const sub = mb.querySelector(".tx span");
+      sub.classList.toggle("warn", warn);
+      sub.textContent = warn ? "Lautsprecher reagiert nicht" : [a.media_artist || a.app_name, a.media_title ? name : ""].filter(Boolean).join(" · ") || (s ? fmtState(h, s) : "");
+      mb.querySelector(".pp ha-icon").setAttribute("icon", s?.state === "playing" ? "mdi:pause" : "mdi:play");
+      if (this._pm) this._fillPlayers();
+    }
+    // Play/Pause über media_play_pause; meldet der Player nach 3 s keine Änderung, kurzer Hinweis in der Leiste
+    _play() {
+      const id = this._mp, s = id && this._h.states[id];
+      if (!s) return;
+      if (this._haptic) haptic();
+      clearTimeout(this._pend?.t);
+      this._pend = { id, st: s.state, lc: s.last_changed, t: setTimeout(() => {
+        const n = this._h?.states[id];
+        if (this._pend?.id === id && n && n.state === this._pend.st && n.last_changed === this._pend.lc) {
+          this._warn = { id, until: Date.now() + 3e3 };
+          clearTimeout(this._wt);
+          this._wt = setTimeout(() => this._media(), 3050);
+        }
+        this._pend = null;
+        this._media();
+      }, 3e3) };
+      this._warn = null;
+      this._h.callService("media_player", "media_play_pause", { entity_id: id }).catch(() => {
+        this._warn = { id, until: Date.now() + 3e3 };
+        this._media();
+      });
+    }
+    // Auswahl der Lautsprecher (Nova-Menü über dem Knopf)
+    _openPlayers() {
+      this._close();
+      const m = document.createElement("div");
+      m.className = "menu glass";
+      m.setAttribute("role", "menu");
+      this.shadowRoot.appendChild(m);
+      this._pm = m;
+      this._fillPlayers();
+      const b = this._mb.querySelector(".sp");
+      this._place(m, b);
+      this._pout = (e) => {
+        const p = e.composedPath();
+        if (!p.includes(m) && !p.includes(b)) this._closePlayers();
+      };
+      this._pesc = (e) => {
+        if (e.key === "Escape") this._closePlayers();
+      };
+      window.addEventListener("pointerdown", this._pout, true);
+      window.addEventListener("keydown", this._pesc);
+      m.querySelector(".mi")?.focus({ preventScroll: true });
+    }
+    _fillPlayers() {
+      const m = this._pm, h = this._h, key = this._players.map((p) => p.entity).join("|");
+      const st = (s) => !s || ["off", "unavailable", "unknown", "standby"].includes(s.state) ? "aus" : s.state === "playing" ? "spielt" : s.state === "paused" ? "pausiert" : fmtState(h, s);
+      m.replaceChildren(...this._players.map((p) => {
+        const s = h.states[p.entity], a = s?.attributes || {}, pic = a.entity_picture_local || a.entity_picture;
+        const e = document.createElement("div");
+        e.className = "mi";
+        e.tabIndex = 0;
+        e.setAttribute("role", "menuitemradio");
+        e.classList.toggle("here", p.entity === this._mp);
+        e.setAttribute("aria-checked", String(p.entity === this._mp));
+        e.innerHTML = `<span class="ic"><ha-icon icon="${s?.state === "playing" ? "mdi:speaker-play" : "mdi:speaker"}"></ha-icon></span><span class="tt"><b></b><span></span></span>`;
+        if (pic && s?.attributes.media_title) {
+          const ic = e.querySelector(".ic");
+          ic.classList.add("pic");
+          ic.style.backgroundImage = `url(${JSON.stringify(pic)})`;
+        }
+        e.querySelector("b").textContent = p.name || a.friendly_name || p.entity;
+        e.querySelector(".tt span").textContent = [st(s), MEDIA_ON.includes(s?.state) ? a.media_title : ""].filter(Boolean).join(" · ");
+        const go = () => {
+          if (this._haptic) haptic();
+          SEL.set(key, { id: p.entity, at: Date.now() });
+          this._closePlayers();
+          this._media();
+        };
+        e.addEventListener("click", go);
+        e.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            go();
+          }
+        });
+        return e;
+      }));
+    }
+    _closePlayers() {
+      if (!this._pm) return;
+      this._pm.remove();
+      this._pm = null;
+      window.removeEventListener("pointerdown", this._pout, true);
+      window.removeEventListener("keydown", this._pesc);
+    }
+    _run(i, kind) {
+      const it = this._items[i];
+      if (this._haptic) haptic();
+      if (kind !== "tap") return hassAction(this, { entity: it.entity, [`${kind}_action`]: it[`${kind}_action`] }, kind);
+      if (it.popup_hash) {
+        this._close();
+        return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
+      }
+      if (this._cur === i) return this._close();
+      this._close();
+      if (Array.isArray(it.menu) && it.menu.length) return this._openMenu(i, it);
+      if (Array.isArray(it.cards)) return this._openCards(i, it);
+      if (typeof it.popup === "string" && customElements.get("nz-popup")) return this._openLegacy(i, it);
+      this._act(it);
+    }
+    // Aktion eines Eintrags ohne eigenes Pop-up (auch für Einträge im Untermenü)
+    _act(it) {
+      if (it.popup_hash) return togglePopup(this, this._h, cleanHash(it.popup_hash), this._cfg.source);
+      if (it.tap_action && it.tap_action.action !== "none") return hassAction(this, { entity: it.entity, tap_action: it.tap_action }, "tap");
+      if (it.navigation_path) return navigate(it.navigation_path);
+      if (it.entity) moreInfo(this, it.entity);
+    }
+    // Kleines Menü am Button mit weiteren Einträgen
+    _openMenu(i, it) {
+      const m = document.createElement("div");
+      m.className = "menu glass";
+      m.setAttribute("role", "menu");
+      it.menu.forEach((sub) => {
+        const e = document.createElement("div");
+        e.className = "mi";
+        e.tabIndex = 0;
+        e.setAttribute("role", "menuitem");
+        e._it = sub;
+        e.innerHTML = `<span class="ic">${icon(sub.icon || "mdi:circle-outline")}</span><span class="lb"></span>`;
+        e.querySelector(".lb").textContent = sub.label || pathOf(sub) || sub.popup_hash || sub.entity || "";
+        this._bind(e, sub, (kind) => {
+          if (this._haptic) haptic();
+          this._close();
+          if (kind === "tap") this._act(sub);
+          else hassAction(this, { entity: sub.entity, [`${kind}_action`]: sub[`${kind}_action`] }, kind);
+        });
+        m.appendChild(e);
+      });
+      this.shadowRoot.appendChild(m);
+      this._menu = m;
+      this._place(m, this._btns[i]);
+      this._opened(i, m);
+      this._out = (e) => {
+        const p = e.composedPath();
+        if (!p.includes(m) && !p.includes(this._btns[i])) this._close();
+      };
+      window.addEventListener("pointerdown", this._out, true);
+      m.querySelector(".mi:not([hidden])")?.focus({ preventScroll: true });
+    }
+    // Menü neben dem Button: über der Leiste unten, darunter oben, daneben als Seitenleiste
+    _place(m, b) {
+      const r = b.getBoundingClientRect(), W2 = innerWidth, H3 = innerHeight, g = 10, side = this._side;
+      const w = m.offsetWidth, ht = m.offsetHeight, clamp = (v, max) => Math.max(8, Math.min(v, max - 8));
+      if (side) {
+        m.style.left = `${side === "right" ? r.left - g - w : r.right + g}px`;
+        m.style.top = `${clamp(r.top + r.height / 2 - ht / 2, H3 - ht)}px`;
+      } else {
+        m.style.left = `${clamp(r.left + r.width / 2 - w / 2, W2 - w)}px`;
+        m.style.top = `${this._cfg.position === "top" ? r.bottom + g : r.top - g - ht}px`;
+      }
+    }
+    _openCards(i, it) {
+      const p = document.createElement(tag("navi-popup"));
+      p.onclose = () => this._close();
+      p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
+      p.hass = this._h;
+      this.shadowRoot.appendChild(p);
+      this._opened(i, p);
+    }
+    _openLegacy(i, it) {
+      const p = document.createElement("nz-popup");
+      p.host = this;
+      p.onclose = () => this._close();
+      p.cfg = { weather: this._srcCfg?.weather || this._cfg.weather, ...it, title: it.title || it.label };
+      document.body.appendChild(p);
+      p.hass = this._h;
+      this._opened(i, p);
+    }
+    _opened(i, p) {
+      this._pop = p;
+      this._cur = i;
+      this._update();
+      this._esc = (e) => {
+        if (e.key === "Escape") this._close();
+      };
+      window.addEventListener("keydown", this._esc);
+    }
+    _close() {
+      if (this._pop) {
+        this._pop.remove();
+        this._pop = null;
+      }
+      this._menu = null;
+      this._cur = -1;
+      if (this._esc) window.removeEventListener("keydown", this._esc);
+      if (this._out) {
+        window.removeEventListener("pointerdown", this._out, true);
+        this._out = null;
+      }
+      this._update();
+    }
+  };
+  define("navi-card", NovaNaviCard, { name: "Nova Navi", description: "Navigationsleiste unten, oben oder als Seitenleiste: navigieren, Aktionen, Untermenüs, Pop-ups, Badges und eine kleine Media-Leiste.", documentationURL: docUrl("nova-navi") });
+  define("dock-card", class NovaDockCard extends NovaNaviCard {
+  });
+  var GEN3 = [{ name: "source", selector: { text: {} } }];
+  var LOOK = (c) => [
+    g2(
+      { name: "position", selector: { select: { mode: "dropdown", options: [{ value: "bottom", label: "Unten" }, { value: "top", label: "Oben" }] } } },
+      { name: "button_size", selector: { number: { min: 32, max: 72, step: 2, mode: "box", unit_of_measurement: "px" } } }
+    ),
+    g2(
+      sel("sidebar", [["", "Nie"], ["left", "Links"], ["right", "Rechts"]]),
+      ...c.sidebar ? [{ name: "sidebar_min_width", selector: { number: { min: 480, max: 2560, step: 10, mode: "box", unit_of_measurement: "px" } } }] : []
+    ),
+    g2({ name: "active_label", selector: { boolean: {} } }, sel("compact", [["", "Automatisch (schmale Bildschirme)"], ["on", "Immer"], ["off", "Nie"]])),
+    g2({ name: "animation", selector: { boolean: {} } }, ...c.animation !== false ? [{ name: "animation_duration", selector: { number: { min: 100, max: 1500, step: 10, mode: "box", unit_of_measurement: "ms" } } }] : []),
+    { name: "haptic", selector: { boolean: {} } }
+  ];
+  var MEDIA = [g2({ name: "paused_timeout", selector: { number: { min: 0, max: 240, step: 1, mode: "box", unit_of_measurement: "min" } } }, { name: "media_always", selector: { boolean: {} } })];
+  var MPLAYER = [g2({ name: "entity", required: true, selector: { entity: { filter: { domain: "media_player" } } } }, { name: "name", selector: { text: {} } })];
+  var I_MAIN = [g2({ name: "icon", required: true, selector: { icon: {} } }, { name: "label", selector: { text: {} } })];
+  var I_TAP = (opts) => [
+    { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
+    { name: "tap_action", selector: { ui_action: {} } }
+  ];
+  var I_MORE = [{ name: "hold_action", selector: { ui_action: {} } }, { name: "double_tap_action", selector: { ui_action: {} } }];
+  var I_POP = [{ name: "popup_title", selector: { text: {} } }, { name: "cards", selector: { object: {} } }];
+  var COND = (p) => [
+    g2({ name: `${p}_state`, selector: { text: {} } }, { name: `${p}_state_not`, selector: { text: {} } }),
+    g2({ name: `${p}_above`, selector: { number: { mode: "box", step: "any" } } }, { name: `${p}_below`, selector: { number: { mode: "box", step: "any" } } })
+  ];
+  var I_VIS = (it, users) => [
+    { name: "visible_users", selector: { select: { multiple: true, mode: "list", options: users } } },
+    { name: "visible_entity", selector: { entity: {} } },
+    ...it.visible_entity ? COND("visible") : []
+  ];
+  var I_BADGE = (it) => [
+    g2({ name: "badge", selector: { entity: {} } }, { name: "badge_count_of", selector: { entity: {} } }),
+    ...it.badge || it.badge_count_of ? [{ name: "badge_show_number", selector: { boolean: {} } }] : [],
+    ...it.badge_count_of ? [{ name: "badge_exclude", selector: { entity: { multiple: true } } }] : [],
+    g2(ROLE("badge_color"), ROLE("badge_alert_color")),
+    ...it.badge_alert_color && (it.badge || it.badge_count_of) ? COND("badge_alert") : []
+  ];
+  var S_MAIN = (opts) => [...I_MAIN, ...I_TAP(opts)];
+  var LABELS7 = {
+    position: "Position (Handy, schmale Bildschirme)",
+    button_size: "Button-Größe",
+    source: "Einträge aus anderem Dashboard übernehmen",
+    sidebar: "Seitenleiste auf breiten Bildschirmen",
+    sidebar_min_width: "Seitenleiste ab Breite",
+    haptic: "Haptisches Feedback",
+    active_label: "Namen neben dem aktiven Icon zeigen",
+    compact: "Kompakte Leiste",
+    animation: "Wechsel animieren",
+    animation_duration: "Dauer der Animation",
+    media_players: "Media-Player",
+    media_always: "Auch zeigen, wenn nichts läuft",
+    paused_timeout: "Pausiert noch zeigen für",
+    entity: "Media-Player",
+    name: "Name",
+    icon: "Icon",
+    label: "Name",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken",
+    double_tap_action: "Aktion bei Doppeltippen",
+    popup_title: "Titel",
+    popup_hash: "Nova Pop-up öffnen",
+    cards: "Karten (YAML-Liste)",
+    visible_users: "Nur für diese Benutzer",
+    visible_entity: "Nur zeigen abhängig von Entität",
+    visible_state: "Zustand ist",
+    visible_state_not: "Zustand ist nicht",
+    visible_above: "Wert über",
+    visible_below: "Wert unter",
+    badge: "Badge-Entität",
+    badge_count_of: "Zähler: Gruppe",
+    badge_show_number: "Zahl statt Punkt",
+    badge_exclude: "Beim Zählen ignorieren",
+    badge_color: "Badge-Farbe",
+    badge_alert_color: "Farbe bei Bedingung",
+    badge_alert_state: "Zustand ist",
+    badge_alert_state_not: "Zustand ist nicht",
+    badge_alert_above: "Wert über",
+    badge_alert_below: "Wert unter"
+  };
+  var HELPERS7 = {
+    source: "Optional: URL-Pfad eines Dashboards (z. B. neues-zuhause). Dann gilt dessen Navi – praktisch für mehrere Ansichten oder Dashboards mit gleicher Leiste.",
+    sidebar: "Ab der eingestellten Breite steht die Leiste senkrecht am Rand, darunter unten bzw. oben.",
+    animation: "Markierung und Name gleiten beim Viewwechsel vom alten zum neuen Eintrag. Bei „Bewegung reduzieren“ im System immer aus.",
+    active_label: "Rechts neben dem runden Button der aktuellen Ansicht steht sein Name (nicht in der Seitenleiste).",
+    compact: "Kleinere Buttons und Abstände. Automatisch: auf Bildschirmen bis 600 px Breite.",
+    haptic: "Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk).",
+    media_players: "Zeigt über der Leiste den laufenden Player mit Play/Pause. Leer = keine Media-Leiste.",
+    paused_timeout: "So lange bleibt die Leiste nach einer Pause noch stehen (Standard 10 min, 0 = sofort ausblenden).",
+    media_always: "Alte Verhaltensweise: Leiste immer zeigen, auch wenn nichts läuft (dann der erste Player).",
+    name: "Leer = Name der Entität. Erscheint in der Lautsprecher-Auswahl.",
+    popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion, dem Untermenü und dem einfachen Pop-up.",
+    cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
+    visible_users: "Leer = für alle sichtbar.",
+    visible_entity: "Ohne Bedingung: sichtbar, wenn die Entität an ist.",
+    badge: "Punkt, wenn die Entität an ist; mit „Zahl statt Punkt“ ihr Zahlenwert (z. B. Anzahl offener Fenster).",
+    badge_count_of: "Zeigt Punkt/Zahl, wenn Mitglieder der Gruppe an sind (z. B. light.alle_lampen)",
+    badge_color: "Leer = Akzentfarbe des Themes.",
+    badge_alert_color: "Gilt, wenn die Bedingung darunter auf die Badge-Entität zutrifft."
+  };
+  var NovaNaviCardEditor = class extends NovaEditorBase {
+    // Pop-ups des Dashboards und Benutzer für die Auswahllisten einmal laden
+    set hass(h) {
+      super.hass = h;
+      if (h && !this._hashes) {
+        this._hashes = [];
+        popupOptions(h).then((o) => {
+          this._hashes = o;
+          this._rebuild();
+        });
+      }
+      if (h && !this._users) {
+        const me = h.user ? [{ value: h.user.id, label: h.user.name }] : [];
+        this._users = me;
+        h.callWS({ type: "config/auth/list" }).then((us) => {
+          const l = us.filter((u) => !u.system_generated).map((u) => ({ value: u.id, label: u.name || u.username || u.id }));
+          if (l.length) {
+            this._users = l;
+            this._rebuild();
+          }
+        }).catch(() => {
+        });
+      }
+    }
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap");
+      const data = { position: "bottom", button_size: 48, sidebar: "", active_label: true, animation: true, animation_duration: 280, paused_timeout: 10, ...this._config, compact: { true: "on", false: "off" }[this._config.compact] || "" };
+      const form = (schema) => this._form(schema, data, (v) => {
+        const c = merge(this._config, names(schema), v);
+        if (c.position === "bottom") delete c.position;
+        if (c.button_size === 48) delete c.button_size;
+        if (!c.sidebar) {
+          delete c.sidebar;
+          delete c.sidebar_min_width;
+        }
+        if (!c.haptic) delete c.haptic;
+        if (c.active_label !== false) delete c.active_label;
+        if (c.compact === "on" || c.compact === "off") c.compact = c.compact === "on";
+        else delete c.compact;
+        if (c.animation !== false) delete c.animation;
+        if (c.animation === false || c.animation_duration === 280) delete c.animation_duration;
+        if (!c.media_always) delete c.media_always;
+        if (c.paused_timeout == null || c.paused_timeout === "" || +c.paused_timeout === 10) delete c.paused_timeout;
+        const re = !!this._config.source !== !!c.source || !!this._config.sidebar !== !!c.sidebar || this._config.animation !== false !== (c.animation !== false);
+        this._emit(c);
+        if (re) this._rebuild();
+      });
+      const items = this._config.items || [];
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
+          b.append(form(GEN3));
+          if (this._config.source && !items.length) b.append(this._hint("Einträge kommen aus dem anderen Dashboard. Eigene Buttons überschreiben das."));
+        }),
+        this._section("buttons", "mdi:dock-bottom", "Buttons", (b) => {
+          items.forEach((it, i) => b.append(this._item(it, i, items.length)));
+          b.append(this._add("Button hinzufügen", () => {
+            const n = [...items, { icon: "mdi:circle-outline" }];
+            this._open = /* @__PURE__ */ new Set([n.length - 1]);
+            this._emit({ ...this._config, items: n });
+            this._rebuild();
+          }));
+        }),
+        this._section("look", "mdi:palette-outline", "Layout und Aussehen", (b) => b.append(form(LOOK(data)))),
+        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => {
+          b.append(this._hint("Die Leiste erscheint nur, solange ein Player etwas abspielt. Bei mehreren Playern wechselt der Lautsprecher-Knopf neben Play das Gerät."));
+          this._itemList(b, "media_players", MPLAYER, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
+          b.append(form(MEDIA));
+        })
+      );
+    }
+    get _opts() {
+      return this._hashes?.length ? this._hashes : [{ value: "", label: "– keins –" }];
+    }
+    _popName(h) {
+      h = cleanHash(h);
+      return this._hashes?.find((o) => o.value === h)?.label || `#${h}`;
+    }
+    _label(it, i) {
+      return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (it.menu?.length ? "Untermenü" : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : pathOf(it)) || "Neuer Button"}`;
+    }
+    // Formular für einen Teil eines Eintrags; ändert sich dadurch das Schema (Felder ein-/ausblenden), wird neu aufgebaut
+    _part(get, set, schema, onChange) {
+      const cur2 = get();
+      return this._form(schema(cur2), cur2, (v) => {
+        const old = get(), was = JSON.stringify(schema(old));
+        const nx = merge(old, names(schema(old)), v);
+        if (nx.popup_hash) nx.popup_hash = cleanHash(nx.popup_hash);
+        if (!nx.popup_hash) delete nx.popup_hash;
+        if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
+        if (!nx.badge_show_number) delete nx.badge_show_number;
+        set(nx);
+        onChange?.(nx);
+        if (JSON.stringify(schema(nx)) !== was) this._rebuild();
+      });
+    }
+    _setItem(i, nx) {
+      const list2 = [...this._config.items];
+      list2[i] = nx;
+      this._emit({ ...this._config, items: list2 });
+    }
+    _item(it, i, n) {
+      const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => {
+        const get = () => this._config.items[i], set = (nx) => this._setItem(i, nx);
+        const part = (sch) => this._part(get, set, typeof sch === "function" ? sch : () => sch, (nx) => {
+          s.querySelector(".lbl").textContent = this._label(nx, i);
+          s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
+        });
+        b.append(
+          part(I_MAIN),
+          this._h4("Beim Antippen"),
+          part(I_TAP(this._opts)),
+          this._h4("Lange drücken und Doppeltippen"),
+          part(I_MORE),
+          this._h4("Untermenü"),
+          ...this._menuList(i),
+          this._h4("Einfaches Pop-up"),
+          part(I_POP),
+          this._h4("Sichtbarkeit"),
+          part((cur2) => I_VIS(cur2, this._users || [])),
+          this._h4("Badge"),
+          part(I_BADGE)
+        );
+      });
+      return d;
+    }
+    // Einträge des Untermenüs: Antippen des Buttons öffnet dann das Menü statt der Aktion
+    _menuList(i) {
+      const subs = this._config.items[i].menu || [], out = [];
+      const setSubs = (arr) => {
+        const it = { ...this._config.items[i] };
+        if (arr.length) it.menu = arr;
+        else delete it.menu;
+        this._setItem(i, it);
+      };
+      if (!subs.length) out.push(this._hint("Mit Einträgen öffnet der Button beim Antippen ein kleines Menü."));
+      subs.forEach((sub, j) => {
+        const key = `m${i}.${j}`, lbl = (x) => `${j + 1}. ${x.label || pathOf(x) || x.popup_hash || "Neuer Eintrag"}`;
+        const [d] = this._details(key, sub.icon || "mdi:circle-outline", lbl(sub), this._itemBtns(j, subs.length, (dir) => {
+          const arr = [...this._config.items[i].menu], t = j + dir;
+          [arr[j], arr[t]] = [arr[t], arr[j]];
+          this._open = /* @__PURE__ */ new Set([i, `m${i}.${t}`]);
+          setSubs(arr);
+          this._rebuild();
+        }, () => {
+          this._open = /* @__PURE__ */ new Set([i]);
+          setSubs(this._config.items[i].menu.filter((_, x) => x !== j));
+          this._rebuild();
+        }), (b, s) => {
+          const get = () => this._config.items[i].menu[j];
+          const set = (nx) => {
+            const arr = [...this._config.items[i].menu];
+            arr[j] = nx;
+            setSubs(arr);
+          };
+          const part = (sch) => this._part(get, set, sch, (nx) => {
+            s.querySelector(".lbl").textContent = lbl(nx);
+            s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
+          });
+          b.append(part(() => S_MAIN(this._opts)), part(() => I_MORE), part((cur2) => I_VIS(cur2, this._users || [])));
+        });
+        out.push(d);
+      });
+      out.push(this._add("Menü-Eintrag hinzufügen", () => {
+        const arr = [...this._config.items[i].menu || [], { icon: "mdi:circle-outline" }];
+        this._open = /* @__PURE__ */ new Set([i, `m${i}.${arr.length - 1}`]);
+        setSubs(arr);
+        this._rebuild();
+      }));
+      return out;
+    }
+    _move(i, dir) {
+      const j = i + dir, list2 = [...this._config.items];
+      [list2[i], list2[j]] = [list2[j], list2[i]];
+      this._open = /* @__PURE__ */ new Set([j]);
+      this._emit({ ...this._config, items: list2 });
+      this._rebuild();
+    }
+    _remove(i) {
+      this._open = /* @__PURE__ */ new Set();
+      const list2 = this._config.items.filter((_, k) => k !== i);
+      const c = { ...this._config };
+      if (list2.length) c.items = list2;
+      else delete c.items;
+      if (!c.items && !c.source) c.items = [];
+      this._emit(c);
+      this._rebuild();
+    }
+  };
+  __publicField(NovaNaviCardEditor, "labels", LABELS7);
+  __publicField(NovaNaviCardEditor, "helpers", HELPERS7);
+  __publicField(NovaNaviCardEditor, "openSections", ["buttons"]);
+  define("navi-card-editor", NovaNaviCardEditor);
+
+  // src/popup.js
+  var DEF5 = { width: 1180, stack_below: 500, info_layout: "wrap", info_position: "header" };
+  var PCSS3 = `${NOVA_VARS}${GRID_CSS}${CHIP_CSS}
+:host{display:block;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+:host(.live){display:contents}
+ha-icon{--mdc-icon-size:20px;display:flex}
+.ph{display:none;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;border:1px dashed var(--divider-color,#666);color:var(--primary-text-color);font-size:13px}
+:host(.edit) .ph{display:flex}
+.ph .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop{position:fixed;inset:0 var(--nv-pop-r,0px) 0 var(--nv-pop-l,0px);z-index:var(--nova-popup-z-index,6);display:flex;align-items:center;justify-content:center}
+.pop[hidden]{display:none}
+.ov{position:absolute;inset:0;background:var(--nv-popup-backdrop);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .22s}
+.sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96%);max-height:88vh;
+background:var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
+box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.sh.tint{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,var(--nv-popup-base)),var(--nv-popup-base))}
+.pop.in .ov{opacity:1}.pop.in .sh{opacity:1;transform:none}
+.grip{display:none;justify-content:center;padding:8px 0 0;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.35}
+.hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
+background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.hi:empty{display:none}
+.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px}${MARQUEE_CSS}
+.bdg{display:flex;gap:6px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.bdg::-webkit-scrollbar{display:none}.bdg:empty{display:none}
+.bd{display:inline-flex;align-items:center;gap:5px;flex:none;padding:5px 10px;border-radius:999px;background:var(--c,var(--nv-chip));color:var(--cf,inherit);font-size:12px;white-space:nowrap;cursor:pointer;outline:none}
+.bd ha-icon{--mdc-icon-size:15px}.bd img{width:15px;height:15px}.bd:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.bd:active{transform:scale(.95)}
+.bd .bn:empty,.bd .bv:empty{display:none}.bd .bn:not(:empty)+.bv:not(:empty)::before{content:'· '}
+.bd[hidden]{display:none}
+.x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
+.x:active{transform:scale(.92)}
+.info{padding:0 14px 12px}
+/* Info-Chips in der Kopfzeile (info_position: header): rechtsbündig vor dem X, gleiche Höhe wie das X, bei Platzmangel waagrecht scrollbar */
+.hd .info{padding:0;flex:0 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.hd .info::-webkit-scrollbar{display:none}
+.hd .chip{min-height:36px;box-sizing:border-box;padding:0 12px}
+/* Chips haben Vorrang: der Titel nimmt nur den Rest (bis zu seiner Mindestbreite, dann Laufschrift) */
+.hd:has(>.info:not([hidden])) .tt{flex:1 1 0;min-width:min(24%,88px)}
+.body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box;
+padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.pop.inline .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
+.pop.inline .cell.empty::after{content:'Leerer Platz'}
+@media(max-width:600px){
+.pop{align-items:flex-end}
+.bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
+.sh{width:100%;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
+.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}.hd .info{padding:0}
+.hd .chip{padding:0 10px}.hd .chip .ci:not(:empty)~.cn{display:none}.hd .chip .ci:not(:empty)~.cv::before{content:none}
+.body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
+.pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
+.pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
+.pop.inline .body{overflow:visible;padding-bottom:14px}
+@media(prefers-reduced-motion:reduce){.ov,.sh{transition:none}}`;
+  var NovaPopupCard = class extends GridCard(HTMLElement) {
+    static getConfigElement() {
+      return document.createElement(tag("popup-card-editor"));
+    }
+    static getStubConfig() {
+      return { hash: "neu", rows: [{ cells: [{ card: null }] }, { cells: [{ card: null }, { card: null }] }] };
+    }
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${PCSS3}</style>
+<div class="ph"><ha-icon icon="mdi:card-multiple-outline"></ha-icon><span class="t"></span></div>
+<div class="pop" hidden><div class="ov"></div><div class="sh" role="dialog" aria-modal="true">
+<div class="grip"><i></i></div>
+<div class="hd"><span class="hi"></span><span class="tt"></span><div class="bdg"></div><button type="button" class="x" aria-label="Schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
+<div class="info" hidden></div><div class="body"></div></div></div>`;
+      this._pop = r.querySelector(".pop");
+      this._sh = r.querySelector(".sh");
+      this._body = r.querySelector(".body");
+      this._infoEl = r.querySelector(".info");
+      this._bdgEl = r.querySelector(".bdg");
+      this._mode = "live";
+      r.querySelector(".x").addEventListener("click", () => this.close());
+      r.querySelector(".ov").addEventListener("click", () => this.close());
+      r.querySelector(".ov").addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+      this._sync = () => this._syncOpen();
+      this._key = (e) => {
+        if (e.key !== "Escape" || e.defaultPrevented) return;
+        if (e.composedPath().some((n) => n.localName?.includes("dialog"))) return;
+        this.close();
+      };
+      this._swipe();
+      this._ro = new ResizeObserver(() => this._stack());
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      const old = this._cfg?.hash;
+      this._cfg = {
+        ...DEF5,
+        ...c,
+        hash: cleanHash(c.hash),
+        info: [].concat(c.info || []).map((x) => typeof x === "string" ? { entity: x } : x),
+        badges: [].concat(c.badges || []).map((x) => typeof x === "string" ? { entity: x } : x).filter((x) => x?.entity)
+      };
+      this._rows = normRows(c);
+      this._ids = entityIds([this._cfg.info, this._cfg.badges]);
+      if (this.isConnected && old !== this._cfg.hash) {
+        this._unreg(old);
+        this._reg();
+      }
+      this._head();
+      this._dirty = true;
+      if (this._isOpen || this._mode === "preview") this._grid();
+      this._syncOpen();
+    }
+    // Die eingebetteten Karten bekommen jedes Update (sie filtern selbst), Kopfzeile und Info-Leiste nur bei eigenen Änderungen
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._isOpen && this._mode !== "preview") return;
+      if (old === h || hassChanged(old, h, this._ids)) this._info();
+      this._cells().forEach((el2) => this._setHass(el2));
+    }
+    getCardSize() {
+      return this._mode === "live" ? 0 : 1;
+    }
+    getGridOptions() {
+      return { columns: "full", rows: "auto" };
+    }
+    connectedCallback() {
+      this._ro.observe(this._body);
+      ["hashchange", "popstate", "location-changed"].forEach((ev) => window.addEventListener(ev, this._sync));
+      this._detect();
+      requestAnimationFrame(() => this._detect());
+      const tt = this.shadowRoot?.querySelector(".tt");
+      if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
+    }
+    disconnectedCallback() {
+      ["hashchange", "popstate", "location-changed"].forEach((ev) => window.removeEventListener(ev, this._sync));
+      this._ro.disconnect();
+      stopMarquee(this.shadowRoot?.querySelector(".tt"));
+      this._unreg(this._cfg?.hash);
+      if (this._isOpen) this._hide(true);
+      if (this._mode === "preview") this._handOffCells();
+    }
+    _reg() {
+      if (this._cfg?.hash && this._mode !== "preview") register(this._cfg.hash, this);
+    }
+    _unreg(h) {
+      if (h) unregister(h, this);
+    }
+    _detect() {
+      if (!this.isConnected) return;
+      let inDialog = false, inEdit = !!(this.preview || this.hasAttribute("preview") || this.editMode);
+      for (let n = this, i = 0; n && i < 80; i++) {
+        if (PREV.has(n.tagName) || n.tagName?.includes("DIALOG")) {
+          inDialog = true;
+          break;
+        }
+        if (EDIT.has(n.tagName)) inEdit = true;
+        n = n.parentElement || n.getRootNode?.().host;
+      }
+      let m = inDialog ? "preview" : inEdit ? "edit" : "live";
+      if (this._fallback) m = "live";
+      const was = this._mode;
+      this._mode = m;
+      ["live", "edit", "preview"].forEach((k) => this.classList.toggle(k, k === m));
+      this._pop.classList.toggle("inline", m === "preview");
+      this._unreg(this._cfg?.hash);
+      this._reg();
+      if (m === "preview") {
+        if (this._isOpen) this._hide(true);
+        this._pop.hidden = false;
+        if (this._dirty) this._grid();
+        if (this._h) this.hass = this._h;
+      } else if (was === "preview") this._pop.hidden = true;
+      this._syncOpen();
+    }
+    /* --- Öffnen & Schließen --- */
+    _syncOpen() {
+      if (!this._cfg || this._mode === "preview") return;
+      const want = this.isConnected && !!this._cfg.hash && curHash() === this._cfg.hash;
+      if (want && !this._isOpen) this._show();
+      else if (!want && this._isOpen) this._hide();
+    }
+    _show() {
+      if (this._fallback && hasPopup(this._cfg.hash)) return;
+      this._isOpen = true;
+      this._back = cameByNav();
+      clearTimeout(this._ht);
+      this._pop.hidden = false;
+      this._sh.style.transform = "";
+      lockScroll(true);
+      this._unfollow?.();
+      this._unfollow = followContent(this._pop);
+      if (this._dirty) this._grid();
+      if (this._h) this.hass = this._h;
+      this._body.scrollTop = 0;
+      window.addEventListener("keydown", this._key);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (this._isOpen) this._pop.classList.add("in");
+      }));
+    }
+    _hide(now) {
+      this._isOpen = false;
+      this._pop.classList.remove("in");
+      this._sh.style.transform = "";
+      lockScroll(false);
+      this._unfollow?.();
+      this._unfollow = null;
+      window.removeEventListener("keydown", this._key);
+      clearTimeout(this._ht);
+      if (now) this._pop.hidden = this._mode !== "preview";
+      else this._ht = setTimeout(() => {
+        if (!this._isOpen && this._mode !== "preview") this._pop.hidden = true;
+      }, 260);
+    }
+    // Schließen = Hash entfernen; das eigentliche Ausblenden folgt über _syncOpen
+    close() {
+      if (!this._isOpen) return;
+      if (curHash() === this._cfg.hash) clearHash(this._back);
+      else this._hide();
+    }
+    // Nach unten wischen (Handy): auf Griff/Kopfzeile immer, im Inhalt nur, wenn er ganz oben steht
+    _swipe() {
+      const sh = this._sh;
+      let y0 = 0, x0 = 0, dy = 0, t0 = 0, ok2 = false, drag = false;
+      const mobile = () => matchMedia("(max-width:600px)").matches;
+      sh.addEventListener("touchstart", (e) => {
+        ok2 = this._isOpen && mobile() && e.touches.length === 1 && (!e.composedPath().includes(this._body) || this._body.scrollTop <= 0);
+        if (!ok2) return;
+        y0 = e.touches[0].clientY;
+        x0 = e.touches[0].clientX;
+        dy = 0;
+        t0 = Date.now();
+        drag = false;
+      }, { passive: true });
+      sh.addEventListener("touchmove", (e) => {
+        if (!ok2) return;
+        const d = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
+        if (!drag) {
+          if (Math.abs(d) < 8 && Math.abs(dx) < 8) return;
+          if (d <= 0 || Math.abs(dx) > d) {
+            ok2 = false;
+            return;
+          }
+          drag = true;
+          sh.style.transition = "none";
+        }
+        dy = Math.max(0, d);
+        e.preventDefault();
+        sh.style.transform = `translateY(${dy}px)`;
+      }, { passive: false });
+      const end = () => {
+        if (!drag) {
+          ok2 = false;
+          return;
+        }
+        drag = false;
+        ok2 = false;
+        sh.style.transition = "";
+        if (dy > 120 || dy / Math.max(1, Date.now() - t0) > 0.6) this.close();
+        else sh.style.transform = "";
+      };
+      sh.addEventListener("touchend", end);
+      sh.addEventListener("touchcancel", end);
+    }
+    /* --- Kopfzeile --- */
+    _head() {
+      const c = this._cfg, r = this.shadowRoot;
+      marquee(r.querySelector(".tt"), c.title || "", inPicker(this));
+      const hi = r.querySelector(".hi");
+      if (c.icon) setIcon(hi, c.icon);
+      else {
+        hi.innerHTML = "";
+        hi._ic = null;
+      }
+      r.querySelector(".ph .t").textContent = c.title || (c.hash ? `#${c.hash}` : "Kein Hash eingestellt");
+      r.querySelector(".ph ha-icon").setAttribute("icon", c.icon || "mdi:card-multiple-outline");
+      this._sh.style.setProperty("--pw", `${+c.width || DEF5.width}px`);
+      const tint = c.tint || c.color;
+      this._sh.classList.toggle("tint", !!tint);
+      if (tint) this._sh.style.setProperty("--tc", roleVars(tint).c);
+      if (c.title || c.hash) this._sh.setAttribute("aria-label", c.title || c.hash);
+      else this._sh.removeAttribute("aria-label");
+      const inHead = (c.info_position || DEF5.info_position) !== "below", x = r.querySelector(".hd .x");
+      if (inHead && this._infoEl.parentNode !== x.parentNode) x.before(this._infoEl);
+      else if (!inHead && this._infoEl.parentNode === x.parentNode) r.querySelector(".hd").after(this._infoEl);
+      this._infoEl.classList.toggle("scroll", !inHead && c.info_layout === "scroll");
+      this._bds = null;
+      if (this._h) this._info();
+    }
+    // Badges in der Kopfzeile: optional nur bei bestimmtem Zustand, Farbe aus den Farbrollen
+    _badges() {
+      const items = this._cfg.badges, h = this._h, bar = this._bdgEl;
+      if (!this._bds || this._bds.length !== items.length) {
+        bar.innerHTML = "";
+        this._bds = items.map((o) => {
+          const d = document.createElement("div");
+          d.className = "bd";
+          d.tabIndex = 0;
+          d.setAttribute("role", "button");
+          d.innerHTML = '<span class="ci"></span><span class="bn"></span><span class="bv"></span>';
+          if (o.color) {
+            const v = roleVars(o.color);
+            d.style.setProperty("--c", v.c);
+            d.style.setProperty("--cf", v.fg);
+          }
+          const open = () => moreInfo(this, o.entity);
+          d.addEventListener("click", (e) => {
+            e.stopPropagation();
+            open();
+          });
+          d.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              open();
+            }
+          });
+          bar.appendChild(d);
+          return d;
+        });
+      }
+      items.forEach((o, i) => {
+        const d = this._bds[i], s = h.states[o.entity];
+        d.hidden = !s || o.state != null && o.state !== "" && !list(o.state).includes(s.state);
+        if (d.hidden) return;
+        setIcon(d.querySelector(".ci"), iconOf(h, o, "mdi:information-outline"));
+        d.querySelector(".bn").textContent = o.name || "";
+        d.querySelector(".bv").textContent = o.show_state === false ? "" : valueOf(h, s, o);
+        d.title = `${nameOf(h, o)}: ${valueOf(h, s, o)}`;
+      });
+    }
+    _info() {
+      this._badges();
+      renderChips(this, this._infoEl, this._cfg.info, this._h);
+    }
+    /* --- Raster (GridCard) --- */
+    _handoff() {
+      return this._mode === "preview";
+    }
+  };
+  __publicField(NovaPopupCard, "gridKind", "popup");
+  define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – von Nova Navi oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
+  var GENERAL = [
+    { name: "hash", required: true, selector: T },
+    g2({ name: "title", selector: T }, { name: "icon", selector: I }),
+    ROLE("tint"),
+    g2(
+      { name: "width", selector: { number: { min: 320, max: 1600, step: 10, mode: "box", unit_of_measurement: "px" } } },
+      { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } }
+    )
+  ];
+  var BADGE = [
+    ENT,
+    NAMEICON,
+    g2({ name: "show_state", selector: { boolean: {} } }, ROLE("color")),
+    { name: "state", selector: T }
+  ];
+  var HEAD = (c) => [
+    sel("info_position", [["header", "In der Kopfzeile"], ["below", "Eigene Zeile darunter"]]),
+    ...(c.info_position || DEF5.info_position) === "below" ? [sel("info_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])] : []
+  ];
+  var LABELS8 = {
+    ...GRID_LABELS,
+    hash: "Hash (ohne #)",
+    title: "Titel",
+    icon: "Icon",
+    tint: "Farbton (leer = Nova-Glas)",
+    color: "Farbe",
+    show_state: "Zustand anzeigen",
+    state: "Nur anzeigen bei Zustand",
+    width: "Max. Breite (Desktop)",
+    stack_below: "Untereinander unter Breite",
+    info_layout: "Info-Leiste bei vielen Einträgen",
+    info_position: "Info-Chips anzeigen",
+    entity: "Entität",
+    name: "Eigener Name (optional)",
+    decimals: "Nachkommastellen",
+    alert: "Bei Achtung hervorheben",
+    alert_state: "Achtung bei Zustand",
+    alert_color: "Farbe",
+    alert_above: "Achtung über",
+    alert_below: "Achtung unter"
+  };
+  var HELPERS8 = {
+    ...GRID_HELPERS,
+    hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
+    info_position: "In der Kopfzeile: rechts vor dem X, bei wenig Platz waagrecht scrollbar. Darunter: eigene Zeile wie früher.",
+    title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Nova Navi und Raum-Karte.",
+    stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
+    state: "Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.",
+    color: "Leer = neutral.",
+    alert_state: "z. B. on oder open, mehrere mit Komma. Leer = an bzw. Problem (z. B. Fenster offen)."
+  };
+  var NovaPopupCardEditor = class extends GridEditor(NovaEditorBase) {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${EDITOR_CSS}${EDITOR_ICON_CSS}${EDITOR_LIST_CSS}${GRID_ED_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap");
+      this._gridReset();
+      if (!this._init) {
+        this._init = true;
+        this._secs = /* @__PURE__ */ new Set([this._config.hash ? "sec.content" : "sec.general"]);
+      }
+      this._secs.forEach((k) => this._open.add(k));
+      w.append(this._secGeneral(), this._secHead(), this._secLayout(), this._secContent());
+    }
+    _sec(key, icon2, label) {
+      const [d, , b] = this._details(key, icon2, label, []);
+      d.addEventListener("toggle", () => {
+        if (d.open) this._secs.add(key);
+        else this._secs.delete(key);
+      });
+      return [d, b];
+    }
+    _secGeneral() {
+      const [d, b] = this._sec("sec.general", "mdi:cog-outline", "Allgemein");
+      const data = { ...this._config };
+      delete data.rows;
+      delete data.info;
+      delete data.badges;
+      if (data.color && !data.tint) data.tint = data.color;
+      const f3 = this._form(GENERAL, data, (v) => {
+        const c = merge(this._config, names(GENERAL), v);
+        delete c.color;
+        if (v.hash != null) {
+          const h = cleanHash(v.hash);
+          if (h !== v.hash) f3.data = { ...v, hash: h };
+          if (h) c.hash = h;
+          else delete c.hash;
+        }
+        this._emit(c);
+      });
+      b.append(f3);
+      if (!this._config.hash) b.append(this._hint("Ohne Hash lässt sich das Pop-up nicht öffnen."));
+      return d;
+    }
+    _secHead() {
+      const [d, b] = this._sec("sec.header", "mdi:information-outline", "Kopfzeile & Info-Leiste");
+      b.append(this._hint("Titel und Icon stehen unter „Allgemein“. Badges und Info-Chips sitzen in der Kopfzeile (oder die Info-Chips als eigene Zeile darunter). Antippen öffnet die Details."));
+      const head = HEAD(this._config);
+      b.append(this._form(head, { info_layout: DEF5.info_layout, info_position: DEF5.info_position, ...this._config }, (v) => {
+        const c = merge(this._config, names(head), v);
+        if (c.info_layout === DEF5.info_layout) delete c.info_layout;
+        if (c.info_position === DEF5.info_position) delete c.info_position;
+        const re = (c.info_position || DEF5.info_position) !== (this._config.info_position || DEF5.info_position);
+        this._emit(c);
+        if (re) this._rebuild();
+      }));
+      b.append(Object.assign(document.createElement("h4"), { textContent: "Badges" }));
+      b.append(this._hint("Kleine Anzeigen rechts neben dem Titel. Auf schmalen Bildschirmen nur Icon und Zustand, bei Platzmangel waagrecht scrollbar."));
+      this._itemList(b, "badges", BADGE, { item: "Badge", icon: "mdi:label-outline" }, "Badge hinzufügen", (it) => ({ show_state: true, ...it }));
+      b.append(Object.assign(document.createElement("h4"), { textContent: "Info-Leiste" }));
+      this._itemList(b, "info", INFO, { item: "Info", icon: "mdi:information-outline" }, "Info-Entität hinzufügen");
+      return d;
+    }
+    _secLayout() {
+      const [d, b] = this._sec("sec.layout", "mdi:view-grid-outline", "Layout & Vorlage");
+      this._layoutBody(b);
+      return d;
+    }
+    _onTemplate() {
+      this._secs.add("sec.content");
+    }
+    _secContent() {
+      const [d, b] = this._sec("sec.content", "mdi:view-dashboard-edit-outline", "Inhalt");
+      this._contentBody(b);
+      return d;
+    }
+  };
+  __publicField(NovaPopupCardEditor, "gridWhere", "im Pop-up");
+  __publicField(NovaPopupCardEditor, "labels", LABELS8);
+  __publicField(NovaPopupCardEditor, "helpers", HELPERS8);
+  define("popup-card-editor", NovaPopupCardEditor);
+
+  // src/chips.js
+  var DEF6 = { layout: "wrap", size: "normal" };
+  var CSS = `${NOVA_VARS}${NOVA_CHIPS_CSS}
+:host{display:block;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.nchips:empty{display:flex;min-height:34px}
+.hint{font-size:13px;opacity:.7;padding:8px 2px}
+/* Groß: für kleine Touch-Displays (z. B. Echo Show) – höhere Chips, die die Zeile gleichmäßig füllen */
+.nchips.lg{gap:8px}.nchips.lg .nchip{min-height:var(--nova-chip-large-height,50px);padding:0 16px;font-size:15px;border-radius:16px;flex:1 1 auto;justify-content:center}
+.nchips.lg .nchip ha-icon{--mdc-icon-size:21px}.nchips.lg .nchip img{width:21px;height:21px}`;
+  var NovaChipsCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("chips-card-editor"));
+    }
+    static getStubConfig(h) {
+      const t = Object.keys(h?.states || {}).find((id) => h.states[id].attributes.device_class === "temperature");
+      return { chips: t ? [{ type: "value", entity: t }] : [] };
+    }
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${CSS}</style><div class="nchips"></div>`;
+      this._box = r.querySelector(".nchips");
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._cfg = { ...DEF6, ...c, chips: normChips(c.chips) };
+      this._ids = entityIds(this._cfg.chips);
+      this._box.classList.toggle("scroll", this._cfg.layout === "scroll");
+      this._box.classList.toggle("lg", this._cfg.size === "large");
+      if (this._h) this._render();
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (this._cfg && hassChanged(old, h, this._ids)) this._render();
+    }
+    getCardSize() {
+      return 1;
+    }
+    getGridOptions() {
+      return { columns: "full", rows: "auto" };
+    }
+    _render() {
+      renderNovaChips(this, this._box, this._cfg.chips, this._h, { area: this._cfg.area });
+    }
+  };
+  define("chips-card", NovaChipsCard, { name: "Nova Chips Card", description: "Eine Reihe frei belegbarer Chips: Werte von Entitäten oder Knöpfe mit Aktion, z. B. „Alle Lichter im Raum aus“.", documentationURL: docUrl("nova-chips-card") });
+  var S_GEN4 = [
+    { name: "area", selector: { area: {} } },
+    sel("layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]]),
+    sel("size", [["normal", "Normal"], ["large", "Groß (für kleine Touch-Displays)"]])
+  ];
+  var LABELS9 = { ...CHIP_LABELS, area: "Area (für „Alle Lichter im Raum aus“)", layout: "Bei vielen Chips", size: "Größe" };
+  var HELPERS9 = { ...CHIP_HELPERS, area: "Nur nötig für die Schnellauswahl „Alle Lichter im Raum aus“." };
+  var NovaChipsCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      r.querySelector(".wrap").append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(this._form(S_GEN4, { ...DEF6, ...this._config }, (v) => {
+          const c = merge(this._config, names(S_GEN4), v);
+          if (c.layout === DEF6.layout) delete c.layout;
+          if (c.size === DEF6.size) delete c.size;
+          this._emit(c);
+          if (!!c.area !== !!this._built) this._rebuild();
+        }))),
+        this._section("chips", "mdi:label-multiple-outline", "Chips", (b) => {
+          b.append(this._hint("Wert-Chips zeigen den Zustand einer Entität, Knopf-Chips führen eine Aktion aus (Szene, Skript, Dienst …). „Alle Lichter im Raum aus“ gibt es, sobald unter „Allgemein“ eine Area gewählt ist."));
+          this._itemList(b, "chips", (o) => chipSchema(o, { area: !!this._config.area }), { item: "Chip", icon: "mdi:label-outline" }, "Chip hinzufügen", chipView);
+        })
+      );
+      this._built = !!this._config.area;
+    }
+  };
+  __publicField(NovaChipsCardEditor, "labels", LABELS9);
+  __publicField(NovaChipsCardEditor, "helpers", HELPERS9);
+  __publicField(NovaChipsCardEditor, "openSections", ["chips"]);
+  define("chips-card-editor", NovaChipsCardEditor);
+
+  // src/recipe.js
+  var DEF7 = { title: "Rezepte", subtitle: "", layout: "auto", cover_color: "brown", start_open: false, close_after: 0 };
+  var COVERS = ["brown", "red", "green", "blue"];
+  var OPEN_MS = 1100;
+  var TURN_MS = 800;
+  var PAGE_RATIO = 0.72;
+  var FONT_URL = "/nova/static/fonts";
+  var fontsLoaded = false;
+  var loadFonts = () => {
+    if (fontsLoaded) return;
+    fontsLoaded = true;
+    const st = document.createElement("style");
+    st.dataset.nova = "recipe-fonts";
+    const ff = (fam, file, w, s = "normal") => `@font-face{font-family:'${fam}';src:url(${FONT_URL}/${file}.woff2?v=1) format('woff2');font-weight:${w};font-style:${s};font-display:swap}`;
+    st.textContent = ff("Nova Hand", "nova-hand-400", 400) + ff("Nova Hand", "nova-hand-700", 700) + ff("Nova Serif", "nova-serif-400", 400) + ff("Nova Serif", "nova-serif-400-italic", 400, "italic");
+    document.head.append(st);
+  };
+  var noise = (freq, oct, rgb, op, type = "fractalNoise", size = 220) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'><filter id='n'><feTurbulence type='${type}' baseFrequency='${freq}' numOctaves='${oct}' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 ${rgb[0]} 0 0 0 0 ${rgb[1]} 0 0 0 0 ${rgb[2]} ${op} 0 0 0 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`)}")`;
+  var PAPER_FIBER = noise(0.85, 3, [0.35, 0.24, 0.1], 0.55);
+  var PAPER_CLOUD = noise(0.012, 3, [0.55, 0.38, 0.12], 0.5, "fractalNoise", 400);
+  var LEATHER_GRAIN = noise(1.4, 2, [0, 0, 0], 0.9, "turbulence", 160);
+  var LEATHER_MOTTLE = noise(0.02, 3, [0.95, 0.8, 0.6], 0.45, "fractalNoise", 420);
+  var rnd = (seed) => () => {
+    seed = seed + 1831565813 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t ^= t + Math.imul(t ^ t >>> 7, 61 | t);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+  var stains = (seed) => {
+    const r = rnd(seed * 7919 + 13), out = [];
+    if (r() < 0.55) {
+      const x = 10 + r() * 80, y = 8 + r() * 84, s = 70 + r() * 70;
+      out.push(`radial-gradient(circle ${s}px at ${x}% ${y}%,transparent 82%,rgba(122,74,24,.16) 88%,rgba(122,74,24,.05) 93%,transparent 97%)`);
+    }
+    const n = 2 + Math.floor(r() * 5);
+    for (let i = 0; i < n; i++) {
+      const x = r() * 100, y = r() * 100, s = 3 + r() * 9;
+      out.push(`radial-gradient(circle ${s}px at ${x}% ${y}%,rgba(140,90,40,${(0.12 + r() * 0.14).toFixed(2)}),transparent)`);
+    }
+    if (r() < 0.35) {
+      const x = r() * 100, y = r() * 100;
+      out.push(`radial-gradient(ellipse 60px 34px at ${x}% ${y}%,rgba(160,110,40,.1),transparent 70%)`);
+    }
+    return out.join(",");
+  };
+  var CSS2 = `
+:host{display:block;height:100%;
+--ink:var(--nv-book-ink);--paper:var(--nv-book-paper);--leather:var(--nv-book-brown);--gold:var(--nv-book-gold)}
+:host([cover=red]){--leather:var(--nv-book-red)}:host([cover=green]){--leather:var(--nv-book-green)}:host([cover=blue]){--leather:var(--nv-book-blue)}
+*{box-sizing:border-box}
+.rb{position:relative;height:100%;min-height:200px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+font-family:'Nova Serif',Georgia,'Times New Roman',serif;color:var(--ink);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.stage{position:relative;perspective:2400px;perspective-origin:50% 40%}
+.book{position:absolute;inset:0;transform-style:preserve-3d;transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1)}
+/* Aufgeschlagen gehören waagrechte Wischgesten dem Buch (Nova Swipe Card blättert dann nicht mit), zugeklappt nicht */
+.book.open{touch-action:pan-y}
+.book.closed{transform:translateX(calc(var(--pw) * -.5))}
+.book.single.closed,.book.single{transform:none}
+/* Seitenblock: Papierkanten unten und rechts (Buchdicke) */
+.block{position:absolute;top:0;bottom:0;right:0;width:var(--pw);border-radius:2px 6px 6px 2px;
+background:repeating-linear-gradient(90deg,#e9dcb8 0 1px,#cdbb8f 1px 2px);box-shadow:3px 4px 0 -1px #bfae84,5px 7px 14px rgba(0,0,0,.45);transform:translate(4px,4px)}
+.double .block.l{right:auto;left:0;transform:translate(-4px,4px);border-radius:6px 2px 2px 6px}
+.single .block.l,.closed .block.l{display:none}
+/* Seiten */
+.pg,.face{position:absolute;top:0;bottom:0;width:var(--pw);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.pg.r,.leaf{left:auto;right:0}.pg.l{left:0}
+/* Seiten minimal vor dem aufgeklappten Einband, das Blatt beim Umblättern vor den Seiten (in 3D zählt die Tiefe, nicht z-index) */
+.open .pg{transform:translateZ(1px)}
+.single .pg.r,.single .leaf{right:auto;left:0}
+.single .pg.l{display:none}
+.paper{background-color:var(--paper);background-image:var(--st),${PAPER_FIBER},${PAPER_CLOUD},
+radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(120,80,30,.22) 100%);background-size:auto,220px 220px,400px 400px,auto;
+box-shadow:inset 0 0 0 1px rgba(110,80,40,.25),inset 0 0 30px rgba(140,95,40,.22)}
+.pg.r.paper,.face.f.paper{border-radius:2px 6px 6px 2px}.pg.l.paper,.face.b.paper{border-radius:6px 2px 2px 6px}
+/* Schatten am Falz */
+.pg.r::before,.leaf .face.f::before{content:"";position:absolute;inset:0 auto 0 0;width:14%;background:linear-gradient(90deg,rgba(60,35,10,.28),rgba(60,35,10,.06) 45%,transparent);pointer-events:none;z-index:2}
+.pg.l::before,.leaf .face.b::before{content:"";position:absolute;inset:0 0 0 auto;width:14%;background:linear-gradient(270deg,rgba(60,35,10,.3),rgba(60,35,10,.06) 45%,transparent);pointer-events:none;z-index:2}
+.single .pg.r::before,.single .leaf .face.f::before{width:5%}
+.in{position:absolute;inset:0;padding:calc(var(--pw) * .09) calc(var(--pw) * .1) calc(var(--pw) * .11);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;
+font-size:clamp(12px,calc(var(--pw) * .036),19px);line-height:1.45}
+.in::-webkit-scrollbar{display:none}
+.no{position:absolute;bottom:calc(var(--pw) * .035);left:0;right:0;text-align:center;font-style:italic;font-size:clamp(10px,calc(var(--pw) * .026),14px);opacity:.55;pointer-events:none}
+.leaf{position:absolute;top:0;bottom:0;width:var(--pw);transform-style:preserve-3d;transform-origin:0 50%;z-index:5;pointer-events:none}
+.leaf .face{left:0}.leaf .face.b{transform:rotateY(180deg)}
+.leaf .sh{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0}
+.leaf.fwd{animation:turn-f ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) forwards}.leaf.bwd{animation:turn-b ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) forwards}
+.leaf .face.f .sh{background:linear-gradient(90deg,rgba(0,0,0,.35),transparent 60%)}.leaf .face.b .sh{background:linear-gradient(270deg,rgba(0,0,0,.35),transparent 60%)}
+.leaf.fwd .face.f .sh,.leaf.bwd .face.b .sh{animation:sh-in ${TURN_MS}ms ease-in forwards}.leaf.fwd .face.b .sh,.leaf.bwd .face.f .sh{animation:sh-out ${TURN_MS}ms ease-out forwards}
+.single .leaf.fwd{animation-name:turn-sf}.single .leaf.bwd{animation-name:turn-sb}
+@keyframes turn-f{from{transform:translateZ(2px) rotateY(0)}50%{transform:translateZ(2px) rotateY(-90deg) skewY(-1.5deg)}to{transform:translateZ(2px) rotateY(-180deg)}}
+@keyframes turn-b{from{transform:translateZ(2px) rotateY(-180deg)}50%{transform:translateZ(2px) rotateY(-90deg) skewY(1.5deg)}to{transform:translateZ(2px) rotateY(0)}}
+@keyframes turn-sf{from{transform:translateZ(2px) rotateY(0);opacity:1}70%{opacity:1}to{transform:translateZ(2px) rotateY(-160deg);opacity:0}}
+@keyframes turn-sb{from{transform:translateZ(2px) rotateY(-160deg);opacity:0}30%{opacity:1}to{transform:translateZ(2px) rotateY(0);opacity:1}}
+@keyframes sh-in{from{opacity:0}to{opacity:1}}@keyframes sh-out{from{opacity:1}to{opacity:0}}
+/* Einband */
+.cover{position:absolute;top:-2%;bottom:-2%;right:-1.5%;width:calc(var(--pw) * 1.03);transform-style:preserve-3d;transform-origin:0 50%;z-index:8;
+transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1)}
+.single .cover{right:auto;left:0}
+.cover .face{width:100%;top:0;bottom:0;left:0}.cover .face.b{transform:rotateY(180deg)}
+.open .cover{transform:rotateY(-180deg)}
+.single.open .cover{transform:rotateY(-160deg);opacity:0;transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1),opacity .3s ${OPEN_MS * 0.7}ms}
+.cover.gone{visibility:hidden}
+.leather{border-radius:3px 10px 10px 3px;background-color:var(--leather);
+background-image:radial-gradient(ellipse at 88% 6%,rgba(255,230,190,.32),transparent 22%),radial-gradient(ellipse at 92% 96%,rgba(255,225,180,.3),transparent 20%),
+radial-gradient(ellipse at 30% 98%,rgba(255,220,170,.16),transparent 25%),radial-gradient(ellipse 40% 30% at 62% 40%,rgba(0,0,0,.18),transparent 70%),
+radial-gradient(ellipse at 20% 15%,rgba(255,220,170,.1),transparent 30%),${LEATHER_MOTTLE},${LEATHER_GRAIN},
+linear-gradient(100deg,rgba(0,0,0,.35),rgba(255,255,255,.06) 18%,rgba(0,0,0,.08) 60%,rgba(0,0,0,.3));
+background-size:auto,auto,auto,auto,auto,420px 420px,160px 160px,auto;background-blend-mode:normal,normal,normal,normal,normal,soft-light,multiply,normal;
+box-shadow:inset 0 0 0 1px rgba(0,0,0,.5),inset 0 0 40px rgba(0,0,0,.5),inset -3px 0 6px rgba(255,220,180,.12),6px 8px 22px rgba(0,0,0,.5)}
+/* Rücken mit Bünden und abgegriffener Kante */
+.spine{position:absolute;inset:0 auto 0 0;width:9%;border-radius:3px 0 0 3px;
+background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,230,190,.12) 40%,rgba(0,0,0,.35)),
+repeating-linear-gradient(180deg,transparent 0 17%,rgba(0,0,0,.35) 17% 18%,rgba(255,220,170,.18) 18% 19%,transparent 19% 21%)}
+.stitch{position:absolute;inset:6% 7% 6% 13%;border:2px dashed rgba(235,205,150,.35);border-radius:6px;box-shadow:0 0 0 1px rgba(0,0,0,.25),inset 0 0 0 1px rgba(0,0,0,.25)}
+.emb{position:absolute;inset:0 0 0 9%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--pw) * .03);text-align:center;padding:0 12%}
+.emb .orn{width:56%;height:auto;opacity:.9}
+.emb h1{margin:0;font-family:'Nova Serif',Georgia,serif;font-style:italic;font-weight:400;font-size:clamp(22px,calc(var(--pw) * .13),78px);line-height:1.05;
+background:linear-gradient(170deg,#f3dc9a,var(--gold) 45%,#8a6424 70%,#d9b665);-webkit-background-clip:text;background-clip:text;color:transparent;
+filter:drop-shadow(0 1px 0 rgba(0,0,0,.6)) drop-shadow(0 -1px 0 rgba(255,230,180,.15));opacity:.92}
+.emb p{margin:0;font-family:'Nova Hand',cursive;font-size:clamp(14px,calc(var(--pw) * .06),34px);color:#e9cf93;opacity:.75;text-shadow:0 1px 0 rgba(0,0,0,.6)}
+.emb .gold{fill:none;stroke:var(--gold);stroke-width:1.2;opacity:.85}
+/* abgewetzte Ecken */
+.wear{position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+background:radial-gradient(circle at 100% 0,rgba(240,210,170,.35),transparent 7%),radial-gradient(circle at 100% 100%,rgba(240,210,170,.32),transparent 7%),
+linear-gradient(180deg,rgba(255,225,180,.12),transparent 3%,transparent 97%,rgba(255,225,180,.12));mix-blend-mode:screen}
+.inside{background-color:#e7d6ae;background-image:var(--st),${PAPER_FIBER},radial-gradient(ellipse at 50% 50%,transparent 50%,rgba(110,70,20,.3)),
+repeating-linear-gradient(45deg,rgba(120,80,30,.05) 0 6px,transparent 6px 12px);border-radius:10px 3px 3px 10px;
+box-shadow:inset 0 0 0 8px var(--leather),inset 0 0 0 9px rgba(0,0,0,.4),inset 0 0 40px rgba(110,70,20,.35)}
+.inside .ded{position:absolute;inset:18% 16%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;
+font-family:'Nova Hand',cursive;font-size:clamp(18px,calc(var(--pw) * .085),46px);transform:rotate(-3deg);opacity:.8}
+.inside .ded small{font-size:.55em;opacity:.75}
+.hit{position:absolute;inset:0;cursor:pointer;z-index:9}
+/* Lesebändchen zum Schließen */
+.ribbon{position:absolute;top:calc(100% - 6px);left:calc(var(--bw) / 2 + var(--pw) * .1);width:clamp(14px,calc(var(--pw) * .045),24px);height:clamp(34px,calc(var(--pw) * .1),60px);z-index:7;transform:translateZ(3px);cursor:pointer;border:0;padding:0;
+background:linear-gradient(90deg,#7c1d1d,#b03030 50%,#7c1d1d);clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);box-shadow:0 2px 4px rgba(0,0,0,.4);
+transition:opacity .4s;opacity:0;pointer-events:none}
+.single .ribbon{left:12%}
+.open .ribbon{opacity:1;pointer-events:auto;transition-delay:${OPEN_MS}ms}
+/* Inhalt der Seiten */
+h2{margin:0 0 .35em;font-family:'Nova Hand',cursive;font-weight:700;font-size:2.15em;line-height:1;color:var(--ink);transform:rotate(-1deg)}
+h3{margin:1em 0 .3em;font-family:'Nova Hand',cursive;font-weight:700;font-size:1.45em;line-height:1;border-bottom:1px solid rgba(70,45,20,.3);padding-bottom:.15em}
+h3:first-child{margin-top:0}
+ul.ing{list-style:none;margin:0;padding:0}ul.ing li{padding:.12em 0 .12em 1.1em;position:relative;border-bottom:1px dotted rgba(70,45,20,.22)}
+ul.ing li::before{content:"–";position:absolute;left:.1em;font-family:'Nova Hand',cursive;font-weight:700}
+ol.st{list-style:none;margin:0;padding:0;counter-reset:s}ol.st li{counter-increment:s;position:relative;padding:.25em 0 .35em 2em}
+ol.st li::before{content:counter(s);position:absolute;left:0;top:.05em;width:1.45em;height:1.45em;border:1.5px solid rgba(70,45,20,.55);border-radius:50%;
+display:flex;align-items:center;justify-content:center;font-family:'Nova Hand',cursive;font-weight:700;font-size:1.05em;line-height:1;transform:rotate(-4deg)}
+.toc h2{text-align:center;transform:none;margin-bottom:.6em}
+.toc .it{display:flex;align-items:baseline;gap:.4em;width:100%;border:0;background:none;color:inherit;font:inherit;padding:.32em 0;cursor:pointer;text-align:left}
+.toc .it .t{font-family:'Nova Hand',cursive;font-size:1.35em;line-height:1.1}
+.toc .it .d{flex:1;border-bottom:2px dotted rgba(70,45,20,.35);transform:translateY(-.25em)}
+.toc .it .n{font-style:italic;opacity:.75}
+.toc .it:active .t{text-decoration:underline}
+.msg{font-family:'Nova Hand',cursive;font-size:1.35em;line-height:1.25;text-align:center;margin:1em 0;opacity:.85}
+.msg.hint{text-align:left;font-size:1.25em}.msg.hint ol{margin:.4em 0 0;padding-left:1.2em}.msg.hint code{font-family:inherit;background:rgba(120,80,30,.12);padding:0 .2em;border-radius:3px}
+.act{display:flex;flex-wrap:wrap;gap:.5em;justify-content:center;margin-top:1.2em}
+.btn{display:inline-flex;align-items:center;gap:.35em;border:1.5px solid rgba(70,45,20,.5);border-radius:999px;background:rgba(255,248,225,.35);color:var(--ink);
+font-family:'Nova Hand',cursive;font-size:1.2em;font-weight:700;padding:.15em .8em .2em;cursor:pointer;line-height:1.2;transition:background-color .2s,transform .15s}
+.btn ha-icon{--mdc-icon-size:1em}
+.btn:active{transform:scale(.95)}.btn.warn{border-color:rgba(150,30,20,.7);color:#8a1f12;background:rgba(200,60,40,.12)}
+.btn.ok{border-color:rgba(40,100,40,.6);color:#2e5e22}
+.btn[disabled]{opacity:.45;cursor:default}.btn.ok[disabled],.btn.warn[disabled]{opacity:1}
+.tools{display:flex;gap:.4em;justify-content:flex-end;margin-top:1.2em}
+.tools .btn{font-size:1em;padding:.1em .6em}
+/* eingeklebtes Foto mit Fotoecken */
+.photo{position:relative;margin:.4em auto 1em;width:86%;padding:4%;background:#f7f1e3;box-shadow:0 2px 6px rgba(60,35,10,.35),0 0 0 1px rgba(0,0,0,.05);transform:rotate(-1.6deg)}
+.photo img{-webkit-user-drag:none;pointer-events:none;display:block;width:100%;aspect-ratio:4/3;object-fit:cover;filter:sepia(.18) saturate(.9) contrast(.96)}
+.photo i{position:absolute;width:16%;aspect-ratio:1;background:linear-gradient(135deg,#3a2a1c,#1b130c 60%,#3d2c1d);box-shadow:0 1px 1px rgba(0,0,0,.3)}
+.photo i::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18),transparent 40%);clip-path:inherit}
+.photo i.tl{top:-2%;left:-2%;clip-path:polygon(0 0,100% 0,0 100%)}.photo i.tr{top:-2%;right:-2%;clip-path:polygon(0 0,100% 0,100% 100%)}
+.photo i.bl{bottom:-2%;left:-2%;clip-path:polygon(0 0,100% 100%,0 100%)}.photo i.br{bottom:-2%;right:-2%;clip-path:polygon(100% 0,100% 100%,0 100%)}
+/* Formular: Karteikarte über dem Buch */
+.form{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,12,4,.45);padding:12px;animation:fade .25s}
+.form[hidden]{display:none}
+@keyframes fade{from{opacity:0}}
+.card{position:relative;width:min(640px,100%);max-height:100%;overflow-y:auto;overscroll-behavior:contain;border-radius:6px;padding:20px 22px 18px;
+background-color:#f6ecd2;background-image:${PAPER_FIBER},repeating-linear-gradient(180deg,transparent 0 31px,rgba(80,110,160,.18) 31px 32px),
+linear-gradient(90deg,transparent 46px,rgba(190,60,60,.3) 46px 47px,transparent 47px);box-shadow:0 12px 40px rgba(0,0,0,.5);transform:rotate(-.6deg);font-size:16px}
+.card h2{font-size:2em}
+.card label{display:block;font-family:'Nova Hand',cursive;font-weight:700;font-size:1.3em;margin:.6em 0 .15em}
+.card input[type=text],.card textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;
+padding:.45em .6em;outline:none;-webkit-user-select:text;user-select:text}
+.card textarea{min-height:7.5em;resize:vertical;line-height:1.45}
+.card input:focus,.card textarea:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
+.card .pic{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card .pic img{width:110px;height:82px;object-fit:cover;border:4px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transform:rotate(-2deg)}
+.card .pic input[type=file]{display:none}
+.card .row{display:flex;gap:10px;justify-content:flex-end;margin-top:1em;flex-wrap:wrap}
+.card .err{color:#8a1f12;font-family:'Nova Hand',cursive;font-size:1.2em;min-height:1.2em;margin-top:.4em}
+.card small{display:block;opacity:.65;font-style:italic}
+@media (prefers-reduced-motion:reduce){.book,.cover,.leaf,.leaf .sh{transition:none!important;animation-duration:1ms!important}}
+.still .book,.still .cover{transition:none!important}`;
+  var ORN = `<svg class="orn" viewBox="0 0 200 24" aria-hidden="true"><path class="gold" d="M4 12H78M122 12H196M84 12c4-8 12-8 16 0s12 8 16 0M84 12c4 8 12 8 16 0s12-8 16 0"/><circle cx="100" cy="12" r="2.2" fill="currentColor" class="gold"/></svg>`;
+  var NovaRecipeBookCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("recipe-book-card-editor"));
+    }
+    static getStubConfig(h) {
+      const ids = Object.keys(h?.states || {});
+      const todo = ids.find((id) => /^todo\..*einkauf/.test(id)) || ids.find((id) => id === "todo.shopping_list");
+      return todo ? { shopping_list: todo } : {};
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      const was = this._c;
+      this._c = { ...DEF7, ...c };
+      this.setAttribute("cover", COVERS.includes(this._c.cover_color) ? this._c.cover_color : "brown");
+      if (this._e) {
+        if (!was || was.title !== this._c.title || was.subtitle !== this._c.subtitle) this._coverText();
+        this._resize(true);
+      }
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) this._build();
+      if (!old || old.connection !== h.connection || old.config?.components !== h.config?.components) this._subscribe();
+    }
+    getCardSize() {
+      return 8;
+    }
+    getGridOptions() {
+      return { columns: 12, rows: 8, min_columns: 6, min_rows: 5 };
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      this._stopVis?.();
+      this._stopVis = watchVisible(this, (v) => {
+        if (v) {
+          loadFonts();
+          this._stopVis?.();
+          this._stopVis = null;
+        }
+      });
+      if (!this._e && this._c && this._h) this._build();
+      if (this._e) {
+        this._ro?.observe(this);
+        this._subscribe();
+      }
+    }
+    disconnectedCallback() {
+      this._ro?.disconnect();
+      this._stopVis?.();
+      this._stopVis = null;
+      this._unsub?.then?.((u) => typeof u === "function" && u()).catch(() => {
+      });
+      this._unsub = null;
+      this._subKey = null;
+      clearTimeout(this._idle);
+      clearTimeout(this._tt);
+      clearTimeout(this._delT);
+      clearTimeout(this._retry);
+    }
+    /* ---------- Aufbau ---------- */
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${CSS2}</style><div class="rb"><div class="stage"><div class="book closed">
+<div class="block l"></div><div class="block r"></div>
+<div class="pg l paper"><div class="in"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="no"></div></div>
+<div class="cover"><div class="face f leather"><div class="spine"></div><div class="stitch"></div><div class="emb">${ORN}<h1></h1><p></p>${ORN}</div><div class="wear"></div></div>
+<div class="face b inside"><div class="ded"></div></div><div class="hit" role="button" aria-label="Buch öffnen"></div></div>
+<button class="ribbon" aria-label="Buch schließen" title="Buch schließen"></button>
+</div></div><div class="form" hidden></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = { rb: q(".rb"), stage: q(".stage"), book: q(".book"), L: q(".pg.l"), R: q(".pg.r"), cover: q(".cover"), ded: q(".ded"), h1: q(".emb h1"), sub: q(".emb p"), form: q(".form") };
+      this._e.cover.style.setProperty("--st", stains(99));
+      this._e.cover.querySelector(".inside").style.setProperty("--st", stains(98));
+      this._sp = 0;
+      this._open = false;
+      this._coverText();
+      q(".hit").addEventListener("click", () => this._setOpen(true));
+      q(".ribbon").addEventListener("click", () => this._setOpen(false));
+      this._gestures();
+      this._ro = new ResizeObserver(() => this._resize());
+      if (this.isConnected) this._ro.observe(this);
+      if (this._c.start_open && !this._quiet) this._setOpen(true, false);
+    }
+    _coverText() {
+      const c = this._c, e = this._e;
+      e.h1.textContent = c.title || DEF7.title;
+      e.sub.textContent = c.subtitle || "";
+      e.sub.hidden = !c.subtitle;
+      e.ded.innerHTML = `<span>${esc(c.title || DEF7.title)}</span>${c.subtitle ? `<small>${esc(c.subtitle)}</small>` : ""}`;
+    }
+    // Größe: Seite im Verhältnis 0,72, so groß wie der Platz erlaubt. Ohne feste Höhe (Masonry) ergibt sich die Höhe aus der Breite.
+    _resize(force) {
+      const e = this._e, c = this._c;
+      if (!e) return;
+      const W2 = this.clientWidth || 0, Hh = this.clientHeight || 0;
+      if (!W2) return;
+      const auto = Hh < 150;
+      let dbl = c.layout === "double" || c.layout !== "single" && W2 >= 560 && (auto || W2 / Math.max(Hh, 1) > 1.05);
+      const pad = Math.max(10, W2 * 0.025);
+      let pw = dbl ? (W2 - 2 * pad) / 2 : W2 - 2 * pad;
+      if (!auto) pw = Math.min(pw, (Hh - 2 * pad) * PAGE_RATIO);
+      pw = Math.max(120, Math.floor(pw));
+      const ph = Math.floor(pw / PAGE_RATIO), bw = dbl ? 2 * pw : pw;
+      if (auto) e.rb.style.height = `${ph + 2 * pad}px`;
+      else e.rb.style.removeProperty("height");
+      e.stage.style.width = `${bw}px`;
+      e.stage.style.height = `${ph}px`;
+      e.rb.style.setProperty("--pw", `${pw}px`);
+      e.rb.style.setProperty("--bw", `${bw}px`);
+      if (force || dbl !== this._dbl) {
+        const spreads = this._spreads(this._dbl), cur2 = spreads[this._sp];
+        this._dbl = dbl;
+        e.book.classList.toggle("double", dbl);
+        e.book.classList.toggle("single", !dbl);
+        const ns = this._spreads(dbl), key = cur2 && (cur2.rid ?? cur2.key);
+        const i = ns.findIndex((s) => (s.rid ?? s.key) === key);
+        this._sp = i >= 0 ? i : Math.min(this._sp, ns.length - 1);
+        this._paint();
+      }
+    }
+    /* ---------- Daten ---------- */
+    // HA-INTERN-frei: nur dokumentierte WebSocket-Wege (subscribeMessage/callWS) zu den eigenen Befehlen der Integration
+    _subscribe() {
+      const h = this._h;
+      if (!h || !this.isConnected || !this._e) return;
+      if (this._quiet) {
+        this._recipes = DEMO;
+        this._missing = false;
+        this._paint();
+        return;
+      }
+      const has = h.config?.components?.includes?.("nova");
+      const key = `${has}|${h.connection ? 1 : 0}`;
+      if (key === this._subKey) return;
+      this._subKey = key;
+      this._unsub?.then?.((u) => typeof u === "function" && u()).catch(() => {
+      });
+      this._unsub = null;
+      if (!has) {
+        this._missing = true;
+        this._recipes = [];
+        this._paint();
+        return;
+      }
+      this._missing = false;
+      this._unsub = h.connection.subscribeMessage((m) => this._setRecipes(m?.recipes), { type: "nova/recipes/subscribe" }).catch((err) => {
+        console.warn("[nova-cards] Rezeptbuch: Abo nicht möglich, lade Liste einmal", err);
+        return h.callWS({ type: "nova/recipes/list" }).then((m) => this._setRecipes(m?.recipes)).catch((e2) => {
+          console.warn("[nova-cards] Rezeptbuch: Nova-Integration antwortet nicht", e2);
+          this._missing = true;
+          this._recipes = [];
+          this._paint();
+        }).then(() => null);
+      });
+    }
+    _setRecipes(list2) {
+      if (list2 == null) {
+        this._missing = true;
+        this._recipes = [];
+        this._paint();
+        clearTimeout(this._retry);
+        this._retry = setTimeout(() => {
+          this._subKey = null;
+          this._subscribe();
+        }, 1e4);
+        return;
+      }
+      const spreads = this._spreads(this._dbl), cur2 = spreads[this._sp], key = cur2 && (cur2.rid ?? cur2.key);
+      this._recipes = Array.isArray(list2) ? list2 : [];
+      this._missing = false;
+      const ns = this._spreads(this._dbl);
+      if (this._jump) {
+        const i = ns.findIndex((s) => s.rid === this._jump);
+        if (i >= 0) {
+          this._jump = null;
+          this._sp = i;
+        }
+      } else {
+        const i = ns.findIndex((s) => (s.rid ?? s.key) === key);
+        this._sp = i >= 0 ? i : Math.min(this._sp, ns.length - 1);
+      }
+      this._paint();
+    }
+    /* ---------- Seiten ---------- */
+    // Doppelseiten: [Vorsatz | Inhalt], dann je Rezept [Titel, Foto, Zutaten | Anleitung]. Einzelseiten: Inhalt, dann je Rezept eine Seite.
+    _spreads(dbl = this._dbl) {
+      const rs = this._recipes || [];
+      return dbl ? [{ key: "toc", L: { k: "end" }, R: { k: "toc", n: 1 } }, ...rs.map((r, i) => ({ rid: r.id, L: { k: "A", r, n: 2 * i + 2 }, R: { k: "B", r, n: 2 * i + 3 } }))] : [{ key: "toc", P: { k: "toc", n: 1 } }, ...rs.map((r, i) => ({ rid: r.id, P: { k: "R", r, n: i + 2 } }))];
+    }
+    _pageNo(i) {
+      return this._dbl ? 2 * i + 2 : i + 2;
+    }
+    _paint() {
+      const e = this._e;
+      if (!e || this._dbl == null || this._turning) return;
+      const s = this._spreads()[this._sp] || this._spreads()[0];
+      if (this._dbl) {
+        this._fill(e.L, s.L);
+        this._fill(e.R, s.R);
+        e.L.style.visibility = s.L.k === "end" ? "hidden" : "";
+      } else this._fill(e.R, s.P);
+    }
+    // Seite füllen: Inhalt + Seitenzahl + eigene Flecken
+    _fill(pg, d) {
+      const inn = pg.querySelector(".in"), no = pg.querySelector(".no");
+      const sig = JSON.stringify([d.k, d.r?.id, d.r?.updated, d.n, d.k === "toc" ? [this._recipes?.length, this._missing, (this._recipes || []).map((r) => r.title)] : 0, this._dbl]);
+      if (pg._sig === sig) return;
+      pg._sig = sig;
+      pg.style.setProperty("--st", stains(d.n || 0));
+      inn.replaceChildren(this._content(d));
+      inn.scrollTop = 0;
+      no.textContent = d.n && d.k !== "end" ? `— ${d.n} —` : "";
+    }
+    _content(d) {
+      const box = document.createElement("div");
+      const r = d.r;
+      if (d.k === "end") {
+        box.className = "inside";
+        return box;
+      }
+      if (d.k === "toc") {
+        box.className = "toc";
+        box.innerHTML = "<h2>Inhalt</h2>";
+        if (this._missing) {
+          box.insertAdjacentHTML("beforeend", `<div class="msg hint">Hier fehlt noch die Nova-Integration – ohne sie kann das Buch keine Rezepte aufbewahren.
+<ol><li>Ordner <code>custom_components/nova</code> aus dem Nova-Cards-Repository nach <code>/config/custom_components/</code> kopieren</li>
+<li>Home Assistant neu starten</li><li>Einstellungen → Geräte &amp; Dienste → Integration hinzufügen → „Nova“</li></ol></div>`);
+          return box;
+        }
+        if (!this._recipes) {
+          box.insertAdjacentHTML("beforeend", '<div class="msg">Einen Moment, die Seiten werden geblättert …</div>');
+          return box;
+        }
+        if (!this._recipes.length) box.insertAdjacentHTML("beforeend", '<div class="msg">Noch keine Rezepte.<br>Trag das erste ein!</div>');
+        this._recipes.forEach((x, i) => {
+          const b = document.createElement("button");
+          b.className = "it";
+          b.innerHTML = '<span class="t"></span><span class="d"></span><span class="n"></span>';
+          b.firstChild.textContent = x.title;
+          b.lastChild.textContent = this._pageNo(i);
+          b.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            this._go(i + 1);
+          });
+          box.append(b);
+        });
+        const act = document.createElement("div");
+        act.className = "act";
+        act.append(this._btn("mdi:plus", "Neues Rezept", () => this._edit(null)));
+        box.append(act);
+        return box;
+      }
+      const head = () => `<h2>${esc(r.title)}</h2>${r.image ? `<div class="photo"><img alt="" loading="lazy" src="${esc(r.image)}"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>` : ""}`;
+      const ing = () => r.ingredients?.length ? `<h3>Zutaten</h3><ul class="ing">${r.ingredients.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
+      const steps = () => r.steps?.length ? `<h3>Zubereitung</h3><ol class="st">${r.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>` : "";
+      if (d.k === "A") box.innerHTML = head() + ing();
+      else if (d.k === "B") box.innerHTML = steps() || '<div class="msg">Ohne Anleitung – einfach drauflos kochen.</div>';
+      else box.innerHTML = head() + ing() + steps();
+      if (d.k !== "A") box.append(this._tools(r));
+      return box;
+    }
+    _btn(icon2, label, fn, cls = "") {
+      const b = document.createElement("button");
+      b.className = `btn ${cls}`;
+      b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon><span></span>`;
+      b.lastChild.textContent = label;
+      b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        fn(b);
+      });
+      return b;
+    }
+    // Knöpfe unter einem Rezept: Zutaten auf die Einkaufsliste, Bearbeiten, Löschen (mit Rückfrage)
+    _tools(r) {
+      const w = document.createElement("div");
+      if (this._c.shopping_list && r.ingredients?.length) {
+        const act = document.createElement("div");
+        act.className = "act";
+        act.append(this._btn("mdi:cart-plus", "Zutaten auf Einkaufsliste", (b) => this._toList(r, b)));
+        w.append(act);
+      }
+      if (this._quiet) return w;
+      const t = document.createElement("div");
+      t.className = "tools";
+      t.append(this._btn("mdi:pencil", "Bearbeiten", () => this._edit(r)), this._btn("mdi:delete-outline", "Löschen", (b) => this._del(r, b)));
+      w.append(t);
+      return w;
+    }
+    /* ---------- Öffnen, Blättern, Gesten ---------- */
+    _setOpen(open, anim = true) {
+      const e = this._e;
+      if (!e || open === this._open || this._quiet && open) return;
+      this._open = open;
+      this._resize(true);
+      e.book.classList.toggle("still", !anim);
+      e.cover.classList.remove("gone");
+      e.book.classList.toggle("open", open);
+      e.book.classList.toggle("closed", !open);
+      clearTimeout(this._ct);
+      if (open && !this._dbl) this._ct = setTimeout(() => e.cover.classList.add("gone"), anim ? OPEN_MS : 0);
+      if (!open) {
+        this._sp = 0;
+        setTimeout(() => this._paint(), anim ? OPEN_MS : 0);
+      }
+      this._poke();
+    }
+    // Nach close_after Sekunden ohne Bedienung wieder zuklappen
+    _poke() {
+      clearTimeout(this._idle);
+      const s = +this._c.close_after;
+      if (this._open && s > 0) this._idle = setTimeout(() => {
+        if (this._e.form.hidden) this._setOpen(false);
+        else this._poke();
+      }, s * 1e3);
+    }
+    _go(i) {
+      const n = this._spreads().length;
+      i = Math.max(0, Math.min(n - 1, i));
+      if (i === this._sp || this._turning || !this._open) return;
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const dir = i > this._sp ? 1 : -1, from = this._spreads()[this._sp], to = this._spreads()[i];
+      this._poke();
+      if (reduce) {
+        this._sp = i;
+        this._paint();
+        return;
+      }
+      const e = this._e, leaf = document.createElement("div");
+      leaf.className = "leaf";
+      leaf.innerHTML = '<div class="face f paper"><div class="in"></div><div class="no"></div><div class="sh"></div></div><div class="face b paper"><div class="in"></div><div class="no"></div><div class="sh"></div></div>';
+      const [ff, fb] = leaf.querySelectorAll(".face");
+      if (this._dbl) {
+        if (dir > 0) {
+          this._fill(ff, from.R);
+          this._fill(fb, to.L);
+          this._fill(e.R, to.R);
+        } else {
+          this._fill(ff, to.R);
+          this._fill(fb, from.L);
+          this._fill(e.L, to.L);
+          e.L.style.visibility = to.L.k === "end" ? "hidden" : "";
+        }
+      } else {
+        if (dir > 0) {
+          this._fill(ff, from.P);
+          this._fill(e.R, to.P);
+        } else {
+          this._fill(ff, to.P);
+          this._fill(e.R, from.P);
+        }
+        fb.replaceChildren();
+      }
+      this._turning = true;
+      leaf.classList.add(dir > 0 ? "fwd" : "bwd");
+      e.book.append(leaf);
+      this._tt = setTimeout(() => {
+        leaf.remove();
+        this._turning = false;
+        this._sp = i;
+        this._paint();
+      }, TURN_MS + 30);
+    }
+    _gestures() {
+      const b = this._e.book;
+      let x0 = null, y0 = 0, t0 = 0;
+      b.addEventListener("pointerdown", (ev) => {
+        if (!this._open || ev.button > 0) return;
+        x0 = ev.clientX;
+        y0 = ev.clientY;
+        t0 = Date.now();
+        this._poke();
+      });
+      const end = (ev) => {
+        if (x0 == null) return;
+        const dx = ev.clientX - x0, dy = ev.clientY - y0, dt = Date.now() - t0;
+        x0 = null;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3 && dt < 900) this._go(this._sp + (dx < 0 ? 1 : -1));
+      };
+      b.addEventListener("pointerup", end);
+      b.addEventListener("pointercancel", () => {
+        x0 = null;
+      });
+      b.addEventListener("dragstart", (ev) => ev.preventDefault());
+      this.tabIndex = this.tabIndex >= 0 ? this.tabIndex : 0;
+      this.addEventListener("keydown", (ev) => {
+        if (!this._open || !this._e.form.hidden) return;
+        if (ev.key === "ArrowRight") this._go(this._sp + 1);
+        else if (ev.key === "ArrowLeft") this._go(this._sp - 1);
+      });
+    }
+    /* ---------- Einkaufsliste ---------- */
+    async _toList(r, b) {
+      const h = this._h, id = this._c.shopping_list, label = b.lastChild;
+      if (!h || !id || b.disabled) return;
+      b.disabled = true;
+      label.textContent = "Wird eingetragen …";
+      try {
+        let open = /* @__PURE__ */ new Set();
+        try {
+          const res = await h.callService("todo", "get_items", { status: ["needs_action"] }, { entity_id: id }, false, true);
+          open = new Set((res?.response?.[id]?.items || []).map((x) => String(x.summary).trim().toLowerCase()));
+        } catch {
+        }
+        const add = r.ingredients.filter((x) => !open.has(x.trim().toLowerCase()));
+        for (const x of add) await h.callService("todo", "add_item", { item: x }, { entity_id: id });
+        label.textContent = add.length ? `${add.length} ${add.length === 1 ? "Zutat" : "Zutaten"} eingetragen` : "Steht schon alles drauf";
+        b.classList.add("ok");
+      } catch (err) {
+        console.warn("[nova-cards] Rezeptbuch: Einkaufsliste", err);
+        label.textContent = "Hat nicht geklappt";
+        b.classList.add("warn");
+      }
+      setTimeout(() => {
+        b.disabled = false;
+        b.classList.remove("ok", "warn");
+        label.textContent = "Zutaten auf Einkaufsliste";
+      }, 3500);
+    }
+    /* ---------- Bearbeiten, Löschen ---------- */
+    _del(r, b) {
+      const label = b.lastChild;
+      if (!b.classList.contains("warn")) {
+        b.classList.add("warn");
+        label.textContent = "Wirklich löschen?";
+        clearTimeout(this._delT);
+        this._delT = setTimeout(() => {
+          b.classList.remove("warn");
+          label.textContent = "Löschen";
+        }, 4e3);
+        return;
+      }
+      clearTimeout(this._delT);
+      b.disabled = true;
+      this._h.callWS({ type: "nova/recipes/delete", recipe_id: r.id }).catch((err) => {
+        console.warn("[nova-cards] Rezeptbuch: Löschen fehlgeschlagen", err);
+        b.disabled = false;
+        label.textContent = "Fehler – nochmal?";
+      });
+    }
+    _edit(r) {
+      if (this._missing) return;
+      const f3 = this._e.form, st = { image: r?.image || null, file: null };
+      f3.innerHTML = `<form class="card" novalidate><h2>${r ? "Rezept bearbeiten" : "Neues Rezept"}</h2>
+<label for="t">Titel</label><input id="t" type="text" maxlength="200" autocomplete="off" enterkeyhint="next">
+<label>Bild</label><div class="pic"><img alt="" hidden><button type="button" class="btn" data-a="pick"><ha-icon icon="mdi:camera-outline"></ha-icon><span>Foto wählen</span></button>
+<button type="button" class="btn" data-a="clear" hidden><ha-icon icon="mdi:close"></ha-icon><span>Entfernen</span></button><input type="file" accept="image/*"></div>
+<label for="i">Zutaten</label><textarea id="i" placeholder="250 g Mehl&#10;2 Eier&#10;1 Prise Salz"></textarea><small>Eine Zutat pro Zeile</small>
+<label for="s">Anleitung</label><textarea id="s" placeholder="Mehl und Eier verrühren&#10;30 Minuten ruhen lassen"></textarea><small>Ein Schritt pro Zeile</small>
+<div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>Speichern</span></button></div></form>`;
+      const q = (s) => f3.querySelector(s), img = q(".pic img"), file = q("input[type=file]"), clr = q("[data-a=clear]"), err = q(".err");
+      q("#t").value = r?.title || "";
+      q("#i").value = (r?.ingredients || []).join("\n");
+      q("#s").value = (r?.steps || []).join("\n");
+      const showPic = (src) => {
+        img.hidden = !src;
+        if (src) img.src = src;
+        else img.removeAttribute("src");
+        clr.hidden = !src;
+      };
+      showPic(st.image);
+      f3.addEventListener("keydown", (ev) => ev.stopPropagation());
+      f3.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+      q("[data-a=pick]").addEventListener("click", () => file.click());
+      clr.addEventListener("click", () => {
+        st.image = null;
+        st.file = null;
+        showPic(null);
+      });
+      file.addEventListener("change", async () => {
+        const fl = file.files?.[0];
+        if (!fl) return;
+        err.textContent = "";
+        try {
+          st.file = await shrink(fl);
+          st.image = null;
+          showPic(URL.createObjectURL(st.file));
+        } catch (x) {
+          err.textContent = "Das Bild ließ sich nicht lesen.";
+          console.warn(x);
+        }
+      });
+      q("[data-a=cancel]").addEventListener("click", () => this._closeForm());
+      q("form").addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const title = q("#t").value.trim(), save = q("button[type=submit]");
+        if (!title) {
+          err.textContent = "Ein Titel fehlt noch.";
+          q("#t").focus();
+          return;
+        }
+        save.disabled = true;
+        err.textContent = "";
+        try {
+          let image = st.image;
+          if (st.file) image = await this._upload(st.file);
+          const lines = (v) => v.split("\n").map((x) => x.trim()).filter(Boolean);
+          const recipe = { ...r ? { id: r.id } : {}, title, image, ingredients: lines(q("#i").value), steps: lines(q("#s").value) };
+          const res = await this._h.callWS({ type: "nova/recipes/save", recipe });
+          if (!r && res?.recipe?.id) this._jump = res.recipe.id;
+          this._closeForm();
+          if (this._jump) this._setRecipes(this._recipes);
+        } catch (x) {
+          console.warn("[nova-cards] Rezeptbuch: Speichern fehlgeschlagen", x);
+          err.textContent = `Speichern hat nicht geklappt${x?.message ? `: ${x.message}` : ""}`;
+          save.disabled = false;
+        }
+      });
+      f3.hidden = false;
+      this._poke();
+      if (!r) setTimeout(() => q("#t").focus(), 50);
+    }
+    _closeForm() {
+      const f3 = this._e.form;
+      f3.hidden = true;
+      f3.replaceChildren();
+      this._poke();
+    }
+    // Bild hochladen: HTTP mit Anmeldung (hass.fetchWithAuth), sonst über WebSocket als Base64
+    async _upload(blob) {
+      const h = this._h;
+      if (typeof h.fetchWithAuth === "function") {
+        try {
+          const res2 = await h.fetchWithAuth("/api/nova/recipes/image", { method: "POST", body: blob, headers: { "Content-Type": blob.type || "image/jpeg" } });
+          const j = await res2.json().catch(() => ({}));
+          if (res2.ok && j.url) return j.url;
+          throw new Error(j.message || `HTTP ${res2.status}`);
+        } catch (x) {
+          console.warn("[nova-cards] Rezeptbuch: HTTP-Upload fehlgeschlagen, versuche WebSocket", x);
+        }
+      }
+      const data = await new Promise((ok2, no) => {
+        const fr = new FileReader();
+        fr.onload = () => ok2(String(fr.result));
+        fr.onerror = no;
+        fr.readAsDataURL(blob);
+      });
+      const res = await h.callWS({ type: "nova/recipes/upload", data, content_type: blob.type || "image/jpeg" });
+      return res.url;
+    }
+  };
+  async function shrink(file, max = 1600) {
+    let src;
+    try {
+      src = await createImageBitmap(file, { imageOrientation: "from-image" });
+    } catch {
+      src = await new Promise((ok2, no) => {
+        const im = new Image();
+        im.onload = () => ok2(im);
+        im.onerror = no;
+        im.src = URL.createObjectURL(file);
+      });
+    }
+    const w = src.width, hgt = src.height, s = Math.min(1, max / Math.max(w, hgt));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(w * s);
+    cv.height = Math.round(hgt * s);
+    cv.getContext("2d").drawImage(src, 0, 0, cv.width, cv.height);
+    return new Promise((ok2, no) => cv.toBlob((b) => b ? ok2(b) : no(new Error("toBlob")), "image/jpeg", 0.85));
+  }
+  var DEMO = [
+    { id: "demo1", title: "Apfelkuchen", image: null, ingredients: ["200 g Mehl", "125 g Butter", "100 g Zucker", "1 Ei", "4 Äpfel"], steps: ["Teig kneten", "Äpfel schälen und schneiden", "45 Minuten bei 180 °C backen"] },
+    { id: "demo2", title: "Kartoffelsuppe", image: null, ingredients: ["1 kg Kartoffeln", "1 Zwiebel", "1 l Brühe"], steps: ["Kartoffeln würfeln", "Alles 20 Minuten kochen", "Pürieren"] }
+  ];
+  define("recipe-book-card", NovaRecipeBookCard, { name: "Nova Recipe Book", description: "Rezeptbuch im Stil eines alten Kochbuchs: Inhaltsverzeichnis, Rezepte mit Foto, Zutaten und Anleitung, Blättern per Wischen. Rezepte werden über die Nova-Integration in Home Assistant gespeichert.", documentationURL: docUrl("nova-recipe-book") });
+  var S_BOOK = [
+    g2({ name: "title", selector: T }, { name: "subtitle", selector: T }),
+    g2(sel("cover_color", [["brown", "Braunes Leder"], ["red", "Bordeaux"], ["green", "Dunkelgrün"], ["blue", "Nachtblau"]]), sel("layout", [["auto", "Automatisch"], ["double", "Doppelseite"], ["single", "Einzelseite"]])),
+    g2({ name: "start_open", selector: { boolean: {} } }, { name: "close_after", selector: { number: { min: 0, max: 3600, step: 10, mode: "box", unit_of_measurement: "s" } } })
+  ];
+  var S_LIST = [{ name: "shopping_list", selector: { entity: { domain: "todo" } } }];
+  var LABELS10 = {
+    title: "Titel auf dem Einband",
+    subtitle: "Untertitel (optional)",
+    cover_color: "Einband",
+    layout: "Seiten",
+    start_open: "Aufgeschlagen starten",
+    close_after: "Zuklappen nach",
+    shopping_list: "Einkaufsliste (todo)"
+  };
+  var HELPERS10 = {
+    layout: "Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.",
+    close_after: "0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.",
+    shopping_list: "Optional: Unter jedem Rezept erscheint „Zutaten auf Einkaufsliste“. Was schon offen auf der Liste steht, wird nicht doppelt eingetragen.",
+    subtitle: "Steht in Handschrift unter dem Titel, z. B. „von Oma Erna“."
+  };
+  var NovaRecipeBookCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const data = () => ({ ...DEF7, ...this._config });
+      const form = (s) => this._form(s, data(), (v) => {
+        const c = merge(this._config, names(s), v);
+        Object.keys(DEF7).forEach((k) => {
+          if (c[k] === DEF7[k]) delete c[k];
+        });
+        this._emit(c);
+      });
+      r.querySelector(".wrap").append(
+        this._section("book", "mdi:book-open-page-variant-outline", "Buch", (b) => b.append(form(S_BOOK))),
+        this._section("list", "mdi:cart-outline", "Einkaufsliste", (b) => b.append(form(S_LIST)))
+      );
+    }
+  };
+  __publicField(NovaRecipeBookCardEditor, "labels", LABELS10);
+  __publicField(NovaRecipeBookCardEditor, "helpers", HELPERS10);
+  __publicField(NovaRecipeBookCardEditor, "openSections", ["book"]);
+  define("recipe-book-card-editor", NovaRecipeBookCardEditor);
 })();

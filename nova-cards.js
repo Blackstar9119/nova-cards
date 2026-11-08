@@ -64,21 +64,11 @@
   var DICON = { light: "mdi:lightbulb", switch: "mdi:power-socket-eu", fan: "mdi:fan", input_boolean: "mdi:toggle-switch-outline", button: "mdi:gesture-tap-button", input_button: "mdi:gesture-tap-button", script: "mdi:script-text-outline", scene: "mdi:palette", automation: "mdi:robot", climate: "mdi:thermostat", cover: "mdi:window-shutter", media_player: "mdi:speaker", number: "mdi:ray-vertex", input_number: "mdi:ray-vertex", select: "mdi:format-list-bulleted", binary_sensor: "mdi:checkbox-blank-circle-outline", sensor: "mdi:eye" };
   var TOGGLE = ["light", "switch", "input_boolean", "fan", "cover", "group", "siren", "humidifier", "automation", "media_player", "valve"];
   var PRESS = { button: ["button", "press"], input_button: ["input_button", "press"], script: ["script", "turn_on"], scene: ["scene", "turn_on"] };
-  var NUMLOC = { comma_decimal: "de", decimal_period: "en-US", space_comma: "fr", none: "en-US" };
-  var fmtNum = (h, v, dec) => {
-    const nf = h?.locale?.number_format, loc = NUMLOC[nf] || (nf === "system" ? void 0 : h?.locale?.language || h?.language || "de");
-    const d = dec ?? decOf(v);
-    try {
-      return new Intl.NumberFormat(loc, { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: nf !== "none" }).format(+v);
-    } catch {
-      return String(v);
-    }
-  };
   var fmtState = (h, s) => {
     try {
       if (h.formatEntityState) return h.formatEntityState(s);
       const u = s.attributes.unit_of_measurement;
-      return (NUMRE.test(s.state) ? fmtNum(h, s.state) : s.state) + (u ? " " + u : "");
+      return NUMRE.test(s.state) ? haUnitJoin(h, fmtNum(h, s.state), u) : s.state + (u ? " " + u : "");
     } catch {
       return s.state;
     }
@@ -155,12 +145,30 @@
     return hh ? `${hh}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
   };
   var idleState = (s) => !s || ["off", "unavailable", "unknown", ""].includes(s.state) || NUMRE.test(s.state) && +s.state <= 0;
+  var NUM_LOCALE = { comma_decimal: "en-US", decimal_comma: "de", space_comma: "fr", system: void 0 };
+  var fmtNum = (h, v, d) => {
+    const n = +v, dd = d ?? decOf(v), f3 = h?.locale?.number_format;
+    if (f3 === "none") return n.toFixed(dd);
+    const loc = f3 && f3 in NUM_LOCALE ? NUM_LOCALE[f3] : h?.locale?.language || h?.language;
+    try {
+      return new Intl.NumberFormat(loc, { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(n);
+    } catch {
+      return n.toFixed(dd);
+    }
+  };
+  var PCT_BLANK = ["cs", "de", "fi", "fr", "sk", "sv"];
+  var haUnitJoin = (h, v, u) => {
+    if (!u) return `${v}`;
+    if (u === "°") return `${v}${u}`;
+    if (u === "%") return PCT_BLANK.includes(String(h?.locale?.language || h?.language || "").split("-")[0]) ? `${v} %` : `${v}%`;
+    return `${v} ${u}`;
+  };
   function valueOf(h, s, o) {
     if (!s) return "–";
     if (o.format === "clock" && NUMRE.test(s.state)) return clockOf(+s.state * (DUR_U[o.unit ?? s.attributes.unit_of_measurement] ?? 1));
     if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
-      const n = fmtNum(h, s.state, o.decimals ?? void 0);
-      return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
+      const n = fmtNum(h, s.state, o.decimals != null ? +o.decimals : void 0);
+      return haUnitJoin(h, n, o.unit ?? s.attributes.unit_of_measurement);
     }
     return fmtState(h, s);
   }
@@ -2035,7 +2043,7 @@ ha-icon{--mdc-icon-size:20px;display:flex}
   };
   define("navi-popup", NovaNaviPopup);
   var DCSS = `
-:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px))}
+:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px));transition:height .3s ease}
 :host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
 :host([side]){height:0}
 ha-icon{--mdc-icon-size:22px;display:flex}
@@ -2084,17 +2092,29 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bc,var(--nv-accent));color:var(--bfg,#3a2a00);font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
 .d.bn .num{display:block}.d.bn .dot{display:none}
 .empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
-.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;align-self:center;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
-.mb[hidden]{display:none}
-.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.mbw{display:grid;grid-template-rows:0fr;margin-bottom:-8px;opacity:0;transform:translateY(14px);pointer-events:none;transition:grid-template-rows var(--mbd) ease,margin var(--mbd) ease,opacity var(--mbd) ease,transform var(--mbd) cubic-bezier(.2,.8,.2,1)}
+.mbw.on{grid-template-rows:1fr;margin-bottom:0;opacity:1;transform:none;pointer-events:auto}
+.top .mbw{margin-bottom:0;margin-top:-8px;transform:translateY(-14px)}.top .mbw.on{margin-top:0;transform:none}
+.side .mbw{transform:translateX(-14px)}.side.right .mbw{transform:translateX(14px)}.side .mbw.on{transform:none}
+.mbi{min-height:0;overflow:hidden;display:flex;justify-content:center}.mbw.open .mbi{overflow:visible}
+.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .mb .art.pic ha-icon{display:none}
 .mb .tx{flex:1;min-width:0;cursor:pointer}
 .mb .tx b,.mb .tx span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mb .tx b{font-size:13px;font-weight:600}.mb .tx span{font-size:11px;opacity:.7}
-.mb .pp{width:40px;height:40px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-active);color:var(--nv-active-fg);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.mb .pp:active{transform:scale(.9)}
+.mb .tx span.warn{opacity:1;color:var(--nova-warning-color,#f5b83d)}
+.mb .pp,.mb .sp{flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;transition:transform .15s}
+.mb .pp{width:40px;height:40px;background:var(--nv-active);color:var(--nv-active-fg)}
+.mb .sp{width:32px;height:32px;background:var(--nv-chip);color:var(--nv-fg);opacity:.85}.mb .sp ha-icon{--mdc-icon-size:18px}
+.mb .sp[hidden]{display:none}
+.mb .pp:active,.mb .sp:active{transform:scale(.9)}
+.mb .pp:focus-visible,.mb .sp:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .side .mb{width:auto;flex-direction:column;padding:6px;border-radius:28px}
 .side .mb .tx{display:none}
+.mi .tt{display:flex;flex-direction:column;min-width:0;line-height:1.25}.mi .tt span{font-size:12px;opacity:.7;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.mi .ic.pic{background:var(--nv-chip) center/cover no-repeat}.mi .ic.pic ha-icon{display:none}
+@media(prefers-reduced-motion:reduce){.mbw{transition:none}}
 .menu{position:fixed;z-index:8;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:22px;min-width:180px;max-width:calc(100vw - 16px);max-height:60vh;overflow-y:auto;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:mi .16s ease-out}
 .mi{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:999px;cursor:pointer;font-size:14px;white-space:nowrap;-webkit-tap-highlight-color:transparent;outline:none}
 .mi[hidden]{display:none}
@@ -2143,6 +2163,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     return Object.values(cond).some((v) => v != null) ? alertHit(cond, s) : isOn(s);
   };
   var MEDIA_ON = ["playing", "paused"];
+  var SEL = /* @__PURE__ */ new Map();
   var LAST = /* @__PURE__ */ new Map();
   var REDUCED = window.matchMedia?.("(prefers-reduced-motion: reduce)");
   var NovaNaviCard = class extends HTMLElement {
@@ -2226,6 +2247,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       this._mq?.removeEventListener("change", this._mqf);
       this._mq = null;
       this._close();
+      this._closePlayers();
+      clearTimeout(this._mpt);
+      clearTimeout(this._wt);
+      clearTimeout(this._pend?.t);
+      this._pend = null;
       if (this._hp) {
         this._hp.remove();
         this._hp = null;
@@ -2272,13 +2298,14 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       w.classList.toggle("right", s === "right");
       w.classList.toggle(this._cfg.position === "top" ? "top" : "bottom", !s);
       if (this._menu) this._close();
+      this._closePlayers();
       if (this._shown) this._shown = `${this._shown.split("|")[0]}|neu`;
       this._update();
     }
     _build() {
       this._built = true;
       const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""} ${{ true: "cmp", false: "nocmp" }[this._opt("compact")] || ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms"><div class="mb glass" hidden><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="pp" role="button" tabindex="0"><ha-icon></ha-icon></div></div><div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
+      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""} ${{ true: "cmp", false: "nocmp" }[this._opt("compact")] || ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms;--mbd:${this._opt("animation") === false ? 0 : 300}ms"><div class="mbw"><div class="mbi"><div class="mb glass"><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="sp" role="button" tabindex="0" title="Lautsprecher wählen" hidden><ha-icon icon="mdi:speaker"></ha-icon></div><div class="pp" role="button" tabindex="0" title="Play/Pause"><ha-icon></ha-icon></div></div></div></div><div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
       const dock = r.querySelector(".dock");
       this._dock = dock;
       this._bg = r.querySelector(".dk>.bg");
@@ -2290,20 +2317,24 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         this._edges();
       }, { passive: true });
       this._mb = r.querySelector(".mb");
-      this._mb.querySelector(".tx").addEventListener("click", () => this._mp && moreInfo(this, this._mp));
-      const pp = this._mb.querySelector(".pp");
-      const play = () => {
-        if (!this._mp) return;
-        if (this._haptic) haptic();
-        this._h.callService("media_player", "media_play_pause", { entity_id: this._mp });
-      };
-      pp.addEventListener("click", play);
-      pp.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          play();
-        }
+      this._mbw = r.querySelector(".mbw");
+      this._mbw.addEventListener("transitionend", (e) => {
+        if (e.target === this._mbw && e.propertyName === "grid-template-rows") this._mbw.classList.toggle("open", this._mbw.classList.contains("on"));
       });
+      const info = () => this._mp && moreInfo(this, this._mp);
+      this._mb.querySelector(".tx").addEventListener("click", info);
+      this._mb.querySelector(".art").addEventListener("click", info);
+      const key = (el2, fn) => {
+        el2.addEventListener("click", fn);
+        el2.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            fn();
+          }
+        });
+      };
+      key(this._mb.querySelector(".pp"), () => this._play());
+      key(this._mb.querySelector(".sp"), () => this._pm ? this._closePlayers() : this._openPlayers());
       this._applySide();
       if (this._hp) r.appendChild(this._hp);
       if (!this._items.length) {
@@ -2588,25 +2619,152 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         d.style.removeProperty("--bfg");
       }
     }
-    // Media-Leiste: spielt ein Player, wird er gezeigt, sonst ein pausierter (oder auf Wunsch immer der erste)
+    // Media-Leiste. Gezeigt wird sie nur, solange ein Player wirklich etwas abspielt; ein pausierter bleibt noch
+    // paused_timeout Minuten (an last_changed gemessen). Angezeigt wird der Player, der spielt – bei mehreren der zuletzt
+    // gestartete –, außer man hat über den Lautsprecher-Knopf selbst einen gewählt
+    get _players() {
+      return [].concat(this._cfg.media_players ?? this._srcCfg?.media_players ?? []).flatMap((x) => typeof x === "string" ? list(x) : [x]).map(toObj).filter((p) => typeof p.entity === "string" && p.entity);
+    }
+    get _pauseMs() {
+      const v = Number(this._opt("paused_timeout"));
+      return (Number.isFinite(v) && v >= 0 ? v : 10) * 6e4;
+    }
+    // Läuft der Player (true), ist er pausiert und noch in der Frist (Zahl = Ablaufzeitpunkt) oder läuft nicht (false)?
+    _live(s) {
+      if (!s || !s.attributes.media_title || !MEDIA_ON.includes(s.state)) return false;
+      if (s.state === "playing") return true;
+      const until = Date.parse(s.last_changed) + this._pauseMs;
+      return until > Date.now() ? until : false;
+    }
     _media() {
-      const mb = this._mb, ids = list(this._cfg.media_players ?? this._srcCfg?.media_players);
-      if (!mb) return;
-      const ss = ids.map((id) => this._h.states[id]).filter(Boolean);
-      const s = ss.find((x) => x.state === "playing") || ss.find((x) => MEDIA_ON.includes(x.state)) || (this._cfg.media_always ?? this._srcCfg?.media_always ? ss[0] : null);
-      mb.hidden = !s;
-      this.toggleAttribute("media", !!s && !this._side && !this._inline);
-      this._mp = s?.entity_id || null;
-      if (!s) return;
-      const a = s.attributes, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
+      const mb = this._mb;
+      if (!mb || !this._h) return;
+      const ps = this._players, h = this._h, key = ps.map((p) => p.entity).join("|");
+      const live = ps.map((p) => ({ ...p, s: h.states[p.entity] })).map((p) => ({ ...p, l: this._live(p.s) })).filter((p) => p.l);
+      const t = (p) => Date.parse(p.s.last_changed) || 0;
+      const playing = live.filter((p) => p.l === true).sort((x, y) => t(y) - t(x));
+      const pick = SEL.get(key);
+      const manual = pick && ps.find((p) => p.entity === pick.id) && !playing.some((p) => p.entity !== pick.id && t(p) > pick.at) && (live.some((p) => p.entity === pick.id) || Date.now() - pick.at < this._pauseMs);
+      let cur2 = manual ? ps.find((p) => p.entity === pick.id) : playing[0] || live.sort((x, y) => t(y) - t(x))[0] || null;
+      const show = !!live.length || !!this._opt("media_always") && !!ps.length;
+      if (!cur2 && show) cur2 = ps[0];
+      clearTimeout(this._mpt);
+      const next = Math.min(...live.filter((p) => p.l !== true).map((p) => p.l));
+      if (Number.isFinite(next)) this._mpt = setTimeout(() => this._media(), next - Date.now() + 50);
+      this._mbw.classList.toggle("on", show);
+      if (!show) this._mbw.classList.remove("open");
+      this.toggleAttribute("media", show && !this._side && !this._inline);
+      mb.querySelector(".sp").hidden = ps.length < 2;
+      this._mp = show ? cur2.entity : null;
+      if (!show) {
+        this._closePlayers();
+        return;
+      }
+      const s = h.states[cur2.entity], a = s?.attributes || {}, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
       if (art._pic !== pic) {
         art._pic = pic;
         art.style.backgroundImage = pic ? `url(${JSON.stringify(pic)})` : "";
         art.classList.toggle("pic", !!pic);
       }
-      mb.querySelector("b").textContent = a.media_title || a.friendly_name || s.entity_id;
-      mb.querySelector(".tx span").textContent = a.media_artist || a.app_name || (MEDIA_ON.includes(s.state) ? a.friendly_name || "" : fmtState(this._h, s));
-      mb.querySelector(".pp ha-icon").setAttribute("icon", s.state === "playing" ? "mdi:pause" : "mdi:play");
+      const name = cur2.name || a.friendly_name || cur2.entity;
+      mb.querySelector("b").textContent = a.media_title || name;
+      const ps0 = this._pend && h.states[this._pend.id];
+      if (ps0 && (ps0.state !== this._pend.st || ps0.last_changed !== this._pend.lc)) {
+        clearTimeout(this._pend.t);
+        this._pend = null;
+      }
+      const warn = this._warn && this._warn.id === cur2.entity && this._warn.until > Date.now();
+      const sub = mb.querySelector(".tx span");
+      sub.classList.toggle("warn", warn);
+      sub.textContent = warn ? "Lautsprecher reagiert nicht" : [a.media_artist || a.app_name, a.media_title ? name : ""].filter(Boolean).join(" · ") || (s ? fmtState(h, s) : "");
+      mb.querySelector(".pp ha-icon").setAttribute("icon", s?.state === "playing" ? "mdi:pause" : "mdi:play");
+      if (this._pm) this._fillPlayers();
+    }
+    // Play/Pause über media_play_pause; meldet der Player nach 3 s keine Änderung, kurzer Hinweis in der Leiste
+    _play() {
+      const id = this._mp, s = id && this._h.states[id];
+      if (!s) return;
+      if (this._haptic) haptic();
+      clearTimeout(this._pend?.t);
+      this._pend = { id, st: s.state, lc: s.last_changed, t: setTimeout(() => {
+        const n = this._h?.states[id];
+        if (this._pend?.id === id && n && n.state === this._pend.st && n.last_changed === this._pend.lc) {
+          this._warn = { id, until: Date.now() + 3e3 };
+          clearTimeout(this._wt);
+          this._wt = setTimeout(() => this._media(), 3050);
+        }
+        this._pend = null;
+        this._media();
+      }, 3e3) };
+      this._warn = null;
+      this._h.callService("media_player", "media_play_pause", { entity_id: id }).catch(() => {
+        this._warn = { id, until: Date.now() + 3e3 };
+        this._media();
+      });
+    }
+    // Auswahl der Lautsprecher (Nova-Menü über dem Knopf)
+    _openPlayers() {
+      this._close();
+      const m = document.createElement("div");
+      m.className = "menu glass";
+      m.setAttribute("role", "menu");
+      this.shadowRoot.appendChild(m);
+      this._pm = m;
+      this._fillPlayers();
+      const b = this._mb.querySelector(".sp");
+      this._place(m, b);
+      this._pout = (e) => {
+        const p = e.composedPath();
+        if (!p.includes(m) && !p.includes(b)) this._closePlayers();
+      };
+      this._pesc = (e) => {
+        if (e.key === "Escape") this._closePlayers();
+      };
+      window.addEventListener("pointerdown", this._pout, true);
+      window.addEventListener("keydown", this._pesc);
+      m.querySelector(".mi")?.focus({ preventScroll: true });
+    }
+    _fillPlayers() {
+      const m = this._pm, h = this._h, key = this._players.map((p) => p.entity).join("|");
+      const st = (s) => !s || ["off", "unavailable", "unknown", "standby"].includes(s.state) ? "aus" : s.state === "playing" ? "spielt" : s.state === "paused" ? "pausiert" : fmtState(h, s);
+      m.replaceChildren(...this._players.map((p) => {
+        const s = h.states[p.entity], a = s?.attributes || {}, pic = a.entity_picture_local || a.entity_picture;
+        const e = document.createElement("div");
+        e.className = "mi";
+        e.tabIndex = 0;
+        e.setAttribute("role", "menuitemradio");
+        e.classList.toggle("here", p.entity === this._mp);
+        e.setAttribute("aria-checked", String(p.entity === this._mp));
+        e.innerHTML = `<span class="ic"><ha-icon icon="${s?.state === "playing" ? "mdi:speaker-play" : "mdi:speaker"}"></ha-icon></span><span class="tt"><b></b><span></span></span>`;
+        if (pic && s?.attributes.media_title) {
+          const ic = e.querySelector(".ic");
+          ic.classList.add("pic");
+          ic.style.backgroundImage = `url(${JSON.stringify(pic)})`;
+        }
+        e.querySelector("b").textContent = p.name || a.friendly_name || p.entity;
+        e.querySelector(".tt span").textContent = [st(s), MEDIA_ON.includes(s?.state) ? a.media_title : ""].filter(Boolean).join(" · ");
+        const go = () => {
+          if (this._haptic) haptic();
+          SEL.set(key, { id: p.entity, at: Date.now() });
+          this._closePlayers();
+          this._media();
+        };
+        e.addEventListener("click", go);
+        e.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            go();
+          }
+        });
+        return e;
+      }));
+    }
+    _closePlayers() {
+      if (!this._pm) return;
+      this._pm.remove();
+      this._pm = null;
+      window.removeEventListener("pointerdown", this._pout, true);
+      window.removeEventListener("keydown", this._pesc);
     }
     _run(i, kind) {
       const it = this._items[i];
@@ -2732,7 +2890,8 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     g2({ name: "animation", selector: { boolean: {} } }, ...c.animation !== false ? [{ name: "animation_duration", selector: { number: { min: 100, max: 1500, step: 10, mode: "box", unit_of_measurement: "ms" } } }] : []),
     { name: "haptic", selector: { boolean: {} } }
   ];
-  var MEDIA = [{ name: "media_players", selector: { entity: { multiple: true, filter: { domain: "media_player" } } } }, { name: "media_always", selector: { boolean: {} } }];
+  var MEDIA = [g2({ name: "paused_timeout", selector: { number: { min: 0, max: 240, step: 1, mode: "box", unit_of_measurement: "min" } } }, { name: "media_always", selector: { boolean: {} } })];
+  var MPLAYER = [g2({ name: "entity", required: true, selector: { entity: { filter: { domain: "media_player" } } } }, { name: "name", selector: { text: {} } })];
   var I_MAIN = [g2({ name: "icon", required: true, selector: { icon: {} } }, { name: "label", selector: { text: {} } })];
   var I_TAP = (opts) => [
     { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
@@ -2770,6 +2929,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     animation_duration: "Dauer der Animation",
     media_players: "Media-Player",
     media_always: "Auch zeigen, wenn nichts läuft",
+    paused_timeout: "Pausiert noch zeigen für",
+    entity: "Media-Player",
+    name: "Name",
     icon: "Icon",
     label: "Name",
     tap_action: "Aktion beim Antippen",
@@ -2803,6 +2965,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     compact: "Kleinere Buttons und Abstände. Automatisch: auf Bildschirmen bis 600 px Breite.",
     haptic: "Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk).",
     media_players: "Zeigt über der Leiste den laufenden Player mit Play/Pause. Leer = keine Media-Leiste.",
+    paused_timeout: "So lange bleibt die Leiste nach einer Pause noch stehen (Standard 10 min, 0 = sofort ausblenden).",
+    media_always: "Alte Verhaltensweise: Leiste immer zeigen, auch wenn nichts läuft (dann der erste Player).",
+    name: "Leer = Name der Entität. Erscheint in der Lautsprecher-Auswahl.",
     popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion, dem Untermenü und dem einfachen Pop-up.",
     cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
     visible_users: "Leer = für alle sichtbar.",
@@ -2840,7 +3005,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap");
-      const data = { position: "bottom", button_size: 48, sidebar: "", active_label: true, animation: true, animation_duration: 280, ...this._config, compact: { true: "on", false: "off" }[this._config.compact] || "" };
+      const data = { position: "bottom", button_size: 48, sidebar: "", active_label: true, animation: true, animation_duration: 280, paused_timeout: 10, ...this._config, compact: { true: "on", false: "off" }[this._config.compact] || "" };
       const form = (schema) => this._form(schema, data, (v) => {
         const c = merge(this._config, names(schema), v);
         if (c.position === "bottom") delete c.position;
@@ -2856,6 +3021,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         if (c.animation !== false) delete c.animation;
         if (c.animation === false || c.animation_duration === 280) delete c.animation_duration;
         if (!c.media_always) delete c.media_always;
+        if (c.paused_timeout == null || c.paused_timeout === "" || +c.paused_timeout === 10) delete c.paused_timeout;
         const re = !!this._config.source !== !!c.source || !!this._config.sidebar !== !!c.sidebar || this._config.animation !== false !== (c.animation !== false);
         this._emit(c);
         if (re) this._rebuild();
@@ -2876,7 +3042,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
           }));
         }),
         this._section("look", "mdi:palette-outline", "Layout und Aussehen", (b) => b.append(form(LOOK3(data)))),
-        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => b.append(form(MEDIA)))
+        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => {
+          b.append(this._hint("Die Leiste erscheint nur, solange ein Player etwas abspielt. Bei mehreren Playern wechselt der Lautsprecher-Knopf neben Play das Gerät."));
+          this._itemList(b, "media_players", MPLAYER, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
+          b.append(form(MEDIA));
+        })
       );
     }
     get _opts() {
@@ -6473,6 +6643,52 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   __publicField(NovaWeatherCardEditor, "openSections", ["general"]);
   define("weather-card-editor", NovaWeatherCardEditor);
 
+  // src/shared/marquee.js
+  var MARQUEE_CSS = `
+.mq{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mq>.mqi{display:inline}
+.mq.run{text-overflow:clip;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent)}
+.mq.run>.mqi{display:inline-block;padding-left:4px;animation:nv-mq var(--mqd,8s) ease-in-out infinite alternate;will-change:transform}
+@keyframes nv-mq{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--mqx,0))}}
+@media(prefers-reduced-motion:reduce){.mq.run{text-overflow:ellipsis;-webkit-mask-image:none;mask-image:none}.mq.run>.mqi{display:inline;padding-left:0;animation:none}}`;
+  var SPEED = 28;
+  var MIN = 5;
+  var marquee = (el2, text, still = false) => {
+    if (!el2) return;
+    el2.classList.add("mq");
+    let span = el2.querySelector(":scope>.mqi");
+    if (!span) {
+      el2.textContent = "";
+      span = document.createElement("span");
+      span.className = "mqi";
+      el2.appendChild(span);
+    }
+    if (span.textContent !== text) span.textContent = text;
+    el2._mqStill = still;
+    if (!el2._mqRo && typeof ResizeObserver !== "undefined") {
+      el2._mqRo = new ResizeObserver(() => fit(el2));
+      el2._mqRo.observe(el2);
+    }
+    fit(el2);
+  };
+  var fit = (el2) => {
+    const span = el2.querySelector(":scope>.mqi");
+    if (!span) return;
+    el2.classList.remove("run");
+    const over = span.getBoundingClientRect().width - el2.clientWidth;
+    if (el2._mqStill || !el2.isConnected || el2.clientWidth <= 0 || over <= 1) return;
+    const dist = Math.ceil(over) + 18;
+    el2.style.setProperty("--mqx", `-${dist}px`);
+    el2.style.setProperty("--mqd", `${Math.max(MIN, dist / SPEED / 0.64).toFixed(1)}s`);
+    el2.classList.add("run");
+  };
+  var stopMarquee = (el2) => {
+    if (!el2?._mqRo) return;
+    el2._mqRo.disconnect();
+    el2._mqRo = null;
+    el2.classList.remove("run");
+  };
+
   // src/shared/card-grid.js
   var WIDTHS = [["auto", "Auto"], ["1/4", "1/4"], ["1/3", "1/3"], ["1/2", "1/2"], ["2/3", "2/3"], ["3/4", "3/4"], ["1", "Voll"]];
   var FR = { "1/4": 1 / 4, "1/3": 1 / 3, "1/2": 1 / 2, "2/3": 2 / 3, "3/4": 3 / 4, "1": 1 };
@@ -7282,7 +7498,7 @@ hui-card-picker{flex:1;min-height:0}`;
   };
 
   // src/popup.js
-  var DEF = { width: 1180, stack_below: 500, info_layout: "wrap" };
+  var DEF = { width: 1180, stack_below: 500, info_layout: "wrap", info_position: "header" };
   var PCSS2 = `${NOVA_VARS}${GRID_CSS}${CHIP_CSS}
 :host{display:block;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 :host(.live){display:contents}
@@ -7302,7 +7518,7 @@ box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:trans
 .hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
 background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px}${MARQUEE_CSS}
 .bdg{display:flex;gap:6px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.bdg::-webkit-scrollbar{display:none}.bdg:empty{display:none}
 .bd{display:inline-flex;align-items:center;gap:5px;flex:none;padding:5px 10px;border-radius:999px;background:var(--c,var(--nv-chip));color:var(--cf,inherit);font-size:12px;white-space:nowrap;cursor:pointer;outline:none}
 .bd ha-icon{--mdc-icon-size:15px}.bd img{width:15px;height:15px}.bd:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.bd:active{transform:scale(.95)}
@@ -7311,6 +7527,11 @@ background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filt
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
 .info{padding:0 14px 12px}
+/* Info-Chips in der Kopfzeile (info_position: header): rechtsbündig vor dem X, gleiche Höhe wie das X, bei Platzmangel waagrecht scrollbar */
+.hd .info{padding:0;flex:0 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.hd .info::-webkit-scrollbar{display:none}
+.hd .chip{min-height:36px;box-sizing:border-box;padding:0 12px}
+/* Chips haben Vorrang: der Titel nimmt nur den Rest (bis zu seiner Mindestbreite, dann Laufschrift) */
+.hd:has(>.info:not([hidden])) .tt{flex:1 1 0;min-width:min(24%,88px)}
 .body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box;
 padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
 .pop.inline .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
@@ -7319,7 +7540,8 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
 .pop{align-items:flex-end}
 .bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
 .sh{width:100%;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
-.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
+.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}.hd .info{padding:0}
+.hd .chip{padding:0 10px}.hd .chip .ci:not(:empty)~.cn{display:none}.hd .chip .ci:not(:empty)~.cv::before{content:none}
 .body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
 .pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
 .pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
@@ -7399,10 +7621,13 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.addEventListener(ev, this._sync));
       this._detect();
       requestAnimationFrame(() => this._detect());
+      const tt = this.shadowRoot?.querySelector(".tt");
+      if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
     }
     disconnectedCallback() {
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.removeEventListener(ev, this._sync));
       this._ro.disconnect();
+      stopMarquee(this.shadowRoot?.querySelector(".tt"));
       this._unreg(this._cfg?.hash);
       if (this._isOpen) this._hide(true);
       if (this._mode === "preview") this._handOffCells();
@@ -7532,7 +7757,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     /* --- Kopfzeile --- */
     _head() {
       const c = this._cfg, r = this.shadowRoot;
-      r.querySelector(".tt").textContent = c.title || "";
+      marquee(r.querySelector(".tt"), c.title || "", inPicker(this));
       const hi = r.querySelector(".hi");
       if (c.icon) setIcon(hi, c.icon);
       else {
@@ -7547,7 +7772,10 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       if (tint) this._sh.style.setProperty("--tc", roleVars(tint).c);
       if (c.title || c.hash) this._sh.setAttribute("aria-label", c.title || c.hash);
       else this._sh.removeAttribute("aria-label");
-      this._infoEl.classList.toggle("scroll", c.info_layout === "scroll");
+      const inHead = (c.info_position || DEF.info_position) !== "below", x = r.querySelector(".hd .x");
+      if (inHead && this._infoEl.parentNode !== x.parentNode) x.before(this._infoEl);
+      else if (!inHead && this._infoEl.parentNode === x.parentNode) r.querySelector(".hd").after(this._infoEl);
+      this._infoEl.classList.toggle("scroll", !inHead && c.info_layout === "scroll");
       this._bds = null;
       if (this._h) this._info();
     }
@@ -7618,7 +7846,10 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     g2({ name: "show_state", selector: { boolean: {} } }, ROLE("color")),
     { name: "state", selector: T }
   ];
-  var HEAD = [sel("info_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])];
+  var HEAD = (c) => [
+    sel("info_position", [["header", "In der Kopfzeile"], ["below", "Eigene Zeile darunter"]]),
+    ...(c.info_position || DEF.info_position) === "below" ? [sel("info_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])] : []
+  ];
   var LABELS2 = {
     ...GRID_LABELS,
     hash: "Hash (ohne #)",
@@ -7631,6 +7862,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     width: "Max. Breite (Desktop)",
     stack_below: "Untereinander unter Breite",
     info_layout: "Info-Leiste bei vielen Einträgen",
+    info_position: "Info-Chips anzeigen",
     entity: "Entität",
     name: "Eigener Name (optional)",
     decimals: "Nachkommastellen",
@@ -7643,6 +7875,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
   var HELPERS2 = {
     ...GRID_HELPERS,
     hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
+    info_position: "In der Kopfzeile: rechts vor dem X, bei wenig Platz waagrecht scrollbar. Darunter: eigene Zeile wie früher.",
     title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Nova Navi und Raum-Karte.",
     stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
     state: "Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.",
@@ -7694,11 +7927,15 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     }
     _secHead() {
       const [d, b] = this._sec("sec.header", "mdi:information-outline", "Kopfzeile & Info-Leiste");
-      b.append(this._hint("Titel und Icon stehen unter „Allgemein“. Badges sitzen in der Kopfzeile, Info-Entitäten als Chips darunter. Antippen öffnet die Details."));
-      b.append(this._form(HEAD, { info_layout: DEF.info_layout, ...this._config }, (v) => {
-        const c = merge(this._config, names(HEAD), v);
+      b.append(this._hint("Titel und Icon stehen unter „Allgemein“. Badges und Info-Chips sitzen in der Kopfzeile (oder die Info-Chips als eigene Zeile darunter). Antippen öffnet die Details."));
+      const head = HEAD(this._config);
+      b.append(this._form(head, { info_layout: DEF.info_layout, info_position: DEF.info_position, ...this._config }, (v) => {
+        const c = merge(this._config, names(head), v);
         if (c.info_layout === DEF.info_layout) delete c.info_layout;
+        if (c.info_position === DEF.info_position) delete c.info_position;
+        const re = (c.info_position || DEF.info_position) !== (this._config.info_position || DEF.info_position);
         this._emit(c);
+        if (re) this._rebuild();
       }));
       b.append(Object.assign(document.createElement("h4"), { textContent: "Badges" }));
       b.append(this._hint("Kleine Anzeigen rechts neben dem Titel. Auf schmalen Bildschirmen nur Icon und Zustand, bei Platzmangel waagrecht scrollbar."));
@@ -7808,6 +8045,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       sel("type", CHIP_TYPES),
       ...btn ? [] : [ENT],
       NAMEICON,
+      ...btn ? [] : [{ name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }],
       ROLE("color"),
       ...btn && presets.length ? [sel("preset", [["custom", "Eigene Aktion"], ...presets.map(([k, p]) => [k, p.label])])] : [],
       ...btn && CHIP_PRESETS[o.preset] ? [] : [{ name: "tap_action", selector: A }],
@@ -7824,24 +8062,26 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     color: "Farbe",
     preset: "Aktion",
     tap_action: "Aktion beim Antippen",
-    state: "Nur anzeigen bei Zustand"
+    state: "Nur anzeigen bei Zustand",
+    decimals: "Nachkommastellen"
   };
   var CHIP_HELPERS = {
     color: "Leer = neutral.",
     state: "z. B. on, mehrere mit Komma. Leer = immer anzeigen. Bei Knöpfen bezieht es sich auf die gewählte Entität.",
-    tap_action: "Bei Wert-Chips: leer = Details öffnen."
+    tap_action: "Bei Wert-Chips: leer = Details öffnen.",
+    decimals: "Nur bei Zahlenwerten. Leer = wie in Home Assistant. Beispiel: 1 → 21,9 °C."
   };
 
   // src/area.js
   var DEF2 = { stack_below: 500, chips_layout: "wrap" };
-  var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}
+  var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
 :host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:12px;padding:14px}
 .hd{display:flex;align-items:center;gap:10px;padding:6px;border-radius:999px;background:var(--nv-chip)}
 .hd.nb{padding-left:14px}
 .hi{display:flex}.hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:0;font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.tt{flex:1 1 auto;min-width:min(35%,110px);font-weight:600;font-size:15px}
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
 .x:focus-visible{outline:none;box-shadow:0 0 0 2px var(--nv-active)}
@@ -7907,9 +8147,12 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       this._detect();
       requestAnimationFrame(() => this._detect());
       if (this._dirty && this._cfg) this._grid();
+      const tt = this.shadowRoot?.querySelector(".tt");
+      if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
     }
     disconnectedCallback() {
       this._ro.disconnect();
+      stopMarquee(this.shadowRoot?.querySelector(".tt"));
       if (this._prev) this._handOffCells();
     }
     // Editor-Vorschau (Zellen übernehmen) bzw. Bearbeitungsmodus (leere Plätze zeigen)
@@ -7939,7 +8182,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       const r = this.shadowRoot, noBack = c.back_action?.action === "none";
       this._bk.hidden = noBack;
       this._hd.classList.toggle("nb", noBack);
-      r.querySelector(".tt").textContent = c.name || ar?.name || (c.area ? c.area : "Keine Area gewählt");
+      marquee(r.querySelector(".tt"), c.name || ar?.name || (c.area ? c.area : "Keine Area gewählt"), inPicker(this));
       setIcon(r.querySelector(".hi"), c.icon || ar?.icon || "mdi:texture-box");
       const tint = c.tint;
       this.classList.toggle("tint", !!tint);
@@ -12328,7 +12571,7 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,o
   var R = 80;
   var RING = 58;
   var SP = 10;
-  var SPEED = { slow: { k: 0.8, max: 1, fr: 0.94 }, normal: { k: 1.5, max: 2, fr: 0.955 }, fast: { k: 3, max: 4, fr: 0.965 } };
+  var SPEED2 = { slow: { k: 0.8, max: 1, fr: 0.94 }, normal: { k: 1.5, max: 2, fr: 0.955 }, fast: { k: 3, max: 4, fr: 0.965 } };
   var parseIn = (x) => {
     const p = String(x).trim().replace(",", ":").split(/[:.\s]+/).filter(Boolean).map(Number);
     if (!p.length || p.some((n) => !Number.isFinite(n) || n < 0)) return 0;
@@ -13060,7 +13303,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         const dy = ev.clientY - ly, dt = Math.max(1, ev.timeStamp - lt), sp = Math.abs(dy) / dt;
         ly = ev.clientY;
         lt = ev.timeStamp;
-        const S = SPEED[this._c.scale_speed] || SPEED.normal, gain = 1 + Math.min(S.max, Math.max(0, sp - 0.15) * S.k);
+        const S = SPEED2[this._c.scale_speed] || SPEED2.normal, gain = 1 + Math.min(S.max, Math.max(0, sp - 0.15) * S.k);
         want = this._clampOff(want + dy * gain);
         pts.push([ev.timeStamp, want]);
         if (pts.length > 8) pts.shift();
@@ -13103,7 +13346,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
             o = c;
             v = 0;
           }
-          v *= Math.pow((SPEED[this._c.scale_speed] || SPEED.normal).fr, dt / 16);
+          v *= Math.pow((SPEED2[this._c.scale_speed] || SPEED2.normal).fr, dt / 16);
           this._move(o, false);
           this._hit(o);
           if (Math.abs(v) > 0.05) this._raf = requestAnimationFrame(step);

@@ -80,6 +80,24 @@ Pop-up öffnen. Badges zeigen Punkte oder Zahlen in wählbarer Farbe, Einträge 
 ausblenden, und eine kleine Media-Leiste zeigt den laufenden Player. Früher hieß sie Nova Dock Card – der alte Typ
 `custom:nova-dock-card` läuft weiter.
 
+Der Mini-Player erscheint nur, solange etwas läuft, zeigt den spielenden Player und wechselt per Lautsprecher-Knopf das Gerät:
+
+```yaml
+type: custom:nova-navi-card
+media_players:
+  - entity: media_player.wohnzimmer_echo
+    name: Wohnzimmer
+  - entity: media_player.kuche_echo
+    name: Küche
+paused_timeout: 10   # Minuten, die ein pausierter Player noch sichtbar bleibt
+items:
+  - icon: mdi:home
+    label: Start
+    tap_action:
+      action: navigate
+      navigation_path: /zuhause/home
+```
+
 ➜ [Alle Optionen von Nova Navi](docs/navi-card.md)
 
 <!-- Screenshot/GIF: Nova Navi -->
@@ -121,6 +139,20 @@ z. B. „Hauptbürste blockiert“, auch für die Station. Vieles findet die Kar
 ### Nova Pop-up Card
 Ein Pop-up mit beliebigen Karten in Zeilen und Spalten, geöffnet über eine Adresse wie `#wohnzimmer`, zum Beispiel von Nova Navi
 oder von der Raum Card. Kopfzeile mit Badges und Info-Leiste, auf dem Handy per Wischen schließbar.
+
+Temperatur, Luftfeuchte & Co. stehen als Info-Chips direkt in der Kopfzeile neben dem Titel (oder mit
+`info_position: below` in einer eigenen Zeile darunter):
+
+```yaml
+type: custom:nova-popup-card
+hash: wohnzimmer
+title: Wohnzimmer
+icon: mdi:sofa
+info_position: header
+info:
+  - entity: sensor.wohnzimmer_temperatur
+  - entity: sensor.wohnzimmer_luftfeuchtigkeit
+```
 
 ➜ [Alle Optionen der Pop-up Card](docs/popup-card.md)
 

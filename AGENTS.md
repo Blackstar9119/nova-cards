@@ -23,7 +23,8 @@ src/
   vacuum.js           Nova Saugroboter Card + Editor
   waste.js            Nova Müllkalender Card + Editor (Termine aus calendar.*-Entitäten)
   weather.js          Nova Wetter Card + Editor (aktuelles Wetter + Vorhersage per weather/subscribe_forecast)
-  popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten)
+  popup.js            Nova Pop-up Card + Editor (Pop-up per URL-Hash, Raster aus beliebigen Karten; Info-Chips per
+                      info_position in der Kopfzeile wie bei der Bereich Card oder als Zeile darunter)
   area.js             Nova Bereich Card + Editor (Raumansicht: Kopfzeile, Raster aus beliebigen Karten)
   swipe.js            Nova Swipe Card + Editor (Seiten zum Wischen, je Seite ein Raster aus beliebigen Karten, Seiten-Punkte)
   chips.js            Nova Chips Card + Editor (Reihe aus Wert- und Knopf-Chips)
@@ -60,6 +61,7 @@ src/
     chips.js          Nova Chips: Wert- und Knopf-Chips (Darstellung, Schnellauswahl wie „Alle Lichter im Raum aus“,
                       Editor-Schema) – für die Chips Card, später auch Pop-up
     print-button.js   Druck-Knopf von Einkauf und Notiz: ruft ein Skript auf und zeigt Erfolg/Fehler (runPrint, printPaint)
+    marquee.js        Laufschrift für zu lange Namen (Titel von Pop-up und Bereich): läuft hin und her, sonst „…“
     popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
                       Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Nova Navi und Raum-Karte
 docs/
@@ -169,3 +171,6 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 - **Danach dem Nutzer sagen,** welche Karte (`custom:nova-dev-…`) er testen soll und dass er hart neu laden muss
   (Strg/Cmd+Shift+R bzw. App-Cache leeren).
 - **Keine Releases dafür.** Releases (Versionssprung, Tag, GitHub-Release) nur, wenn der Nutzer es ausdrücklich sagt.
+- **Offen nach dem nächsten Release:** Die Dashboards `nova-iphone` und `nova-macbook` laufen zum Testen mit Dev-Karten
+  (`custom:nova-dev-navi-card`, `-popup-card`, `-area-card`, `-shopping-card`, `-note-card`). Nach dem Release alle wieder
+  auf die normalen `custom:nova-*`-Typen zurückstellen (Einkauf/Notiz erst, wenn sie im Release enthalten sind).

@@ -7,18 +7,11 @@ export const DICON = {light: 'mdi:lightbulb', switch: 'mdi:power-socket-eu', fan
 export const TOGGLE = ['light', 'switch', 'input_boolean', 'fan', 'cover', 'group', 'siren', 'humidifier', 'automation', 'media_player', 'valve'];
 export const PRESS = {button: ['button', 'press'], input_button: ['input_button', 'press'], script: ['script', 'turn_on'], scene: ['scene', 'turn_on']};
 
-// Zahl nach dem Zahlenformat aus dem HA-Profil (Komma/Punkt); dec = feste Nachkommastellen, sonst wie im Zustand
-const NUMLOC = {comma_decimal: 'de', decimal_period: 'en-US', space_comma: 'fr', none: 'en-US'};
-export const fmtNum = (h, v, dec) => {
-  const nf = h?.locale?.number_format, loc = NUMLOC[nf] || (nf === 'system' ? undefined : h?.locale?.language || h?.language || 'de');
-  const d = dec ?? decOf(v);
-  try { return new Intl.NumberFormat(loc, {minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: nf !== 'none'}).format(+v); } catch { return String(v); }
-};
 export const fmtState = (h, s) => {
   try {
     if (h.formatEntityState) return h.formatEntityState(s);
     const u = s.attributes.unit_of_measurement;
-    return (NUMRE.test(s.state) ? fmtNum(h, s.state) : s.state) + (u ? ' ' + u : '');
+    return NUMRE.test(s.state) ? haUnitJoin(h, fmtNum(h, s.state), u) : s.state + (u ? ' ' + u : '');
   } catch { return s.state; }
 };
 export const unitJoin = (v, u) => !u ? `${v}` : u.startsWith('°') ? `${v}${u}` : `${v} ${u}`;
@@ -59,12 +52,30 @@ export const clockOf = sec => {
 // Ruhezustand: 0, aus, nicht verfügbar – für „bei 0 / aus ausblenden“
 export const idleState = s => !s || ['off', 'unavailable', 'unknown', ''].includes(s.state) || (NUMRE.test(s.state) && +s.state <= 0);
 
+// Zahl im Zahlenformat des HA-Profils (z. B. 21,9 statt 21.9). d = feste Nachkommastellen, ohne d so viele wie im Wert.
+const NUM_LOCALE = {comma_decimal: 'en-US', decimal_comma: 'de', space_comma: 'fr', system: undefined};
+export const fmtNum = (h, v, d) => {
+  const n = +v, dd = d ?? decOf(v), f = h?.locale?.number_format;
+  if (f === 'none') return n.toFixed(dd);
+  const loc = f && f in NUM_LOCALE ? NUM_LOCALE[f] : h?.locale?.language || h?.language;
+  try { return new Intl.NumberFormat(loc, {minimumFractionDigits: dd, maximumFractionDigits: dd}).format(n); } catch { return n.toFixed(dd); }
+};
+
+// Einheit anhängen wie HA: kein Leerzeichen bei „°“ allein, bei „%“ je nach Sprache, sonst immer (21,9 °C, 62 %)
+const PCT_BLANK = ['cs', 'de', 'fi', 'fr', 'sk', 'sv'];
+export const haUnitJoin = (h, v, u) => {
+  if (!u) return `${v}`;
+  if (u === '°') return `${v}${u}`;
+  if (u === '%') return PCT_BLANK.includes(String(h?.locale?.language || h?.language || '').split('-')[0]) ? `${v} %` : `${v}%`;
+  return `${v} ${u}`;
+};
+
 export function valueOf(h, s, o) {
   if (!s) return '–';
   if (o.format === 'clock' && NUMRE.test(s.state)) return clockOf(+s.state * (DUR_U[o.unit ?? s.attributes.unit_of_measurement] ?? 1));
   if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
-    const n = fmtNum(h, s.state, o.decimals ?? undefined);
-    return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
+    const n = fmtNum(h, s.state, o.decimals != null ? +o.decimals : undefined);
+    return haUnitJoin(h, n, o.unit ?? s.attributes.unit_of_measurement);
   }
   return fmtState(h, s);
 }

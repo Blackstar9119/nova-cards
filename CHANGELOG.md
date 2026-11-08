@@ -21,11 +21,15 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 - Theme-Variablen `--nova-clock-morning`, `--nova-clock-noon`, `--nova-clock-night` und `--nova-led-red|green|blue|amber`.
 - Nova Uhr, Timer und Swipe Card sowie Nova Einkauf und Notiz Card aus den Feature-Branches zusammengeführt.
 - `docs/DESIGN.md` als feste Design-Referenz, dieses Changelog.
+- Pop-up Card: Info-Chips per `info_position` in der Kopfzeile; Pop-up und Bereich: zu lange Titel laufen langsam hin und her.
+- Nova Navi: Mini-Player nur bei laufender Wiedergabe, Lautsprecher-Auswahl, Rückmeldung bei Play.
+- Chips: Nachkommastellen (`decimals`) im Editor, Einheit wie in HA (21,9 °C, 62 %).
 
 ### Behoben
 - Nova Uhr Card: Inhalt auf breiten Karten (ab 420 px) vertikal zentriert statt oben; Radiowecker ohne PM-Punkt bei 24 Stunden.
 - Nova Uhr Card: Uhrzeit immer in der Zeitzone von Home Assistant (`hass.config.time_zone`), nicht in der des Browsers.
-- Zahlen ohne Formatierung durch HA (z. B. Werte unter der Uhr) nach dem Zahlenformat des HA-Profils: `21,5 °C` statt `21.5 °C`.
+- Zahlen nach dem Zahlenformat des HA-Profils (`language`, `comma_decimal`, `decimal_comma`, `space_comma`, `none`), auch
+  ohne `formatEntityState` und mit `decimals`: `21,5 °C` statt `21.5 °C`.
 - Nova Swipe Card: Tippen in einem Eingabefeld (z. B. Einkaufsliste) hält „Zurück zu Seite 1 nach“ auf; solange ein Feld den
   Fokus hat, springt die Karte nicht zurück.
 
