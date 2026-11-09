@@ -7,9 +7,12 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node build.mjs --dev"
+    "dev": "node build.mjs --dev",
+    "preview:capture": "node tools/preview/capture.mjs"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "@mdi/js": "^7.4.47",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.65.0"
   }
 }

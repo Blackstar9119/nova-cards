@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Nova Cards – Vorschau</title>
+<style>
+  :root { color-scheme: dark; --primary-text-color:#e8eaf0; --secondary-text-color:#9aa3b5; --primary-color:#f5b83d; --card-background-color:#1b2134; --ha-card-background:#1b2134; --divider-color:rgba(255,255,255,.12); --primary-background-color:#0f1320; --ha-card-border-radius:16px }
+  body { margin:0; padding:24px; background:#0f1320; color:#e8eaf0; font-family:Roboto,-apple-system,"Segoe UI",sans-serif }
+  .grid { display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start }
+  .slot { width:420px; padding:0; transform:translateZ(0) }
+  .slot.wide { width:720px }
+  .err { color:#ff8a80; font:12px monospace; white-space:pre-wrap }
+  @media (prefers-reduced-motion: reduce) { * { animation-play-state: running !important } }
+</style>
+</head>
+<body>
+<div class="grid" id="grid"></div>
+<script type="module">
+import {makeHass} from './mock-hass.js';
+import './icons.bundle.js';
+
+const q = new URLSearchParams(location.search);
+const bundle = q.get('bundle'), prefix = q.get('prefix') || 'nova-';
+
+// Beispiel-Konfigurationen je Karte (Name ohne Präfix). Mehrere Varianten → eigene Datei <karte>-<variante>.
+// anim: true → zusätzlich GIF. wide: breiterer Slot. Nicht aufgeführte Karten nutzen getStubConfig(hass).
+const room = {name: 'Wohnzimmer', icon: 'mdi:sofa', temperature: 'sensor.wohnzimmer_temperatur', windows: ['binary_sensor.fenster_wohnzimmer'], buttons: [{entity: 'light.wohnzimmer_decke'}, {entity: 'light.stehlampe'}, {entity: 'light.sofa'}, {entity: 'media_player.wohnzimmer'}]};
+const vac = {entity: 'vacuum.robbi', name: 'Robbi', battery: 'sensor.robbi_akku', status: 'sensor.robbi_status', map: 'image.robbi_karte', layout: 'side', segment_mode: 'roborock',
+  rooms: [{name: 'Küche', icon: 'mdi:countertop', entity: 'input_boolean.raum_kueche'}, {name: 'Wohnzimmer', icon: 'mdi:sofa', entity: 'input_boolean.raum_wohnzimmer'}, {name: 'Bad', icon: 'mdi:shower', entity: 'input_boolean.raum_bad'}]};
+const V = (name, config, states, extra = {}) => ({name, config, states, ...extra});
+const CARDS = {
+  'room-card': [V('default', room)],
+  'thermostat-card': [V('default', {entity: 'climate.wohnzimmer', sensor: 'sensor.wohnzimmer_temperatur', humidity: 'sensor.wohnzimmer_luftfeuchte', windows: ['binary_sensor.fenster_wohnzimmer']})],
+  'light-card': [V('default', {title: 'Wohnzimmer', entities: ['light.wohnzimmer_decke', 'light.stehlampe', 'light.sofa', 'light.fernseher']})],
+  'weather-card': [V('default', {entity: 'weather.zuhause', show_clock: true, show_date: true, details: ['humidity', 'wind', 'pressure', 'uv_index'], show_hourly: true, hours: 24, hour_step: 3}, null, {wide: true})],
+  'waste-card': [V('default', {entities: ['calendar.muell'], title: 'Müllkalender', count: 5, days: 30, types: [
+    {match: 'Restmüll', name: 'Restmüll', icon: 'mdi:trash-can', color: 'neutral'}, {match: 'Gelb', name: 'Gelber Sack', icon: 'mdi:recycle', color: 'accent-2'},
+    {match: 'Papier', name: 'Papiertonne', icon: 'mdi:newspaper-variant-outline', color: 'accent-1'}, {match: 'Bio', name: 'Biotonne', icon: 'mdi:leaf', color: 'accent-3'}]}),
+    V('kompakt', {entities: ['calendar.muell'], layout: 'compact', count: 4, types: [{match: 'Restmüll', name: 'Restmüll', icon: 'mdi:trash-can', color: 'neutral'}, {match: 'Gelb', name: 'Gelber Sack', icon: 'mdi:recycle', color: 'accent-2'}]})],
+  'vacuum-card': [
+    V('saugt', vac, null, {anim: true}),
+    V('laedt', vac, {'vacuum.robbi': {state: 'docked'}, 'sensor.robbi_akku': {state: '54'}, 'sensor.robbi_status': {state: 'Lädt'}}),
+    V('fehler', vac, {'vacuum.robbi': {state: 'error'}, 'sensor.robbi_status': {state: 'Hauptbürste verfangen'}})],
+  'media-card': [V('default', {entity: 'media_player.wohnzimmer', name: 'Wohnzimmer', artwork: 'background', players: [{entity: 'media_player.kueche', name: 'Küche'}]}, null, {anim: false})],
+  'remote-card': [V('default', {entity: 'remote.tv', layout: 'dpad', apps: [{preset: 'netflix'}, {preset: 'youtube'}, {preset: 'prime'}, {preset: 'disney'}]})],
+  'camera-card': [V('default', {entity: 'camera.eingang', name: 'Eingang'})],
+  'modular-card': [V('default', {blocks: [{type: 'header', name: 'Kaffeemaschine', icon: 'mdi:coffee-maker', status: 'sensor.wohnzimmer_temperatur'}, {type: 'entities', entities: [{entity: 'switch.kaffee'}]}]})],
+  'chips-card': [V('default', {chips: [{type: 'value', entity: 'sensor.wohnzimmer_temperatur'}, {type: 'value', entity: 'sensor.wohnzimmer_luftfeuchte'}, {type: 'button', name: 'Lichter aus', icon: 'mdi:lightbulb-off', tap_action: {action: 'none'}}]})],
+  'navi-card': [V('default', {inline: true, items: [{icon: 'mdi:home', label: 'Start', tap_action: {action: 'none'}}, {icon: 'mdi:lightbulb-group', label: 'Licht', tap_action: {action: 'none'}}, {icon: 'mdi:thermometer', label: 'Klima', tap_action: {action: 'none'}}, {icon: 'mdi:cog', label: 'Mehr', tap_action: {action: 'none'}}]})],
+  'geraet-card': [
+    V('spuelmaschine', {device_type: 'dishwasher', name: 'Spülmaschine', entity: 'sensor.spuelmaschine_status', progress: 'sensor.spuelmaschine_fortschritt', remaining: 'sensor.spuelmaschine_restzeit'}, null, {anim: true}),
+    V('futterautomat', {device_type: 'feeder', name: 'Futterautomat', entity: 'sensor.futter_status', level: 'sensor.futter_fuellstand'}, null, {anim: true}),
+    V('trinkbrunnen', {device_type: 'fountain', name: 'Trinkbrunnen', entity: 'sensor.brunnen_status', level: 'sensor.brunnen_wasserstand'}, null, {anim: true})],
+  'drucker-card': [V('default', {demo: 'print'}, null, {anim: true})],
+  'timer-card': [V('default', {entity: 'timer.kueche'}),
+    V('laeuft', {entity: 'timer.kueche'}, {'timer.kueche': {state: 'active', attributes: {duration: '0:05:00', remaining: '0:03:12', finishes_at: new Date(Date.now() + 192e3).toISOString()}}})],
+  'clock-card': [V('default', {})],
+  'shopping-card': [V('default', {entity: 'todo.einkauf', print_script: 'script.einkauf_drucken'})],
+  'note-card': [V('default', {print_script: 'script.notiz_drucken', notes_entity: 'todo.notizen'})],
+  'recipe-book-card': [V('default', {shopping_list: 'todo.einkauf'}, null, {wide: true})],
+  // Container-Karten brauchen Kind-Karten
+  'area-card': [V('default', {area: 'wohnzimmer', rows: [{cells: [{card: {type: 'custom:' + prefix + 'light-card', entities: ['light.wohnzimmer_decke', 'light.stehlampe']}}, {card: {type: 'custom:' + prefix + 'thermostat-card', entity: 'climate.wohnzimmer'}}]}]})],
+  'swipe-card': [V('default', {pages: [{rows: [{cells: [{card: {type: 'custom:' + prefix + 'room-card', ...room}}]}]}, {rows: [{cells: [{card: {type: 'custom:' + prefix + 'light-card', entities: ['light.wohnzimmer_decke', 'light.stehlampe']}}]}]}]})],
+  // Pop-up ist ein Overlay (per URL-Hash geöffnet) und hat keine feste Größe im Seitenfluss → wird übersprungen
+  'popup-card': [V('default', {hash: 'demo', rows: [{cells: [{card: {type: 'custom:' + prefix + 'light-card', entities: ['light.wohnzimmer_decke']}}]}]})],
+};
+
+// Ersatz für HA-Kartenhelfer (Container-Karten wie Bereich/Swipe/Pop-up erzeugen ihre Kinder damit)
+window.loadCardHelpers = async () => ({createCardElement: cfg => {
+  const el = document.createElement(cfg.type.replace(/^custom:/, ''));
+  el.setConfig(cfg); return el;
+}});
+
+await import(new URL(bundle, location.href).href);
+
+// Karten nur über customElements-Registrierung finden: window.customCards (von define() befüllt) – kein fester Katalog
+const registered = (window.customCards || []).map(c => c.type).filter(t => t.startsWith(prefix) && !t.endsWith('-editor'));
+const grid = document.getElementById('grid');
+const slots = [];
+for (const type of registered) {
+  const base = type.slice(prefix.length);
+  let variants = CARDS[base];
+  const wasStub = !variants;
+  if (!variants) variants = [V('default', null)];
+  variants.forEach((v, i) => {
+    const hass = makeHass(v.states || {});
+    const el = document.createElement(type);
+    const slot = document.createElement('div');
+    slot.className = 'slot' + (v.wide ? ' wide' : '');
+    const id = base + (i === 0 ? '' : '-' + v.name);
+    slot.dataset.id = id; slot.dataset.base = base; slot.dataset.anim = v.anim ? '1' : '';
+    slot.dataset.stub = wasStub ? '1' : '';
+    try {
+      let cfg = v.config;
+      if (!cfg) cfg = el.constructor.getStubConfig ? el.constructor.getStubConfig(hass) : {};
+      el.setConfig({type: 'custom:' + type, ...cfg});
+      el.hass = hass;
+      slot.appendChild(el);
+    } catch (e) { slot.innerHTML = `<div class="err">${type}: ${e.message}</div>`; slot.dataset.error = e.message; }
+    grid.appendChild(slot);
+    slots.push({id, base, type, anim: !!v.anim, stub: wasStub, error: slot.dataset.error || ''});
+  });
+}
+window.__slots = slots;
+window.__ready = true;
+</script>
+</body>
+</html>
