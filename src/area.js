@@ -28,6 +28,8 @@ const ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}
 .hd .nchips{flex:0 1 auto;justify-content:flex-end}
 .hd .nchip{min-height:36px}
 .body{display:flex;flex-direction:column;gap:12px}
+/* Ohne Karten nur die Kopfzeile (z. B. als Titelleiste mit Zurück); im Editor bleibt der Hinweis sichtbar */
+.g:not(.prev) .body:has(>.hint:only-child){display:none}
 .cell>*{min-width:0}
 .prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
 .prev .cell.empty::after{content:'Leerer Platz'}
