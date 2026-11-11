@@ -107,6 +107,9 @@ img{object-fit:contain}
 .pills.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-modular-button-width,104px),1fr));gap:8px}
 .pills.grid .pill{flex-direction:column;justify-content:center;border-radius:16px;padding:10px 8px;white-space:normal;text-align:center}
 .pills.grid .pill ha-icon{--mdc-icon-size:22px}.pills.grid .pill img{width:22px;height:22px}
+.pills.flat{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--nova-modular-button-width,60px)),1fr));gap:6px}
+.pills.flat .pill{justify-content:center;border-radius:12px;padding:6px;min-height:40px;overflow:hidden}
+.pills.flat .pill .t{overflow:hidden;text-overflow:ellipsis}
 .row{display:flex;align-items:center;gap:10px;padding:5px 0;min-width:0}
 .sw{width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,.18);position:relative;flex:none;transition:background .25s}
 .sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s}

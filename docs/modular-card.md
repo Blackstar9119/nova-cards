@@ -57,10 +57,10 @@ blocks:
 | Baustein | Optionen |
 |---|---|
 | `header` | `name`, `icon`, `status` (Text + an/aus), `active` (statt `status` für an/aus), `progress` (%-Balken), `tap_action`, `button_icon` + `button_action` (Touch-Button oben rechts) |
-| `info` | `entities[]`: `entity`, `name`, `icon`, `unit`, `decimals`, `tap_action` · `layout: rows\|chips`, `columns` |
+| `info` | `entities[]`: `entity`, `name`, `icon`, `unit`, `decimals`, `format: value\|clock` (`clock` = Dauer als m:ss, z. B. Restzeit), `hide_idle` (Zeile nur, solange der Wert nicht 0/aus ist), `tap_action` · `layout: rows\|chips`, `columns` |
 | `entities` | `entities[]`: `entity`, `name`, `icon`, `tap_action`, `hold_action`, `confirm` · `columns`. Standard: schalten, sonst more-info |
 | `sliders` | `entities[]`: `entity` (number, input_number, light, fan, cover, media_player, climate, water_heater), `name`, `icon`, `min`/`max`/`step`, `unit`, `format: duration` (Minuten → Std:Min) |
-| `buttons` | `buttons[]`: `name`, `icon`, `entity` (button/script/scene werden ausgelöst) oder `tap_action`, `confirm` · `layout: pills\|grid` |
+| `buttons` | `buttons[]`: `name`, `icon`, `entity` (button/script/scene werden ausgelöst) oder `tap_action`, `confirm` · `layout: pills\|flat\|grid` (`flat` = flache Knöpfe nebeneinander, spart Höhe) |
 | `alerts` | `alerts[]`: `entity`, `state` / `state_not` (Komma-Liste), `above` / `below`, `message` (`{state}` wird ersetzt), `icon`, `level: warning\|error\|info` · `layout: list\|chips`, `glow` (Kartenrahmen, Standard `true`) |
 
 Für die ganze Karte: `size` (Größe in Prozent, Standard `100`, z. B. `150` für Wandpanels) – skaliert Schrift, Icons und Abstände.

@@ -11,6 +11,7 @@ Eine Reihe frei belegbarer Chips. Jeder Chip ist entweder ein **Wert-Chip** (zei
 |---|---|
 | `chips` | Liste der Chips (siehe unten), Reihenfolge im Editor per Pfeil änderbar |
 | `layout` | `wrap` (umbrechen, Standard) oder `scroll` (waagrecht scrollen) |
+| `size` | `normal` (Standard) oder `large`: höhere Chips, die die Zeile gleichmäßig füllen – für kleine Touch-Displays wie den Echo Show |
 | `area` | Nur für die Schnellauswahl „Alle Lichter im Raum aus“ nötig |
 
 ## Optionen je Chip

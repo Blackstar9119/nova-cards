@@ -1,5 +1,5 @@
 /* Nova Cards v0.11.1 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Chips, Gerät, 3D-Drucker, Fernbedienung, Einkauf, Notiz – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
   var __defProp = Object.defineProperty;
@@ -48,6 +48,15 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
   }
+  var fitLabels = (root, sel2, collapse) => root?.querySelectorAll(sel2).forEach((k) => {
+    if (collapse) k.style.display = "";
+    const cut = k.offsetParent !== null && k.scrollWidth > k.clientWidth + 1;
+    if (collapse) k.style.display = cut ? "none" : "";
+    else k.style.visibility = cut ? "hidden" : "";
+    const p = k.parentElement;
+    if (cut) p.title = k.textContent;
+    else if (p.title === k.textContent) p.removeAttribute("title");
+  });
 
   // src/shared/state.js
   var OFF = /* @__PURE__ */ new Set(["off", "unavailable", "unknown", "idle", "docked", "standby", "closed", "paused", "not_home", "none", "ready"]);
@@ -65,16 +74,78 @@
   var unitJoin = (v, u) => !u ? `${v}` : u.startsWith("°") ? `${v}${u}` : `${v} ${u}`;
   var decOf = (st) => (String(st).split(".")[1] || "").length;
   var nameOf = (h, o) => o.name ?? h.states[o.entity]?.attributes.friendly_name ?? o.entity ?? "";
-  var iconOf = (h, o, fb) => o.icon || h.states[o.entity]?.attributes.icon || DICON[dom(o.entity)] || fb;
+  var SCLASS = {
+    temperature: "mdi:thermometer",
+    humidity: "mdi:water-percent",
+    battery: "mdi:battery",
+    power: "mdi:flash",
+    energy: "mdi:lightning-bolt",
+    illuminance: "mdi:brightness-5",
+    pressure: "mdi:gauge",
+    atmospheric_pressure: "mdi:gauge",
+    co2: "mdi:molecule-co2",
+    carbon_dioxide: "mdi:molecule-co2",
+    pm25: "mdi:blur",
+    pm10: "mdi:blur",
+    voltage: "mdi:sine-wave",
+    current: "mdi:current-ac",
+    duration: "mdi:timer-outline",
+    timestamp: "mdi:clock-outline",
+    date: "mdi:calendar",
+    moisture: "mdi:water",
+    precipitation: "mdi:weather-rainy",
+    wind_speed: "mdi:weather-windy",
+    gas: "mdi:meter-gas",
+    water: "mdi:water",
+    signal_strength: "mdi:wifi",
+    volatile_organic_compounds: "mdi:air-filter",
+    speed: "mdi:speedometer",
+    weight: "mdi:weight"
+  };
+  var BCLASS = {
+    window: ["mdi:window-closed", "mdi:window-open"],
+    door: ["mdi:door-closed", "mdi:door-open"],
+    garage_door: ["mdi:garage", "mdi:garage-open"],
+    opening: ["mdi:square-outline", "mdi:square-rounded-outline"],
+    motion: ["mdi:motion-sensor-off", "mdi:motion-sensor"],
+    occupancy: ["mdi:home-outline", "mdi:home"],
+    presence: ["mdi:home-outline", "mdi:home"],
+    moisture: ["mdi:water-off", "mdi:water"],
+    smoke: ["mdi:smoke-detector", "mdi:smoke-detector-alert"],
+    battery: ["mdi:battery", "mdi:battery-outline"],
+    problem: ["mdi:check-circle-outline", "mdi:alert-circle"],
+    connectivity: ["mdi:close-network-outline", "mdi:check-network-outline"],
+    power: ["mdi:power-plug-off", "mdi:power-plug"],
+    plug: ["mdi:power-plug-off", "mdi:power-plug"],
+    running: ["mdi:stop", "mdi:play"],
+    lock: ["mdi:lock", "mdi:lock-open"]
+  };
+  var classIcon = (s, id) => {
+    const dc = s?.attributes.device_class, d = dom(id);
+    if (!dc) return null;
+    if (d === "binary_sensor") return BCLASS[dc]?.[s.state === "on" ? 1 : 0] || null;
+    return d === "sensor" || d === "number" || d === "input_number" ? SCLASS[dc] || null : null;
+  };
+  var iconOf = (h, o, fb) => {
+    const s = h.states[o.entity];
+    return o.icon || s?.attributes.icon || classIcon(s, o.entity) || DICON[dom(o.entity)] || fb;
+  };
   var langOf = (h) => h.locale?.language || h.language || "de";
   var tzOf = (h) => h.locale?.time_zone === "server" ? h.config?.time_zone : void 0;
   var areaOf = (h, id) => {
     const e = h.entities?.[id];
     return e && (e.area_id || h.devices?.[e.device_id]?.area_id) || null;
   };
-  var hasF = (s, f) => ((s?.attributes.supported_features || 0) & f) === f;
+  var hasF = (s, f2) => ((s?.attributes.supported_features || 0) & f2) === f2;
+  var DUR_U = { ms: 1e-3, s: 1, min: 60, h: 3600, d: 86400 };
+  var clockOf = (sec) => {
+    const t = Math.max(0, Math.round(sec)), hh = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), ss = String(t % 60).padStart(2, "0");
+    return hh ? `${hh}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+  };
+  var idleState = (s) => !s || ["off", "unavailable", "unknown", ""].includes(s.state) || NUMRE.test(s.state) && +s.state <= 0;
   function valueOf(h, s, o) {
     if (!s) return "–";
+    if (o.format === "clock" && NUMRE.test(s.state)) return clockOf(+s.state * (DUR_U[o.unit ?? s.attributes.unit_of_measurement] ?? 1));
     if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
       const n = o.decimals != null ? (+s.state).toFixed(o.decimals) : s.state;
       return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
@@ -254,6 +325,9 @@ img{object-fit:contain}
 .pills.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-modular-button-width,104px),1fr));gap:8px}
 .pills.grid .pill{flex-direction:column;justify-content:center;border-radius:16px;padding:10px 8px;white-space:normal;text-align:center}
 .pills.grid .pill ha-icon{--mdc-icon-size:22px}.pills.grid .pill img{width:22px;height:22px}
+.pills.flat{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--nova-modular-button-width,60px)),1fr));gap:6px}
+.pills.flat .pill{justify-content:center;border-radius:12px;padding:6px;min-height:40px;overflow:hidden}
+.pills.flat .pill .t{overflow:hidden;text-overflow:ellipsis}
 .row{display:flex;align-items:center;gap:10px;padding:5px 0;min-width:0}
 .sw{width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,.18);position:relative;flex:none;transition:background .25s}
 .sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s}
@@ -323,6 +397,31 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     }
     return false;
   };
+  var watchVisible = (el2, cb) => {
+    let inView = !("IntersectionObserver" in window), last;
+    const upd = () => {
+      const v = inView && !document.hidden && el2.isConnected;
+      if (v !== last) {
+        last = v;
+        cb(v);
+      }
+    };
+    const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => {
+      inView = es[es.length - 1].isIntersecting;
+      upd();
+    }, { rootMargin: "100px" }) : null;
+    io?.observe(el2);
+    document.addEventListener("visibilitychange", upd);
+    upd();
+    return () => {
+      io?.disconnect();
+      document.removeEventListener("visibilitychange", upd);
+      if (last) {
+        last = false;
+        cb(false);
+      }
+    };
+  };
 
   // src/shared/editor-base.js
   var preload;
@@ -356,8 +455,8 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     set hass(h) {
       const old = this._hass;
       this._hass = h;
-      if (hassChanged(old, h, this._ids)) this._forms.forEach((f) => {
-        f.hass = h;
+      if (hassChanged(old, h, this._ids)) this._forms.forEach((f2) => {
+        f2.hass = h;
       });
     }
     setConfig(c) {
@@ -411,28 +510,28 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
       return el2;
     }
     _form(schema, data, cb) {
-      const f = this._reuse(`form:${JSON.stringify(schema)}`, () => {
-        const f2 = document.createElement("ha-form");
-        f2.schema = schema;
-        f2.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
-        f2.computeHelper = (s) => this.constructor.helpers?.[s.name];
-        f2.addEventListener("value-changed", (e) => {
+      const f2 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
+        const f3 = document.createElement("ha-form");
+        f3.schema = schema;
+        f3.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f3.computeHelper = (s) => this.constructor.helpers?.[s.name];
+        f3.addEventListener("value-changed", (e) => {
           e.stopPropagation();
-          f2.data = e.detail.value;
-          f2._dk = JSON.stringify(f2.data);
-          f2._cb(e.detail.value);
+          f3.data = e.detail.value;
+          f3._dk = JSON.stringify(f3.data);
+          f3._cb(e.detail.value);
         });
-        return f2;
+        return f3;
       });
-      if (f.hass !== this._hass) f.hass = this._hass;
+      if (f2.hass !== this._hass) f2.hass = this._hass;
       const dk = JSON.stringify(data);
-      if (f._dk !== dk) {
-        f.data = data;
-        f._dk = dk;
+      if (f2._dk !== dk) {
+        f2.data = data;
+        f2._dk = dk;
       }
-      f._cb = cb;
-      this._forms.push(f);
-      return f;
+      f2._cb = cb;
+      this._forms.push(f2);
+      return f2;
     }
     // Runder Icon-Button (Verschieben, Löschen …)
     _btn(icon2, title, fn, dis) {
@@ -1343,11 +1442,11 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
 
   // src/light.js
   function hsToRgb(hue, sat) {
-    const f = (n) => {
+    const f2 = (n) => {
       const k = (n + hue / 60) % 6;
       return Math.round(255 * (1 - sat * Math.max(0, Math.min(k, 4 - k, 1))));
     };
-    return [f(5), f(3), f(1)];
+    return [f2(5), f2(3), f2(1)];
   }
   var rgbToHex = (rgb) => "#" + rgb.map((x) => x.toString(16).padStart(2, "0")).join("");
   var hexToRgb = (hex) => {
@@ -1440,7 +1539,8 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
   var vis2 = (c) => `${!!c.area}|${c.show_colors !== false}`;
   var LAMP = [
     { name: "entity", required: true, selector: { entity: { domain: "light" } } },
-    { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] }
+    { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} }, context: { icon_entity: "entity" } }] },
+    { name: "slider", selector: { boolean: {} } }
   ];
   var LAMP_ACT = [{ name: "tap_action", selector: { ui_action: {} } }, { name: "hold_action", selector: { ui_action: {} } }];
   var EDITOR_DEFAULTS2 = { show_header: true, show_all_off: true, use_light_color: true, show_colors: true, hide_group_members: true, strip_area_name: true };
@@ -1525,9 +1625,10 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
       return d;
     }
     _lampBody(body, s, l, i, keys) {
-      body.append(this._form(LAMP, l, (v) => {
+      body.append(this._form(LAMP, { slider: true, ...l }, (v) => {
         const lamps = [...this._config.entities], old = lamps[i];
         lamps[i] = merge(old, keys, v);
+        if (lamps[i].slider !== false) delete lamps[i].slider;
         this._set(lamps);
         s.querySelector(".lbl").textContent = this._label(lamps[i], i);
         if (old.entity !== lamps[i].entity) this._rebuild();
@@ -1614,6 +1715,7 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
     show_colors: "Farbknöpfe anzeigen",
     entity: "Lampe",
     name: "Name",
+    slider: "Helligkeitsregler",
     tap_action: "Aktion beim Antippen",
     hold_action: "Aktion bei langem Drücken",
     hide_group_members: "Lampen einer Lichtgruppe ausblenden",
@@ -1622,7 +1724,8 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
   __publicField(NovaLightCardEditor, "helpers", {
     area: "Optional. Neue Lampen im Bereich erscheinen von selbst",
     hide_group_members: "Ist eine Lichtgruppe (z. B. Deckenlampen) im Bereich, erscheint nur die Gruppe, nicht jede einzelne Lampe darin.",
-    strip_area_name: "„Wohnzimmer Pilzlampe“ wird zu „Pilzlampe“. Eigene Namen bleiben, wie sie sind."
+    strip_area_name: "„Wohnzimmer Pilzlampe“ wird zu „Pilzlampe“. Eigene Namen bleiben, wie sie sind.",
+    slider: "Aus = nur an/aus, die Kachel wird flacher (z. B. für kleine Displays). Gilt nur für dimmbare Lampen."
   });
   __publicField(NovaLightCardEditor, "openSections", ["general", "lamps"]);
   define("light-card-editor", NovaLightCardEditor);
@@ -1780,7 +1883,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
         const rgb = this._c.use_light_color !== false && on && a.rgb_color;
         if (rgb) x.t.style.setProperty("--lc", `rgb(${rgb.join(",")})`);
         else x.t.style.removeProperty("--lc");
-        x.sl.style.display = dimmable && !na ? "" : "none";
+        x.sl.style.display = dimmable && !na && x.o.slider !== false ? "" : "none";
         if (!x.t._drag) {
           x.sl.value = pct || 1;
           x.t.style.setProperty("--p", `${pct}%`);
@@ -2389,21 +2492,21 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     _flip(cur2, lbl, sig) {
       const dock = this._dock, btns = this._btns;
       const rect = (e) => e.getBoundingClientRect();
-      const f = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
+      const f2 = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
       const oldNm = btns.map((d) => d._nm).find((n) => n.classList.contains("on") && !n.hidden);
       const fn = oldNm && { r: rect(oldNm), t: oldNm.textContent, o: +getComputedStyle(oldNm).opacity };
       this._stop();
       this._apply(cur2, lbl, false);
       const o = this._origin(), l = { bg: rect(this._bg), b: btns.map(rect) }, newNm = btns[cur2]?._nm.classList.contains("on") ? btns[cur2]._nm : null;
       btns.forEach((d, k) => {
-        if (!d.hidden && f.b[k].width) d.style.transform = `translate(${f.b[k].left - l.b[k].left}px,${f.b[k].top - l.b[k].top}px)`;
+        if (!d.hidden && f2.b[k].width) d.style.transform = `translate(${f2.b[k].left - l.b[k].left}px,${f2.b[k].top - l.b[k].top}px)`;
       });
-      if (l.bg.width) this._bg.style.transform = `translate(${f.bg.left - l.bg.left}px,${f.bg.top - l.bg.top}px) scale(${f.bg.width / l.bg.width},${f.bg.height / l.bg.height})`;
-      if (f.hlOn) this._hl.style.transform = `translate(${f.hl.left - o.x}px,${f.hl.top - o.y}px)`;
+      if (l.bg.width) this._bg.style.transform = `translate(${f2.bg.left - l.bg.left}px,${f2.bg.top - l.bg.top}px) scale(${f2.bg.width / l.bg.width},${f2.bg.height / l.bg.height})`;
+      if (f2.hlOn) this._hl.style.transform = `translate(${f2.hl.left - o.x}px,${f2.hl.top - o.y}px)`;
       else this._pillTo(cur2, false);
       if (newNm) {
         newNm.style.opacity = "0";
-        newNm.style.transform = `translate(${f.b[cur2].left - l.b[cur2].left - 12}px,0)`;
+        newNm.style.transform = `translate(${f2.b[cur2].left - l.b[cur2].left - 12}px,0)`;
       }
       if (fn) {
         const g = this._ghost = document.createElement("span");
@@ -2436,7 +2539,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         const g = this._ghost, ob = fn && btns.findIndex((d) => d._nm === oldNm);
         if (g) {
           g.style.opacity = "0";
-          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f.b[ob].left : 0) - 8}px,${g._dy}px)`;
+          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f2.b[ob].left : 0) - 8}px,${g._dy}px)`;
         }
         this._ft = setTimeout(() => {
           if (this._shown === sig) {
@@ -2932,17 +3035,26 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         return [el2, o];
       });
       w.append(box);
-      return (h) => els.forEach(([el2, o]) => {
-        const s = h.states[o.entity];
-        el2.classList.toggle("na", !s || s.state === "unavailable");
-        setIcon(el2.firstChild, iconOf(h, o, "mdi:information-outline"));
-        const v = valueOf(h, s, o);
-        if (chips) el2.lastChild.textContent = o.name === "" ? v : `${nameOf(h, o)} · ${v}`;
-        else {
-          el2.children[1].textContent = nameOf(h, o);
-          el2.children[2].textContent = v;
-        }
-      });
+      return (h) => {
+        let shown = 0;
+        els.forEach(([el2, o]) => {
+          const off2 = !!o.hide_idle && idleState(h.states[o.entity]);
+          el2.style.display = off2 ? "none" : "";
+          shown += !off2;
+        });
+        w.style.display = shown ? "" : "none";
+        els.forEach(([el2, o]) => {
+          const s = h.states[o.entity];
+          el2.classList.toggle("na", !s || s.state === "unavailable");
+          setIcon(el2.firstChild, iconOf(h, o, "mdi:information-outline"));
+          const v = valueOf(h, s, o);
+          if (chips) el2.lastChild.textContent = o.name === "" ? v : `${nameOf(h, o)} · ${v}`;
+          else {
+            el2.children[1].textContent = nameOf(h, o);
+            el2.children[2].textContent = v;
+          }
+        });
+      };
     },
     entities(b, w) {
       const box = document.createElement("div");
@@ -3016,7 +3128,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     },
     buttons(b, w) {
       const box = document.createElement("div");
-      box.className = `pills${b.layout === "grid" ? " grid" : ""}`;
+      box.className = `pills${b.layout === "grid" ? " grid" : b.layout === "flat" ? " flat" : ""}`;
       const els = b.buttons.map((o) => {
         const el2 = document.createElement("div");
         el2.className = "pill";
@@ -3146,7 +3258,13 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       plural: "Entitäten",
       defaults: { layout: "rows", columns: 1 },
       schema: [TITLE, g2(sel("layout", [["rows", "Liste"], ["chips", "Chips"]]), COLS)],
-      items: [ENT, NAMEICON, g2({ name: "unit", selector: T }, { name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }), { name: "tap_action", selector: A }]
+      items: [
+        ENT,
+        NAMEICON,
+        g2({ name: "unit", selector: T }, { name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }),
+        g2(sel("format", [["value", "Wie die Entität"], ["clock", "Dauer als Uhr (m:ss)"]]), { name: "hide_idle", selector: { boolean: {} } }),
+        { name: "tap_action", selector: A }
+      ]
     },
     entities: {
       label: "Schalter & Entitäten",
@@ -3177,7 +3295,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       plural: "Buttons",
       key: "buttons",
       defaults: { layout: "pills" },
-      schema: [TITLE, sel("layout", [["pills", "Pillen"], ["grid", "Kacheln"]])],
+      schema: [TITLE, sel("layout", [["pills", "Pillen"], ["flat", "Flache Leiste"], ["grid", "Kacheln"]])],
       items: [NAMEICON, { name: "entity", selector: { entity: {} } }, { name: "tap_action", selector: A }, { name: "confirm", selector: T }]
     },
     alerts: {
@@ -3207,7 +3325,8 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     confirm: "Optional: Text der Rückfrage vor dem Auslösen",
     state: "Mehrere mit Komma trennen. Ohne Bedingung: Warnung bei „on“ bzw. „problem“",
     message: "Leer = Name: Zustand. {state} wird ersetzt",
-    min: "Leer = Werte der Entität"
+    min: "Leer = Werte der Entität",
+    hide_idle: "Zeile nur zeigen, solange der Wert nicht 0 bzw. aus ist – z. B. Restzeit nur während das Gerät läuft"
   };
   var normItems = (b) => {
     const k = ITEMS[b.type];
@@ -3339,7 +3458,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       this._rebuild();
     }
   };
-  __publicField(NovaModularCardEditor, "labels", { ...BASE_LABELS, size: "Größe" });
+  __publicField(NovaModularCardEditor, "labels", { ...BASE_LABELS, size: "Größe", hide_idle: "Bei 0 / aus ausblenden" });
   __publicField(NovaModularCardEditor, "helpers", MHELPERS);
   __publicField(NovaModularCardEditor, "openSections", ["blocks"]);
   define("modular-card-editor", NovaModularCardEditor);
@@ -4373,14 +4492,14 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
     _build() {
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}${MAPROW_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), strip2 = (c) => {
+      const w = r.querySelector(".wrap"), strip3 = (c) => {
         Object.entries(MDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         if (c.glow === true) delete c.glow;
         return c;
       };
       const data = { ...MDEF, glow: true, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
-        const c = strip2(merge(this._config, names(schema), v));
+        const c = strip3(merge(this._config, names(schema), v));
         this._emit(c);
         if (!!c.show_source !== !!c0.show_source) this._rebuild();
       });
@@ -4399,7 +4518,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
           }));
         }),
         this._section("players", "mdi:speaker-multiple", "Weitere Player", (b) => {
-          if (this._items("players").length) b.append(this._form(MPPLAY, data, (v) => this._emit(strip2({ ...this._config, ...v }))));
+          if (this._items("players").length) b.append(this._form(MPPLAY, data, (v) => this._emit(strip3({ ...this._config, ...v }))));
           this._itemList(b, "players", MPITEM, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
         }),
         this._section("logos", "mdi:application-outline", "App-Logos", (b) => this._logos(b, c0)),
@@ -5353,13 +5472,13 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
     _build() {
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), strip2 = (c) => {
+      const w = r.querySelector(".wrap"), strip3 = (c) => {
         Object.entries(VDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         return c;
       };
       const data = { ...VDEF, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
-        const c = strip2(merge(this._config, names(schema), v));
+        const c = strip3(merge(this._config, names(schema), v));
         this._emit(c);
         if (vvis(c) !== vvis(c0)) this._rebuild();
       });
@@ -5739,14 +5858,14 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), data = { ...WDEF, ...c0, entities: calsOf(c0) };
-      const strip2 = (c) => {
+      const strip3 = (c) => {
         if (c.entities === void 0 && c.entity !== void 0) c.entities = calsOf(c);
         Object.entries(WDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         delete c.entity;
         delete c.refresh;
         return c;
       };
-      const form = (schema) => this._form(schema, data, (v) => this._emit(strip2(merge(this._config, names(schema), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
       w.append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(WGEN))),
         this._section("dates", "mdi:calendar-clock", "Termine", (b) => b.append(form(WDATES(data)))),
@@ -6306,11 +6425,11 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), data = { ...WDEF2, ...c0 };
-      const strip2 = (c) => {
+      const strip3 = (c) => {
         Object.entries(WDEF2).forEach(([k, x]) => JSON.stringify(c[k]) === JSON.stringify(x) && delete c[k]);
         return c;
       };
-      const form = (schema) => this._form(schema, data, (v) => this._emit(strip2(merge(this._config, names(schema), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
       const s = this._hass?.states[c0.entity];
       const none = (t) => s && !hasF(s, FC[t]) ? [this._hint(`Diese Entität liefert keine ${FC_NAME[t]}.`)] : [];
       const fc = data.show_daily !== false || data.show_hourly;
@@ -7542,18 +7661,18 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       delete data.info;
       delete data.badges;
       if (data.color && !data.tint) data.tint = data.color;
-      const f = this._form(GENERAL, data, (v) => {
+      const f2 = this._form(GENERAL, data, (v) => {
         const c = merge(this._config, names(GENERAL), v);
         delete c.color;
         if (v.hash != null) {
           const h = cleanHash(v.hash);
-          if (h !== v.hash) f.data = { ...v, hash: h };
+          if (h !== v.hash) f2.data = { ...v, hash: h };
           if (h) c.hash = h;
           else delete c.hash;
         }
         this._emit(c);
       });
-      b.append(f);
+      b.append(f2);
       if (!this._config.hash) b.append(this._hint("Ohne Hash lässt sich das Pop-up nicht öffnen."));
       return d;
     }
@@ -7891,12 +8010,512 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   __publicField(NovaAreaCardEditor, "openSections", ["general"]);
   define("area-card-editor", NovaAreaCardEditor);
 
+  // src/swipe.js
+  var DEF3 = { dots: true, reset_after: 0, fill: false, fit_screen: false, margin: 0, stack_below: 500 };
+  var SCSS = `${NOVA_VARS}${GRID_CSS}
+:host{display:block;box-sizing:border-box}
+:host(.fill){height:100%}
+.w{display:flex;flex-direction:column;gap:6px;min-height:0;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.w.fill{height:100%}
+.sc{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;
+-webkit-overflow-scrolling:touch;flex:1 1 auto;min-height:0;border-radius:var(--nv-radius)}
+.sc::-webkit-scrollbar{display:none}
+.sc.lock{overflow-x:hidden}
+.pg{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.fill .pg{overflow-y:auto;scrollbar-width:none}.fill .pg::-webkit-scrollbar{display:none}
+.fill .pg:not(.stack)>.rw{flex:1 1 auto;min-height:0;align-items:stretch}
+.fill .pg:not(.stack)>.rw>.cell{display:grid;min-height:0}
+.rw{gap:var(--nova-swipe-gap,8px)}
+.cell>*{min-width:0}
+.prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
+.prev .cell.empty::after{content:'Leerer Platz'}
+.dots{display:flex;justify-content:center;align-items:center;gap:2px;flex:none;height:14px}
+.dots[hidden]{display:none}
+.dot{border:none;background:none;padding:4px 3px;margin:0;cursor:pointer;display:flex;-webkit-tap-highlight-color:transparent}
+.dot i{display:block;width:6px;height:6px;border-radius:3px;background:var(--nv-fg);opacity:.35;transition:width .25s,opacity .25s,background-color .25s}
+.dot.on i{width:16px;opacity:1;background:var(--nv-active)}
+.dot:focus-visible{outline:none}.dot:focus-visible i{box-shadow:0 0 0 2px var(--nv-active)}
+@media (prefers-reduced-motion:reduce){.dot i{transition:none}}`;
+  var Page = class extends GridCard(Object) {
+    constructor(card, rows) {
+      super();
+      this._card = card;
+      this._rows = rows;
+      this._body = document.createElement("div");
+      this._body.className = "pg";
+    }
+    get _cfg() {
+      return this._card._cfg;
+    }
+    get _h() {
+      return this._card._h;
+    }
+    _handoff() {
+      return this._card._prev;
+    }
+  };
+  __publicField(Page, "gridKind", "swipe");
+  var SLIDERS = /* @__PURE__ */ new Set(["HA-SLIDER", "HA-CONTROL-SLIDER", "MWC-SLIDER", "HA-SELECTOR-NUMBER"]);
+  var grabsSwipe = (path) => {
+    for (const n of path) {
+      if (!(n instanceof Element)) continue;
+      if (n.classList?.contains("sc")) return false;
+      if (n.tagName === "INPUT" && n.type === "range" || n.getAttribute("role") === "slider" || SLIDERS.has(n.tagName)) return true;
+      const ta = getComputedStyle(n).touchAction;
+      if (ta === "none" || ta === "pan-y") return true;
+    }
+    return false;
+  };
+  var NovaSwipeCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("swipe-card-editor"));
+    }
+    static getStubConfig() {
+      return { pages: [{ rows: [{ cells: [{ card: null }] }] }, { rows: [{ cells: [{ card: null }] }] }] };
+    }
+    constructor() {
+      super();
+      const r = this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${SCSS}</style><div class="w"><div class="sc"></div><div class="dots" role="tablist"></div></div>`;
+      this._w = r.querySelector(".w");
+      this._sc = r.querySelector(".sc");
+      this._dots = r.querySelector(".dots");
+      this._i = 0;
+      this._pages = [];
+      this._sc.addEventListener("scroll", () => {
+        this._poke();
+        if (this._raf) return;
+        this._raf = requestAnimationFrame(() => {
+          this._raf = 0;
+          const w = this._sc.clientWidth;
+          if (w) this._mark(Math.round(this._sc.scrollLeft / w));
+        });
+      }, { passive: true });
+      const lock = (e) => {
+        this._poke();
+        if (!grabsSwipe(e.composedPath())) return;
+        this._sc.classList.add("lock");
+        const off2 = () => {
+          this._sc.classList.remove("lock");
+          ["pointerup", "pointercancel", "touchend", "touchcancel"].forEach((t) => window.removeEventListener(t, off2, true));
+        };
+        ["pointerup", "pointercancel", "touchend", "touchcancel"].forEach((t) => window.addEventListener(t, off2, true));
+      };
+      this._sc.addEventListener("pointerdown", lock, true);
+      this._sc.addEventListener("touchstart", lock, { capture: true, passive: true });
+      this._sc.addEventListener("keydown", () => this._poke());
+      this._ro = new ResizeObserver(() => {
+        this._fit();
+        this._pages.forEach((p) => p._stack());
+        this.go(this._i, false);
+      });
+      this._onResize = () => this._fit();
+      this._onGoto = (e) => {
+        if (this._prev) this.go(e.detail?.page ?? 0, false);
+      };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (c.pages != null && !Array.isArray(c.pages)) throw new Error("pages muss eine Liste von Seiten sein");
+      this._cfg = { ...DEF3, ...c };
+      this._dirty = true;
+      if (this.isConnected) this._render();
+    }
+    set hass(h) {
+      this._h = h;
+      if (!this._cfg) return;
+      if (DEV && !window.__novaVp && h.callService) {
+        window.__novaVp = 1;
+        setTimeout(() => h.callService("system_log", "write", { message: `Nova Dev Swipe: Fenster ${innerWidth}×${innerHeight} px, DPR ${devicePixelRatio}, Karte ${Math.round(this.getBoundingClientRect().height)} px hoch`, level: "warning", logger: "nova_cards.dev" })?.catch?.(() => {
+        }), 3e3);
+      }
+      if (this._dirty && this.isConnected) this._render();
+      this._pages.forEach((p) => p._cells().forEach((el2) => p._setHass(el2)));
+    }
+    getCardSize() {
+      return Math.max(1, ...this._pages.map((p) => 3 * (p._rows.length || 1)));
+    }
+    getGridOptions() {
+      return { columns: "full", rows: "auto" };
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      this._detect();
+      requestAnimationFrame(() => this._detect());
+      this._ro.observe(this._sc);
+      window.addEventListener("resize", this._onResize);
+      window.addEventListener("nova-swipe-goto", this._onGoto);
+      if (this._dirty && this._cfg) this._render();
+      this._poke();
+    }
+    disconnectedCallback() {
+      this._ro.disconnect();
+      window.removeEventListener("resize", this._onResize);
+      window.removeEventListener("nova-swipe-goto", this._onGoto);
+      clearTimeout(this._rt);
+      this._rt = null;
+      cancelAnimationFrame(this._raf);
+      this._raf = 0;
+      if (this._prev) this._pages.forEach((p) => p._handOffCells());
+    }
+    // Editor-Vorschau (Zellen übernehmen, Seite folgt dem Editor) bzw. Bearbeitungsmodus (leere Plätze zeigen)
+    _detect() {
+      let prev2 = false, edit = !!(this.preview || this.editMode);
+      for (let n = this, i = 0; n && i < 80; i++) {
+        if (PREV.has(n.tagName) || n.tagName?.includes("DIALOG")) {
+          prev2 = true;
+          break;
+        }
+        if (EDIT.has(n.tagName)) edit = true;
+        n = n.parentElement || n.getRootNode?.().host;
+      }
+      this._prev = prev2;
+      this._w.classList.toggle("prev", prev2 || edit);
+    }
+    _render() {
+      this._dirty = false;
+      const c = this._cfg, list2 = Array.isArray(c.pages) && c.pages.length ? c.pages : [{ rows: [] }];
+      const fill = !!c.fill || !!c.fit_screen;
+      this.classList.toggle("fill", fill);
+      this._w.classList.toggle("fill", fill);
+      const m = Math.max(0, +c.margin || 0);
+      if (m) this.style.padding = `${m}px`;
+      else this.style.removeProperty("padding");
+      this._fit();
+      const old = this._pages;
+      if (this._prev) old.slice(list2.length).forEach((p) => p._handOffCells());
+      this._pages = list2.map((pg, i) => {
+        const rows = normRows(pg || {}), p = old[i] || new Page(this, rows);
+        if (p._built && JSON.stringify(p._rows) === JSON.stringify(rows)) return p;
+        p._rows = rows;
+        p._built = true;
+        p._grid();
+        return p;
+      });
+      this._pages.forEach((p, i) => {
+        p._body.setAttribute("aria-label", list2[i]?.name || `Seite ${i + 1}`);
+        p._body.classList.toggle("eqh", !!c.equal_height);
+      });
+      this._sc.replaceChildren(...this._pages.map((p) => p._body));
+      const n = this._pages.length;
+      this._dots.hidden = c.dots === false || n < 2;
+      this._dots.replaceChildren(...this._pages.map((_, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "dot";
+        b.setAttribute("role", "tab");
+        b.title = list2[i]?.name || `Seite ${i + 1}`;
+        b.innerHTML = "<i></i>";
+        b.addEventListener("click", () => this.go(i));
+        b.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowRight") this.go(this._i + 1);
+          if (e.key === "ArrowLeft") this.go(this._i - 1);
+        });
+        return b;
+      }));
+      this._i = Math.min(this._i, n - 1);
+      this._mark(this._i, true);
+      requestAnimationFrame(() => {
+        this._pages.forEach((p) => p._stack());
+        this.go(this._i, false);
+      });
+    }
+    // Bis zum unteren Bildschirmrand: Höhe = sichtbares Fenster minus Abstand oben, minus 8 px unten
+    // (mit Rand steckt der Abstand unten schon im Rand).
+    // Unabhängig davon, ob der Browser 100vh/100dvh richtig kennt (z. B. Silk auf dem Echo Show) – innerHeight stimmt immer.
+    _fit() {
+      if (!this._cfg?.fit_screen) {
+        if (this._fitH) {
+          this._fitH = 0;
+          this.style.removeProperty("height");
+        }
+        return;
+      }
+      const top = this.getBoundingClientRect().top + (window.scrollY || 0);
+      const hgt = Math.max(160, Math.floor(window.innerHeight - Math.max(0, top) - (+this._cfg.margin > 0 ? 0 : 8)));
+      if (hgt !== this._fitH) {
+        this._fitH = hgt;
+        this.style.height = `${hgt}px`;
+      }
+    }
+    // Zu Seite i wischen (smooth = mit Animation, außer bei „Bewegung reduzieren“)
+    go(i, smooth = true) {
+      const n = this._pages.length;
+      if (!n) return;
+      i = Math.max(0, Math.min(n - 1, i));
+      const w = this._sc.clientWidth;
+      const calm = !smooth || matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (w) this._sc.scrollTo({ left: i * w, behavior: calm ? "auto" : "smooth" });
+      this._mark(i);
+    }
+    _mark(i, force) {
+      if (i === this._i && !force) return;
+      this._i = i;
+      [...this._dots.children].forEach((d, k) => {
+        d.classList.toggle("on", k === i);
+        d.setAttribute("aria-selected", k === i);
+      });
+      this._pages.forEach((p, k) => p._body.setAttribute("aria-hidden", k !== i));
+      this._poke();
+    }
+    // Nach X Sekunden ohne Bedienung zurück zur ersten Seite (ein einziger Zeitgeber, nicht in Vorschau/Kartenauswahl)
+    _poke() {
+      clearTimeout(this._rt);
+      this._rt = null;
+      const s = +this._cfg?.reset_after;
+      if (!(s > 0) || this._i === 0 || this._quiet || this._prev || !this.isConnected) return;
+      this._rt = setTimeout(() => {
+        this._rt = null;
+        this.go(0);
+      }, s * 1e3);
+    }
+  };
+  define("swipe-card", NovaSwipeCard, { name: "Nova Swipe Card", description: "Mehrere Seiten mit beliebigen Karten in einer Karte – zum Wischen, mit Seiten-Punkten. Ideal für kleine Displays.", documentationURL: docUrl("nova-swipe-card") });
+  var S_PAGE = [g2({ name: "name", selector: T }, { name: "icon", selector: I })];
+  var S_SWIPE = [
+    g2({ name: "dots", selector: { boolean: {} } }, { name: "fill", selector: { boolean: {} } }),
+    g2({ name: "fit_screen", selector: { boolean: {} } }, { name: "margin", selector: { number: { min: 0, max: 48, step: 2, mode: "box", unit_of_measurement: "px" } } }),
+    g2(
+      { name: "reset_after", selector: { number: { min: 0, max: 600, step: 5, mode: "box", unit_of_measurement: "s" } } },
+      { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } }
+    )
+  ];
+  var LABELS4 = {
+    ...GRID_LABELS,
+    name: "Name der Seite (optional)",
+    icon: "Icon (optional)",
+    dots: "Seiten-Punkte",
+    fill: "Ganze Höhe ausfüllen",
+    fit_screen: "Bis zum unteren Bildschirmrand",
+    margin: "Rand",
+    reset_after: "Zurück zu Seite 1 nach",
+    stack_below: "Untereinander unter Breite"
+  };
+  var HELPERS4 = {
+    ...GRID_HELPERS,
+    name: "Nur für dich im Editor und als Hinweis an den Punkten.",
+    fit_screen: "Für Wand-Displays wie den Echo Show: Die Karte endet genau am unteren Rand des sichtbaren Fensters, auch wenn der Browser die Höhe falsch meldet. Schließt „Ganze Höhe ausfüllen“ ein.",
+    margin: "Luft rundherum. In einer Panel-Ansicht reichen 8 px, damit die Karten nicht am Fensterrand kleben.",
+    fill: "Für Wand-Displays: Die Karte ist so hoch wie ihr Platz, die Karten einer Seite teilen sich die Höhe.",
+    reset_after: "Sekunden ohne Bedienung, danach springt die Karte zur ersten Seite. 0 = aus.",
+    stack_below: "Ist die Karte schmaler als dieser Wert, stehen die Karten einer Seite untereinander (0 = nie)."
+  };
+  var PCSS3 = `
+.pgs{display:flex;flex-direction:column;gap:8px}
+.pgb{display:flex;align-items:center;gap:6px;padding:8px 8px 8px 2px;border-radius:12px;border:1px solid var(--divider-color,#444);background:var(--secondary-background-color);cursor:pointer;user-select:none;-webkit-user-select:none;position:relative;outline:none}
+.pgb:focus-visible{box-shadow:0 0 0 2px var(--primary-color)}
+.pgb.sel{border-color:var(--primary-color);box-shadow:0 0 0 1px var(--primary-color)}
+.pgb.lift{z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:.92;cursor:grabbing}
+.pgb.before{box-shadow:inset 0 4px 0 var(--primary-color)}.pgb.after{box-shadow:inset 0 -4px 0 var(--primary-color)}
+.pgb .num{flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:var(--primary-color);color:var(--text-primary-color,#fff)}
+.pgb .pi{flex:none;color:var(--primary-color);display:flex}.pgb .pi:empty{display:none}`;
+  var strip2 = (c) => {
+    Object.keys(DEF3).forEach((k) => {
+      if (c[k] === DEF3[k]) delete c[k];
+    });
+    return c;
+  };
+  var NovaSwipeCardEditor = class extends GridEditor(NovaEditorBase) {
+    _list() {
+      const p = this._config.pages;
+      return Array.isArray(p) && p.length ? p.map((x) => ({ ...x || {} })) : [{ rows: [] }];
+    }
+    _cur() {
+      const n = this._list().length;
+      this._page = Math.max(0, Math.min(n - 1, this._page || 0));
+      return this._page;
+    }
+    // Raster-Teil (GridEditor) arbeitet immer auf der gewählten Seite
+    _rows() {
+      return normRows(this._list()[this._cur()] || {});
+    }
+    _emitRows(rows, keep) {
+      if (keep !== void 0) {
+        this._sel = null;
+        rows.forEach((r, ri) => r.cells.forEach((x, ci) => {
+          if (x === keep) this._sel = [ri, ci];
+        }));
+      }
+      const pages = this._list(), i = this._cur();
+      pages[i] = { ...pages[i], rows: serRows(rows) };
+      delete pages[i].cards;
+      delete pages[i].columns;
+      this._emit({ ...this._config, pages });
+    }
+    _setPages(pages, sel2) {
+      if (sel2 != null) this._page = sel2;
+      this._sel = null;
+      this._emit({ ...this._config, pages });
+      this._rebuild();
+    }
+    _show(i) {
+      this._page = i;
+      this._sel = null;
+      window.dispatchEvent(new CustomEvent("nova-swipe-goto", { detail: { page: i } }));
+      this._rebuild();
+    }
+    _onTemplate() {
+      this._openSecs?.add("content");
+    }
+    _build() {
+      const r = this.shadowRoot, i = this._cur(), pages = this._list();
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}${GRID_ED_CSS}${PCSS3}</style><div class="wrap"></div>`;
+      this._gridReset();
+      const data = { ...DEF3, ...this._config };
+      requestAnimationFrame(() => window.dispatchEvent(new CustomEvent("nova-swipe-goto", { detail: { page: i } })));
+      const label = (p, k) => p.name || `Seite ${k + 1}`;
+      r.querySelector(".wrap").append(
+        this._section("pages", "mdi:book-open-page-variant-outline", "Seiten", (b) => this._pagesBody(b, pages, i)),
+        this._section("layout", "mdi:view-grid-outline", `Aufteilung: ${label(pages[i], i)}`, (b) => this._layoutBody(b)),
+        this._section("content", "mdi:view-dashboard-edit-outline", `Karten: ${label(pages[i], i)}`, (b) => {
+          b.append(this._form(S_PAGE, pages[i], (v) => {
+            const ps = this._list(), k = this._cur();
+            ps[k] = merge(ps[k], names(S_PAGE), v);
+            this._emit({ ...this._config, pages: ps });
+          }));
+          this._contentBody(b);
+        }),
+        this._section("swipe", "mdi:gesture-swipe-horizontal", "Wischen und Anzeige", (b) => b.append(this._form(S_SWIPE, data, (v) => this._emit(strip2(merge(this._config, names(S_SWIPE), v))))))
+      );
+    }
+    _pagesBody(b, pages, cur2) {
+      b.append(this._hint("Jede Seite ist ein eigenes Raster aus Karten. Antippen wählt die Seite zum Bearbeiten (die Vorschau springt mit), am Griff ziehen sortiert."));
+      const box = document.createElement("div");
+      box.className = "pgs";
+      this._pgEls = pages.map((p, k) => {
+        const e = document.createElement("div");
+        e.className = `pgb${k === cur2 ? " sel" : ""}`;
+        e.tabIndex = 0;
+        e.setAttribute("role", "button");
+        e.innerHTML = '<span class="drag"><ha-icon icon="mdi:drag"></ha-icon></span><span class="num"></span><span class="pi"></span><span class="bl"><b></b><small></small></span>';
+        e.querySelector(".num").textContent = k + 1;
+        if (p.icon) e.querySelector(".pi").innerHTML = `<ha-icon icon="${p.icon.replace(/"/g, "")}"></ha-icon>`;
+        const cards = normRows(p).flatMap((r) => r.cells).filter((x) => x.card);
+        e.querySelector("b").textContent = p.name || `Seite ${k + 1}`;
+        e.querySelector("small").textContent = cards.length ? `${cards.length} ${cards.length === 1 ? "Karte" : "Karten"}` : "Noch leer";
+        const mv = (d) => {
+          const ps = this._list();
+          ps.splice(k + d, 0, ...ps.splice(k, 1));
+          this._setPages(ps, cur2 === k ? k + d : cur2 === k + d ? k : cur2);
+        };
+        e.append(
+          this._btn("mdi:plus-box-outline", "Karte hinzufügen", () => this._addCard(k)),
+          this._btn("mdi:arrow-up", "Nach vorne", () => mv(-1), k === 0),
+          this._btn("mdi:arrow-down", "Nach hinten", () => mv(1), k === pages.length - 1),
+          this._btn("mdi:content-copy", "Seite duplizieren", () => {
+            const ps = this._list();
+            ps.splice(k + 1, 0, JSON.parse(JSON.stringify(ps[k])));
+            this._setPages(ps, k + 1);
+          }),
+          this._btn("mdi:delete-outline", "Seite löschen", () => {
+            const ps = this._list();
+            ps.splice(k, 1);
+            this._setPages(ps.length ? ps : [{ rows: [] }], Math.min(cur2, ps.length - 1));
+          }, pages.length < 2)
+        );
+        const pick = () => {
+          if (Date.now() - (this._pgDragged || 0) < 200) return;
+          this._openSecs?.add("content");
+          this._show(k);
+        };
+        e.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          pick();
+        });
+        e.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            pick();
+          }
+        });
+        this._pgDrag(e, e.querySelector(".drag"), k);
+        box.append(e);
+        return e;
+      });
+      b.append(box, this._add("Seite hinzufügen", () => {
+        const ps = this._list();
+        ps.push({ rows: [] });
+        this._openSecs?.add("content");
+        this._setPages(ps, ps.length - 1);
+      }));
+    }
+    // „Karte hinzufügen“ an einer Seite: Kartenauswahl öffnen, die Karte kommt als neue Zeile unten auf die Seite
+    _addCard(k) {
+      this._page = k;
+      this._sel = null;
+      this._openSecs?.add("content");
+      window.dispatchEvent(new CustomEvent("nova-swipe-goto", { detail: { page: k } }));
+      const put = (card) => {
+        const rs = this._rows(), x = { width: "auto", card: card ?? null };
+        rs.push({ cells: [x] });
+        this._picking = !card;
+        this._yaml = false;
+        this._emitRows(rs, x);
+        this._rebuild();
+      };
+      if (!this._openPicker((c) => put(c))) put();
+    }
+    // Seiten per Ziehen sortieren (Maus und Touch, über Pointer Events)
+    _pgDrag(e, grip, k) {
+      e.addEventListener("pointerdown", (ev) => {
+        if (ev.button !== 0) return;
+        if (ev.pointerType !== "mouse" && !ev.composedPath().includes(grip)) return;
+        const y0 = ev.clientY, x0 = ev.clientX;
+        let on = false, to = null;
+        const move = (m) => {
+          if (!on) {
+            if (Math.hypot(m.clientX - x0, m.clientY - y0) < 6) return;
+            on = true;
+            e.classList.add("lift");
+          }
+          m.preventDefault();
+          e.style.transform = `translateY(${m.clientY - y0}px)`;
+          this._pgEls.forEach((n) => n.classList.remove("before", "after"));
+          to = null;
+          this._pgEls.forEach((n, j) => {
+            if (n === e) return;
+            const rc = n.getBoundingClientRect();
+            if (m.clientY >= rc.top && m.clientY <= rc.bottom) {
+              const after = m.clientY > rc.top + rc.height / 2;
+              n.classList.add(after ? "after" : "before");
+              to = after ? j + 1 : j;
+            }
+          });
+        };
+        const stop = (drop) => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", cancel);
+          if (!on) return;
+          this._pgDragged = Date.now();
+          if (!drop || to == null || to === k || to === k + 1) return this._rebuild();
+          const ps = this._list(), cur2 = this._cur(), x = ps[k], selPage = ps[cur2];
+          ps.splice(k, 1);
+          ps.splice(to > k ? to - 1 : to, 0, x);
+          this._setPages(ps, ps.indexOf(selPage));
+        };
+        const up = () => stop(true), cancel = () => stop(false);
+        window.addEventListener("pointermove", move, { passive: false });
+        window.addEventListener("pointerup", up);
+        window.addEventListener("pointercancel", cancel);
+      });
+    }
+  };
+  __publicField(NovaSwipeCardEditor, "gridWhere", "auf dieser Seite");
+  __publicField(NovaSwipeCardEditor, "labels", LABELS4);
+  __publicField(NovaSwipeCardEditor, "helpers", HELPERS4);
+  __publicField(NovaSwipeCardEditor, "openSections", ["pages", "content"]);
+  define("swipe-card-editor", NovaSwipeCardEditor);
+
   // src/chips.js
-  var DEF3 = { layout: "wrap" };
+  var DEF4 = { layout: "wrap", size: "normal" };
   var CSS = `${NOVA_VARS}${NOVA_CHIPS_CSS}
 :host{display:block;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 .nchips:empty{display:flex;min-height:34px}
-.hint{font-size:13px;opacity:.7;padding:8px 2px}`;
+.hint{font-size:13px;opacity:.7;padding:8px 2px}
+/* Groß: für kleine Touch-Displays (z. B. Echo Show) – höhere Chips, die die Zeile gleichmäßig füllen */
+.nchips.lg{gap:8px}.nchips.lg .nchip{min-height:var(--nova-chip-large-height,50px);padding:0 16px;font-size:15px;border-radius:16px;flex:1 1 auto;justify-content:center}
+.nchips.lg .nchip ha-icon{--mdc-icon-size:21px}.nchips.lg .nchip img{width:21px;height:21px}`;
   var NovaChipsCard = class extends HTMLElement {
     static getConfigElement() {
       return document.createElement(tag("chips-card-editor"));
@@ -7913,9 +8532,10 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      this._cfg = { ...DEF3, ...c, chips: normChips(c.chips) };
+      this._cfg = { ...DEF4, ...c, chips: normChips(c.chips) };
       this._ids = entityIds(this._cfg.chips);
       this._box.classList.toggle("scroll", this._cfg.layout === "scroll");
+      this._box.classList.toggle("lg", this._cfg.size === "large");
       if (this._h) this._render();
     }
     set hass(h) {
@@ -7936,18 +8556,20 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   define("chips-card", NovaChipsCard, { name: "Nova Chips Card", description: "Eine Reihe frei belegbarer Chips: Werte von Entitäten oder Knöpfe mit Aktion, z. B. „Alle Lichter im Raum aus“.", documentationURL: docUrl("nova-chips-card") });
   var S_GEN4 = [
     { name: "area", selector: { area: {} } },
-    sel("layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])
+    sel("layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]]),
+    sel("size", [["normal", "Normal"], ["large", "Groß (für kleine Touch-Displays)"]])
   ];
-  var LABELS4 = { ...CHIP_LABELS, area: "Area (für „Alle Lichter im Raum aus“)", layout: "Bei vielen Chips" };
-  var HELPERS4 = { ...CHIP_HELPERS, area: "Nur nötig für die Schnellauswahl „Alle Lichter im Raum aus“." };
+  var LABELS5 = { ...CHIP_LABELS, area: "Area (für „Alle Lichter im Raum aus“)", layout: "Bei vielen Chips", size: "Größe" };
+  var HELPERS5 = { ...CHIP_HELPERS, area: "Nur nötig für die Schnellauswahl „Alle Lichter im Raum aus“." };
   var NovaChipsCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       r.querySelector(".wrap").append(
-        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(this._form(S_GEN4, { ...DEF3, ...this._config }, (v) => {
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(this._form(S_GEN4, { ...DEF4, ...this._config }, (v) => {
           const c = merge(this._config, names(S_GEN4), v);
-          if (c.layout === DEF3.layout) delete c.layout;
+          if (c.layout === DEF4.layout) delete c.layout;
+          if (c.size === DEF4.size) delete c.size;
           this._emit(c);
           if (!!c.area !== !!this._built) this._rebuild();
         }))),
@@ -7959,8 +8581,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       this._built = !!this._config.area;
     }
   };
-  __publicField(NovaChipsCardEditor, "labels", LABELS4);
-  __publicField(NovaChipsCardEditor, "helpers", HELPERS4);
+  __publicField(NovaChipsCardEditor, "labels", LABELS5);
+  __publicField(NovaChipsCardEditor, "helpers", HELPERS5);
   __publicField(NovaChipsCardEditor, "openSections", ["chips"]);
   define("chips-card-editor", NovaChipsCardEditor);
 
@@ -8000,11 +8622,12 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
 .scene .s-body{stroke:${PAL.line};stroke-width:.6;transition:stroke .4s}.scene .s-sheen{opacity:.4}.scene .s-edge{fill:#fff;opacity:.12}
 .scene .s-part{stroke:rgba(255,255,255,.15);stroke-width:.5}
 .scene .s-glass{stroke:rgba(255,255,255,.22);stroke-width:.7}.scene .s-refl{fill:#fff;opacity:.035}
-.scene .s-gls{opacity:0;transform-box:view-box}
+/* Außerhalb der Animation zusätzlich unsichtbar: manche Browser (Echo Show) zeigen den geparkten Streifen sonst als hellen Balken neben dem Glas */
+.scene .s-gls{opacity:0;visibility:hidden;transform-box:view-box}
 .sweep .scene .s-gls{animation:nv-glare .9s .1s ease-in-out both}
 .scene .s-scr{fill:${PAL.screen};stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .s-tgl{fill:#fff;opacity:.05}
 .still .scene .s-gls{animation-play-state:paused!important}
-@keyframes nv-glare{0%{opacity:0;transform:translateX(0)}15%{opacity:.7}85%{opacity:.7}100%{opacity:0;transform:translateX(var(--gx,70px))}}
+@keyframes nv-glare{0%{opacity:0;visibility:visible;transform:translateX(0)}15%{opacity:.7}85%{opacity:.7}99%{opacity:0;visibility:visible}100%{opacity:0;visibility:hidden;transform:translateX(var(--gx,70px))}}
 @media (prefers-reduced-motion:reduce){.sweep .scene .s-gls{animation:none}}`;
   var frameGlow = (sel2) => `${sel2}{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}`;
   function sweep(el2) {
@@ -8057,7 +8680,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var TXT = { pause: "Pausiert", wait: "Startet später", done: "Fertig", err: "Störung", prep: "Wird eingestellt", heat: "Heizt auf", warm: "Hält warm", ready: "Bereit", off: "Aus" };
   var BAD = /* @__PURE__ */ new Set(["unavailable", "unknown", "none", ""]);
   var ok = (s) => !!s && !BAD.has(s.state);
-  var GDEF = { layout: "full", animation: true, glow: true, hide_when_off: false, start_at: "none", window: true, door_anim: true };
+  var GDEF = { controls_columns: "1", controls_labels: "auto", layout: "full", animation: true, glow: true, hide_when_off: false, start_at: "none", window: true, door_anim: true };
   var nice = (raw, t) => t === raw && /_/.test(raw) ? raw.replace(/_/g, " ").replace(/^./, (x) => x.toUpperCase()) : t;
   var fmtOpt = (h, s, o) => {
     let t = o;
@@ -8145,7 +8768,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var qTumb = (x) => `<path class="qgl" d="M${x - 4} 104 L${x - 3.2} 91 h6.4 L${x + 4} 104 Z"/><path class="qgh" d="M${x - 2.6} 102 L${x - 2} 93"/>`;
   var qCup = (x, c) => `<path class="qcup${c ? " c2" : ""}" d="M${x - 5} 104 v-9.5 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v9.5 Z"/><path class="qcuh" d="M${x + 5} 95.6 h1.4 a2.5 2.5 0 0 1 0 5 h-1.4"/><path class="qgh" d="M${x - 3.4} 102 v-7"/>`;
   var qWire = (y1, y2) => `<path class="qwire" d="${Array.from({ length: 19 }, (_, i) => `M${46 + i * 6} ${y1} V${y2}`).join(" ")}"/><rect class="qrl" x="45" y="${y2 - 0.6}" width="110" height="1.4" rx=".7"/><rect class="qrl t" x="45" y="${y1 - 0.4}" width="110" height=".9" rx=".45"/><circle class="qrol" cx="47" cy="${y2 + 1.6}" r="1.6"/><circle class="qrol" cx="153" cy="${y2 + 1.6}" r="1.6"/>`;
-  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f) => `<circle class="qnz" cx="${100 + f * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
+  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f2) => `<circle class="qnz" cx="${100 + f2 * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
   var qJets = (y, xs) => `<g class="qjet">${xs.map((x, i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1 : 1.3}" style="--dx:${x < 100 ? -4 : 4}px;animation-delay:${(i * 0.27).toFixed(2)}s"/>`).join("")}</g>`;
   var QIN = `<g class="qtop"><path class="qcut" d="M58 37.4 h18 M82 36.6 h16 M118 37.4 h20"/><ellipse class="qcuts" cx="76.6" cy="37.4" rx="2.2" ry="1.2"/><path class="qcutk" d="M98 36.6 h6 q-1 1.4 -6 1.2 Z"/>${qWire(33, 40.5)}</g>
 <g class="qup">${[58, 70].map(qWine).join("")}${qTumb(82)}${qCup(96)}${qCup(110, 1)}${qTumb(124)}${[136, 146].map(qWine).join("")}${qWire(88, 104.5)}</g>
@@ -8170,8 +8793,8 @@ ${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" 
       for (let x = x0 - 1 + rnd() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd() * rMax * 0.6) {
         const r = rMin + rnd() * (rMax - rMin), cx = x + (rnd() - 0.5) * 1.6, cy = y + (rnd() - 0.5) * 1.8;
         if (cy < top(cx) + r * 0.2 || rnd() < 0.1) continue;
-        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f = (n) => n.toFixed(1);
-        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f(cx)} ${f(cy)})"><path d="M${f(cx - a[0])} ${f(cy)}Q${f(cx - a[0])} ${f(cy - a[1])} ${f(cx)} ${f(cy - a[1])}Q${f(cx + a[2])} ${f(cy - a[1])} ${f(cx + a[2])} ${f(cy)}Q${f(cx + a[2])} ${f(cy + a[3])} ${f(cx)} ${f(cy + a[3])}Q${f(cx - a[0])} ${f(cy + a[3])} ${f(cx - a[0])} ${f(cy)}Z"/><ellipse cx="${f(cx - r * 0.3)}" cy="${f(cy - r * 0.38)}" rx="${f(r * 0.38)}" ry="${f(r * 0.24)}"/></g>`);
+        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f2 = (n) => n.toFixed(1);
+        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f2(cx)} ${f2(cy)})"><path d="M${f2(cx - a[0])} ${f2(cy)}Q${f2(cx - a[0])} ${f2(cy - a[1])} ${f2(cx)} ${f2(cy - a[1])}Q${f2(cx + a[2])} ${f2(cy - a[1])} ${f2(cx + a[2])} ${f2(cy)}Q${f2(cx + a[2])} ${f2(cy + a[3])} ${f2(cx)} ${f2(cy + a[3])}Q${f2(cx - a[0])} ${f2(cy + a[3])} ${f2(cx - a[0])} ${f2(cy)}Z"/><ellipse cx="${f2(cx - r * 0.3)}" cy="${f2(cy - r * 0.38)}" rx="${f2(r * 0.38)}" ry="${f2(r * 0.24)}"/></g>`);
       }
     }
     return out.join("");
@@ -8408,6 +9031,9 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .bar i{display:block;height:100%;width:0;background:var(--dc);border-radius:4px;transition:width 1s}
 .tm{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;flex-wrap:wrap}.tm .rm{font-weight:600}.tm .en{opacity:.7}
 .ctls{display:flex;flex-direction:column;gap:2px}
+.ctls.c2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px}
+.ctls.c2 .stp{gap:4px}.ctls.c2 .stp .v{min-width:52px}
+.ct .row .hb.go{width:32px;height:32px}
 .ct{border-top:1px solid rgba(255,255,255,.08);padding:8px 0 6px;min-width:0}
 .ct .kv{border:none;padding:0}.ct .kv .v{font-weight:600;opacity:1}
 .ct .pills{margin-top:8px}.ct .pill.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,var(--dc) 45%,transparent)}
@@ -8866,11 +9492,16 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
         this._io.observe(this);
       } else this._inView = true;
       this._tick();
+      if ("ResizeObserver" in window) {
+        this._ro ||= new ResizeObserver(() => this._fitLbl());
+        this._ro.observe(this);
+      }
       if (this._fat && this._e) this._update();
     }
     disconnectedCallback() {
       document.removeEventListener("visibilitychange", this._onVis);
       this._io?.disconnect();
+      this._ro?.disconnect();
       this._inView = false;
       this._tick();
       Object.values(this._pend || {}).forEach((p) => clearTimeout(p.t));
@@ -8967,7 +9598,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         if (el2) this._act({ entity: el2.dataset.e }, "tap", true);
       });
       if (e.pw) press(e.pw, { tap: () => this._call(dom(c.power) === "input_boolean" ? "input_boolean" : "switch", "toggle", c.power, {}, "Ein/Aus") });
-      if (e.ctls) this._ctl = c.controls.map((o) => this._mkCtl(o));
+      if (e.ctls) {
+        e.ctls.classList.toggle("c2", String(c.controls_columns) === "2");
+        this._ctl = c.controls.map((o) => this._mkCtl(o));
+      }
       if (e.sa) {
         e.sat.addEventListener("change", () => {
           this._at = e.sat.value || null;
@@ -9035,6 +9669,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         el2.innerHTML = '<div class="row"><span class="i"></span><span class="k" style="flex:1"></span><div class="sw"></div></div>';
         up.kind = "sw";
         press(el2.firstChild, { tap: () => this._call(d, "toggle", o.entity, {}, o.name || "Schalter"), hold: () => this._act(o, "hold") });
+      } else if (["button", "input_button", "script", "scene"].includes(d)) {
+        el2.innerHTML = '<div class="row"><span class="i"></span><span class="k" style="flex:1"></span><div class="hb go"><ha-icon icon="mdi:play"></ha-icon></div></div>';
+        up.kind = "btn";
+        press(el2.firstChild, { tap: () => this._call(d, d.endsWith("button") ? "press" : "turn_on", o.entity, {}, o.name || "Knopf"), hold: () => this._act(o, "hold") });
       } else {
         el2.innerHTML = '<div class="kv"><span class="i"></span><span class="k"></span><span class="v"></span></div>';
         up.kind = "val";
@@ -9208,9 +9846,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.g.classList.toggle("last", cls === "run" && rem != null && rem <= 60);
       if (e.kp) {
         const r = secsOf(this._S(c.remaining)), tot = secsOf(this._S(c.duration));
-        const f = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
-        e.g.classList.toggle("kring", f != null);
-        e.kp.style.strokeDashoffset = String(100 - (f ?? 0) * 100);
+        const f2 = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
+        e.g.classList.toggle("kring", f2 != null);
+        e.kp.style.strokeDashoffset = String(100 - (f2 ?? 0) * 100);
         if (e.kt) e.kt.textContent = r > 0 ? fmtDisp(r) : "";
       }
       if (e.wd) e.wd.textContent = cls === "done" ? "End" : cls === "off" ? "" : rem != null ? fmtDisp(rem) : "– –";
@@ -9310,8 +9948,26 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
             u.rng.style.setProperty("--p", `${((n ?? 0) - (a.min ?? 0)) / ((a.max ?? 100) - (a.min ?? 0) || 1) * 100}%`);
           }
         } else if (u.kind === "sw") el2.firstChild.classList.toggle("on", s?.state === "on");
+        else if (u.kind === "btn") return;
         else v.textContent = valueOf(h, s, o);
       });
+      this._fitLbl();
+    }
+    // Regler-Namen, die nicht passen, ausblenden statt abschneiden (nur Icon + Wert)
+    // „Nur Icons“: Namen immer weg (stehen dann im Tooltip)
+    _fitLbl() {
+      const box = this._e?.ctls;
+      if (!box) return;
+      if (this._c?.controls_labels === "icon") box.querySelectorAll(".ct .kv .k, .ct .row .k").forEach((k) => {
+        k.style.display = "none";
+        k.parentElement.title = k.textContent;
+      });
+      else {
+        box.querySelectorAll(".ct .kv .k, .ct .row .k").forEach((k) => {
+          if (k.style.display === "none") k.style.display = "";
+        });
+        fitLabels(box, ".ct .kv .k, .ct .row .k");
+      }
     }
     // Knöpfe nur mit eingetragener, verfügbarer Entität; Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen
     _actUp(cls) {
@@ -9353,10 +10009,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       DRINKS.forEach(([x]) => g.classList.toggle(`k-${x}`, x === k));
       ["--cc", "--cr", "--cm"].forEach((v, i) => g.style.setProperty(v, col[i]));
       g.classList.toggle("milk", milk);
-      const prog = cls === "run" && p != null, f = cls === "done" ? 1 : prog ? p / 100 : 0;
+      const prog = cls === "run" && p != null, f2 = cls === "done" ? 1 : prog ? p / 100 : 0;
       g.classList.toggle("cprog", prog);
-      g.style.setProperty("--cl", f.toFixed(2));
-      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f - 0.45) / 0.55)).toFixed(2) : "0");
+      g.style.setProperty("--cl", f2.toFixed(2));
+      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f2 - 0.45) / 0.55)).toFixed(2) : "0");
       if (this._e.cx) this._e.cx.textContent = { off: "", err: "Störung", done: "Fertig", heat: "Heizt auf", warm: "Warm", wait: "Später" }[cls] ?? (src ? D[2] : cls === "run" ? TY.run : "Bereit");
     }
     _alerts(cls, stx) {
@@ -9439,13 +10095,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var GCTL = (it) => {
     const d = dom(it.entity);
     return [
-      { name: "entity", required: true, selector: { entity: { domain: ["select", "input_select", "number", "input_number", "switch", "input_boolean", "sensor"] } } },
+      { name: "entity", required: true, selector: { entity: { domain: ["select", "input_select", "number", "input_number", "switch", "input_boolean", "sensor", "button", "input_button", "script", "scene"] } } },
       NAMEICON,
       ...d === "select" || d === "input_select" ? [sel("display", [["auto", "Automatisch"], ["pills", "Alle Optionen als Pillen"], ["list", "Aufklappen"]])] : [],
       ...d === "number" || d === "input_number" ? [g2(sel("display", [["buttons", "Plus / Minus"], ["slider", "Schieber"]]), NUM("step"))] : [],
       sel("show", [["always", "Immer"], ["idle", "Nur vor dem Start"], ["running", "Nur während des Laufs"]])
     ];
   };
+  var GCOLS = [g2(sel("controls_columns", [["1", "Untereinander"], ["2", "Zwei nebeneinander"]]), sel("controls_labels", [["auto", "Icon und Name"], ["icon", "Nur Icons"]]))];
   var GACT = (c) => [
     g2({ name: "start", selector: { entity: { domain: [...BTN.entity.domain, "select", "input_select"] } } }, { name: "start_name", selector: T }),
     ...["select", "input_select"].includes(dom(c.start)) ? [{ name: "start_option", selector: { entity: { domain: ["select", "input_select", "sensor", "input_text"] } } }] : [],
@@ -9556,6 +10213,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     text_finished: "Text „fertig“",
     text_error: "Text „Störung“",
     text_off: "Text „aus“",
+    controls_columns: "Anordnung der Regler",
+    controls_labels: "Beschriftung der Regler",
     layout: "Darstellung",
     hide_when_off: "Ausblenden, wenn aus, bereit oder fertig",
     animation: "Animation (aus = Standbild)",
@@ -9582,6 +10241,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     end_time: "Zeitpunkt-Sensor. Restzeit wird daraus berechnet",
     phase: "Leer = Status. Steuert die Sonder-Animation und wird unter dem Programm angezeigt",
     phase_states: "Leer = Vorschlag zum Gerätetyp",
+    controls_labels: "Nur Icons spart Platz auf kleinen Displays. Bei „Icon und Name“ fällt der Name nur weg, wenn er nicht passt.",
     show: "z. B. Temperatur und Schleudern nur vor dem Start",
     step: "Leer = Schritt der Entität (bei „Fertig in“ in Sekunden z. B. 1800 = 30 min)",
     start: "Button, Skript, Schalter – oder ein Select wie „Aktives Programm“ bei Home Connect",
@@ -9618,14 +10278,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       GLABELS.phase_states = PHASE_LBL[t] || "Sonder-Zustände";
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap");
-      const strip2 = (c) => {
+      const strip3 = (c) => {
         Object.entries(GDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         if (c.color === TYPES2[typeOf(c)].color) delete c.color;
         return c;
       };
       const data = { ...GDEF, color: TYPES2[t].color, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
-        const c = strip2(merge(this._config, names(schema), v));
+        const c = strip3(merge(this._config, names(schema), v));
         this._emit(c);
         if (gvis(c) !== gvis(c0)) this._rebuild();
       });
@@ -9633,8 +10293,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GGEN))),
         this._section("program", "mdi:progress-clock", "Programm und Zeit", (b) => b.append(form(GPROG(t)))),
         this._section("controls", "mdi:tune-variant", "Regler", (b) => {
-          b.append(this._hint("Einstellungen vor dem Start, z. B. Programm, Temperatur, Schleudern, „Fertig in“, Kochzeit. Select = Auswahl, Zahl = Plus/Minus, Schalter = Kippschalter."));
+          b.append(this._hint("Einstellungen vor dem Start, z. B. Programm, Temperatur, Schleudern, „Fertig in“, Kochzeit. Select = Auswahl, Zahl = Plus/Minus, Schalter = Kippschalter, Button/Skript = Knopf zum Auslösen (z. B. Warmhalten)."));
           this._itemList(b, "controls", GCTL, { item: "Regler", icon: "mdi:tune" }, "Regler hinzufügen");
+          b.append(form(GCOLS));
         }),
         this._section("buttons", "mdi:play-pause", "Bedienung", (b) => {
           b.append(this._hint("Knöpfe erscheinen nur, wenn eine Entität eingetragen und verfügbar ist: Start vor dem Lauf, Pause/Fortsetzen/Stopp währenddessen."));
@@ -9801,8 +10462,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     const a = s.attributes || {}, groups = {};
     for (const [k, v] of Object.entries(a)) {
       if (["friendly_name", "device_class", "icon", "Count", "count"].includes(k) || v == null || typeof v === "object") continue;
-      const m = k.match(/^(\d+)[-_ ](.+)$/), n = m ? m[1] : "0", f = (m ? m[2] : k).toLowerCase();
-      (groups[n] ||= {})[f] = String(v);
+      const m = k.match(/^(\d+)[-_ ](.+)$/), n = m ? m[1] : "0", f2 = (m ? m[2] : k).toLowerCase();
+      (groups[n] ||= {})[f2] = String(v);
     }
     const out = Object.values(groups).map((g) => {
       const raw = g.error || g.message || g.text || g.description || g.desc || "";
@@ -10023,7 +10684,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 <g class="b-tp"><rect x="-1.6" y="-6" width="3.2" height="8" rx="1.6"/><circle cx="0" cy="3.4" r="2.8"/></g>
 <g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g></g>
 </svg>`;
-  var PCSS3 = `
+  var PCSS4 = `
 .g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
 --sb1:var(--nova-printer-color-light,#3a4252);--sb2:var(--nova-printer-color,#191d26)}
 .g.pr.glow.on{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
@@ -10289,7 +10950,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _build() {
       this._built = true;
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" }), rv = roleVars(c.color);
-      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${PCSS3}</style>
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${PCSS4}</style>
 <div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}${c.show_display === false ? " nodisp" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
 <div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
@@ -10491,7 +11152,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const wnSlot = ["empty", "tangle"].includes(m.fx);
       e.sl.forEach((x, i) => {
         const s = aU?.slots[i];
-        const f = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f, y = 75 - hh / 2;
+        const f2 = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f2, y = 75 - hh / 2;
         [x.fl, x.fcl].forEach((r) => {
           r.setAttribute("y", y.toFixed(1));
           r.setAttribute("height", hh.toFixed(1));
@@ -10847,7 +11508,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}.demo-btns{display:flex;gap:8px;flex-wrap:wrap}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap");
-      const strip2 = (c) => {
+      const strip3 = (c) => {
         Object.entries(PDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         ["demo", "demo_message"].forEach((k) => !c[k] && delete c[k]);
         if (c.demo_ams === true) delete c.demo_ams;
@@ -10865,12 +11526,12 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         if (v.device !== void 0 && v.device !== this._config.device) {
           [...EKEYS, "fans", "camera"].forEach((k) => delete c[k]);
           Object.assign(c, detect(this._hass, v.device));
-          c = strip2(c);
+          c = strip3(c);
           this._emit(c);
           this._rebuild();
           return;
         }
-        this._emit(strip2(c));
+        this._emit(strip3(c));
       });
       const step = (k, list2, dir) => {
         const cur2 = this._config[k] || "", i = list2.indexOf(cur2), n = list2[(i + dir + list2.length) % list2.length];
@@ -11179,11 +11840,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       return { columns: 6, rows: "auto", min_columns: 4 };
     }
     disconnectedCallback() {
-      this._stops?.forEach((f) => f());
+      this._stops?.forEach((f2) => f2());
     }
     _build() {
       this._built = true;
-      this._stops?.forEach((f) => f());
+      this._stops?.forEach((f2) => f2());
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" });
       this._plat = platformOf(this._h, c);
       this._mp = playerOf(this._h, c);
@@ -11516,13 +12177,13 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
     _build() {
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), strip2 = (c) => {
+      const w = r.querySelector(".wrap"), strip3 = (c) => {
         Object.entries(RDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         if (c.platform === "auto") delete c.platform;
         return c;
       };
       const data = { ...RDEF, platform: "auto", ...c0 };
-      const form = (schema) => this._form(schema, data, (v) => this._emit(strip2(merge(this._config, names(schema), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
       w.append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(RGEN))),
         this._section("controls", "mdi:remote-tv", "Bedienung", (b) => b.append(form(RCTRL))),
@@ -11550,20 +12211,1322 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
     _keys(b) {
       const plat = platformOf(this._hass, this._config), map = KEYMAPS[plat] || {};
       b.append(this._hint("Nur ausfüllen, wenn eine Taste anders belegt sein soll. Mehrere Befehle nacheinander mit Komma, abwechselnd bei jedem Druck mit | (z. B. Pause|Play)."));
-      const f = this._form(RKEYS, { ...this._config.keys }, (v) => {
+      const f2 = this._form(RKEYS, { ...this._config.keys }, (v) => {
         const keys = Object.fromEntries(KEYS.filter((k) => v[k]).map((k) => [k, v[k]])), c = { ...this._config };
         if (Object.keys(keys).length) c.keys = keys;
         else delete c.keys;
         this._emit(c);
       });
-      f.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
-      b.append(f);
+      f2.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
+      b.append(f2);
     }
   };
   __publicField(NovaRemoteCardEditor, "labels", RLABELS);
   __publicField(NovaRemoteCardEditor, "helpers", RHELPERS);
   __publicField(NovaRemoteCardEditor, "openSections", ["general"]);
   define("remote-card-editor", NovaRemoteCardEditor);
+
+  // src/shared/dial.js
+  var f = (n) => +n.toFixed(2);
+  var pt = (cx, cy, r, a) => [f(cx + r * Math.sin(a)), f(cy - r * Math.cos(a))];
+  var ticks = (cx, cy, r, len = 5, big = 9) => {
+    let s = "", m = "";
+    for (let i = 0; i < 60; i++) {
+      const a = i / 60 * Math.PI * 2, major = i % 5 === 0, [x1, y1] = pt(cx, cy, r, a), [x2, y2] = pt(cx, cy, r - (major ? big : len), a);
+      if (major) m += `M${x1} ${y1}L${x2} ${y2}`;
+      else s += `M${x1} ${y1}L${x2} ${y2}`;
+    }
+    return `<path class="tk" d="${s}"/><path class="tkm" d="${m}"/>`;
+  };
+  var dialDefs = (p, cx, cy, r) => `${sceneDefs(p)}
+<radialGradient id="${p}-fc" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="${PAL.inner}"/><stop offset=".75" stop-color="${PAL.innerDark}"/><stop offset="1" stop-color="#05070a"/></radialGradient>
+<clipPath id="${p}-gc"><circle cx="${cx}" cy="${cy}" r="${r - 9}"/></clipPath>`;
+  var dialBody = (p, cx, cy, r, ring = 0) => `<ellipse class="s-shd" cx="${cx}" cy="${cy + r + 4}" rx="${f(r * 0.7)}" ry="3.5"/>
+<circle class="s-body" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${p}-bd)"/>
+<circle class="s-sheen" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${p}-sh)"/>
+<path class="dl-edge" d="M${pt(cx, cy, r - 1, -1.1).join(" ")}A${r - 1} ${r - 1} 0 0 1 ${pt(cx, cy, r - 1, 1.1).join(" ")}"/>
+<circle class="dl-bz" cx="${cx}" cy="${cy}" r="${r - 5}" stroke="url(#${p}-cr)"/>
+<circle class="dl-fc" cx="${cx}" cy="${cy}" r="${r - 8}" fill="url(#${p}-fc)"/>
+${ticks(cx, cy, r - 11)}
+${ring ? `<circle class="dl-tr" cx="${cx}" cy="${cy}" r="${ring}"/><circle class="dl-arc" cx="${cx}" cy="${cy}" r="${ring}" transform="rotate(-90 ${cx} ${cy})" pathLength="1000"/>` : ""}`;
+  var dialGlass = (p, cx, cy, r) => {
+    const g = r - 9, [ax, ay] = pt(cx, cy, g - 4, -1.25), [bx, by] = pt(cx, cy, g - 4, -0.35);
+    return `<circle class="s-glass" cx="${cx}" cy="${cy}" r="${g}" fill="url(#${p}-gl)"/>
+<g clip-path="url(#${p}-gc)"><path class="s-refl" d="M${cx - g} ${cy - g * 0.2}L${cx - g * 0.2} ${cy - g}h${f(g * 0.35)}L${cx - g} ${cy + g * 0.15}z"/>
+<path class="s-refl" d="M${cx - g * 0.7} ${cy + g * 0.55}L${cx + g * 0.55} ${cy - g * 0.7}h${f(g * 0.12)}L${cx - g * 0.58} ${cy + g * 0.67}z"/>
+<g transform="rotate(25 ${cx} ${cy})"><rect class="s-gls" x="${cx - g - 18}" y="${cy - g - 20}" width="16" height="${2 * g + 40}" fill="url(#${p}-gs)"/></g></g>
+<path class="dl-arcl" d="M${ax} ${ay}A${g - 4} ${g - 4} 0 0 1 ${bx} ${by}"/>`;
+  };
+  var crown = (p, cx, cy, r) => {
+    const top = cy - r, grooves = [-12, -9, -6, -3, 0, 3, 6, 9, 12].map((x) => `M${cx + x} ${top - 16}v8`).join("");
+    const pusher = (side, a) => `<g class="dl-push ${side}" transform="rotate(${a} ${cx} ${cy})"><rect class="s-part" x="${cx - 5}" y="${top - 9}" width="10" height="10" rx="2" fill="url(#${p}-pt)"/><rect class="dl-cap" x="${cx - 6.5}" y="${top - 12}" width="13" height="4" rx="1.5" fill="url(#${p}-cr)"/></g>`;
+    return `${pusher("l", -40)}${pusher("r", 40)}
+<rect class="s-part" x="${cx - 5}" y="${top - 8}" width="10" height="9" rx="1.5" fill="url(#${p}-pt)"/>
+<g class="dl-crown"><rect class="dl-cr" x="${cx - 10}" y="${top - 19}" width="20" height="12" rx="3" fill="url(#${p}-cr)"/><clipPath id="${p}-cc"><rect x="${cx - 7.5}" y="${top - 19}" width="15" height="12"/></clipPath><g clip-path="url(#${p}-cc)"><g class="dl-gv"><path class="dl-grv" d="${grooves}"/></g></g></g>`;
+  };
+  var bellBadge = (right, bottom) => {
+    const { x, y, r } = badgeAt(right, bottom);
+    return `<g class="dl-bell"><circle class="dl-br" cx="${x}" cy="${y}" r="${r}"/><path class="dl-bk" transform="translate(${x - 6} ${y - 6.5}) scale(.5)" d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1z"/></g>`;
+  };
+  var DIAL_CSS = `${SCENE_CSS}
+.scene .dl-edge{fill:none;stroke:#fff;stroke-opacity:.14;stroke-width:.7}
+.scene .dl-bz{fill:none;stroke-width:4.4}
+.scene .dl-fc{stroke:rgba(0,0,0,.6);stroke-width:1}
+.scene .tk{stroke:#fff;stroke-opacity:.14;stroke-width:.6}.scene .tkm{stroke:#fff;stroke-opacity:.3;stroke-width:1.4;stroke-linecap:round}
+.scene .dl-tr{fill:none;stroke:#fff;stroke-opacity:.06;stroke-width:6}
+.scene .dl-arc{fill:none;stroke:var(--dc);stroke-width:6;stroke-linecap:round;stroke-dasharray:1000;stroke-dashoffset:calc(1000 - var(--p,0) * 1000);
+filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,opacity .4s}
+.scene .dl-arcl{fill:none;stroke:#fff;stroke-opacity:.16;stroke-width:1.2;stroke-linecap:round}
+.scene .dl-cr{stroke:rgba(255,255,255,.2);stroke-width:.5}.scene .dl-grv{stroke:#000;stroke-opacity:.3;stroke-width:.8}
+.scene .dl-cap{stroke:rgba(255,255,255,.2);stroke-width:.4}
+.scene .dl-push,.scene .dl-crown{transform-box:view-box}
+/* Unsichtbares mit Leuchten (drop-shadow) zusätzlich per visibility weg – manche Browser (Echo Show) malen den Schatten sonst als Fleck */
+.scene .dl-bell{opacity:0;visibility:hidden;transform-box:fill-box;transform-origin:center}
+.scene .dl-br{fill:var(--dc);filter:drop-shadow(0 0 4px var(--dc))}.scene .dl-bk{fill:var(--dcfg,#fff)}
+@media (prefers-reduced-motion:reduce){.scene *{animation:none!important;transition:none!important}}`;
+
+  // src/timer.js
+  var DEF5 = {
+    presets: [1, 5, 10, 15],
+    show_presets: true,
+    show_custom: true,
+    custom_units: "auto",
+    custom_picker: "scale",
+    scale_max: 180,
+    scale_speed: "normal",
+    click_sound: true,
+    custom_input: true,
+    show_add: true,
+    color: "accent-1",
+    alarm_color: "accent-2",
+    alarm_minutes: 10,
+    layout: "full",
+    animation: true,
+    glow: true
+  };
+  var CX = 100;
+  var CY = 112;
+  var R = 80;
+  var RING = 58;
+  var SP = 10;
+  var SPEED = { slow: { k: 0.8, max: 1, fr: 0.94 }, normal: { k: 1.5, max: 2, fr: 0.955 }, fast: { k: 3, max: 4, fr: 0.965 } };
+  var parseIn = (x) => {
+    const p = String(x).trim().replace(",", ":").split(/[:.\s]+/).filter(Boolean).map(Number);
+    if (!p.length || p.some((n) => !Number.isFinite(n) || n < 0)) return 0;
+    return Math.round(p.length === 1 ? p[0] * 60 : p.length === 2 ? p[0] * 60 + p[1] : p[0] * 3600 + p[1] * 60 + p[2]);
+  };
+  var parseDur = (v) => {
+    if (v == null) return null;
+    if (typeof v === "number") return v;
+    const m = String(v).match(/^(?:(\d+)\s*days?,\s*)?(\d+):(\d{1,2})(?::(\d{1,2})(?:\.\d+)?)?$/);
+    if (!m) return null;
+    return (+m[1] || 0) * 86400 + +m[2] * 3600 + +m[3] * 60 + (+m[4] || 0);
+  };
+  var hms = (s) => `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  var fmtLeft = (s) => {
+    s = Math.max(0, Math.ceil(s));
+    const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = String(s % 60).padStart(2, "0");
+    return h ? `${h}:${String(m).padStart(2, "0")}:${x}` : `${m}:${x}`;
+  };
+  var presetSecs = (v) => list(v).map((x) => {
+    const m = String(x).match(/^(\d+(?:[.,]\d+)?)\s*(s|sek|min|m|h|std)?$/i);
+    if (!m) return null;
+    const n = +m[1].replace(",", ".");
+    const u = (m[2] || "min").toLowerCase();
+    return Math.round(n * (u[0] === "s" ? 1 : u[0] === "h" ? 3600 : 60));
+  }).filter((n) => n > 0).slice(0, 8);
+  var presetLbl = (s) => s % 3600 === 0 ? `${s / 3600} h` : s % 60 === 0 ? `${s / 60}` : s > 60 ? fmtLeft(s) : `${s} s`;
+  var ICON = { play: "mdi:play", pause: "mdi:pause", stop: "mdi:stop", plus: "mdi:plus", tune: "mdi:timer-edit-outline", ok: "mdi:check", again: "mdi:restart" };
+  var TCSS = `${DIAL_CSS}
+.g.tm{--dc:var(--tc);--dcfg:var(--tcfg);padding:14px;gap:10px;transition:box-shadow .4s}
+${frameGlow(".g.tm.glow.st-active")}
+.g.tm.alm{--dc:var(--ac);--dcfg:var(--acfg)}
+.g.tm.glow.alm{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 2px var(--ac),0 0 24px color-mix(in srgb,var(--ac) 55%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.anim.glow.alm{animation:tm-frame 1.2s ease-in-out infinite}
+.still{animation-play-state:paused!important}.still *{animation-play-state:paused!important}
+.hd .nm small{font-variant-numeric:tabular-nums}
+.bd{display:flex;flex-direction:column;gap:12px;align-items:stretch;flex:1;min-height:0}
+.dial{position:relative;align-self:center;width:100%;max-width:var(--nova-timer-size,240px);aspect-ratio:1;flex:none}
+.dial svg{display:block;width:100%;height:100%;overflow:visible}
+.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%}
+.ro .t{display:block;font-size:clamp(22px,calc(var(--dw,240px) * .16),46px);font-weight:600;letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.05;white-space:nowrap}
+.ro .s{display:block;font-size:clamp(11px,calc(var(--dw,240px) * .05),14px);opacity:.65;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-idle .scene{opacity:.55}.st-idle .ro .t{opacity:.7}
+.alm .scene{opacity:1}
+.anim.st-paused .ro .t{animation:tm-blink 1.4s ease-in-out infinite}
+.ctl{display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
+.row2{display:flex;gap:8px;flex-wrap:wrap}
+.bt2{flex:1 1 0;min-width:0;box-sizing:border-box;min-height:var(--nova-timer-button-height,52px);padding:0 8px;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);
+display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:inherit;white-space:nowrap;overflow:hidden;transition:background-color .2s,transform .15s,box-shadow .2s}
+.bt2 span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bt2 ha-icon{--mdc-icon-size:21px;flex:none}
+.bt2:active{transform:scale(.95)}
+/* Hauptknopf im Glas-Stil: nur leicht in der Kartenfarbe getönt, Icon in der Farbe – keine Vollfarbfläche */
+.bt2.pri{background:color-mix(in srgb,var(--dc) 22%,var(--nv-chip));border-color:color-mix(in srgb,var(--dc) 55%,transparent)}
+.bt2.pri ha-icon{color:var(--dc)}
+/* Nur-Icon-Knöpfe in „Eigene Zeit“: Icon hell, sonst verschwindet z. B. das Häkchen auf dem getönten Knopf */
+.cust .bt2.pri ha-icon{color:inherit}
+.bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
+.pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
+.pre .bt2{font-size:16px;font-weight:600}
+.zone{position:relative;display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
+/* Eigene Zeit liegt über Start/Schnellwahl (die bleiben unsichtbar stehen) – die Karte wird nie höher oder niedriger */
+.zone.op>.main,.zone.op>.pre{visibility:hidden}
+.cust{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;justify-content:center;min-height:0}
+.cust.sc{display:grid;grid-template-columns:minmax(0,1fr) minmax(84px,40%);grid-template-rows:minmax(0,1fr) auto;gap:10px}
+.cust:not(.sc) .scl,.cust:not(.sc) .rd,.cust.sc .stps{display:none}
+.cust.sc .rd{grid-column:1;grid-row:1}.cust.sc .row2{grid-column:1;grid-row:2;flex-wrap:nowrap}.cust.sc .scl{grid-column:2;grid-row:1/3}
+/* Tuner-Skala: Striche wandern beim Ziehen (nur transform), die Marke in der Mitte zeigt die Zeit */
+.rd{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;contain:strict}
+.rd b{font-size:clamp(26px,10cqw,52px);font-weight:600;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
+.rd.in b{cursor:text}
+.rd input{width:100%;max-width:6.5em;box-sizing:border-box;font:inherit;font-size:clamp(20px,7cqw,36px);font-weight:600;text-align:center;color:inherit;background:var(--nv-chip);border:1px solid color-mix(in srgb,var(--dc) 60%,transparent);border-radius:12px;padding:6px;outline:none}
+.scl{position:relative;overflow:hidden;min-height:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;cursor:grab;outline:none;user-select:none;-webkit-user-select:none;
+contain:strict}
+/* Abdunkeln oben/unten als feste Ebene darüber – eine Maske müsste bei jeder Bewegung neu gerechnet werden (ruckelt auf schwachen Geräten) */
+.scl::before,.scl::after{content:'';position:absolute;left:0;right:0;height:26%;z-index:1;pointer-events:none}
+.scl::before{top:0;background:linear-gradient(rgba(0,0,0,.35),transparent)}.scl::after{bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.35))}
+.scl:focus-visible{border-color:color-mix(in srgb,var(--dc) 70%,transparent)}
+.scl .str{position:absolute;left:0;right:0;top:0;height:0;will-change:transform}
+.scl .str.snap{transition:transform .22s cubic-bezier(.2,.8,.3,1)}
+.scene .dl-gv{transform-box:view-box}
+.scl i{position:absolute;left:10px;width:16%;height:1.5px;margin-top:-.75px;background:rgba(255,255,255,.2)}
+.scl i.m{width:34%;background:rgba(255,255,255,.5)}
+.scl b{position:absolute;left:calc(10px + 34% + 8px);height:16px;margin-top:-8px;line-height:16px;font-size:13px;font-weight:600;opacity:.7;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scl .mk{z-index:2;position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:var(--dc);box-shadow:0 0 8px color-mix(in srgb,var(--dc) 60%,transparent);pointer-events:none}
+.scl .mk::before{content:'';position:absolute;left:0;top:-5px;border:6px solid transparent;border-left:7px solid var(--dc);border-right:0}
+/* Eigene Zeit: je Einheit [−] 05 Min [+] nebeneinander, so hoch wie Schnellwahl + Knöpfe – die Karte wächst nicht */
+.stps{display:flex;gap:8px}
+.stp{flex:1 1 0;display:flex;align-items:center;justify-content:space-between;gap:2px;padding:0 3px;min-width:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);height:var(--nova-timer-button-height,52px);box-sizing:border-box}
+.stp .mi{order:0}.stp .v{order:1;flex:1;text-align:right;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}.stp small{order:2;flex:1;text-align:left;font-size:11px;opacity:.6;margin-left:4px}.stp .pl{order:3}
+.stp .hb{width:34px;height:42px;flex:none;border-radius:12px}
+.stp .hb ha-icon{--mdc-icon-size:22px}
+.msg{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;font-size:16px;font-weight:600;
+background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid color-mix(in srgb,var(--ac) 50%,transparent)}
+.msg ha-icon{color:var(--ac);--mdc-icon-size:26px}
+.anim .msg ha-icon{animation:tm-ring 1.2s ease-in-out infinite;transform-origin:50% 10%}
+.alm .dl-bell{opacity:1;visibility:visible}
+.anim.alm.fx .dl-bell{animation:tm-pop .45s ease-out both}
+.anim.alm .dl-crown,.anim.alm .dl-push{animation:tm-press 1.2s ease-in-out infinite}
+.anim.alm .rot{animation:tm-shake 1.2s ease-in-out infinite;transform-box:view-box;transform-origin:100px 112px}
+.scene .snd path{fill:none;stroke:var(--ac);stroke-width:2;stroke-linecap:round;opacity:0}
+.anim.alm .snd path{animation:tm-snd 1.2s ease-out infinite}.anim.alm .snd path:nth-child(2n){animation-delay:.25s}
+.alm:not(.anim) .snd path{opacity:.7}
+.st-active .dl-push.r{animation:none}
+.prs .dl-push.r,.prs .dl-crown{animation:tm-press .35s ease-out}
+.scene .tip{fill:#fff;filter:drop-shadow(0 0 3px var(--dc));opacity:0;visibility:hidden;transition:opacity .4s,visibility 0s .4s}
+.st-active .scene .tip,.st-paused .scene .tip{opacity:1;visibility:visible;transition:opacity .4s}
+.scene .tipg{transition:transform 1s linear;transform-box:view-box;transform-origin:100px 112px}
+.st-idle .scene .dl-arc{opacity:.35}
+[hidden]{display:none!important}
+/* Kompakt: kleine Stoppuhr links, Zeit daneben, Knöpfe rechts; Schnellwahl und eigene Zeit darunter über die ganze Breite */
+.cmp .hd{display:none}
+.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;align-content:center;column-gap:14px;row-gap:10px}
+.cmp .ctl{display:contents}
+.cmp .dial{grid-column:1;grid-row:1;width:84px;max-width:84px}.cmp .ro{display:none}
+.cmp .ct2{grid-column:2;grid-row:1;min-width:0}
+.cmp .main{flex-wrap:nowrap}
+.cmp .zone,.cmp .msg{grid-column:1/-1}
+.cmp .zone{min-height:calc(2 * var(--nova-timer-button-height,52px) + 10px)}
+.cmp .msg{display:none}
+.ct2 .tt b{display:block;font-size:42px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.ct2 .tt small{display:block;font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct2 .tt i{font-style:normal;opacity:.75}
+.full .ct2{display:none}
+.cmp.alm .tt b{color:var(--ac)}
+@container (max-width:340px){.main.n3 .bt2 ha-icon{display:none}.bt2{font-size:14px}}
+@container (max-width:260px){.main .bt2 span{display:none}.main .bt2 ha-icon{display:flex!important}}
+@container (min-width:400px){.full .bd{flex-direction:row;align-items:center}.full .dial{width:46%;max-width:var(--nova-timer-size,260px)}.full .ctl{flex:1;align-self:stretch}.full .zone{flex:1}}
+/* Stoppuhr neben den Knöpfen, aber wenig Platz rechts: Hauptknöpfe untereinander, damit kein Text abgeschnitten wird */
+@container (min-width:400px) and (max-width:560px){.full .main{flex-direction:column}.full .main .bt2{flex:none;width:100%}}
+@keyframes tm-blink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes tm-ring{0%,60%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-14deg)}20%,40%{transform:rotate(14deg)}}
+@keyframes tm-shake{0%,60%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(-3deg)}20%,40%{transform:rotate(3deg)}}
+@keyframes tm-press{0%,100%{transform:translateY(0)}20%{transform:translateY(3px)}}
+@keyframes tm-snd{0%{opacity:0;transform:scale(.8)}30%{opacity:.85}100%{opacity:0;transform:scale(1.25)}}
+@keyframes tm-pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes tm-frame{0%,100%{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 2px var(--ac),0 0 10px color-mix(in srgb,var(--ac) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}50%{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 2px var(--ac),0 0 30px color-mix(in srgb,var(--ac) 75%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}}
+@media (prefers-reduced-motion:reduce){.anim *,.anim{animation:none!important}}`;
+  var SND = `<g class="snd" style="transform-box:view-box;transform-origin:100px 18px"><path d="M78 20a16 16 0 0 1 6-12"/><path d="M70 24a26 26 0 0 1 9-20"/><path d="M122 20a16 16 0 0 0-6-12"/><path d="M130 24a26 26 0 0 0-9-20"/></g>`;
+  var SVG = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("t", CX, CY, R)}</defs>${SND}
+<g class="rot">${crown("t", CX, CY, R)}${dialBody("t", CX, CY, R, RING)}
+<g class="tipg"><circle class="tip" cx="${CX}" cy="${CY - RING}" r="3.2"/></g>
+${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
+  var NovaTimerCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("timer-card-editor"));
+    }
+    static getStubConfig(h) {
+      const t = Object.keys(h?.states || {}).find((id) => id.startsWith("timer."));
+      return t ? { entity: t } : {};
+    }
+    constructor() {
+      super();
+      this._cust = { h: 0, m: 5, s: 0 };
+      this._showCust = false;
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (c.entity && !String(c.entity).startsWith("timer.")) throw new Error("Bitte einen Timer-Helfer (timer.*) wählen");
+      this._c = { ...DEF5, ...c };
+      this._pre = presetSecs(this._c.presets);
+      this._ids = [c.entity].filter(Boolean);
+      this._key = null;
+      if (this._e) this._layout();
+      if (this._h) this._render();
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) this._build();
+      else if (this._key != null && !hassChanged(old, h, this._ids)) return;
+      this._render();
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      if (!this._e && this._c && this._h) this._build();
+      else if (this._ro && this._e) {
+        this._ro.observe(this._e.dial);
+        this._ro.observe(this._e.g);
+      }
+      this._stopVis?.();
+      this._stopVis = watchVisible(this, (v) => {
+        this._vis = v && !this._quiet;
+        this._tick(true);
+      });
+    }
+    disconnectedCallback() {
+      this._stopVis?.();
+      this._stopVis = null;
+      this._vis = false;
+      this._tick();
+      this._ro?.disconnect();
+      this._stopRep();
+      this._stopFling();
+      this._ac?.close?.().catch(() => {
+      });
+      this._ac = null;
+      this._clk = null;
+      this._drag = false;
+    }
+    getCardSize() {
+      return this._c?.layout === "compact" ? 2 : 5;
+    }
+    getGridOptions() {
+      return this._c?.layout === "compact" ? { columns: 6, rows: "auto", min_columns: 4 } : { columns: 6, rows: "auto", min_columns: 4 };
+    }
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${TCSS}</style><div class="g tm">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
+<div class="bd"><div class="dial">${SVG}<div class="ro"><span class="t"></span><span class="s"></span></div></div>
+<div class="ctl"><div class="ct2"><div class="tt"><b></b><small></small></div></div>
+<div class="msg" hidden><ha-icon icon="mdi:bell-ring"></ha-icon><span>Zeit ist um!</span></div>
+<div class="zone"><div class="row2 main"></div><div class="pre"></div>
+<div class="cust" hidden><div class="rd"><b></b></div><div class="scl" tabindex="0" role="slider" aria-label="Eigene Zeit"><div class="str"></div><div class="mk"></div></div><div class="stps">${["h|Std", "m|Min", "s|Sek"].map((x) => {
+        const [k, l] = x.split("|");
+        return `<div class="stp" data-k="${k}"><small>${l}</small><div class="hb pl"><ha-icon icon="mdi:plus"></ha-icon></div><span class="v"></span><div class="hb mi"><ha-icon icon="mdi:minus"></ha-icon></div></div>`;
+      }).join("")}</div>
+<div class="row2"><div class="bt2 cbk"><ha-icon icon="mdi:close"></ha-icon><span>Zurück</span></div><div class="bt2 pri cgo"><ha-icon icon="mdi:check"></ha-icon><span>Übernehmen</span></div></div></div></div>
+</div></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = {
+        g: q(".g"),
+        hd: q(".hd"),
+        ic: q(".hd .ic"),
+        nm: q(".hd b"),
+        sub: q(".hd small"),
+        dial: q(".dial"),
+        svg: q("svg"),
+        t: q(".ro .t"),
+        s: q(".ro .s"),
+        tt: q(".ct2 b"),
+        ts: q(".ct2 small"),
+        msg: q(".msg"),
+        main: q(".main"),
+        pre: q(".pre"),
+        cust: q(".cust"),
+        gv: q(".dl-gv"),
+        zone: q(".zone"),
+        rd: q(".rd"),
+        scl: q(".scl"),
+        str: q(".str"),
+        tip: q(".tipg")
+      };
+      this._scaleInit();
+      const act = () => ({ entity: this._c.entity, tap_action: this._c.tap_action, hold_action: this._c.hold_action });
+      press(this._e.hd, { tap: () => runAction(this, act(), "tap", true), hold: () => runAction(this, act(), "hold") });
+      press(this._e.dial, { tap: () => this._dialTap(), hold: () => runAction(this, act(), "hold") });
+      r.querySelectorAll(".stp").forEach((st) => {
+        const k = st.dataset.k;
+        [[".pl", 1], [".mi", -1]].forEach(([s, d]) => this._rep(st.querySelector(s), () => this._step(k, d)));
+      });
+      press(q(".cbk"), { tap: () => {
+        this._showCust = false;
+        this._key = null;
+        this._render();
+      } });
+      press(q(".cgo"), { tap: () => {
+        const { h, m, s } = this._cust, u = this._units(), sec = this._scale() ? this._sec : (u.includes("h") ? h : 0) * 3600 + m * 60 + (u.includes("s") ? s : 0);
+        if (sec > 0) {
+          this._armed = sec;
+          this._showCust = false;
+          this._key = null;
+          this._render();
+        }
+      } });
+      if ("ResizeObserver" in window) {
+        this._ro = new ResizeObserver((es) => {
+          es.forEach((x) => {
+            if (x.target === this._e.dial && x.contentRect.width) this._e.dial.style.setProperty("--dw", `${x.contentRect.width}px`);
+          });
+          this._fitBtn();
+          if (this._scale() && !this._e.cust.hidden) this._scaleTo(this._sec, false);
+        });
+        this._ro.observe(this._e.dial);
+        this._ro.observe(this._e.g);
+      }
+      this._layout();
+      this._key = null;
+    }
+    _layout() {
+      const c = this._c, e = this._e, rv = roleVars(c.color), av = roleVars(c.alarm_color);
+      e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--ac:${av.c};--acfg:${av.fg}`;
+      e.g.classList.toggle("cmp", c.layout === "compact");
+      e.g.classList.toggle("full", c.layout !== "compact");
+      e.g.classList.toggle("glow", c.glow !== false);
+      this._presetsKey = null;
+    }
+    _S() {
+      return this._c.entity ? this._h?.states[this._c.entity] : null;
+    }
+    // Restzeit und Gesamtdauer aus dem Zustand des Helfers
+    _calc() {
+      const s = this._S();
+      if (!s) return null;
+      const a = s.attributes, total = parseDur(a.duration) || 0;
+      let left = total;
+      if (s.state === "idle" && this._armed > 0) return { st: s.state, total: this._armed, left: this._armed, fin: a.finishes_at };
+      if (s.state === "active") left = a.finishes_at ? (Date.parse(a.finishes_at) - Date.now()) / 1e3 : parseDur(a.remaining) ?? total;
+      else if (s.state === "paused") left = parseDur(a.remaining) ?? total;
+      return { st: s.state, total, left: Math.max(0, left), fin: a.finishes_at };
+    }
+    // Abgelaufen? HA setzt nach dem Ablauf last_transition = finished; ohne das Attribut zählt der beobachtete Wechsel aktiv → bereit
+    _alarm(s) {
+      if (!s || s.state !== "idle") return false;
+      const fin = s.attributes.last_transition ? s.attributes.last_transition === "finished" : this._sawFinish === s.last_changed;
+      const age = (Date.now() - Date.parse(s.last_changed)) / 6e4, max = +this._c.alarm_minutes;
+      return fin && this._dismissed !== s.last_changed && (!(max > 0) || age < max);
+    }
+    _render() {
+      const c = this._c, e = this._e, h = this._h;
+      if (!e || !h) return;
+      const s = this._S();
+      if (s && this._prevSt === "active" && s.state === "idle" && this._prevFin && Date.parse(this._prevFin) <= Date.now() + 2e3) this._sawFinish = s.last_changed;
+      const fresh = s && this._prevSt && this._prevSt !== "idle" && s.state === "idle";
+      this._prevSt = s?.state;
+      this._prevFin = s?.attributes.finishes_at;
+      const v = this._calc(), al = this._alarm(s), st = v?.st || "na";
+      const key = JSON.stringify([s?.state, s?.last_changed, s?.attributes, al, this._showCust, c]);
+      const changed = key !== this._key;
+      this._key = key;
+      if (changed) {
+        e.g.classList.remove("st-active", "st-paused", "st-idle", "st-na");
+        e.g.classList.add(`st-${st}`);
+        if (al && !e.g.classList.contains("alm")) {
+          e.g.classList.add("fx");
+          if (c.animation !== false && this._vis) sweep(e.g);
+        }
+        if (!al) e.g.classList.remove("fx");
+        e.g.classList.toggle("alm", al);
+        e.g.classList.toggle("na", !s);
+        const nm = s ? nameOf(h, { entity: c.entity, name: c.name }) : c.name || "Timer";
+        e.nm.textContent = nm;
+        this._nm = nm;
+        e.ic.innerHTML = `<ha-icon icon="${esc(c.icon || s?.attributes.icon || "mdi:timer-outline")}"></ha-icon>`;
+        e.ic.classList.toggle("on", st === "active" || al);
+        e.hd.classList.toggle("on", st === "active" || al);
+        e.msg.hidden = !al;
+        e.msg.querySelector("span").textContent = c.alarm_text || "Zeit ist um!";
+        this._buttons(st, al, v);
+        if (fresh && !al) e.cust.hidden = !this._showCust;
+      }
+      this._time();
+      this._tick();
+    }
+    // Zeit, Ring und Untertitel – läuft jede Sekunde, solange der Timer läuft
+    _time() {
+      const e = this._e, v = this._calc(), s = this._S(), al = this._alarm(s);
+      if (!v) {
+        e.t.textContent = "–:––";
+        e.s.textContent = this._c.entity ? "Timer nicht gefunden" : "Timer-Helfer wählen";
+        e.tt.textContent = "–:––";
+        e.ts.textContent = e.s.textContent;
+        e.sub.textContent = e.s.textContent;
+        e.svg.style.setProperty("--p", 0);
+        return;
+      }
+      const p = v.total ? v.left / v.total : 0, txt = al ? "0:00" : fmtLeft(v.st === "idle" ? v.total : v.left);
+      let sub = "";
+      if (al) sub = this._c.alarm_text || "Zeit ist um!";
+      else if (v.st === "active") sub = `bis ${this._clock(v.fin ? new Date(v.fin) : new Date(Date.now() + v.left * 1e3))}`;
+      else if (v.st === "paused") sub = "Pausiert";
+      else sub = "Bereit";
+      if (e.t.textContent !== txt) {
+        e.t.textContent = txt;
+        e.tt.textContent = txt;
+      }
+      const hs = al ? sub : { active: "Läuft", paused: "Pausiert" }[v.st] || "Bereit";
+      if (e.s.textContent !== sub) e.s.textContent = sub;
+      const ts = `${this._nm ? `${this._nm} · ` : ""}${sub}`;
+      if (e.ts.textContent !== ts) e.ts.textContent = ts;
+      if (e.sub.textContent !== hs) e.sub.textContent = hs;
+      const pp = v.st === "idle" ? al ? 0 : 1 : p;
+      e.svg.style.setProperty("--p", pp.toFixed(4));
+      e.tip.style.transform = `rotate(${(pp * 360).toFixed(2)}deg)`;
+    }
+    _clock(d) {
+      const h = this._h, o = { hour: "2-digit", minute: "2-digit", timeZone: tzOf(h) };
+      try {
+        return new Intl.DateTimeFormat(langOf(h), o).format(d);
+      } catch {
+        delete o.timeZone;
+        return new Intl.DateTimeFormat(langOf(h), o).format(d);
+      }
+    }
+    _buttons(st, al, v) {
+      const c = this._c, e = this._e, b = [];
+      const B = (cls, icon2, label, fn) => b.push([cls, icon2, label, fn]);
+      if (!this._S()) {
+      } else if (al) {
+        B("pri", ICON.ok, "OK", () => this._dismiss());
+        if (v?.total) B("", ICON.again, "Nochmal", () => {
+          this._dismiss();
+          this._start(v.total);
+        });
+      } else if (st === "active") {
+        B("", ICON.pause, "Pause", () => this._svc("pause"));
+        if (c.show_add !== false) B("", ICON.plus, "+1 Min", () => this._add(60));
+        B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
+      } else if (st === "paused") {
+        B("pri", ICON.play, "Weiter", () => this._svc("start"));
+        B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
+      } else {
+        B("pri", ICON.play, "Start", () => this._start(v?.total || 0));
+        if (c.show_custom !== false) B(this._showCust ? "sel" : "", ICON.tune, "Eigene Zeit", () => {
+          this._showCust = !this._showCust;
+          if (this._showCust) this._custFrom(v?.total || 0);
+          this._key = null;
+          this._render();
+        });
+      }
+      e.main.innerHTML = "";
+      e.main.classList.toggle("n3", b.length > 2);
+      b.forEach(([cls, icon2, label, fn]) => {
+        const d = document.createElement("div");
+        d.className = `bt2 ${cls}`;
+        d.title = label;
+        d.innerHTML = `<ha-icon icon="${icon2}"></ha-icon><span>${esc(label)}</span>`;
+        press(d, { tap: fn });
+        e.main.append(d);
+      });
+      const idle = st === "idle" && !al && !!this._S();
+      e.pre.hidden = !idle || this._showCust || c.show_presets === false || !this._pre.length;
+      if (!e.pre.hidden) {
+        const pk = JSON.stringify(this._pre);
+        if (this._presetsKey !== pk) {
+          this._presetsKey = pk;
+          e.pre.style.setProperty("--n", Math.min(4, this._pre.length));
+          e.pre.innerHTML = "";
+          this._pre.forEach((sec) => {
+            const d = document.createElement("div");
+            d.className = "bt2";
+            d.textContent = presetLbl(sec);
+            d.title = `${sec % 60 ? presetLbl(sec) : sec / 60 + " Minuten"} starten`;
+            press(d, { tap: () => this._start(sec) });
+            e.pre.append(d);
+          });
+        }
+      }
+      e.cust.hidden = !(idle && this._showCust && c.show_custom !== false);
+      e.zone.classList.toggle("op", !e.cust.hidden);
+      if (!e.cust.hidden) this._custShow();
+      this._fitBtn();
+    }
+    _dialTap() {
+      const s = this._S();
+      if (!s) return;
+      if (this._alarm(s)) return this._dismiss();
+      if (s.state === "active") return this._svc("pause");
+      if (s.state === "paused") return this._svc("start");
+      this._start(this._calc()?.total || 0);
+    }
+    _dismiss() {
+      this._dismissed = this._S()?.last_changed;
+      this._key = null;
+      this._render();
+    }
+    _press() {
+      const g = this._e.g;
+      g.classList.remove("prs");
+      void g.offsetWidth;
+      g.classList.add("prs");
+    }
+    _svc(svc, data = {}) {
+      if (!this._c.entity) return;
+      this._press();
+      return this._h.callService("timer", svc, { entity_id: this._c.entity, ...data });
+    }
+    _start(sec) {
+      this._armed = 0;
+      return sec > 0 ? this._svc("start", { duration: hms(Math.round(sec)) }) : this._svc("start");
+    }
+    // +1 Minute: timer.change (ab HA 2024.x); geht nicht über die eingestellte Dauer hinaus → dann neu starten mit Rest + 60 s
+    async _add(sec) {
+      const v = this._calc();
+      try {
+        await this._svc("change", { duration: hms(sec) });
+      } catch (err) {
+        console.warn("[nova-cards] Timer: +1 Min per Neustart", err);
+        if (v) this._start(Math.round(v.left + sec));
+      }
+    }
+    // Stepper: läuft am Ende rundherum (59 → 0); Sekunden in 5er-Schritten, kompakt ohne Stunden bis 180 Minuten
+    // Einheiten der eigenen Zeit: auto = groß Std/Min/Sek, kompakt Min/Sek; sonst jede Kombination aus h, m, s (z. B. „hm“, „s“)
+    _units() {
+      const u = String(this._c.custom_units || "auto"), l = u === "auto" ? "" : ["h", "m", "s"].filter((k) => u.includes(k)).join("");
+      return [...l || (this._c.layout === "compact" ? "ms" : "hms")];
+    }
+    // Größter Wert je Feld: die kleinste gewählte Einheit nimmt den Rest auf (nur Minuten → bis 180, nur Sekunden → bis 59:55)
+    _max(k) {
+      const u = this._units();
+      if (k === "h") return u.length === 1 ? 24 : 23;
+      if (k === "m") return u.includes("h") ? 59 : 180;
+      return u.includes("m") ? 55 : 3595;
+    }
+    _step(k, d) {
+      const c = this._cust, st = k === "s" ? 5 : 1, n = this._max(k) + st;
+      c[k] = ((Math.round(c[k] / st) * st + d * st) % n + n) % n;
+      this._custShow();
+    }
+    // Auswahl beginnt mit der eingestellten Zeit (5:00 → 0 Std, 5 Min, 0 Sek); fehlt eine größere Einheit, zählt ihr Teil in der nächstkleineren
+    _custFrom(sec) {
+      if (this._scale()) {
+        this._sec = sec > 0 ? Math.min(sec, this._vals.at(-1)) : 300;
+        return;
+      }
+      const t = Math.max(0, Math.round(sec)), u = this._units(), H2 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
+      const c = { h: 0, m: 0, s: 0 };
+      if (H2) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
+      if (M) c.m = Math.min(this._max("m"), Math.floor((H2 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
+      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H2 ? t % 3600 : t) / 5) * 5);
+      if (!c.h && !c.m && !c.s) {
+        if (M) c.m = 5;
+        else if (H2) c.h = 1;
+        else c.s = 30;
+      }
+      this._cust = c;
+    }
+    // Knopf-Texte, die nicht passen, weglassen – der Knopf zeigt dann nur sein Icon (nie „Überne…“)
+    _fitBtn() {
+      if (this._e) fitLabels(this.shadowRoot, ".bt2 > span", true);
+    }
+    _custShow() {
+      const e = this._e, sc = this._scale();
+      e.cust.classList.toggle("sc", sc);
+      if (sc) {
+        this._scaleBuild();
+        e.rd.classList.toggle("in", this._c.custom_input !== false);
+        requestAnimationFrame(() => this._scaleTo(this._sec, false));
+        return;
+      }
+      const u = this._units();
+      this._e.cust.querySelectorAll(".stp").forEach((st) => {
+        st.hidden = !u.includes(st.dataset.k);
+        st.querySelector(".v").textContent = String(this._cust[st.dataset.k]).padStart(2, "0");
+      });
+    }
+    // Taste mit Wiederholung beim Gedrückthalten (Stepper)
+    _rep(el2, fn) {
+      el2.tabIndex = 0;
+      el2.setAttribute("role", "button");
+      el2.classList.add("tap");
+      el2.addEventListener("pointerdown", (ev) => {
+        ev.preventDefault();
+        fn();
+        this._stopRep();
+        this._rt = setTimeout(() => {
+          this._ri = setInterval(fn, 110);
+        }, 450);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach((t) => el2.addEventListener(t, () => this._stopRep()));
+      el2.addEventListener("contextmenu", (ev) => ev.preventDefault());
+      el2.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          fn();
+        }
+      });
+    }
+    _stopRep() {
+      clearTimeout(this._rt);
+      clearInterval(this._ri);
+      this._rt = this._ri = null;
+    }
+    /* ---------- Eigene Zeit als Tuner-Skala ----------
+       Senkrechte Skala, mit dem Finger hoch/runter ziehen. Raster: bis 5 Min 15 s, bis 15 Min 30 s, bis 60 Min 1 Min, darüber 5 Min.
+       Schnelles Wischen läuft mit Schwung aus und rastet dann ein. Pro Raster ein leiser Klick (und Vibration, wo es geht).
+       Pro Bild wird nur transform gesetzt – nichts wird neu gezeichnet. */
+    _scale() {
+      return this._c?.custom_picker !== "buttons";
+    }
+    get _vals() {
+      const max = Math.max(5, Math.min(1440, +this._c?.scale_max || 180)) * 60;
+      if (this._valsFor === max) return this._valsC;
+      const v = [];
+      for (let t = 15; t <= Math.min(300, max); t += 15) v.push(t);
+      for (let t = 330; t <= Math.min(900, max); t += 30) v.push(t);
+      for (let t = 960; t <= Math.min(3600, max); t += 60) v.push(t);
+      for (let t = 3900; t <= max; t += 300) v.push(t);
+      this._valsFor = max;
+      this._valsC = v;
+      return v;
+    }
+    _scaleBuild() {
+      const vals = this._vals, key = vals.length + "|" + vals.at(-1);
+      if (this._strKey === key) return;
+      this._strKey = key;
+      const LBL = /* @__PURE__ */ new Set([1, 2, 3, 4, 5, 10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 480, 600, 720, 900, 1080, 1260, 1440]);
+      this._e.str.innerHTML = vals.map((t, i) => {
+        const y = i * SP, maj = t <= 900 ? t % 60 === 0 : t <= 3600 ? t % 300 === 0 : t % 900 === 0, min = t / 60;
+        return `<i${maj ? ' class="m"' : ""} style="top:${y}px"></i>${maj && LBL.has(min) ? `<b style="top:${y}px">${min}</b>` : ""}`;
+      }).join("");
+    }
+    _fmt(t) {
+      const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60, p = (n) => String(n).padStart(2, "0");
+      return h ? `${h}:${p(m)}:${p(s)}` : `${m}:${p(s)}`;
+    }
+    _idxOf(t) {
+      const v = this._vals;
+      let b = 0;
+      v.forEach((x, i) => {
+        if (Math.abs(x - t) < Math.abs(v[b] - t)) b = i;
+      });
+      return b;
+    }
+    // Höhe nur beim Öffnen/Anfassen messen – nie während der Bewegung (kein erzwungenes Layout pro Bild)
+    _mid(fresh) {
+      if (fresh || !this._midC) this._midC = (this._e.scl.clientHeight || 0) / 2;
+      return this._midC;
+    }
+    _offOf(i) {
+      return this._mid() - i * SP;
+    }
+    _clampOff(o) {
+      return Math.max(this._offOf(this._vals.length - 1), Math.min(this._offOf(0), o));
+    }
+    _move(o, snap) {
+      this._off = o;
+      const s = this._e.str;
+      s.classList.toggle("snap", !!snap);
+      s.style.transform = `translate3d(0,${o}px,0)`;
+      const gv = this._e.gv;
+      if (gv) gv.style.transform = `translateX(${(o * 0.12 % 3 + 3) % 3}px)`;
+    }
+    // Raster unter der Marke prüfen: neue Zeit, Klick
+    _hit(o) {
+      const i = Math.max(0, Math.min(this._vals.length - 1, Math.round((this._mid() - o) / SP)));
+      if (i === this._idx) return;
+      this._idx = i;
+      this._sec = this._vals[i];
+      this._showSec();
+      this._click();
+    }
+    _showSec() {
+      const e = this._e, txt = this._fmt(this._sec);
+      const b = e.rd.querySelector("b");
+      if (b) b.textContent = txt;
+      e.scl.setAttribute("aria-valuetext", txt);
+      if (this._c.layout === "compact") e.tt.textContent = txt;
+      else e.t.textContent = txt;
+    }
+    // Zeit setzen und Skala dorthin stellen (exakte Werte aus dem Zahlenfeld bleiben exakt, die Skala zeigt das nächste Raster)
+    _scaleTo(t, snap) {
+      if (!this._e) return;
+      this._mid(true);
+      this._sec = t;
+      this._idx = this._idxOf(t);
+      this._move(this._offOf(this._idx), snap);
+      this._showSec();
+    }
+    _snap() {
+      this._stopFling();
+      const i = Math.max(0, Math.min(this._vals.length - 1, Math.round((this._mid() - this._off) / SP)));
+      this._idx = -1;
+      this._move(this._offOf(i), true);
+      this._hit(this._offOf(i));
+    }
+    // Schwung beenden – setzt auch den Zustand zurück, sonst würde jedes Ziehen danach als Antippen (ein Schritt) zählen
+    _stopFling() {
+      if (this._raf) cancelAnimationFrame(this._raf);
+      this._raf = 0;
+      this._fling = false;
+    }
+    // Leiser Klick: sehr kurzer Ton über Web Audio (der Echo kann nicht vibrieren), dazu Vibration, wo vorhanden
+    _click() {
+      if (this._c.click_sound === false || !this._drag) return;
+      const now = performance.now();
+      if (now - (this._lastClick || 0) < (this._fling ? 45 : 28)) return;
+      this._lastClick = now;
+      try {
+        navigator.vibrate?.(6);
+      } catch (e) {
+      }
+      const ac = this._ac;
+      if (!ac || ac.state === "closed") return;
+      try {
+        if (!this._clk) {
+          const n = Math.round(ac.sampleRate * 5e-3), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+          for (let i = 0; i < n; i++) d[i] = Math.sin(i / ac.sampleRate * 2 * Math.PI * 2100) * Math.pow(1 - i / n, 3) * 0.12;
+          this._clk = buf;
+        }
+        const src = ac.createBufferSource();
+        src.buffer = this._clk;
+        src.connect(ac.destination);
+        src.start();
+      } catch (e) {
+      }
+    }
+    _scaleInit() {
+      const e = this._e, sc = e.scl;
+      let y0 = 0, ly = 0, lt = 0, moved = false, pts = [], want = null, frame = 0;
+      const flush = () => {
+        frame = 0;
+        if (want == null) return;
+        this._move(want, false);
+        this._hit(want);
+      };
+      sc.addEventListener("pointerdown", (ev) => {
+        if (ev.button > 0) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (this._c.click_sound !== false && !this._ac) {
+          const A3 = window.AudioContext || window.webkitAudioContext;
+          if (A3) try {
+            this._ac = new A3();
+          } catch (x) {
+            this._ac = null;
+          }
+        }
+        this._ac?.resume?.().catch(() => {
+        });
+        this._stopFling();
+        this._fling = false;
+        sc.setPointerCapture?.(ev.pointerId);
+        this._mid(true);
+        this._drag = true;
+        moved = false;
+        y0 = ly = ev.clientY;
+        lt = ev.timeStamp;
+        want = this._off ?? this._offOf(this._idx || 0);
+        pts = [[ev.timeStamp, want]];
+        this._move(want, false);
+        sc.focus({ preventScroll: true });
+      });
+      sc.addEventListener("pointermove", (ev) => {
+        if (!this._drag || this._fling) return;
+        if (!moved && Math.abs(ev.clientY - y0) > 4) moved = true;
+        if (!moved) return;
+        const dy = ev.clientY - ly, dt = Math.max(1, ev.timeStamp - lt), sp = Math.abs(dy) / dt;
+        ly = ev.clientY;
+        lt = ev.timeStamp;
+        const S = SPEED[this._c.scale_speed] || SPEED.normal, gain = 1 + Math.min(S.max, Math.max(0, sp - 0.15) * S.k);
+        want = this._clampOff(want + dy * gain);
+        pts.push([ev.timeStamp, want]);
+        if (pts.length > 8) pts.shift();
+        if (!frame) frame = requestAnimationFrame(flush);
+      });
+      const up = (ev) => {
+        if (!this._drag) return;
+        if (!moved && ev.type !== "pointerup") {
+          this._drag = false;
+          return;
+        }
+        if (!moved) {
+          const r = sc.getBoundingClientRect(), i = Math.max(0, Math.min(this._vals.length - 1, this._idx + (ev.clientY < r.top + r.height / 2 ? -1 : 1)));
+          this._move(this._offOf(i), true);
+          this._hit(this._offOf(i));
+          this._drag = false;
+          return;
+        }
+        if (frame) {
+          cancelAnimationFrame(frame);
+          flush();
+        }
+        const last = pts.at(-1), first = pts.find((p) => last[0] - p[0] <= 100) || pts[0];
+        let v = last[0] > first[0] ? (last[1] - first[1]) / (last[0] - first[0]) : 0;
+        const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (ev.timeStamp - last[0] > 120) v = 0;
+        if (calm || Math.abs(v) < 0.2 || ev.type === "pointercancel") {
+          this._snap();
+          this._drag = false;
+          return;
+        }
+        let t0 = performance.now();
+        this._fling = true;
+        const step = (now) => {
+          const dt = Math.min(40, now - t0);
+          t0 = now;
+          let o = this._off + v * dt;
+          const c = this._clampOff(o);
+          if (c !== o) {
+            o = c;
+            v = 0;
+          }
+          v *= Math.pow((SPEED[this._c.scale_speed] || SPEED.normal).fr, dt / 16);
+          this._move(o, false);
+          this._hit(o);
+          if (Math.abs(v) > 0.05) this._raf = requestAnimationFrame(step);
+          else {
+            this._raf = 0;
+            this._fling = false;
+            this._snap();
+            this._drag = false;
+          }
+        };
+        this._raf = requestAnimationFrame(step);
+      };
+      sc.addEventListener("pointerup", up);
+      sc.addEventListener("pointercancel", up);
+      sc.addEventListener("lostpointercapture", (ev) => {
+        if (this._drag && !this._fling) up(ev);
+      });
+      ["touchstart", "touchmove"].forEach((t) => sc.addEventListener(t, (ev) => ev.stopPropagation(), { passive: true }));
+      sc.addEventListener("wheel", (ev) => {
+        ev.preventDefault();
+        this._drag = true;
+        this._nudge(ev.deltaY > 0 ? 1 : -1);
+        this._drag = false;
+      }, { passive: false });
+      sc.addEventListener("keydown", (ev) => {
+        const d = { ArrowDown: 1, ArrowUp: -1, PageDown: 5, PageUp: -5 }[ev.key];
+        if (d) {
+          ev.preventDefault();
+          this._drag = true;
+          this._nudge(d);
+          this._drag = false;
+        }
+      });
+      press(e.rd, { tap: () => this._typeIn() });
+    }
+    _nudge(d) {
+      this._stopFling();
+      const i = Math.max(0, Math.min(this._vals.length - 1, this._idx + d));
+      this._move(this._offOf(i), true);
+      this._hit(this._offOf(i));
+    }
+    _typeIn() {
+      const rd = this._e.rd;
+      if (this._c.custom_input === false || rd.querySelector("input")) return;
+      const inp = document.createElement("input");
+      inp.type = "text";
+      inp.inputMode = "numeric";
+      inp.value = this._fmt(this._sec);
+      inp.setAttribute("aria-label", "Zeit eintippen (Minuten oder m:ss)");
+      rd.replaceChildren(inp);
+      inp.focus();
+      inp.select();
+      let done = false;
+      const fin = (ok3) => {
+        if (done) return;
+        done = true;
+        const t = ok3 ? parseIn(inp.value) : 0;
+        rd.replaceChildren(document.createElement("b"));
+        if (t > 0) this._scaleTo(Math.min(t, 86399), true);
+        else this._showSec();
+      };
+      inp.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") fin(true);
+        if (ev.key === "Escape") fin(false);
+      });
+      inp.addEventListener("blur", () => fin(true));
+    }
+    // Ein Takt pro Sekunde, nur wenn der Timer läuft (oder klingelt) und die Karte zu sehen ist
+    _tick(cameIn) {
+      const e = this._e;
+      if (!e) return;
+      const vis3 = !!this._vis, s = this._S(), al = this._alarm(s);
+      e.g.classList.toggle("anim", vis3 && this._c.animation !== false);
+      e.g.classList.toggle("still", !vis3);
+      if (cameIn && vis3 && !this._wasVis && this._c.animation !== false) sweep(e.g);
+      this._wasVis = vis3;
+      const run = vis3 && (s?.state === "active" || al);
+      if (run && !this._tm) this._tm = setInterval(() => {
+        const s2 = this._S();
+        if (s2?.state === "active") this._time();
+        else if (!this._alarm(s2)) {
+          this._key = null;
+          this._render();
+        }
+      }, 1e3);
+      if (!run && this._tm) {
+        clearInterval(this._tm);
+        this._tm = null;
+      }
+    }
+  };
+  define("timer-card", NovaTimerCard, { name: "Nova Timer Card", description: "Küchen-Timer über einen Timer-Helfer: Schnellwahl, eigene Zeit, Pause, +1 Minute, Abbrechen – auf allen Geräten synchron, mit Hinweis beim Ablauf.", documentationURL: docUrl("nova-timer-card") });
+  var S_GEN5 = [
+    { name: "entity", required: true, selector: { entity: { domain: "timer" } } },
+    g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } })
+  ];
+  var S_START = [
+    { name: "show_presets", selector: { boolean: {} } },
+    { name: "presets", selector: T },
+    g2({ name: "show_custom", selector: { boolean: {} } }, sel("custom_picker", [["scale", "Skala zum Ziehen"], ["buttons", "Plus / Minus"]])),
+    g2({ name: "scale_max", selector: { number: { min: 5, max: 1440, step: 5, mode: "box", unit_of_measurement: "min" } } }, { name: "click_sound", selector: { boolean: {} } }),
+    g2(sel("scale_speed", [["slow", "Langsam"], ["normal", "Normal"], ["fast", "Schnell"]]), { name: "custom_input", selector: { boolean: {} } }),
+    sel("custom_units", [["auto", "Automatisch"], ["h", "Nur Stunden"], ["m", "Nur Minuten"], ["s", "Nur Sekunden"], ["hm", "Stunden und Minuten"], ["ms", "Minuten und Sekunden"], ["hms", "Stunden, Minuten, Sekunden"]]),
+    { name: "show_add", selector: { boolean: {} } }
+  ];
+  var S_ALARM = [
+    { name: "alarm_text", selector: T },
+    g2(ROLE("alarm_color"), { name: "alarm_minutes", selector: { number: { min: 0, max: 120, mode: "box", unit_of_measurement: "min" } } })
+  ];
+  var S_LOOK3 = [
+    g2(sel("layout", [["full", "Groß (mit Stoppuhr)"], ["compact", "Kompakt"]]), ROLE("color")),
+    g2({ name: "animation", selector: { boolean: {} } }, { name: "glow", selector: { boolean: {} } })
+  ];
+  var S_ACT3 = [{ name: "tap_action", selector: A }, { name: "hold_action", selector: A }];
+  var LABELS6 = {
+    entity: "Timer-Helfer",
+    name: "Name",
+    icon: "Icon",
+    show_presets: "Schnellwahl-Knöpfe zeigen",
+    presets: "Schnellwahl (Minuten, mit Komma)",
+    show_custom: "Knopf „Eigene Zeit“ zeigen",
+    custom_picker: "Eigene Zeit einstellen mit",
+    scale_max: "Skala bis",
+    scale_speed: "Tempo der Skala",
+    click_sound: "Klick-Geräusch beim Drehen",
+    custom_input: "Zeit antippen = eintippen",
+    custom_units: "Plus / Minus in",
+    show_add: "Knopf „+1 Min“ während der Timer läuft",
+    alarm_text: "Text beim Ablauf",
+    alarm_color: "Farbe beim Ablauf",
+    alarm_minutes: "Hinweis anzeigen für",
+    layout: "Darstellung",
+    color: "Farbe",
+    animation: "Animationen",
+    glow: "Rahmen leuchtet, solange der Timer läuft",
+    tap_action: "Kopfzeile antippen",
+    hold_action: "Lange drücken"
+  };
+  var HELPERS6 = {
+    entity: "Ein Timer-Helfer läuft in Home Assistant – alle Geräte zeigen dieselbe Zeit. Anlegen unter Einstellungen → Geräte & Dienste → Helfer → Timer.",
+    presets: "z. B. „1, 5, 10, 15“. Auch „30s“ oder „1h“ geht. Höchstens 8.",
+    custom_picker: "Skala: wie ein Radio-Tuner hoch und runter ziehen, schnelles Wischen läuft mit Schwung aus. Raster bis 5 Min 15 Sekunden, bis 15 Min 30 Sekunden, bis 60 Min 1 Minute, darüber 5 Minuten.",
+    scale_speed: "Wie weit schnelles Ziehen und Wischen die Skala dreht. Langsames Ziehen bleibt immer fein.",
+    click_sound: "Leiser Klick pro Raster (und Vibration, wo das Gerät es kann).",
+    custom_input: "Antippen der großen Zeit öffnet ein Zahlenfeld: „5“ = 5 Minuten, „5:30“, „1:05:00“.",
+    custom_units: "Nur für Plus / Minus. Automatisch = groß Stunden/Minuten/Sekunden, kompakt Minuten/Sekunden. Gibt es keine größere Einheit, geht die kleinere weiter: „Nur Minuten“ bis 180, „Nur Sekunden“ bis 59:55.",
+    alarm_text: "Leer = „Zeit ist um!“",
+    alarm_minutes: "So lange klingelt die Karte nach dem Ablauf, wenn niemand „OK“ drückt. 0 = bis jemand bestätigt.",
+    tap_action: "Leer = Details des Timers öffnen. Die Stoppuhr selbst startet, pausiert und setzt fort."
+  };
+  var NovaTimerCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const data = () => {
+        const d = { ...DEF5, ...this._config };
+        if (Array.isArray(d.presets)) d.presets = d.presets.join(", ");
+        return d;
+      };
+      const form = (s) => this._form(s, data(), (v) => {
+        const c = merge(this._config, names(s), v);
+        if ("presets" in v) {
+          const arr = list(v.presets).map((x) => /^\d+$/.test(x) ? +x : x);
+          if (!arr.length || JSON.stringify(arr) === JSON.stringify(DEF5.presets)) delete c.presets;
+          else c.presets = arr;
+        }
+        Object.keys(DEF5).forEach((k) => {
+          if (k !== "presets" && c[k] === DEF5[k]) delete c[k];
+        });
+        this._emit(c);
+      });
+      const w = r.querySelector(".wrap");
+      if (!Object.keys(this._hass?.states || {}).some((id) => id.startsWith("timer."))) w.append(this._hint("Noch kein Timer-Helfer vorhanden: Einstellungen → Geräte & Dienste → Helfer → „Helfer erstellen“ → Timer. Tipp: „Zustand wiederherstellen“ anhaken, dann übersteht der Timer auch einen Neustart von Home Assistant."));
+      w.append(
+        this._section("general", "mdi:timer-outline", "Timer", (b) => b.append(form(S_GEN5))),
+        this._section("start", "mdi:gesture-tap-button", "Schnellwahl und Knöpfe", (b) => b.append(form(S_START))),
+        this._section("alarm", "mdi:bell-ring-outline", "Wenn die Zeit um ist", (b) => {
+          b.append(form(S_ALARM), this._hint("Ton oder Ansage (z. B. auf dem Echo) per Automation: Auslöser „Ereignis“ timer.finished mit diesem Timer."));
+        }),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK3))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT3)))
+      );
+    }
+  };
+  __publicField(NovaTimerCardEditor, "labels", LABELS6);
+  __publicField(NovaTimerCardEditor, "helpers", HELPERS6);
+  __publicField(NovaTimerCardEditor, "openSections", ["general"]);
+  define("timer-card-editor", NovaTimerCardEditor);
+
+  // src/clock.js
+  var DEF6 = { mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true };
+  var C = 100;
+  var R2 = 92;
+  var CCSS2 = `${DIAL_CSS}
+:host{container-type:inline-size}
+.g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
+.g.ck.flat{background:none;border-color:transparent;box-shadow:none}
+.nm{font-size:12.5px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
+.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
+.tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
+.tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
+.dt{font-size:clamp(13px,5cqw,22px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ana{width:100%;max-width:var(--nova-clock-size,240px);aspect-ratio:1}
+.ana svg{display:block;width:100%;height:100%}
+.scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
+.scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
+.scene .cap{fill:url(#k-cr);stroke:rgba(255,255,255,.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
+.scene .hsh{fill:#000;opacity:.25}
+[hidden]{display:none!important}
+@container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}
+.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}.row .inf{font-size:clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)}}
+.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:clamp(14px,var(--nova-clock-info-size,7.5cqw),26px);opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
+.inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
+.row .inf{justify-content:flex-start}
+.txt{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0;max-width:100%}`;
+  var hand = (cls, w, len, back) => `<path class="${cls}" d="M${C - w / 2} ${C + back} L${C - w / 2 + 0.4} ${C - len} Q${C} ${C - len - w / 2} ${C + w / 2 - 0.4} ${C - len} L${C + w / 2} ${C + back} Z"/>`;
+  var SVG2 = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("k", C, C, R2)}</defs>${dialBody("k", C, C, R2)}
+<g class="hh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 6, 44, 10)}</g>${hand("hd", 6, 44, 10)}</g>
+<g class="mh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 4.2, 64, 12)}</g>${hand("md", 4.2, 64, 12)}</g>
+<g class="sh">${hand("sd", 1.6, 70, 18)}<circle class="sd" cx="${C}" cy="${C + 14}" r="3"/></g>
+<circle class="cap" cx="${C}" cy="${C}" r="5"/><circle class="cap2" cx="${C}" cy="${C}" r="1.8"/>
+${dialGlass("k", C, C, R2)}</svg>`;
+  var NovaClockCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("clock-card-editor"));
+    }
+    static getStubConfig() {
+      return {};
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._c = { ...DEF6, ...c };
+      this._ents = (Array.isArray(c.entities) ? c.entities : []).map((x) => typeof x === "string" ? { entity: x } : { ...x }).filter((x) => x.entity);
+      this._ids = this._ents.map((x) => x.entity);
+      this._fmtKey = null;
+      if (this._e) {
+        this._layout();
+        this._draw();
+        this._vals();
+        this._plan();
+      }
+    }
+    // Nur Sprache, Zeitformat und Zeitzone aus hass sind wichtig – Zustände nicht
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) {
+        this._build();
+        this._draw();
+        this._vals();
+        this._plan();
+        return;
+      }
+      if (!old || old.locale !== h.locale || old.config !== h.config || old.language !== h.language) {
+        this._fmtKey = null;
+        this._draw();
+      }
+      if (this._ents.length && hassChanged(old, h, this._ids)) this._vals();
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      if (!this._e && this._c && this._h) this._build();
+      this._stopVis?.();
+      this._stopVis = watchVisible(this, (v) => {
+        const was = this._vis;
+        this._vis = v && !this._quiet;
+        if (this._vis && !was && this._c?.mode === "analog" && this._c.animation !== false) sweep(this._e?.g);
+        this._draw();
+        this._plan();
+      });
+    }
+    disconnectedCallback() {
+      this._stopVis?.();
+      this._stopVis = null;
+      this._vis = false;
+      clearTimeout(this._t);
+      this._t = null;
+    }
+    getCardSize() {
+      return this._c?.mode === "analog" ? 4 : 2;
+    }
+    getGridOptions() {
+      return { columns: 6, rows: "auto", min_columns: 3 };
+    }
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${CCSS2}</style><div class="g ck"><div class="ana">${SVG2}</div>
+<div class="txt"><div class="nm"></div><div class="tm"></div><div class="dt"></div><div class="inf"></div></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = { g: q(".g"), ana: q(".ana"), nm: q(".nm"), tm: q(".tm"), dt: q(".dt"), inf: q(".inf"), hh: q(".hh"), mh: q(".mh"), sh: q(".sh") };
+      const act = () => ({ tap_action: this._c.tap_action, hold_action: this._c.hold_action });
+      press(this._e.g, { tap: () => runAction(this, act(), "tap", true), hold: () => runAction(this, act(), "hold") });
+      this._layout();
+    }
+    _layout() {
+      const c = this._c, e = this._e, rv = roleVars(c.color), an = c.mode === "analog";
+      e.g.style.setProperty("--kc", rv.c);
+      e.ana.hidden = !an;
+      e.tm.hidden = an && !c.analog_digital;
+      e.g.classList.toggle("flat", c.glass === false);
+      this.classList.toggle("nv-flat", c.glass === false);
+      e.nm.hidden = !c.name;
+      e.nm.textContent = c.name || "";
+      e.inf.hidden = !this._ents.length;
+      e.inf.replaceChildren(...this._ents.map(() => {
+        const sp = document.createElement("span");
+        sp.innerHTML = "<i></i><b></b>";
+        return sp;
+      }));
+      e.g.classList.toggle("row", an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name || this._ents.length));
+    }
+    // Werte-Zeile: nur neu schreiben, wenn sich eine der Entitäten ändert
+    _vals() {
+      const e = this._e, h = this._h;
+      if (!e || !h || !this._ents.length) return;
+      this._ents.forEach((o, i) => {
+        const sp = e.inf.children[i], s = h.states[o.entity];
+        if (!sp) return;
+        setIcon(sp.firstChild, iconOf(h, o, "mdi:information-outline"));
+        sp.lastChild.textContent = valueOf(h, s, o);
+        sp.title = o.name ?? s?.attributes.friendly_name ?? o.entity;
+      });
+    }
+    // Formatierer nur neu bauen, wenn sich Sprache/Zeitzone/Optionen ändern
+    _fmts() {
+      const h = this._h, c = this._c, lang = langOf(h), tz = tzOf(h), tf = c.time_format === "auto" ? h?.locale?.time_format : c.time_format;
+      const key = JSON.stringify([lang, tz, tf, c.date_format, c.show_seconds]);
+      if (key === this._fmtKey) return this._f;
+      this._fmtKey = key;
+      const mk = (o) => {
+        try {
+          return new Intl.DateTimeFormat(lang, { ...o, timeZone: tz });
+        } catch {
+          return new Intl.DateTimeFormat(lang, o);
+        }
+      };
+      const h12 = tf === "12" ? true : tf === "24" ? false : void 0;
+      const time = mk({ hour: "2-digit", minute: "2-digit", second: "2-digit", ...h12 != null ? { hour12: h12 } : {} });
+      const DF = { long: { day: "numeric", month: "long" }, short: { day: "numeric", month: "short" }, numeric: { day: "2-digit", month: "2-digit", year: "numeric" } };
+      this._f = { time, wd: mk({ weekday: "long" }), date: mk(DF[c.date_format] || DF.long) };
+      return this._f;
+    }
+    _draw() {
+      const e = this._e, c = this._c;
+      if (!e || !this._h) return;
+      const f2 = this._fmts(), now = /* @__PURE__ */ new Date();
+      const p = Object.fromEntries(f2.time.formatToParts(now).map((x) => [x.type, x.value]));
+      if (!e.tm.hidden) {
+        const html = `${esc(p.hour)}<span class="cl">:</span>${esc(p.minute)}${c.show_seconds ? `<span class="sc">${esc(p.second)}</span>` : ""}${p.dayPeriod ? `<span class="ap">${esc(p.dayPeriod)}</span>` : ""}`;
+        if (this._tmH !== html) {
+          this._tmH = html;
+          e.tm.innerHTML = html;
+        }
+      }
+      const wd = c.show_weekday ? f2.wd.format(now) : "", dt = c.show_date ? f2.date.format(now) : "";
+      const dh = [wd && esc(wd), dt && esc(dt)].filter(Boolean).join(", ");
+      e.dt.hidden = !dh;
+      if (this._dtH !== dh) {
+        this._dtH = dh;
+        e.dt.innerHTML = dh;
+      }
+      if (!e.ana.hidden) {
+        const h24 = +p.hour % 12, mm = +p.minute, ss = +p.second;
+        e.hh.setAttribute("transform", `rotate(${((h24 + mm / 60) * 30).toFixed(2)} ${C} ${C})`);
+        e.mh.setAttribute("transform", `rotate(${((mm + (c.show_seconds ? ss / 60 : 0)) * 6).toFixed(2)} ${C} ${C})`);
+        e.sh.style.display = c.show_seconds ? "" : "none";
+        if (c.show_seconds) e.sh.setAttribute("transform", `rotate(${ss * 6} ${C} ${C})`);
+      }
+    }
+    // Ein Zeitgeber: zum nächsten Sekunden- (mit Sekunden) bzw. Minutenwechsel; nur sichtbar und nicht in der Kartenauswahl
+    _plan() {
+      clearTimeout(this._t);
+      this._t = null;
+      if (!this._vis || !this._e) return;
+      const step = this._c.show_seconds ? 1e3 : 6e4, now = Date.now();
+      this._t = setTimeout(() => {
+        this._t = null;
+        this._draw();
+        this._plan();
+      }, step - now % step + 15);
+    }
+  };
+  define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit digital oder analog im Nova-Stil, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("nova-uhr-card") });
+  var S_GEN6 = [
+    sel("mode", [["digital", "Digital"], ["analog", "Analog (Zifferblatt)"]]),
+    { name: "name", selector: T }
+  ];
+  var S_SHOW = (c) => [
+    g2({ name: "show_seconds", selector: { boolean: {} } }, ...c.mode === "analog" ? [{ name: "analog_digital", selector: { boolean: {} } }] : []),
+    g2({ name: "show_weekday", selector: { boolean: {} } }, { name: "show_date", selector: { boolean: {} } }),
+    { name: "entities", selector: { entity: { multiple: true, domain: ["sensor", "binary_sensor", "input_number", "number", "input_text", "input_select"] } } },
+    g2(sel("date_format", [["long", "2. November"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]), sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]]))
+  ];
+  var S_LOOK4 = [g2(ROLE("color"), { name: "glass", selector: { boolean: {} } })];
+  var S_ACT4 = [{ name: "tap_action", selector: A }, { name: "hold_action", selector: A }];
+  var LABELS7 = {
+    mode: "Art der Uhr",
+    name: "Überschrift (optional)",
+    show_seconds: "Sekunden",
+    analog_digital: "Zusätzlich digitale Zeit",
+    show_weekday: "Wochentag",
+    show_date: "Datum",
+    date_format: "Datumsformat",
+    time_format: "Zeitformat",
+    color: "Akzentfarbe",
+    glass: "Glas-Hintergrund",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken",
+    entities: "Werte unter der Uhr"
+  };
+  var HELPERS7 = {
+    show_seconds: "Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.",
+    color: "Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.",
+    glass: "Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild.",
+    entities: "Optional: z. B. Temperatur und Luftfeuchte – erscheinen in einer Zeile unter der Uhrzeit."
+  };
+  var NovaClockCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const data = () => ({ ...DEF6, ...this._config });
+      const form = (s) => this._form(s, data(), (v) => {
+        const was = this._config.mode, c = merge(this._config, names(s), v);
+        Object.keys(DEF6).forEach((k) => {
+          if (c[k] === DEF6[k]) delete c[k];
+        });
+        this._emit(c);
+        if ((c.mode || DEF6.mode) !== (was || DEF6.mode)) this._rebuild();
+      });
+      r.querySelector(".wrap").append(
+        this._section("general", "mdi:clock-outline", "Uhr", (b) => b.append(form(S_GEN6))),
+        this._section("show", "mdi:calendar-today", "Anzeige", (b) => b.append(form(S_SHOW(data())))),
+        this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK4))),
+        this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT4)))
+      );
+    }
+  };
+  __publicField(NovaClockCardEditor, "labels", LABELS7);
+  __publicField(NovaClockCardEditor, "helpers", HELPERS7);
+  __publicField(NovaClockCardEditor, "openSections", ["general", "show"]);
+  define("clock-card-editor", NovaClockCardEditor);
 
   // src/shared/todo.js
   var TodoFeed = class {
@@ -11722,7 +13685,7 @@ box-shadow:0 0 16px color-mix(in srgb,var(--ok) 45%,transparent);opacity:1}
   var PRINT_HELPERS = { print_script: "Leer = kein Druck-Knopf. Das Skript wird aufgerufen und die Karte wartet, bis es fertig ist." };
 
   // src/shopping.js
-  var SCSS = `
+  var SCSS2 = `
 .g.sh{gap:10px}
 .add{display:flex;gap:8px;align-items:center;flex:none}
 .add .fld{height:44px;border-radius:999px;padding:0 16px}
@@ -11798,7 +13761,7 @@ transition:background-color .25s,border-color .25s,box-shadow .25s}
     }
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${SCSS}</style><div class="g sh">
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${SCSS2}</style><div class="g sh">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
 <form class="add"><input class="fld" type="text" enterkeyhint="done" autocomplete="off"><button class="ab" type="submit" title="Hinzufügen" aria-label="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button></form>
 <div class="items"></div><div class="ft"></div></div>`;
@@ -11936,7 +13899,7 @@ transition:background-color .25s,border-color .25s,box-shadow .25s}
     { name: "height", selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } }
   ];
   var PRINT = printSchema();
-  var LABELS5 = {
+  var LABELS8 = {
     ...BASE_LABELS,
     ...PRINT_LABELS,
     entity: "Einkaufsliste (todo)",
@@ -11946,7 +13909,7 @@ transition:background-color .25s,border-color .25s,box-shadow .25s}
     show_completed: "Erledigte Einträge anzeigen",
     height: "Mindesthöhe der Liste"
   };
-  var HELPERS5 = {
+  var HELPERS8 = {
     ...PRINT_HELPERS,
     name: "Leer = Name der Liste",
     show_completed: "Erledigte stehen durchgestrichen unten, Antippen holt sie zurück.",
@@ -11957,11 +13920,11 @@ transition:background-color .25s,border-color .25s,box-shadow .25s}
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), data = { ...SDEF, ...c0 };
-      const strip2 = (c) => {
+      const strip3 = (c) => {
         Object.entries(SDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         return c;
       };
-      const form = (schema) => this._form(schema, data, (v) => this._emit(strip2(merge(this._config, names(schema), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
       w.append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN4))),
         this._section("list", "mdi:format-list-checks", "Liste", (b) => b.append(form(LIST))),
@@ -11969,8 +13932,8 @@ transition:background-color .25s,border-color .25s,box-shadow .25s}
       );
     }
   };
-  __publicField(NovaShoppingCardEditor, "labels", LABELS5);
-  __publicField(NovaShoppingCardEditor, "helpers", HELPERS5);
+  __publicField(NovaShoppingCardEditor, "labels", LABELS8);
+  __publicField(NovaShoppingCardEditor, "helpers", HELPERS8);
   __publicField(NovaShoppingCardEditor, "openSections", ["general"]);
   define("shopping-card-editor", NovaShoppingCardEditor);
 
@@ -12294,7 +14257,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
     g2(H("notes_height"), { name: "clear_after_save", selector: { boolean: {} } })
   ];
   var PRINT2 = printSchema([g2({ name: "print_field", selector: T }, { name: "clear_after_print", selector: { boolean: {} } })]);
-  var LABELS6 = {
+  var LABELS9 = {
     ...BASE_LABELS,
     ...PRINT_LABELS,
     name: "Name",
@@ -12308,7 +14271,7 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
     notes_height: "Mindesthöhe der Liste",
     clear_after_save: "Nach dem Speichern leeren"
   };
-  var HELPERS6 = {
+  var HELPERS9 = {
     ...PRINT_HELPERS,
     print_field: "Unter diesem Namen bekommt das Skript den Text (Standard: text).",
     height: "Im Raster füllt das Textfeld den Platz aus.",
@@ -12319,11 +14282,11 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
       const r = this.shadowRoot, c0 = this._config;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap"), data = { ...NDEF, ...c0 };
-      const strip2 = (c) => {
+      const strip3 = (c) => {
         Object.entries(NDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         return c;
       };
-      const form = (schema) => this._form(schema, data, (v) => this._emit(strip2(merge(this._config, names(schema), v))));
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
       w.append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN5))),
         this._section("notes", "mdi:note-multiple-outline", "Gespeicherte Notizen", (b) => b.append(form(NOTES))),
@@ -12331,8 +14294,8 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
       );
     }
   };
-  __publicField(NovaNoteCardEditor, "labels", LABELS6);
-  __publicField(NovaNoteCardEditor, "helpers", HELPERS6);
+  __publicField(NovaNoteCardEditor, "labels", LABELS9);
+  __publicField(NovaNoteCardEditor, "helpers", HELPERS9);
   __publicField(NovaNoteCardEditor, "openSections", ["general"]);
   define("note-card-editor", NovaNoteCardEditor);
 
