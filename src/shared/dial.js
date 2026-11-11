@@ -58,18 +58,18 @@ export const bellBadge = (right, bottom) => {
 };
 
 export const DIAL_CSS = `${SCENE_CSS}
-.scene .dl-edge{fill:none;stroke:#fff;stroke-opacity:.14;stroke-width:.7}
+.scene .dl-edge{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.14;stroke-width:.7}
 .scene .dl-bz{fill:none;stroke-width:4.4}
-.scene .dl-fc{stroke:rgba(0,0,0,.6);stroke-width:1}
-.scene .tk{stroke:#fff;stroke-opacity:.14;stroke-width:.6}.scene .tkm{stroke:#fff;stroke-opacity:.3;stroke-width:1.4;stroke-linecap:round}
-.scene .dl-tr{fill:none;stroke:#fff;stroke-opacity:.06;stroke-width:6}
+.scene .dl-fc{stroke:rgba(var(--nv-lo),.6);stroke-width:1}
+.scene .tk{stroke:rgb(var(--nv-hi));stroke-opacity:.14;stroke-width:.6}.scene .tkm{stroke:rgb(var(--nv-hi));stroke-opacity:.3;stroke-width:1.4;stroke-linecap:round}
+.scene .dl-tr{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.06;stroke-width:6}
 .scene .dl-arc{fill:none;stroke:var(--dc);stroke-width:6;stroke-linecap:round;stroke-dasharray:1000;stroke-dashoffset:calc(1000 - var(--p,0) * 1000);
-filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,opacity .4s}
-.scene .dl-arcl{fill:none;stroke:#fff;stroke-opacity:.16;stroke-width:1.2;stroke-linecap:round}
-.scene .dl-cr{stroke:rgba(255,255,255,.2);stroke-width:.5}.scene .dl-grv{stroke:#000;stroke-opacity:.3;stroke-width:.8}
-.scene .dl-cap{stroke:rgba(255,255,255,.2);stroke-width:.4}
+filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset var(--nv-d7) linear,opacity var(--nv-d5)}
+.scene .dl-arcl{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.16;stroke-width:1.2;stroke-linecap:round}
+.scene .dl-cr{stroke:rgba(var(--nv-hi),.2);stroke-width:.5}.scene .dl-grv{stroke:rgb(var(--nv-lo));stroke-opacity:.3;stroke-width:.8}
+.scene .dl-cap{stroke:rgba(var(--nv-hi),.2);stroke-width:.4}
 .scene .dl-push,.scene .dl-crown{transform-box:view-box}
 /* Unsichtbares mit Leuchten (drop-shadow) zusätzlich per visibility weg – manche Browser (Echo Show) malen den Schatten sonst als Fleck */
 .scene .dl-bell{opacity:0;visibility:hidden;transform-box:fill-box;transform-origin:center}
-.scene .dl-br{fill:var(--dc);filter:drop-shadow(0 0 4px var(--dc))}.scene .dl-bk{fill:var(--dcfg,#fff)}
+.scene .dl-br{fill:var(--dc);filter:drop-shadow(0 0 4px var(--dc))}.scene .dl-bk{fill:var(--dcfg,rgb(var(--nv-hi)))}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important;transition:none!important}}`;

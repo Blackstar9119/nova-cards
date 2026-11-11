@@ -15,26 +15,26 @@ const DEF = {dots: true, reset_after: 0, fill: false, fit_screen: false, margin:
 const SCSS = `${NOVA_VARS}${GRID_CSS}
 :host{display:block;box-sizing:border-box}
 :host(.fill){height:100%}
-.w{display:flex;flex-direction:column;gap:6px;min-height:0;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.w{display:flex;flex-direction:column;gap:var(--nv-s3);min-height:0;color:var(--nv-fg);font-family:var(--nv-font)}
 .w.fill{height:100%}
 .sc{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;
 -webkit-overflow-scrolling:touch;flex:1 1 auto;min-height:0;border-radius:var(--nv-radius)}
 .sc::-webkit-scrollbar{display:none}
 .sc.lock{overflow-x:hidden}
-.pg{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.pg{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;gap:var(--nv-s6);box-sizing:border-box}
 .fill .pg{overflow-y:auto;scrollbar-width:none}.fill .pg::-webkit-scrollbar{display:none}
 .fill .pg:not(.stack)>.rw{flex:1 1 auto;min-height:0;align-items:stretch}
 .fill .pg:not(.stack)>.rw>.cell{display:grid;min-height:0}
 .rw{gap:var(--nova-swipe-gap,8px)}
 .cell>*{min-width:0}
-.prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
+.prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:var(--nv-r-lg);display:flex;align-items:center;justify-content:center;font-size:var(--nv-fs-5);opacity:.7}
 .prev .cell.empty::after{content:'Leerer Platz'}
-.dots{display:flex;justify-content:center;align-items:center;gap:2px;flex:none;height:14px}
+.dots{display:flex;justify-content:center;align-items:center;gap:var(--nv-s1);flex:none;height:14px}
 .dots[hidden]{display:none}
-.dot{border:none;background:none;padding:4px 3px;margin:0;cursor:pointer;display:flex;-webkit-tap-highlight-color:transparent}
-.dot i{display:block;width:6px;height:6px;border-radius:3px;background:var(--nv-fg);opacity:.35;transition:width .25s,opacity .25s,background-color .25s}
+.dot{border:none;background:none;padding:var(--nv-s2) 3px;margin:0;cursor:pointer;display:flex;-webkit-tap-highlight-color:transparent}
+.dot i{display:block;width:6px;height:6px;border-radius:3px;background:var(--nv-fg);opacity:.35;transition:width var(--nv-d3),opacity var(--nv-d3),background-color var(--nv-d3)}
 .dot.on i{width:16px;opacity:1;background:var(--nv-active)}
-.dot:focus-visible{outline:none}.dot:focus-visible i{box-shadow:0 0 0 2px var(--nv-active)}
+.dot:focus-visible{outline:none}.dot:focus-visible i{box-shadow:var(--nv-focus)}
 @media (prefers-reduced-motion:reduce){.dot i{transition:none}}`;
 
 // Seite = ein Raster (GridCard) mit eigenem Container; Karte, hass und Optionen kommen von der Swipe Card

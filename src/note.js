@@ -13,38 +13,38 @@ import {PRINT_CSS, PRINT_DEF, printButton, printPaint, paintBtn, runPrint, runFe
 // Mit notes_entity (todo-Liste) gibt es „Speichern“ und darunter die gespeicherten Notizen (neueste oben), je mit
 // Drucken und Löschen. Eine Notiz = Eintrag mit Kurzfassung (erste Zeile) als summary und ganzem Text als description.
 const NCSS = `
-.g.nt{gap:10px}
-.fld.ta{flex:1 1 0;min-height:var(--th,180px);resize:none;border-radius:18px;padding:14px 16px;line-height:1.5;
+.g.nt{gap:var(--nv-s5)}
+.fld.ta{flex:1 1 0;min-height:var(--th,180px);resize:none;border-radius:18px;padding:var(--nv-pad);line-height:1.5;
 overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:thin;white-space:pre-wrap}
-.ft{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;container-type:inline-size;width:100%}
+.ft{display:flex;align-items:center;justify-content:flex-end;gap:var(--nv-s4);flex:none;container-type:inline-size;width:100%}
 .ft[hidden]{display:none}
-.cnt{flex:1;min-width:0;font-size:12px;opacity:.55;white-space:nowrap;overflow:hidden}
+.cnt{flex:1;min-width:0;font-size:var(--nv-fs-4);opacity:.55;white-space:nowrap;overflow:hidden}
 .ft .pb.pill{flex:0 1 auto;min-width:44px}
 .ft.wide .cnt{display:none}.ft.wide .pb.pill{flex:1 1 0}
 .cl,.nb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
 border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;outline:none;-webkit-tap-highlight-color:transparent;
-transition:opacity .2s,transform .2s,background-color .2s,border-color .2s,color .2s}
-.cl ha-icon{--mdc-icon-size:20px}
+transition:opacity var(--nv-d2),transform var(--nv-d2),background-color var(--nv-d2),border-color var(--nv-d2),color var(--nv-d2)}
+.cl ha-icon{--mdc-icon-size:var(--nv-icon-lg)}
 .cl[disabled]{opacity:.35;cursor:default}
-.cl:active:not([disabled]),.nb:active{transform:scale(.92)}
-.cl:focus-visible,.nb:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.cl:active:not([disabled]),.nb:active{transform:scale(var(--nv-press))}
+.cl:focus-visible,.nb:focus-visible{box-shadow:var(--nv-focus)}
 @container (max-width:420px){.cnt{display:none}}
 @container (max-width:330px){.ft .pb.pill .pl{display:none}.ft .pb.pill{padding:0;flex:0 0 44px}}
-.ns{flex:1 1 0;min-height:var(--nh,180px);display:flex;flex-direction:column;gap:6px}
+.ns{flex:1 1 0;min-height:var(--nh,180px);display:flex;flex-direction:column;gap:var(--nv-s3)}
 .ns[hidden]{display:none}
-.ns .bt{margin:2px 2px 0}
-.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;
-margin:0 -4px;padding:0 4px 10px;-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent)}
-.nr{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:16px;flex:none;min-width:0;
-background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
+.ns .bt{margin:var(--nv-s1) var(--nv-s1) 0}
+.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:var(--nv-s3);scrollbar-width:thin;
+margin:0 -4px;padding:0 var(--nv-s2) var(--nv-s5);-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent)}
+.nr{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s4) var(--nv-s4) var(--nv-s4) var(--nv-s7);border-radius:var(--nv-r-md);flex:none;min-width:0;
+background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07)}
 .nr .tx{flex:1;min-width:0}
-.nr b{display:block;font-weight:500;font-size:14px;overflow-wrap:anywhere}
-.nr small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;opacity:.6;margin-top:2px;white-space:pre-line;overflow-wrap:anywhere}
+.nr b{display:block;font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-8);overflow-wrap:anywhere}
+.nr small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:var(--nv-fs-4);opacity:.6;margin-top:var(--nv-s1);white-space:pre-line;overflow-wrap:anywhere}
 .nr .pb,.nr .nb{width:38px;height:38px;min-width:38px}
 .nr .pb ha-icon,.nr .nb ha-icon{--mdc-icon-size:19px}
 .nb.arm{border-color:color-mix(in srgb,var(--nv-error) 70%,transparent);background:color-mix(in srgb,var(--nv-error) 22%,transparent);color:var(--nv-error)}
-.msg{display:flex;align-items:center;gap:8px;font-size:13px;opacity:.6;padding:8px 4px}
-.msg ha-icon{--mdc-icon-size:18px}`;
+.msg{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-6);opacity:.6;padding:var(--nv-s4) var(--nv-s2)}
+.msg ha-icon{--mdc-icon-size:var(--nv-icon-md)}`;
 
 const NDEF = {name: 'Notiz', icon: 'mdi:note-edit-outline', placeholder: 'Notiz schreiben …', show_header: true, show_clear: true, clear_after_print: true,
   clear_after_save: true, height: 180, notes_height: 180, print_field: 'text', ...PRINT_DEF};

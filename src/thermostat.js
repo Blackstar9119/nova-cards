@@ -93,39 +93,39 @@ define('thermostat-card-editor', NovaThermostatCardEditor);
 
 /* ---------- Nova Thermostat Card ---------- */
 const THERMO_CSS = `
-.th{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.th.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent)}
-.hd{display:flex;align-items:center;gap:10px;cursor:pointer}
-.ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color .3s,color .3s,border-color .3s,box-shadow .3s,transform .3s,opacity .3s}
-.ic.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 50%,transparent)}
+.th{padding:var(--nv-pad);display:flex;flex-direction:column;gap:var(--nv-s5)}
+.th.warn{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-warn) 60%,transparent) var(--nv-ring),transparent)}
+.hd{display:flex;align-items:center;gap:var(--nv-s5);cursor:pointer}
+.ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color var(--nv-d4),color var(--nv-d4),border-color var(--nv-d4),box-shadow var(--nv-d4),transform var(--nv-d4),opacity var(--nv-d4)}
+.ic.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent)}
 .ic.cool{background:var(--nv-active);color:var(--nv-active-fg)}
-.nm{flex:1;min-width:0}.nm b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nm small{display:block;font-size:12px;opacity:.65}
-.w{display:none;--mdc-icon-size:18px;color:var(--nv-warn)}.th.warn .w{display:flex}
-.main{display:flex;align-items:center;gap:10px}
-.cur{font-size:40px;font-weight:300;line-height:1;letter-spacing:-1px}
-.hum{font-size:12px;opacity:.65;margin-top:4px}
-.stp{display:flex;align-items:center;gap:8px;margin-left:auto;background:rgba(0,0,0,.25);border-radius:999px;padding:5px;font-weight:600;font-size:16px}
+.nm{flex:1;min-width:0}.nm b{display:block;font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm small{display:block;font-size:var(--nv-fs-4);opacity:.65}
+.w{display:none;--mdc-icon-size:var(--nv-icon-md);color:var(--nv-warn)}.th.warn .w{display:flex}
+.main{display:flex;align-items:center;gap:var(--nv-s5)}
+.cur{font-size:var(--nv-fd-4);font-weight:var(--nv-fw-light);line-height:1;letter-spacing:-1px}
+.hum{font-size:var(--nv-fs-4);opacity:.65;margin-top:var(--nv-s2)}
+.stp{display:flex;align-items:center;gap:var(--nv-s4);margin-left:auto;background:rgba(var(--nv-shade),.25);border-radius:var(--nv-r-pill);padding:5px;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-10)}
 .stp span{min-width:52px;text-align:center}
 .sb{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-.sb:active{transform:scale(.9)}.sb ha-icon{--mdc-icon-size:18px}
+.sb:active{transform:scale(.9)}.sb ha-icon{--mdc-icon-size:var(--nv-icon-md)}
 .stp.pend span{color:var(--nv-accent)}
 .spk{width:100%;height:56px;display:block}
 .pills{display:flex;flex-wrap:wrap;gap:7px}
-.pill{padding:7px 12px;border-radius:999px;background:var(--nv-chip);font-size:12.5px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;border:1px solid rgba(255,255,255,.08);white-space:nowrap;-webkit-tap-highlight-color:transparent}
-.pill:active{transform:scale(.94)}.pill ha-icon{--mdc-icon-size:16px}
+.pill{padding:7px var(--nv-s6);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-5);cursor:pointer;display:inline-flex;gap:var(--nv-s3);align-items:center;border:1px solid rgba(var(--nv-tint),.08);white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.pill:active{transform:scale(.94)}.pill ha-icon{--mdc-icon-size:var(--nv-icon-sm)}
 .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg)}.pill.on.off{background:var(--nv-active);color:var(--nv-active-fg)}
 .na{opacity:.4;pointer-events:none}`;
 // Kompakt (Standard): kleiner, Modi oben, Verlauf unten
 const COMPACT_CSS = `:host{container-type:inline-size}
-.th{padding:10px 12px;gap:6px;min-width:0}.ic{width:30px;height:30px}.ic ha-icon{--mdc-icon-size:17px}.nm b{font-size:13px}.nm small{font-size:11px}
-.cur{font-size:28px;white-space:nowrap}.hum{font-size:11px;margin-top:2px;white-space:nowrap}
-.main{flex-wrap:wrap;row-gap:6px;min-width:0}
-.stp{padding:3px;gap:6px;font-size:14px;flex:none}.stp span{min-width:44px}
+.th{padding:var(--nv-s5) var(--nv-s6);gap:var(--nv-s3);min-width:0}.ic{width:30px;height:30px}.ic ha-icon{--mdc-icon-size:17px}.nm b{font-size:var(--nv-fs-6)}.nm small{font-size:var(--nv-fs-2)}
+.cur{font-size:var(--nv-fd-2);white-space:nowrap}.hum{font-size:var(--nv-fs-2);margin-top:var(--nv-s1);white-space:nowrap}
+.main{flex-wrap:wrap;row-gap:var(--nv-s3);min-width:0}
+.stp{padding:3px;gap:var(--nv-s3);font-size:var(--nv-fs-8);flex:none}.stp span{min-width:44px}
 .sb{width:30px;height:30px}.sb ha-icon{--mdc-icon-size:15px}.spk{height:32px}
-.pills{gap:5px}.pill{padding:4px 9px;font-size:11.5px}.pill ha-icon{--mdc-icon-size:14px}
+.pills{gap:5px}.pill{padding:var(--nv-s2) 9px;font-size:var(--nv-fs-3)}.pill ha-icon{--mdc-icon-size:14px}
 .hd{order:0}.modes{order:1}.presets{order:2}.main{order:3}.graph{order:4}
-@container (max-width:260px){.th{padding:8px 10px}.cur{font-size:24px}.stp{gap:3px;font-size:13px}.stp span{min-width:38px}.sb{width:26px;height:26px}.pill{padding:3px 7px;font-size:11px}.hum{display:none}}`;
+@container (max-width:260px){.th{padding:var(--nv-s4) var(--nv-s5)}.cur{font-size:var(--nv-fd-1)}.stp{gap:3px;font-size:var(--nv-fs-6)}.stp span{min-width:38px}.sb{width:26px;height:26px}.pill{padding:3px 7px;font-size:var(--nv-fs-2)}.hum{display:none}}`;
 
 function normalize(c) {
   if (!c || !c.entity) throw new Error('entity (Thermostat) fehlt');

@@ -10,11 +10,11 @@ import {normChips, renderNovaChips, NOVA_CHIPS_CSS, chipSchema, chipView, CHIP_L
    area wird nur für die Schnellauswahl „Alle Lichter im Raum aus“ gebraucht. */
 const DEF = {layout: 'wrap', size: 'normal'};
 const CSS = `${NOVA_VARS}${NOVA_CHIPS_CSS}
-:host{display:block;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+:host{display:block;color:var(--nv-fg);font-family:var(--nv-font)}
 .nchips:empty{display:flex;min-height:34px}
-.hint{font-size:13px;opacity:.7;padding:8px 2px}
+.hint{font-size:var(--nv-fs-6);opacity:.7;padding:var(--nv-s4) var(--nv-s1)}
 /* Groß: für kleine Touch-Displays (z. B. Echo Show) – höhere Chips, die die Zeile gleichmäßig füllen */
-.nchips.lg{gap:8px}.nchips.lg .nchip{min-height:var(--nova-chip-large-height,50px);padding:0 16px;font-size:15px;border-radius:16px;flex:1 1 auto;justify-content:center}
+.nchips.lg{gap:var(--nv-s4)}.nchips.lg .nchip{min-height:var(--nova-chip-large-height,50px);padding:0 var(--nv-s8);font-size:var(--nv-fs-9);border-radius:var(--nv-r-md);flex:1 1 auto;justify-content:center}
 .nchips.lg .nchip ha-icon{--mdc-icon-size:21px}.nchips.lg .nchip img{width:21px;height:21px}`;
 
 class NovaChipsCard extends HTMLElement {

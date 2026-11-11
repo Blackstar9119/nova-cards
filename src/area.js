@@ -17,24 +17,24 @@ const DEF = {stack_below: 500, chips_layout: 'wrap'};
 const ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
 :host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
-.g{height:auto;display:flex;flex-direction:column;gap:12px;padding:14px}
-.hd{display:flex;align-items:center;gap:10px;padding:6px;border-radius:999px;background:var(--nv-chip)}
-.hd.nb{padding-left:14px}
+.g{height:auto;display:flex;flex-direction:column;gap:var(--nv-s6);padding:var(--nv-s7)}
+.hd{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s3);border-radius:var(--nv-r-pill);background:var(--nv-chip)}
+.hd.nb{padding-left:var(--nv-s7)}
 .hi{display:flex}.hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:min(35%,110px);font-weight:600;font-size:15px}
+.tt{flex:1 1 auto;min-width:min(35%,110px);font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9)}
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
-.x:active{transform:scale(.92)}
-.x:focus-visible{outline:none;box-shadow:0 0 0 2px var(--nv-active)}
+.x:active{transform:scale(var(--nv-press))}
+.x:focus-visible{outline:none;box-shadow:var(--nv-focus)}
 .x[hidden]{display:none}
 .hd .nchips{flex:0 1 auto;justify-content:flex-end}
 .hd .nchip{min-height:36px}
-.body{display:flex;flex-direction:column;gap:12px}
+.body{display:flex;flex-direction:column;gap:var(--nv-s6)}
 /* Ohne Karten nur die Kopfzeile (z. B. als Titelleiste mit Zurück); im Editor bleibt der Hinweis sichtbar */
 .g:not(.prev) .body:has(>.hint:only-child){display:none}
 .cell>*{min-width:0}
-.prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
+.prev .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:var(--nv-r-lg);display:flex;align-items:center;justify-content:center;font-size:var(--nv-fs-5);opacity:.7}
 .prev .cell.empty::after{content:'Leerer Platz'}
-@media(max-width:600px){.g{padding:12px}.hd .nchip .ci:not(:empty)~.cn{display:none}.hd .nchip .ci:not(:empty)~.cv::before{content:none}}`;
+@media(max-width:600px){.g{padding:var(--nv-s6)}.hd .nchip .ci:not(:empty)~.cn{display:none}.hd .nchip .ci:not(:empty)~.cv::before{content:none}}`;
 
 class NovaAreaCard extends GridCard(HTMLElement) {
   static gridKind = 'area';

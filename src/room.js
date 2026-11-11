@@ -153,24 +153,24 @@ const STATELESS = ['button', 'input_button', 'script', 'scene'];
 const DOMAIN_ICONS = {light: 'mdi:lightbulb', switch: 'mdi:power-socket-eu', fan: 'mdi:fan', vacuum: 'mdi:robot-vacuum', input_boolean: 'mdi:toggle-switch-outline', media_player: 'mdi:speaker', button: 'mdi:gesture-tap-button', input_button: 'mdi:gesture-tap-button', script: 'mdi:script-text-outline', scene: 'mdi:palette', climate: 'mdi:thermostat', cover: 'mdi:window-shutter', lock: 'mdi:lock', sensor: 'mdi:eye'};
 
 const ROOM_CSS = `
-.room{display:flex;flex-direction:column;justify-content:space-between;padding:14px 16px;min-height:var(--nova-room-min-height,168px);transition:box-shadow .4s}
+.room{display:flex;flex-direction:column;justify-content:space-between;padding:var(--nv-pad);min-height:var(--nova-room-min-height,168px);transition:box-shadow var(--nv-d5)}
 .room.click{cursor:pointer}
 .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.45;filter:grayscale(.7);transition:opacity .5s,filter .5s}
 .bgi{position:absolute;right:-14px;top:4px;--mdc-icon-size:130px;opacity:.07;transition:opacity .5s,color .5s}
 .room.lit .bgi{opacity:.18;color:var(--nv-accent)}.room.lit .bg{opacity:.85;filter:none}
-.room.lit{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
-.room.warn{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-warn) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
-.head{display:flex;align-items:center;gap:2px;position:relative;font-weight:600;font-size:15px;text-shadow:0 1px 4px rgba(0,0,0,.4)}
-.head .chev{--mdc-icon-size:18px;opacity:.6}
-.t{margin-left:auto;font-weight:500;font-size:13px;opacity:.85;display:flex;gap:8px;align-items:center}
-.w{display:none;--mdc-icon-size:16px;color:var(--nv-warn)}.room.warn .w{display:flex}
+.room.lit{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 40%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
+.room.warn{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-warn) 60%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
+.head{display:flex;align-items:center;gap:var(--nv-s1);position:relative;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9);text-shadow:0 1px 4px rgba(var(--nv-shade),.4)}
+.head .chev{--mdc-icon-size:var(--nv-icon-md);opacity:.6}
+.t{margin-left:auto;font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-6);opacity:.85;display:flex;gap:var(--nv-s4);align-items:center}
+.w{display:none;--mdc-icon-size:var(--nv-icon-sm);color:var(--nv-warn)}.room.warn .w{display:flex}
 .btns{display:flex;gap:9px;flex-wrap:wrap;position:relative}
-.b{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.1);transition:background-color .25s,color .25s,border-color .25s,box-shadow .25s,transform .25s,opacity .25s;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
-.b:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.b{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.1);transition:background-color var(--nv-d3),color var(--nv-d3),border-color var(--nv-d3),box-shadow var(--nv-d3),transform var(--nv-d3),opacity var(--nv-d3);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;outline:none}
+.b:focus-visible{box-shadow:var(--nv-focus)}
 .b:active{transform:scale(.9)}
 .b img{width:24px;height:24px;object-fit:contain}
-.b.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 55%,transparent)}
-.b.on.alt{background:var(--nv-active);color:var(--nv-active-fg);box-shadow:0 0 16px color-mix(in srgb,var(--nv-active) 55%,transparent)}
+.b.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 55%,transparent) var(--nv-glow),transparent)}
+.b.on.alt{background:var(--nv-active);color:var(--nv-active-fg);box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 55%,transparent) var(--nv-glow),transparent)}
 .b.na{opacity:.3}`;
 
 function normalize(c) {

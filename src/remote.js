@@ -10,36 +10,36 @@ import {g2, T, I, A, sel, BASE_LABELS} from './shared/editor-schema.js';
 
 /* ---------- Nova Fernbedienung ---------- */
 const RCSS = `
-.g.rc{gap:14px;align-items:stretch}
+.g.rc{gap:var(--nv-s7);align-items:stretch}
 .rc .ic img{border-radius:6px}
 .hb.on{background:var(--nv-accent);color:var(--nv-accent-fg)}
-.cb{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .15s,transform .15s}
+.cb{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);transition:background-color var(--nv-d1),transform var(--nv-d1)}
 .cb ha-icon{--mdc-icon-size:22px}
 .cb:active,.cb.hit{transform:scale(.9);background:color-mix(in srgb,var(--nv-active) 40%,var(--nv-chip))}
-.row3{display:flex;justify-content:space-around;align-items:center;gap:10px}
-.pad{position:relative;width:min(230px,72cqw);aspect-ratio:1;margin:2px auto;border-radius:50%;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 18px rgba(0,0,0,.18)}
-.pad .k{position:absolute;width:32%;height:32%;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background-color .15s,transform .15s}
+.row3{display:flex;justify-content:space-around;align-items:center;gap:var(--nv-s5)}
+.pad{position:relative;width:min(230px,72cqw);aspect-ratio:1;margin:var(--nv-s1) auto;border-radius:50%;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);box-shadow:inset 0 1px 0 rgba(var(--nv-tint),.1),0 6px 18px rgba(var(--nv-shade),.18)}
+.pad .k{position:absolute;width:32%;height:32%;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background-color var(--nv-d1),transform var(--nv-d1)}
 .pad .k ha-icon{--mdc-icon-size:30px;opacity:.85}
-.pad .k:active,.pad .k.hit{background:rgba(255,255,255,.12)}
+.pad .k:active,.pad .k.hit{background:rgba(var(--nv-tint),.12)}
 .pad .up{top:2%;left:34%}.pad .down{bottom:2%;left:34%}.pad .left{left:2%;top:34%}.pad .right{right:2%;top:34%}
-.pad .ok{left:29%;top:29%;width:42%;height:42%;background:var(--nv-accent);color:var(--nv-accent-fg);font-weight:700;font-size:15px;letter-spacing:.04em;box-shadow:0 0 18px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.pad .ok{left:29%;top:29%;width:42%;height:42%;background:var(--nv-accent);color:var(--nv-accent-fg);font-weight:var(--nv-fw-heavy);font-size:var(--nv-fs-9);letter-spacing:.04em;box-shadow:0 0 18px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent)}
 .pad .ok:active,.pad .ok.hit{transform:scale(.93);background:var(--nv-accent)}
-.tp{position:relative;height:min(230px,62cqw);border-radius:22px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
-.tp>ha-icon{--mdc-icon-size:42px;opacity:.25;transition:opacity .2s,transform .2s}
+.tp{position:relative;height:min(230px,62cqw);border-radius:22px;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);touch-action:none;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
+.tp>ha-icon{--mdc-icon-size:42px;opacity:.25;transition:opacity var(--nv-d2),transform var(--nv-d2)}
 .tp.hit>ha-icon{opacity:.6;transform:scale(1.15)}
-.tp .ok{position:absolute;inset:0;background:radial-gradient(circle,color-mix(in srgb,var(--nv-accent) 35%,transparent),transparent 60%);opacity:0;transition:opacity .25s;pointer-events:none}
+.tp .ok{position:absolute;inset:0;background:radial-gradient(circle,color-mix(in srgb,var(--nv-accent) 35%,transparent),transparent 60%);opacity:0;transition:opacity var(--nv-d3);pointer-events:none}
 .tp.ok-hit .ok{opacity:1}
-.apps .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.apps .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent)}
 .rc.off .pad,.rc.off .tp{opacity:.55}
-.vol{display:flex;align-items:center;gap:12px}
+.vol{display:flex;align-items:center;gap:var(--nv-s6)}
 .vol input{flex:1;height:30px;border-radius:15px;touch-action:none}
 .vol input::-webkit-slider-thumb{width:30px;height:30px}.vol input::-moz-range-thumb{width:30px;height:30px}
-.vol .v{min-width:40px;text-align:right;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-.vol .cb.on{background:var(--nv-error);color:#fff}
-.vs{position:relative;height:64px;border-radius:20px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
-.vs ha-icon{--mdc-icon-size:24px;opacity:.6;transition:opacity .15s,transform .15s}
-.vs .mid{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;opacity:.7}
-.vs .mid b{font-size:15px;font-variant-numeric:tabular-nums}
+.vol .v{min-width:40px;text-align:right;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold);font-variant-numeric:tabular-nums}
+.vol .cb.on{background:var(--nv-error);color:var(--nv-error-fg)}
+.vs{position:relative;height:64px;border-radius:var(--nv-r-lg);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);touch-action:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
+.vs ha-icon{--mdc-icon-size:var(--nv-icon-xl);opacity:.6;transition:opacity var(--nv-d1),transform var(--nv-d1)}
+.vs .mid{display:flex;flex-direction:column;align-items:center;gap:var(--nv-s1);font-size:var(--nv-fs-4);opacity:.7}
+.vs .mid b{font-size:var(--nv-fs-9);font-variant-numeric:tabular-nums}
 .vs.up .pl,.vs.down .mi{opacity:1;transform:scale(1.25)}
 .vs.muted .mid{color:var(--nv-error);opacity:1}
 @container (max-width:280px){.cb{width:40px;height:40px}}`;
