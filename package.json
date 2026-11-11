@@ -1,6 +1,6 @@
 {
   "name": "nova-cards",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "description": "Nova Cards – Kartenfamilie für Home Assistant (Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz)",
   "private": true,
   "license": "MIT",

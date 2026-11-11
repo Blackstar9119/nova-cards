@@ -21,6 +21,7 @@ Eine Reihe frei belegbarer Chips. Jeder Chip ist entweder ein **Wert-Chip** (zei
 | `type` | `value` (Wert, Standard) oder `button` (Knopf) |
 | `entity` | Wert-Chip: die angezeigte Entität. Knopf-Chip: optional, für Aktionen wie „Umschalten“ und für `state` |
 | `name`, `icon` | Eigener Name / eigenes Icon. Wert-Chips ohne Name zeigen nur den Zustand |
+| `decimals` | Nur Wert-Chips mit Zahl: feste Nachkommastellen im Zahlenformat des HA-Profils, z. B. `1` → „21,9 °C“. Leer = wie HA es anzeigt |
 | `color` | Farbrolle (`neutral`, `accent-1` … `accent-4`), leer = neutral |
 | `tap_action` | Aktion über die HA-Aktionsauswahl (Dienst, Szene, Skript, Navigation …). Wert-Chips ohne Aktion öffnen die Details |
 | `preset` | Nur Knopf-Chips: Schnellauswahl statt eigener Aktion. `lights_off` = alle Lichter der gewählten Area aus |

@@ -22,7 +22,7 @@ einem Abschnitt bzw. in einer Panel-Ansicht verwenden.
 | Option | Bedeutung |
 |---|---|
 | `area` | Area, aus der Name und Icon kommen |
-| `name`, `icon` | Eigener Name / eigenes Icon (leer = wie in der Area) |
+| `name`, `icon` | Eigener Name / eigenes Icon (leer = wie in der Area). Ein zu langer Name läuft langsam hin und her statt umzubrechen |
 | `back_action` | Aktion des Zurück-Knopfs. Ohne Angabe eine Seite zurück, `action: none` blendet den Knopf aus |
 | `tint` | Farbton des Rahmens als Nova-Farbrolle (`neutral`, `accent-1` … `accent-4`), leer = Nova-Glas |
 

@@ -18,7 +18,9 @@ sidebar_min_width: 1024
 button_size: 48
 haptic: true
 media_players:
-  - media_player.wohnzimmer
+  - entity: media_player.wohnzimmer
+    name: Wohnzimmer
+  - media_player.kuche
 items:
   - icon: mdi:home
     label: Übersicht
@@ -76,10 +78,33 @@ items:
 
 ## Media-Leiste
 
+Über der Leiste erscheint ein kleiner Player – aber nur, solange wirklich etwas läuft. Ein- und Ausblenden gleitet weich,
+die Navi rückt ohne Lücke nach.
+
+```yaml
+media_players:
+  - entity: media_player.wohnzimmer_echo
+    name: Wohnzimmer
+  - entity: media_player.kuche_echo
+    name: Küche
+  - media_player.bad_echo          # alte Schreibweise geht weiter
+paused_timeout: 10                 # Minuten, die ein pausierter Player noch sichtbar bleibt
+```
+
 | Option | Standard | Bedeutung |
 |---|---|---|
-| `media_players` | – | Liste von Media-Playern. Gezeigt wird der, der gerade spielt, sonst ein pausierter. Antippen des Titels öffnet den Player, rechts Play/Pause |
-| `media_always` | aus | Auch zeigen, wenn nichts läuft (dann der erste Player) |
+| `media_players` | – | Liste der Player: Entität als Text oder als Objekt mit `entity` und eigenem `name` (Name in der Lautsprecher-Auswahl) |
+| `paused_timeout` | `10` | Minuten, die ein pausierter Player noch angezeigt wird (gemessen an `last_changed`). `0` = sofort ausblenden |
+| `media_always` | aus | Alte Verhaltensweise: Leiste immer zeigen, auch wenn nichts läuft (dann der erste Player) |
+
+- **Wann sie erscheint:** sobald ein Player auf `playing` steht. Pausierte bleiben `paused_timeout` Minuten stehen. `off`, `idle`,
+  `standby`, `unavailable` oder ein Player ohne `media_title` zählen als „läuft nicht“.
+- **Welcher Player:** immer der, der spielt – bei mehreren der zuletzt gestartete.
+- **Lautsprecher wechseln:** Bei mehr als einem Player sitzt neben Play ein kleiner runder Knopf mit Lautsprecher. Er öffnet eine
+  Auswahl mit allen Playern (Name, spielt/pausiert/aus, Titel), der aktuelle ist markiert. Die Wahl gilt, bis ein anderer Player
+  neu startet.
+- **Antippen:** Titel oder Cover öffnen die Details des Players, Play/Pause ruft `media_player.media_play_pause` auf. Meldet der
+  Player nach etwa 3 Sekunden keine Änderung, steht kurz „Lautsprecher reagiert nicht“ in der Leiste.
 
 In der Seitenleiste ist die Media-Leiste ein kompakter Knopf mit Cover und Play/Pause.
 
