@@ -80,6 +80,24 @@ Pop-up öffnen. Badges zeigen Punkte oder Zahlen in wählbarer Farbe, Einträge 
 ausblenden, und eine kleine Media-Leiste zeigt den laufenden Player. Früher hieß sie Nova Dock Card – der alte Typ
 `custom:nova-dock-card` läuft weiter.
 
+Der Mini-Player erscheint nur, solange etwas läuft, zeigt den spielenden Player und wechselt per Lautsprecher-Knopf das Gerät:
+
+```yaml
+type: custom:nova-navi-card
+media_players:
+  - entity: media_player.wohnzimmer_echo
+    name: Wohnzimmer
+  - entity: media_player.kuche_echo
+    name: Küche
+paused_timeout: 10   # Minuten, die ein pausierter Player noch sichtbar bleibt
+items:
+  - icon: mdi:home
+    label: Start
+    tap_action:
+      action: navigate
+      navigation_path: /zuhause/home
+```
+
 ➜ [Alle Optionen von Nova Navi](docs/navi-card.md)
 
 <!-- Screenshot/GIF: Nova Navi -->
@@ -121,6 +139,20 @@ z. B. „Hauptbürste blockiert“, auch für die Station. Vieles findet die Kar
 ### Nova Pop-up Card
 Ein Pop-up mit beliebigen Karten in Zeilen und Spalten, geöffnet über eine Adresse wie `#wohnzimmer`, zum Beispiel von Nova Navi
 oder von der Raum Card. Kopfzeile mit Badges und Info-Leiste, auf dem Handy per Wischen schließbar.
+
+Temperatur, Luftfeuchte & Co. stehen als Info-Chips direkt in der Kopfzeile neben dem Titel (oder mit
+`info_position: below` in einer eigenen Zeile darunter):
+
+```yaml
+type: custom:nova-popup-card
+hash: wohnzimmer
+title: Wohnzimmer
+icon: mdi:sofa
+info_position: header
+info:
+  - entity: sensor.wohnzimmer_temperatur
+  - entity: sensor.wohnzimmer_luftfeuchtigkeit
+```
 
 ➜ [Alle Optionen der Pop-up Card](docs/popup-card.md)
 
@@ -170,6 +202,36 @@ Google TV (z. B. Xiaomi TV Box, Chromecast), Fire TV per ADB, Philips, Apple TV,
 ➜ [Alle Optionen der Fernbedienung](docs/remote-card.md)
 
 <!-- Screenshot: Fernbedienung -->
+
+### Nova Uhr Card
+Die Uhrzeit in fünf Stilen: schlicht digital, als Klappzahl-Uhr wie am Bahnhof, als Zifferblatt mit gleitendem oder
+springendem Sekundenzeiger, als große Leuchtziffern, deren Farbe dem Sonnenstand folgt (morgens warm, mittags weiß,
+abends tiefblau), oder als Radiowecker mit LED-Ziffern in Rot, Grün, Blau oder Bernstein. Wochentag, Datum und Werte wie
+Temperatur stehen auf Wunsch darunter.
+
+➜ [Alle Optionen der Uhr Card](docs/clock-card.md)
+
+<!-- Screenshot: Uhr Card in allen Stilen -->
+
+### Nova Timer Card
+Ein Küchen-Timer als Stoppuhr im Nova-Stil: antippen, Zeit wählen, läuft – gesteuert über einen `timer.*`-Helfer.
+
+➜ [Alle Optionen der Timer Card](docs/timer-card.md)
+
+### Nova Swipe Card
+Mehrere Seiten in einer Karte zum Wischen, auf jeder Seite beliebige Karten – ideal für Wandtablets.
+
+➜ [Alle Optionen der Swipe Card](docs/swipe-card.md)
+
+### Nova Einkauf Card
+Einkaufsliste aus einer `todo.*`-Entität: eintippen, abhaken, auf Wunsch per Knopf drucken.
+
+➜ [Alle Optionen der Einkauf Card](docs/einkauf-card.md)
+
+### Nova Notiz Card
+Ein großes Notizfeld mit Druck-Knopf, Notizen werden in einer todo-Liste gespeichert.
+
+➜ [Alle Optionen der Notiz Card](docs/notiz-card.md)
 
 ---
 

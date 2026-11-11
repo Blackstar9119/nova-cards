@@ -85,6 +85,9 @@ class NovaSwipeCard extends HTMLElement {
     this._sc.addEventListener('pointerdown', lock, true);
     this._sc.addEventListener('touchstart', lock, {capture: true, passive: true});
     this._sc.addEventListener('keydown', () => this._poke());
+    // Tippen in Eingabefeldern (z. B. Einkaufsliste): input-Events kommen auch dann an, wenn die Karte keydown abfängt
+    this._sc.addEventListener('input', () => this._poke());
+    this._sc.addEventListener('focusin', () => this._poke());
     // Größe ändert sich (Drehen, Seitenleiste) → auf der aktuellen Seite bleiben, Stapeln prüfen
     this._ro = new ResizeObserver(() => { this._fit(); this._pages.forEach(p => p._stack()); this.go(this._i, false); });
     this._onResize = () => this._fit();
@@ -215,7 +218,8 @@ class NovaSwipeCard extends HTMLElement {
     clearTimeout(this._rt); this._rt = null;
     const s = +this._cfg?.reset_after;
     if (!(s > 0) || this._i === 0 || this._quiet || this._prev || !this.isConnected) return;
-    this._rt = setTimeout(() => { this._rt = null; this.go(0); }, s * 1000);
+    // Nicht zurückspringen, solange ein Feld auf der Seite den Fokus hat (Bildschirmtastatur offen)
+    this._rt = setTimeout(() => { this._rt = null; if (this.matches(':focus-within')) this._poke(); else this.go(0); }, s * 1000);
   }
 }
 define('swipe-card', NovaSwipeCard, {name: 'Nova Swipe Card', description: 'Mehrere Seiten mit beliebigen Karten in einer Karte – zum Wischen, mit Seiten-Punkten. Ideal für kleine Displays.', documentationURL: docUrl('nova-swipe-card')});

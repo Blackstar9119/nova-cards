@@ -1,4 +1,4 @@
-/* Nova Cards v0.11.1 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.12.0 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
@@ -66,7 +66,9 @@
   var PRESS = { button: ["button", "press"], input_button: ["input_button", "press"], script: ["script", "turn_on"], scene: ["scene", "turn_on"] };
   var fmtState = (h, s) => {
     try {
-      return h.formatEntityState ? h.formatEntityState(s) : s.state + (s.attributes.unit_of_measurement ? " " + s.attributes.unit_of_measurement : "");
+      if (h.formatEntityState) return h.formatEntityState(s);
+      const u = s.attributes.unit_of_measurement;
+      return NUMRE.test(s.state) ? haUnitJoin(h, fmtNum(h, s.state), u) : s.state + (u ? " " + u : "");
     } catch {
       return s.state;
     }
@@ -136,19 +138,37 @@
     const e = h.entities?.[id];
     return e && (e.area_id || h.devices?.[e.device_id]?.area_id) || null;
   };
-  var hasF = (s, f2) => ((s?.attributes.supported_features || 0) & f2) === f2;
+  var hasF = (s, f3) => ((s?.attributes.supported_features || 0) & f3) === f3;
   var DUR_U = { ms: 1e-3, s: 1, min: 60, h: 3600, d: 86400 };
   var clockOf = (sec) => {
     const t = Math.max(0, Math.round(sec)), hh = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), ss = String(t % 60).padStart(2, "0");
     return hh ? `${hh}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
   };
   var idleState = (s) => !s || ["off", "unavailable", "unknown", ""].includes(s.state) || NUMRE.test(s.state) && +s.state <= 0;
+  var NUM_LOCALE = { comma_decimal: "en-US", decimal_comma: "de", space_comma: "fr", system: void 0 };
+  var fmtNum = (h, v, d) => {
+    const n = +v, dd = d ?? decOf(v), f3 = h?.locale?.number_format;
+    if (f3 === "none") return n.toFixed(dd);
+    const loc = f3 && f3 in NUM_LOCALE ? NUM_LOCALE[f3] : h?.locale?.language || h?.language;
+    try {
+      return new Intl.NumberFormat(loc, { minimumFractionDigits: dd, maximumFractionDigits: dd }).format(n);
+    } catch {
+      return n.toFixed(dd);
+    }
+  };
+  var PCT_BLANK = ["cs", "de", "fi", "fr", "sk", "sv"];
+  var haUnitJoin = (h, v, u) => {
+    if (!u) return `${v}`;
+    if (u === "°") return `${v}${u}`;
+    if (u === "%") return PCT_BLANK.includes(String(h?.locale?.language || h?.language || "").split("-")[0]) ? `${v} %` : `${v}%`;
+    return `${v} ${u}`;
+  };
   function valueOf(h, s, o) {
     if (!s) return "–";
     if (o.format === "clock" && NUMRE.test(s.state)) return clockOf(+s.state * (DUR_U[o.unit ?? s.attributes.unit_of_measurement] ?? 1));
     if ((o.decimals != null || o.unit != null) && NUMRE.test(s.state)) {
-      const n = o.decimals != null ? (+s.state).toFixed(o.decimals) : s.state;
-      return unitJoin(n, o.unit ?? s.attributes.unit_of_measurement);
+      const n = fmtNum(h, s.state, o.decimals != null ? +o.decimals : void 0);
+      return haUnitJoin(h, n, o.unit ?? s.attributes.unit_of_measurement);
     }
     return fmtState(h, s);
   }
@@ -266,7 +286,9 @@
 --nv-popup-base:var(--nova-popup-base-color,rgba(22,27,42,.88));
 --nv-popup-head:var(--nova-popup-header-color,rgba(60,72,100,.85));
 --nv-popup-backdrop:var(--nova-popup-backdrop,rgba(8,12,22,.5));
---nv-popup-r:var(--nova-popup-radius,28px)}`;
+--nv-popup-r:var(--nova-popup-radius,28px);
+--nv-clock-night:var(--nova-clock-night,#4d6bff);--nv-clock-morning:var(--nova-clock-morning,#ffb36b);--nv-clock-noon:var(--nova-clock-noon,#f4f7ff);
+--nv-led-red:var(--nova-led-red,#ff2414);--nv-led-green:var(--nova-led-green,#39ff7a);--nv-led-blue:var(--nova-led-blue,#3fa9ff);--nv-led-amber:var(--nova-led-amber,#ffb000)}`;
   var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
   var roleVars = (r) => {
     const k = ROLES[r] || ROLES.neutral;
@@ -455,8 +477,8 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
     set hass(h) {
       const old = this._hass;
       this._hass = h;
-      if (hassChanged(old, h, this._ids)) this._forms.forEach((f2) => {
-        f2.hass = h;
+      if (hassChanged(old, h, this._ids)) this._forms.forEach((f3) => {
+        f3.hass = h;
       });
     }
     setConfig(c) {
@@ -510,28 +532,28 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
       return el2;
     }
     _form(schema, data, cb) {
-      const f2 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
-        const f3 = document.createElement("ha-form");
-        f3.schema = schema;
-        f3.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
-        f3.computeHelper = (s) => this.constructor.helpers?.[s.name];
-        f3.addEventListener("value-changed", (e) => {
+      const f3 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
+        const f4 = document.createElement("ha-form");
+        f4.schema = schema;
+        f4.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f4.computeHelper = (s) => this.constructor.helpers?.[s.name];
+        f4.addEventListener("value-changed", (e) => {
           e.stopPropagation();
-          f3.data = e.detail.value;
-          f3._dk = JSON.stringify(f3.data);
-          f3._cb(e.detail.value);
+          f4.data = e.detail.value;
+          f4._dk = JSON.stringify(f4.data);
+          f4._cb(e.detail.value);
         });
-        return f3;
+        return f4;
       });
-      if (f2.hass !== this._hass) f2.hass = this._hass;
+      if (f3.hass !== this._hass) f3.hass = this._hass;
       const dk = JSON.stringify(data);
-      if (f2._dk !== dk) {
-        f2.data = data;
-        f2._dk = dk;
+      if (f3._dk !== dk) {
+        f3.data = data;
+        f3._dk = dk;
       }
-      f2._cb = cb;
-      this._forms.push(f2);
-      return f2;
+      f3._cb = cb;
+      this._forms.push(f3);
+      return f3;
     }
     // Runder Icon-Button (Verschieben, Löschen …)
     _btn(icon2, title, fn, dis) {
@@ -1442,11 +1464,11 @@ font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none
 
   // src/light.js
   function hsToRgb(hue, sat) {
-    const f2 = (n) => {
+    const f3 = (n) => {
       const k = (n + hue / 60) % 6;
       return Math.round(255 * (1 - sat * Math.max(0, Math.min(k, 4 - k, 1))));
     };
-    return [f2(5), f2(3), f2(1)];
+    return [f3(5), f3(3), f3(1)];
   }
   var rgbToHex = (rgb) => "#" + rgb.map((x) => x.toString(16).padStart(2, "0")).join("");
   var hexToRgb = (hex) => {
@@ -2019,7 +2041,7 @@ ha-icon{--mdc-icon-size:20px;display:flex}
   };
   define("navi-popup", NovaNaviPopup);
   var DCSS = `
-:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px))}
+:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px));transition:height .3s ease}
 :host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
 :host([side]){height:0}
 ha-icon{--mdc-icon-size:22px;display:flex}
@@ -2068,17 +2090,29 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .num{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;background:var(--bc,var(--nv-accent));color:var(--bfg,#3a2a00);font:700 10px/16px var(--ha-font-family-body,Roboto,sans-serif);text-align:center;display:none}
 .d.bn .num{display:block}.d.bn .dot{display:none}
 .empty{color:var(--nv-fg);opacity:.7;font-size:13px;padding:6px 12px}
-.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;align-self:center;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
-.mb[hidden]{display:none}
-.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.mbw{display:grid;grid-template-rows:0fr;margin-bottom:-8px;opacity:0;transform:translateY(14px);pointer-events:none;transition:grid-template-rows var(--mbd) ease,margin var(--mbd) ease,opacity var(--mbd) ease,transform var(--mbd) cubic-bezier(.2,.8,.2,1)}
+.mbw.on{grid-template-rows:1fr;margin-bottom:0;opacity:1;transform:none;pointer-events:auto}
+.top .mbw{margin-bottom:0;margin-top:-8px;transform:translateY(-14px)}.top .mbw.on{margin-top:0;transform:none}
+.side .mbw{transform:translateX(-14px)}.side.right .mbw{transform:translateX(14px)}.side .mbw.on{transform:none}
+.mbi{min-height:0;overflow:hidden;display:flex;justify-content:center}.mbw.open .mbi{overflow:visible}
+.mb{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;border-radius:999px;width:min(340px,calc(100vw - 24px));box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif)}
+.mb .art{width:40px;height:40px;flex:none;border-radius:50%;background:var(--nv-chip) center/cover no-repeat;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .mb .art.pic ha-icon{display:none}
 .mb .tx{flex:1;min-width:0;cursor:pointer}
 .mb .tx b,.mb .tx span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mb .tx b{font-size:13px;font-weight:600}.mb .tx span{font-size:11px;opacity:.7}
-.mb .pp{width:40px;height:40px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-active);color:var(--nv-active-fg);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.mb .pp:active{transform:scale(.9)}
+.mb .tx span.warn{opacity:1;color:var(--nova-warning-color,#f5b83d)}
+.mb .pp,.mb .sp{flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;transition:transform .15s}
+.mb .pp{width:40px;height:40px;background:var(--nv-active);color:var(--nv-active-fg)}
+.mb .sp{width:32px;height:32px;background:var(--nv-chip);color:var(--nv-fg);opacity:.85}.mb .sp ha-icon{--mdc-icon-size:18px}
+.mb .sp[hidden]{display:none}
+.mb .pp:active,.mb .sp:active{transform:scale(.9)}
+.mb .pp:focus-visible,.mb .sp:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
 .side .mb{width:auto;flex-direction:column;padding:6px;border-radius:28px}
 .side .mb .tx{display:none}
+.mi .tt{display:flex;flex-direction:column;min-width:0;line-height:1.25}.mi .tt span{font-size:12px;opacity:.7;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.mi .ic.pic{background:var(--nv-chip) center/cover no-repeat}.mi .ic.pic ha-icon{display:none}
+@media(prefers-reduced-motion:reduce){.mbw{transition:none}}
 .menu{position:fixed;z-index:8;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:22px;min-width:180px;max-width:calc(100vw - 16px);max-height:60vh;overflow-y:auto;box-sizing:border-box;color:var(--nv-fg);font-family:var(--ha-font-family-body,Roboto,sans-serif);animation:mi .16s ease-out}
 .mi{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:999px;cursor:pointer;font-size:14px;white-space:nowrap;-webkit-tap-highlight-color:transparent;outline:none}
 .mi[hidden]{display:none}
@@ -2127,6 +2161,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     return Object.values(cond).some((v) => v != null) ? alertHit(cond, s) : isOn(s);
   };
   var MEDIA_ON = ["playing", "paused"];
+  var SEL = /* @__PURE__ */ new Map();
   var LAST = /* @__PURE__ */ new Map();
   var REDUCED = window.matchMedia?.("(prefers-reduced-motion: reduce)");
   var NovaNaviCard = class extends HTMLElement {
@@ -2210,6 +2245,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       this._mq?.removeEventListener("change", this._mqf);
       this._mq = null;
       this._close();
+      this._closePlayers();
+      clearTimeout(this._mpt);
+      clearTimeout(this._wt);
+      clearTimeout(this._pend?.t);
+      this._pend = null;
       if (this._hp) {
         this._hp.remove();
         this._hp = null;
@@ -2256,13 +2296,14 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       w.classList.toggle("right", s === "right");
       w.classList.toggle(this._cfg.position === "top" ? "top" : "bottom", !s);
       if (this._menu) this._close();
+      this._closePlayers();
       if (this._shown) this._shown = `${this._shown.split("|")[0]}|neu`;
       this._update();
     }
     _build() {
       this._built = true;
       const c = this._cfg, r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""} ${{ true: "cmp", false: "nocmp" }[this._opt("compact")] || ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms"><div class="mb glass" hidden><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="pp" role="button" tabindex="0"><ha-icon></ha-icon></div></div><div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
+      r.innerHTML = `<style>${NAVI_VARS}${DCSS}</style><div class="wrap ${this._inline ? "inline" : ""} ${{ true: "cmp", false: "nocmp" }[this._opt("compact")] || ""}" style="--sz:${+c.button_size || 48}px;--dur:${this._dur}ms;--mbd:${this._opt("animation") === false ? 0 : 300}ms"><div class="mbw"><div class="mbi"><div class="mb glass"><div class="art"><ha-icon icon="mdi:music"></ha-icon></div><div class="tx"><b></b><span></span></div><div class="sp" role="button" tabindex="0" title="Lautsprecher wählen" hidden><ha-icon icon="mdi:speaker"></ha-icon></div><div class="pp" role="button" tabindex="0" title="Play/Pause"><ha-icon></ha-icon></div></div></div></div><div class="dk"><div class="dock"><div class="hl"></div></div><div class="bg glass"></div></div></div>`;
       const dock = r.querySelector(".dock");
       this._dock = dock;
       this._bg = r.querySelector(".dk>.bg");
@@ -2274,20 +2315,24 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         this._edges();
       }, { passive: true });
       this._mb = r.querySelector(".mb");
-      this._mb.querySelector(".tx").addEventListener("click", () => this._mp && moreInfo(this, this._mp));
-      const pp = this._mb.querySelector(".pp");
-      const play = () => {
-        if (!this._mp) return;
-        if (this._haptic) haptic();
-        this._h.callService("media_player", "media_play_pause", { entity_id: this._mp });
-      };
-      pp.addEventListener("click", play);
-      pp.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          play();
-        }
+      this._mbw = r.querySelector(".mbw");
+      this._mbw.addEventListener("transitionend", (e) => {
+        if (e.target === this._mbw && e.propertyName === "grid-template-rows") this._mbw.classList.toggle("open", this._mbw.classList.contains("on"));
       });
+      const info = () => this._mp && moreInfo(this, this._mp);
+      this._mb.querySelector(".tx").addEventListener("click", info);
+      this._mb.querySelector(".art").addEventListener("click", info);
+      const key = (el2, fn) => {
+        el2.addEventListener("click", fn);
+        el2.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            fn();
+          }
+        });
+      };
+      key(this._mb.querySelector(".pp"), () => this._play());
+      key(this._mb.querySelector(".sp"), () => this._pm ? this._closePlayers() : this._openPlayers());
       this._applySide();
       if (this._hp) r.appendChild(this._hp);
       if (!this._items.length) {
@@ -2492,21 +2537,21 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     _flip(cur2, lbl, sig) {
       const dock = this._dock, btns = this._btns;
       const rect = (e) => e.getBoundingClientRect();
-      const f2 = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
+      const f3 = { bg: rect(this._bg), hl: rect(this._hl), hlOn: this._hl.classList.contains("on"), b: btns.map(rect) };
       const oldNm = btns.map((d) => d._nm).find((n) => n.classList.contains("on") && !n.hidden);
       const fn = oldNm && { r: rect(oldNm), t: oldNm.textContent, o: +getComputedStyle(oldNm).opacity };
       this._stop();
       this._apply(cur2, lbl, false);
       const o = this._origin(), l = { bg: rect(this._bg), b: btns.map(rect) }, newNm = btns[cur2]?._nm.classList.contains("on") ? btns[cur2]._nm : null;
       btns.forEach((d, k) => {
-        if (!d.hidden && f2.b[k].width) d.style.transform = `translate(${f2.b[k].left - l.b[k].left}px,${f2.b[k].top - l.b[k].top}px)`;
+        if (!d.hidden && f3.b[k].width) d.style.transform = `translate(${f3.b[k].left - l.b[k].left}px,${f3.b[k].top - l.b[k].top}px)`;
       });
-      if (l.bg.width) this._bg.style.transform = `translate(${f2.bg.left - l.bg.left}px,${f2.bg.top - l.bg.top}px) scale(${f2.bg.width / l.bg.width},${f2.bg.height / l.bg.height})`;
-      if (f2.hlOn) this._hl.style.transform = `translate(${f2.hl.left - o.x}px,${f2.hl.top - o.y}px)`;
+      if (l.bg.width) this._bg.style.transform = `translate(${f3.bg.left - l.bg.left}px,${f3.bg.top - l.bg.top}px) scale(${f3.bg.width / l.bg.width},${f3.bg.height / l.bg.height})`;
+      if (f3.hlOn) this._hl.style.transform = `translate(${f3.hl.left - o.x}px,${f3.hl.top - o.y}px)`;
       else this._pillTo(cur2, false);
       if (newNm) {
         newNm.style.opacity = "0";
-        newNm.style.transform = `translate(${f2.b[cur2].left - l.b[cur2].left - 12}px,0)`;
+        newNm.style.transform = `translate(${f3.b[cur2].left - l.b[cur2].left - 12}px,0)`;
       }
       if (fn) {
         const g = this._ghost = document.createElement("span");
@@ -2539,7 +2584,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         const g = this._ghost, ob = fn && btns.findIndex((d) => d._nm === oldNm);
         if (g) {
           g.style.opacity = "0";
-          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f2.b[ob].left : 0) - 8}px,${g._dy}px)`;
+          g.style.transform = `translate(${g._dx + (ob >= 0 ? l.b[ob].left - f3.b[ob].left : 0) - 8}px,${g._dy}px)`;
         }
         this._ft = setTimeout(() => {
           if (this._shown === sig) {
@@ -2572,25 +2617,152 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         d.style.removeProperty("--bfg");
       }
     }
-    // Media-Leiste: spielt ein Player, wird er gezeigt, sonst ein pausierter (oder auf Wunsch immer der erste)
+    // Media-Leiste. Gezeigt wird sie nur, solange ein Player wirklich etwas abspielt; ein pausierter bleibt noch
+    // paused_timeout Minuten (an last_changed gemessen). Angezeigt wird der Player, der spielt – bei mehreren der zuletzt
+    // gestartete –, außer man hat über den Lautsprecher-Knopf selbst einen gewählt
+    get _players() {
+      return [].concat(this._cfg.media_players ?? this._srcCfg?.media_players ?? []).flatMap((x) => typeof x === "string" ? list(x) : [x]).map(toObj).filter((p) => typeof p.entity === "string" && p.entity);
+    }
+    get _pauseMs() {
+      const v = Number(this._opt("paused_timeout"));
+      return (Number.isFinite(v) && v >= 0 ? v : 10) * 6e4;
+    }
+    // Läuft der Player (true), ist er pausiert und noch in der Frist (Zahl = Ablaufzeitpunkt) oder läuft nicht (false)?
+    _live(s) {
+      if (!s || !s.attributes.media_title || !MEDIA_ON.includes(s.state)) return false;
+      if (s.state === "playing") return true;
+      const until = Date.parse(s.last_changed) + this._pauseMs;
+      return until > Date.now() ? until : false;
+    }
     _media() {
-      const mb = this._mb, ids = list(this._cfg.media_players ?? this._srcCfg?.media_players);
-      if (!mb) return;
-      const ss = ids.map((id) => this._h.states[id]).filter(Boolean);
-      const s = ss.find((x) => x.state === "playing") || ss.find((x) => MEDIA_ON.includes(x.state)) || (this._cfg.media_always ?? this._srcCfg?.media_always ? ss[0] : null);
-      mb.hidden = !s;
-      this.toggleAttribute("media", !!s && !this._side && !this._inline);
-      this._mp = s?.entity_id || null;
-      if (!s) return;
-      const a = s.attributes, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
+      const mb = this._mb;
+      if (!mb || !this._h) return;
+      const ps = this._players, h = this._h, key = ps.map((p) => p.entity).join("|");
+      const live = ps.map((p) => ({ ...p, s: h.states[p.entity] })).map((p) => ({ ...p, l: this._live(p.s) })).filter((p) => p.l);
+      const t = (p) => Date.parse(p.s.last_changed) || 0;
+      const playing = live.filter((p) => p.l === true).sort((x, y) => t(y) - t(x));
+      const pick = SEL.get(key);
+      const manual = pick && ps.find((p) => p.entity === pick.id) && !playing.some((p) => p.entity !== pick.id && t(p) > pick.at) && (live.some((p) => p.entity === pick.id) || Date.now() - pick.at < this._pauseMs);
+      let cur2 = manual ? ps.find((p) => p.entity === pick.id) : playing[0] || live.sort((x, y) => t(y) - t(x))[0] || null;
+      const show = !!live.length || !!this._opt("media_always") && !!ps.length;
+      if (!cur2 && show) cur2 = ps[0];
+      clearTimeout(this._mpt);
+      const next = Math.min(...live.filter((p) => p.l !== true).map((p) => p.l));
+      if (Number.isFinite(next)) this._mpt = setTimeout(() => this._media(), next - Date.now() + 50);
+      this._mbw.classList.toggle("on", show);
+      if (!show) this._mbw.classList.remove("open");
+      this.toggleAttribute("media", show && !this._side && !this._inline);
+      mb.querySelector(".sp").hidden = ps.length < 2;
+      this._mp = show ? cur2.entity : null;
+      if (!show) {
+        this._closePlayers();
+        return;
+      }
+      const s = h.states[cur2.entity], a = s?.attributes || {}, pic = a.entity_picture_local || a.entity_picture, art = mb.querySelector(".art");
       if (art._pic !== pic) {
         art._pic = pic;
         art.style.backgroundImage = pic ? `url(${JSON.stringify(pic)})` : "";
         art.classList.toggle("pic", !!pic);
       }
-      mb.querySelector("b").textContent = a.media_title || a.friendly_name || s.entity_id;
-      mb.querySelector(".tx span").textContent = a.media_artist || a.app_name || (MEDIA_ON.includes(s.state) ? a.friendly_name || "" : fmtState(this._h, s));
-      mb.querySelector(".pp ha-icon").setAttribute("icon", s.state === "playing" ? "mdi:pause" : "mdi:play");
+      const name = cur2.name || a.friendly_name || cur2.entity;
+      mb.querySelector("b").textContent = a.media_title || name;
+      const ps0 = this._pend && h.states[this._pend.id];
+      if (ps0 && (ps0.state !== this._pend.st || ps0.last_changed !== this._pend.lc)) {
+        clearTimeout(this._pend.t);
+        this._pend = null;
+      }
+      const warn = this._warn && this._warn.id === cur2.entity && this._warn.until > Date.now();
+      const sub = mb.querySelector(".tx span");
+      sub.classList.toggle("warn", warn);
+      sub.textContent = warn ? "Lautsprecher reagiert nicht" : [a.media_artist || a.app_name, a.media_title ? name : ""].filter(Boolean).join(" · ") || (s ? fmtState(h, s) : "");
+      mb.querySelector(".pp ha-icon").setAttribute("icon", s?.state === "playing" ? "mdi:pause" : "mdi:play");
+      if (this._pm) this._fillPlayers();
+    }
+    // Play/Pause über media_play_pause; meldet der Player nach 3 s keine Änderung, kurzer Hinweis in der Leiste
+    _play() {
+      const id = this._mp, s = id && this._h.states[id];
+      if (!s) return;
+      if (this._haptic) haptic();
+      clearTimeout(this._pend?.t);
+      this._pend = { id, st: s.state, lc: s.last_changed, t: setTimeout(() => {
+        const n = this._h?.states[id];
+        if (this._pend?.id === id && n && n.state === this._pend.st && n.last_changed === this._pend.lc) {
+          this._warn = { id, until: Date.now() + 3e3 };
+          clearTimeout(this._wt);
+          this._wt = setTimeout(() => this._media(), 3050);
+        }
+        this._pend = null;
+        this._media();
+      }, 3e3) };
+      this._warn = null;
+      this._h.callService("media_player", "media_play_pause", { entity_id: id }).catch(() => {
+        this._warn = { id, until: Date.now() + 3e3 };
+        this._media();
+      });
+    }
+    // Auswahl der Lautsprecher (Nova-Menü über dem Knopf)
+    _openPlayers() {
+      this._close();
+      const m = document.createElement("div");
+      m.className = "menu glass";
+      m.setAttribute("role", "menu");
+      this.shadowRoot.appendChild(m);
+      this._pm = m;
+      this._fillPlayers();
+      const b = this._mb.querySelector(".sp");
+      this._place(m, b);
+      this._pout = (e) => {
+        const p = e.composedPath();
+        if (!p.includes(m) && !p.includes(b)) this._closePlayers();
+      };
+      this._pesc = (e) => {
+        if (e.key === "Escape") this._closePlayers();
+      };
+      window.addEventListener("pointerdown", this._pout, true);
+      window.addEventListener("keydown", this._pesc);
+      m.querySelector(".mi")?.focus({ preventScroll: true });
+    }
+    _fillPlayers() {
+      const m = this._pm, h = this._h, key = this._players.map((p) => p.entity).join("|");
+      const st = (s) => !s || ["off", "unavailable", "unknown", "standby"].includes(s.state) ? "aus" : s.state === "playing" ? "spielt" : s.state === "paused" ? "pausiert" : fmtState(h, s);
+      m.replaceChildren(...this._players.map((p) => {
+        const s = h.states[p.entity], a = s?.attributes || {}, pic = a.entity_picture_local || a.entity_picture;
+        const e = document.createElement("div");
+        e.className = "mi";
+        e.tabIndex = 0;
+        e.setAttribute("role", "menuitemradio");
+        e.classList.toggle("here", p.entity === this._mp);
+        e.setAttribute("aria-checked", String(p.entity === this._mp));
+        e.innerHTML = `<span class="ic"><ha-icon icon="${s?.state === "playing" ? "mdi:speaker-play" : "mdi:speaker"}"></ha-icon></span><span class="tt"><b></b><span></span></span>`;
+        if (pic && s?.attributes.media_title) {
+          const ic = e.querySelector(".ic");
+          ic.classList.add("pic");
+          ic.style.backgroundImage = `url(${JSON.stringify(pic)})`;
+        }
+        e.querySelector("b").textContent = p.name || a.friendly_name || p.entity;
+        e.querySelector(".tt span").textContent = [st(s), MEDIA_ON.includes(s?.state) ? a.media_title : ""].filter(Boolean).join(" · ");
+        const go = () => {
+          if (this._haptic) haptic();
+          SEL.set(key, { id: p.entity, at: Date.now() });
+          this._closePlayers();
+          this._media();
+        };
+        e.addEventListener("click", go);
+        e.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            go();
+          }
+        });
+        return e;
+      }));
+    }
+    _closePlayers() {
+      if (!this._pm) return;
+      this._pm.remove();
+      this._pm = null;
+      window.removeEventListener("pointerdown", this._pout, true);
+      window.removeEventListener("keydown", this._pesc);
     }
     _run(i, kind) {
       const it = this._items[i];
@@ -2648,13 +2820,13 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     }
     // Menü neben dem Button: über der Leiste unten, darunter oben, daneben als Seitenleiste
     _place(m, b) {
-      const r = b.getBoundingClientRect(), W = innerWidth, H2 = innerHeight, g = 10, side = this._side;
+      const r = b.getBoundingClientRect(), W2 = innerWidth, H3 = innerHeight, g = 10, side = this._side;
       const w = m.offsetWidth, ht = m.offsetHeight, clamp2 = (v, max) => Math.max(8, Math.min(v, max - 8));
       if (side) {
         m.style.left = `${side === "right" ? r.left - g - w : r.right + g}px`;
-        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H2 - ht)}px`;
+        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H3 - ht)}px`;
       } else {
-        m.style.left = `${clamp2(r.left + r.width / 2 - w / 2, W - w)}px`;
+        m.style.left = `${clamp2(r.left + r.width / 2 - w / 2, W2 - w)}px`;
         m.style.top = `${this._cfg.position === "top" ? r.bottom + g : r.top - g - ht}px`;
       }
     }
@@ -2716,7 +2888,8 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     g2({ name: "animation", selector: { boolean: {} } }, ...c.animation !== false ? [{ name: "animation_duration", selector: { number: { min: 100, max: 1500, step: 10, mode: "box", unit_of_measurement: "ms" } } }] : []),
     { name: "haptic", selector: { boolean: {} } }
   ];
-  var MEDIA = [{ name: "media_players", selector: { entity: { multiple: true, filter: { domain: "media_player" } } } }, { name: "media_always", selector: { boolean: {} } }];
+  var MEDIA = [g2({ name: "paused_timeout", selector: { number: { min: 0, max: 240, step: 1, mode: "box", unit_of_measurement: "min" } } }, { name: "media_always", selector: { boolean: {} } })];
+  var MPLAYER = [g2({ name: "entity", required: true, selector: { entity: { filter: { domain: "media_player" } } } }, { name: "name", selector: { text: {} } })];
   var I_MAIN = [g2({ name: "icon", required: true, selector: { icon: {} } }, { name: "label", selector: { text: {} } })];
   var I_TAP = (opts) => [
     { name: "popup_hash", selector: { select: { mode: "dropdown", custom_value: true, options: opts } } },
@@ -2754,6 +2927,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     animation_duration: "Dauer der Animation",
     media_players: "Media-Player",
     media_always: "Auch zeigen, wenn nichts läuft",
+    paused_timeout: "Pausiert noch zeigen für",
+    entity: "Media-Player",
+    name: "Name",
     icon: "Icon",
     label: "Name",
     tap_action: "Aktion beim Antippen",
@@ -2787,6 +2963,9 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     compact: "Kleinere Buttons und Abstände. Automatisch: auf Bildschirmen bis 600 px Breite.",
     haptic: "Kurzes Vibrieren beim Antippen (HA-App, Android-Browser, Fully Kiosk).",
     media_players: "Zeigt über der Leiste den laufenden Player mit Play/Pause. Leer = keine Media-Leiste.",
+    paused_timeout: "So lange bleibt die Leiste nach einer Pause noch stehen (Standard 10 min, 0 = sofort ausblenden).",
+    media_always: "Alte Verhaltensweise: Leiste immer zeigen, auch wenn nichts läuft (dann der erste Player).",
+    name: "Leer = Name der Entität. Erscheint in der Lautsprecher-Auswahl.",
     popup_hash: "Öffnet die Nova Pop-up Card mit diesem Hash (Liste = Pop-ups in diesem Dashboard). Hat Vorrang vor der Aktion, dem Untermenü und dem einfachen Pop-up.",
     cards: "Wenn gesetzt, öffnet der Button ein Pop-up mit diesen Karten (statt der Aktion). Beispiel: - type: tile, entity: light.flur",
     visible_users: "Leer = für alle sichtbar.",
@@ -2824,7 +3003,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
       const w = r.querySelector(".wrap");
-      const data = { position: "bottom", button_size: 48, sidebar: "", active_label: true, animation: true, animation_duration: 280, ...this._config, compact: { true: "on", false: "off" }[this._config.compact] || "" };
+      const data = { position: "bottom", button_size: 48, sidebar: "", active_label: true, animation: true, animation_duration: 280, paused_timeout: 10, ...this._config, compact: { true: "on", false: "off" }[this._config.compact] || "" };
       const form = (schema) => this._form(schema, data, (v) => {
         const c = merge(this._config, names(schema), v);
         if (c.position === "bottom") delete c.position;
@@ -2840,6 +3019,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         if (c.animation !== false) delete c.animation;
         if (c.animation === false || c.animation_duration === 280) delete c.animation_duration;
         if (!c.media_always) delete c.media_always;
+        if (c.paused_timeout == null || c.paused_timeout === "" || +c.paused_timeout === 10) delete c.paused_timeout;
         const re = !!this._config.source !== !!c.source || !!this._config.sidebar !== !!c.sidebar || this._config.animation !== false !== (c.animation !== false);
         this._emit(c);
         if (re) this._rebuild();
@@ -2860,7 +3040,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
           }));
         }),
         this._section("look", "mdi:palette-outline", "Layout und Aussehen", (b) => b.append(form(LOOK3(data)))),
-        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => b.append(form(MEDIA)))
+        this._section("media", "mdi:music-circle-outline", "Media-Leiste", (b) => {
+          b.append(this._hint("Die Leiste erscheint nur, solange ein Player etwas abspielt. Bei mehreren Playern wechselt der Lautsprecher-Knopf neben Play das Gerät."));
+          this._itemList(b, "media_players", MPLAYER, { item: "Player", icon: "mdi:speaker" }, "Player hinzufügen");
+          b.append(form(MEDIA));
+        })
       );
     }
     get _opts() {
@@ -6457,6 +6641,52 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transiti
   __publicField(NovaWeatherCardEditor, "openSections", ["general"]);
   define("weather-card-editor", NovaWeatherCardEditor);
 
+  // src/shared/marquee.js
+  var MARQUEE_CSS = `
+.mq{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mq>.mqi{display:inline}
+.mq.run{text-overflow:clip;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent)}
+.mq.run>.mqi{display:inline-block;padding-left:4px;animation:nv-mq var(--mqd,8s) ease-in-out infinite alternate;will-change:transform}
+@keyframes nv-mq{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--mqx,0))}}
+@media(prefers-reduced-motion:reduce){.mq.run{text-overflow:ellipsis;-webkit-mask-image:none;mask-image:none}.mq.run>.mqi{display:inline;padding-left:0;animation:none}}`;
+  var SPEED = 28;
+  var MIN = 5;
+  var marquee = (el2, text, still = false) => {
+    if (!el2) return;
+    el2.classList.add("mq");
+    let span = el2.querySelector(":scope>.mqi");
+    if (!span) {
+      el2.textContent = "";
+      span = document.createElement("span");
+      span.className = "mqi";
+      el2.appendChild(span);
+    }
+    if (span.textContent !== text) span.textContent = text;
+    el2._mqStill = still;
+    if (!el2._mqRo && typeof ResizeObserver !== "undefined") {
+      el2._mqRo = new ResizeObserver(() => fit(el2));
+      el2._mqRo.observe(el2);
+    }
+    fit(el2);
+  };
+  var fit = (el2) => {
+    const span = el2.querySelector(":scope>.mqi");
+    if (!span) return;
+    el2.classList.remove("run");
+    const over = span.getBoundingClientRect().width - el2.clientWidth;
+    if (el2._mqStill || !el2.isConnected || el2.clientWidth <= 0 || over <= 1) return;
+    const dist = Math.ceil(over) + 18;
+    el2.style.setProperty("--mqx", `-${dist}px`);
+    el2.style.setProperty("--mqd", `${Math.max(MIN, dist / SPEED / 0.64).toFixed(1)}s`);
+    el2.classList.add("run");
+  };
+  var stopMarquee = (el2) => {
+    if (!el2?._mqRo) return;
+    el2._mqRo.disconnect();
+    el2._mqRo = null;
+    el2.classList.remove("run");
+  };
+
   // src/shared/card-grid.js
   var WIDTHS = [["auto", "Auto"], ["1/4", "1/4"], ["1/3", "1/3"], ["1/2", "1/2"], ["2/3", "2/3"], ["3/4", "3/4"], ["1", "Voll"]];
   var FR = { "1/4": 1 / 4, "1/3": 1 / 3, "1/2": 1 / 2, "2/3": 2 / 3, "3/4": 3 / 4, "1": 1 };
@@ -7266,7 +7496,7 @@ hui-card-picker{flex:1;min-height:0}`;
   };
 
   // src/popup.js
-  var DEF = { width: 1180, stack_below: 500, info_layout: "wrap" };
+  var DEF = { width: 1180, stack_below: 500, info_layout: "wrap", info_position: "header" };
   var PCSS2 = `${NOVA_VARS}${GRID_CSS}${CHIP_CSS}
 :host{display:block;font-family:var(--ha-font-family-body,Roboto,sans-serif)}
 :host(.live){display:contents}
@@ -7286,7 +7516,7 @@ box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;opacity:0;transform:trans
 .hd{display:flex;align-items:center;gap:10px;margin:14px 14px 10px;padding:6px 6px 6px 14px;border-radius:999px;flex:none;touch-action:pan-x;
 background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt{flex:1 1 auto;min-width:min(30%,120px);font-weight:600;font-size:15px}${MARQUEE_CSS}
 .bdg{display:flex;gap:6px;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.bdg::-webkit-scrollbar{display:none}.bdg:empty{display:none}
 .bd{display:inline-flex;align-items:center;gap:5px;flex:none;padding:5px 10px;border-radius:999px;background:var(--c,var(--nv-chip));color:var(--cf,inherit);font-size:12px;white-space:nowrap;cursor:pointer;outline:none}
 .bd ha-icon{--mdc-icon-size:15px}.bd img{width:15px;height:15px}.bd:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.bd:active{transform:scale(.95)}
@@ -7295,6 +7525,11 @@ background:var(--nv-popup-head);backdrop-filter:blur(16px);-webkit-backdrop-filt
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
 .info{padding:0 14px 12px}
+/* Info-Chips in der Kopfzeile (info_position: header): rechtsbündig vor dem X, gleiche Höhe wie das X, bei Platzmangel waagrecht scrollbar */
+.hd .info{padding:0;flex:0 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.hd .info::-webkit-scrollbar{display:none}
+.hd .chip{min-height:36px;box-sizing:border-box;padding:0 12px}
+/* Chips haben Vorrang: der Titel nimmt nur den Rest (bis zu seiner Mindestbreite, dann Laufschrift) */
+.hd:has(>.info:not([hidden])) .tt{flex:1 1 0;min-width:min(24%,88px)}
 .body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box;
 padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
 .pop.inline .cell.empty{min-height:72px;border:2px dashed var(--nv-box-border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:12.5px;opacity:.7}
@@ -7303,7 +7538,8 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
 .pop{align-items:flex-end}
 .bd .bn{display:none}.bd .bv::before{content:none!important}.bd{padding:5px 8px}
 .sh{width:100%;height:88vh;max-height:none;border-radius:var(--nv-popup-r) var(--nv-popup-r) 0 0;border-bottom:none;opacity:1;transform:translateY(100%)}
-.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}
+.grip{display:flex}.hd{margin:8px 12px 10px}.info{padding:0 12px 10px}.hd .info{padding:0}
+.hd .chip{padding:0 10px}.hd .chip .ci:not(:empty)~.cn{display:none}.hd .chip .ci:not(:empty)~.cv::before{content:none}
 .body{padding:0 12px calc(88px + env(safe-area-inset-bottom))}}
 .pop.inline{position:static;display:block}.pop.inline .ov,.pop.inline .grip{display:none}
 .pop.inline .sh{width:auto;height:auto;max-height:none;opacity:1;transform:none;border-radius:var(--nv-popup-r);box-shadow:none;border-bottom:1px solid var(--nv-border)}
@@ -7383,10 +7619,13 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.addEventListener(ev, this._sync));
       this._detect();
       requestAnimationFrame(() => this._detect());
+      const tt = this.shadowRoot?.querySelector(".tt");
+      if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
     }
     disconnectedCallback() {
       ["hashchange", "popstate", "location-changed"].forEach((ev) => window.removeEventListener(ev, this._sync));
       this._ro.disconnect();
+      stopMarquee(this.shadowRoot?.querySelector(".tt"));
       this._unreg(this._cfg?.hash);
       if (this._isOpen) this._hide(true);
       if (this._mode === "preview") this._handOffCells();
@@ -7516,7 +7755,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     /* --- Kopfzeile --- */
     _head() {
       const c = this._cfg, r = this.shadowRoot;
-      r.querySelector(".tt").textContent = c.title || "";
+      marquee(r.querySelector(".tt"), c.title || "", inPicker(this));
       const hi = r.querySelector(".hi");
       if (c.icon) setIcon(hi, c.icon);
       else {
@@ -7531,7 +7770,10 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       if (tint) this._sh.style.setProperty("--tc", roleVars(tint).c);
       if (c.title || c.hash) this._sh.setAttribute("aria-label", c.title || c.hash);
       else this._sh.removeAttribute("aria-label");
-      this._infoEl.classList.toggle("scroll", c.info_layout === "scroll");
+      const inHead = (c.info_position || DEF.info_position) !== "below", x = r.querySelector(".hd .x");
+      if (inHead && this._infoEl.parentNode !== x.parentNode) x.before(this._infoEl);
+      else if (!inHead && this._infoEl.parentNode === x.parentNode) r.querySelector(".hd").after(this._infoEl);
+      this._infoEl.classList.toggle("scroll", !inHead && c.info_layout === "scroll");
       this._bds = null;
       if (this._h) this._info();
     }
@@ -7602,7 +7844,10 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     g2({ name: "show_state", selector: { boolean: {} } }, ROLE("color")),
     { name: "state", selector: T }
   ];
-  var HEAD = [sel("info_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])];
+  var HEAD = (c) => [
+    sel("info_position", [["header", "In der Kopfzeile"], ["below", "Eigene Zeile darunter"]]),
+    ...(c.info_position || DEF.info_position) === "below" ? [sel("info_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])] : []
+  ];
   var LABELS2 = {
     ...GRID_LABELS,
     hash: "Hash (ohne #)",
@@ -7615,6 +7860,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
     width: "Max. Breite (Desktop)",
     stack_below: "Untereinander unter Breite",
     info_layout: "Info-Leiste bei vielen Einträgen",
+    info_position: "Info-Chips anzeigen",
     entity: "Entität",
     name: "Eigener Name (optional)",
     decimals: "Nachkommastellen",
@@ -7627,6 +7873,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
   var HELPERS2 = {
     ...GRID_HELPERS,
     hash: "Öffnet das Pop-up, wenn die Adresse auf #… endet. Beispiel: wohnzimmer → Navigations-Aktion auf #wohnzimmer.",
+    info_position: "In der Kopfzeile: rechts vor dem X, bei wenig Platz waagrecht scrollbar. Darunter: eigene Zeile wie früher.",
     title: "Steht mit dem Icon oben im Pop-up und in den Auswahllisten von Nova Navi und Raum-Karte.",
     stack_below: "Ist das Pop-up schmaler als dieser Wert, stehen alle Karten untereinander (0 = nie).",
     state: "Optional, z. B. on (Fenster offen). Mehrere mit Komma. Leer = immer anzeigen.",
@@ -7661,28 +7908,32 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
       delete data.info;
       delete data.badges;
       if (data.color && !data.tint) data.tint = data.color;
-      const f2 = this._form(GENERAL, data, (v) => {
+      const f3 = this._form(GENERAL, data, (v) => {
         const c = merge(this._config, names(GENERAL), v);
         delete c.color;
         if (v.hash != null) {
           const h = cleanHash(v.hash);
-          if (h !== v.hash) f2.data = { ...v, hash: h };
+          if (h !== v.hash) f3.data = { ...v, hash: h };
           if (h) c.hash = h;
           else delete c.hash;
         }
         this._emit(c);
       });
-      b.append(f2);
+      b.append(f3);
       if (!this._config.hash) b.append(this._hint("Ohne Hash lässt sich das Pop-up nicht öffnen."));
       return d;
     }
     _secHead() {
       const [d, b] = this._sec("sec.header", "mdi:information-outline", "Kopfzeile & Info-Leiste");
-      b.append(this._hint("Titel und Icon stehen unter „Allgemein“. Badges sitzen in der Kopfzeile, Info-Entitäten als Chips darunter. Antippen öffnet die Details."));
-      b.append(this._form(HEAD, { info_layout: DEF.info_layout, ...this._config }, (v) => {
-        const c = merge(this._config, names(HEAD), v);
+      b.append(this._hint("Titel und Icon stehen unter „Allgemein“. Badges und Info-Chips sitzen in der Kopfzeile (oder die Info-Chips als eigene Zeile darunter). Antippen öffnet die Details."));
+      const head = HEAD(this._config);
+      b.append(this._form(head, { info_layout: DEF.info_layout, info_position: DEF.info_position, ...this._config }, (v) => {
+        const c = merge(this._config, names(head), v);
         if (c.info_layout === DEF.info_layout) delete c.info_layout;
+        if (c.info_position === DEF.info_position) delete c.info_position;
+        const re = (c.info_position || DEF.info_position) !== (this._config.info_position || DEF.info_position);
         this._emit(c);
+        if (re) this._rebuild();
       }));
       b.append(Object.assign(document.createElement("h4"), { textContent: "Badges" }));
       b.append(this._hint("Kleine Anzeigen rechts neben dem Titel. Auf schmalen Bildschirmen nur Icon und Zustand, bei Platzmangel waagrecht scrollbar."));
@@ -7792,6 +8043,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       sel("type", CHIP_TYPES),
       ...btn ? [] : [ENT],
       NAMEICON,
+      ...btn ? [] : [{ name: "decimals", selector: { number: { min: 0, max: 4, mode: "box" } } }],
       ROLE("color"),
       ...btn && presets.length ? [sel("preset", [["custom", "Eigene Aktion"], ...presets.map(([k, p]) => [k, p.label])])] : [],
       ...btn && CHIP_PRESETS[o.preset] ? [] : [{ name: "tap_action", selector: A }],
@@ -7808,24 +8060,26 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     color: "Farbe",
     preset: "Aktion",
     tap_action: "Aktion beim Antippen",
-    state: "Nur anzeigen bei Zustand"
+    state: "Nur anzeigen bei Zustand",
+    decimals: "Nachkommastellen"
   };
   var CHIP_HELPERS = {
     color: "Leer = neutral.",
     state: "z. B. on, mehrere mit Komma. Leer = immer anzeigen. Bei Knöpfen bezieht es sich auf die gewählte Entität.",
-    tap_action: "Bei Wert-Chips: leer = Details öffnen."
+    tap_action: "Bei Wert-Chips: leer = Details öffnen.",
+    decimals: "Nur bei Zahlenwerten. Leer = wie in Home Assistant. Beispiel: 1 → 21,9 °C."
   };
 
   // src/area.js
   var DEF2 = { stack_below: 500, chips_layout: "wrap" };
-  var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}
+  var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
 :host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:12px;padding:14px}
 .hd{display:flex;align-items:center;gap:10px;padding:6px;border-radius:999px;background:var(--nv-chip)}
 .hd.nb{padding-left:14px}
 .hi{display:flex}.hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:0;font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.tt{flex:1 1 auto;min-width:min(35%,110px);font-weight:600;font-size:15px}
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(.92)}
 .x:focus-visible{outline:none;box-shadow:0 0 0 2px var(--nv-active)}
@@ -7891,9 +8145,12 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       this._detect();
       requestAnimationFrame(() => this._detect());
       if (this._dirty && this._cfg) this._grid();
+      const tt = this.shadowRoot?.querySelector(".tt");
+      if (tt?.firstElementChild) marquee(tt, tt.textContent, inPicker(this));
     }
     disconnectedCallback() {
       this._ro.disconnect();
+      stopMarquee(this.shadowRoot?.querySelector(".tt"));
       if (this._prev) this._handOffCells();
     }
     // Editor-Vorschau (Zellen übernehmen) bzw. Bearbeitungsmodus (leere Plätze zeigen)
@@ -7923,7 +8180,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       const r = this.shadowRoot, noBack = c.back_action?.action === "none";
       this._bk.hidden = noBack;
       this._hd.classList.toggle("nb", noBack);
-      r.querySelector(".tt").textContent = c.name || ar?.name || (c.area ? c.area : "Keine Area gewählt");
+      marquee(r.querySelector(".tt"), c.name || ar?.name || (c.area ? c.area : "Keine Area gewählt"), inPicker(this));
       setIcon(r.querySelector(".hi"), c.icon || ar?.icon || "mdi:texture-box");
       const tint = c.tint;
       this.classList.toggle("tint", !!tint);
@@ -8104,6 +8361,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       this._sc.addEventListener("pointerdown", lock, true);
       this._sc.addEventListener("touchstart", lock, { capture: true, passive: true });
       this._sc.addEventListener("keydown", () => this._poke());
+      this._sc.addEventListener("input", () => this._poke());
+      this._sc.addEventListener("focusin", () => this._poke());
       this._ro = new ResizeObserver(() => {
         this._fit();
         this._pages.forEach((p) => p._stack());
@@ -8266,7 +8525,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       if (!(s > 0) || this._i === 0 || this._quiet || this._prev || !this.isConnected) return;
       this._rt = setTimeout(() => {
         this._rt = null;
-        this.go(0);
+        if (this.matches(":focus-within")) this._poke();
+        else this.go(0);
       }, s * 1e3);
     }
   };
@@ -8768,7 +9028,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var qTumb = (x) => `<path class="qgl" d="M${x - 4} 104 L${x - 3.2} 91 h6.4 L${x + 4} 104 Z"/><path class="qgh" d="M${x - 2.6} 102 L${x - 2} 93"/>`;
   var qCup = (x, c) => `<path class="qcup${c ? " c2" : ""}" d="M${x - 5} 104 v-9.5 a2 2 0 0 1 2 -2 h6 a2 2 0 0 1 2 2 v9.5 Z"/><path class="qcuh" d="M${x + 5} 95.6 h1.4 a2.5 2.5 0 0 1 0 5 h-1.4"/><path class="qgh" d="M${x - 3.4} 102 v-7"/>`;
   var qWire = (y1, y2) => `<path class="qwire" d="${Array.from({ length: 19 }, (_, i) => `M${46 + i * 6} ${y1} V${y2}`).join(" ")}"/><rect class="qrl" x="45" y="${y2 - 0.6}" width="110" height="1.4" rx=".7"/><rect class="qrl t" x="45" y="${y1 - 0.4}" width="110" height=".9" rx=".45"/><circle class="qrol" cx="47" cy="${y2 + 1.6}" r="1.6"/><circle class="qrol" cx="153" cy="${y2 + 1.6}" r="1.6"/>`;
-  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f2) => `<circle class="qnz" cx="${100 + f2 * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
+  var qArm = (y, w) => `<g class="qarm" style="transform-origin:100px ${y + 1.1}px"><rect x="${100 - w}" y="${y}" width="${w * 2}" height="2.2" rx="1.1" fill="url(#d-cr)"/>${[-0.8, -0.45, 0.45, 0.8].map((f3) => `<circle class="qnz" cx="${100 + f3 * w}" cy="${y + 1.1}" r=".55"/>`).join("")}</g><circle class="qhub" cx="100" cy="${y + 1.1}" r="2.8" fill="url(#d-cr)"/>`;
   var qJets = (y, xs) => `<g class="qjet">${xs.map((x, i) => `<circle cx="${x}" cy="${y}" r="${i % 2 ? 1 : 1.3}" style="--dx:${x < 100 ? -4 : 4}px;animation-delay:${(i * 0.27).toFixed(2)}s"/>`).join("")}</g>`;
   var QIN = `<g class="qtop"><path class="qcut" d="M58 37.4 h18 M82 36.6 h16 M118 37.4 h20"/><ellipse class="qcuts" cx="76.6" cy="37.4" rx="2.2" ry="1.2"/><path class="qcutk" d="M98 36.6 h6 q-1 1.4 -6 1.2 Z"/>${qWire(33, 40.5)}</g>
 <g class="qup">${[58, 70].map(qWine).join("")}${qTumb(82)}${qCup(96)}${qCup(110, 1)}${qTumb(124)}${[136, 146].map(qWine).join("")}${qWire(88, 104.5)}</g>
@@ -8793,8 +9053,8 @@ ${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" 
       for (let x = x0 - 1 + rnd() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd() * rMax * 0.6) {
         const r = rMin + rnd() * (rMax - rMin), cx = x + (rnd() - 0.5) * 1.6, cy = y + (rnd() - 0.5) * 1.8;
         if (cy < top(cx) + r * 0.2 || rnd() < 0.1) continue;
-        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f2 = (n) => n.toFixed(1);
-        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f2(cx)} ${f2(cy)})"><path d="M${f2(cx - a[0])} ${f2(cy)}Q${f2(cx - a[0])} ${f2(cy - a[1])} ${f2(cx)} ${f2(cy - a[1])}Q${f2(cx + a[2])} ${f2(cy - a[1])} ${f2(cx + a[2])} ${f2(cy)}Q${f2(cx + a[2])} ${f2(cy + a[3])} ${f2(cx)} ${f2(cy + a[3])}Q${f2(cx - a[0])} ${f2(cy + a[3])} ${f2(cx - a[0])} ${f2(cy)}Z"/><ellipse cx="${f2(cx - r * 0.3)}" cy="${f2(cy - r * 0.38)}" rx="${f2(r * 0.38)}" ry="${f2(r * 0.24)}"/></g>`);
+        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f3 = (n) => n.toFixed(1);
+        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f3(cx)} ${f3(cy)})"><path d="M${f3(cx - a[0])} ${f3(cy)}Q${f3(cx - a[0])} ${f3(cy - a[1])} ${f3(cx)} ${f3(cy - a[1])}Q${f3(cx + a[2])} ${f3(cy - a[1])} ${f3(cx + a[2])} ${f3(cy)}Q${f3(cx + a[2])} ${f3(cy + a[3])} ${f3(cx)} ${f3(cy + a[3])}Q${f3(cx - a[0])} ${f3(cy + a[3])} ${f3(cx - a[0])} ${f3(cy)}Z"/><ellipse cx="${f3(cx - r * 0.3)}" cy="${f3(cy - r * 0.38)}" rx="${f3(r * 0.38)}" ry="${f3(r * 0.24)}"/></g>`);
       }
     }
     return out.join("");
@@ -9732,8 +9992,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _atCalc() {
       const c = this._c;
       if (!this._at || c.start_at !== "home_connect") return null;
-      const [H2, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
-      start.setHours(H2, M, 0, 0);
+      const [H3, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
+      start.setHours(H3, M, 0, 0);
       if (start <= now) start.setDate(start.getDate() + 1);
       const ds = this._S(c.duration), dur = secsOf(ds);
       if (!dur) return { start, err: "Programmdauer unbekannt (Editor → Programm und Zeit → Gesamtdauer)" };
@@ -9846,9 +10106,9 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       e.g.classList.toggle("last", cls === "run" && rem != null && rem <= 60);
       if (e.kp) {
         const r = secsOf(this._S(c.remaining)), tot = secsOf(this._S(c.duration));
-        const f2 = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
-        e.g.classList.toggle("kring", f2 != null);
-        e.kp.style.strokeDashoffset = String(100 - (f2 ?? 0) * 100);
+        const f3 = r > 0 && tot > 0 ? Math.min(1, r / tot) : null;
+        e.g.classList.toggle("kring", f3 != null);
+        e.kp.style.strokeDashoffset = String(100 - (f3 ?? 0) * 100);
         if (e.kt) e.kt.textContent = r > 0 ? fmtDisp(r) : "";
       }
       if (e.wd) e.wd.textContent = cls === "done" ? "End" : cls === "off" ? "" : rem != null ? fmtDisp(rem) : "– –";
@@ -10009,10 +10269,10 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       DRINKS.forEach(([x]) => g.classList.toggle(`k-${x}`, x === k));
       ["--cc", "--cr", "--cm"].forEach((v, i) => g.style.setProperty(v, col[i]));
       g.classList.toggle("milk", milk);
-      const prog = cls === "run" && p != null, f2 = cls === "done" ? 1 : prog ? p / 100 : 0;
+      const prog = cls === "run" && p != null, f3 = cls === "done" ? 1 : prog ? p / 100 : 0;
       g.classList.toggle("cprog", prog);
-      g.style.setProperty("--cl", f2.toFixed(2));
-      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f2 - 0.45) / 0.55)).toFixed(2) : "0");
+      g.style.setProperty("--cl", f3.toFixed(2));
+      g.style.setProperty("--mf", milk ? Math.max(0, Math.min(1, (f3 - 0.45) / 0.55)).toFixed(2) : "0");
       if (this._e.cx) this._e.cx.textContent = { off: "", err: "Störung", done: "Fertig", heat: "Heizt auf", warm: "Warm", wait: "Später" }[cls] ?? (src ? D[2] : cls === "run" ? TY.run : "Bereit");
     }
     _alerts(cls, stx) {
@@ -10033,14 +10293,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       c.hints.forEach((a) => {
         const s = this._S(a.entity);
         if (!alertHit(a, s)) return;
-        const an = can.includes(a.anim) ? a.anim : null, H2 = HANIM[an];
+        const an = can.includes(a.anim) ? a.anim : null, H3 = HANIM[an];
         if (an) on.add(an);
         const fd = an === "filter" ? this._S(c.filter_days) : null, fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
         const fx = fdn != null ? `noch ${fdn} ${fdn === 1 ? "Tag" : "Tage"}` : "";
         add(
           ["error", "info"].includes(a.level) ? a.level : "warning",
-          a.icon || (H2 && an !== "warning" ? H2[2] : s?.attributes.icon) || "mdi:information-outline",
-          [a.message || H2 && H2[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
+          a.icon || (H3 && an !== "warning" ? H3[2] : s?.attributes.icon) || "mdi:information-outline",
+          [a.message || H3 && H3[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
           a.entity,
           !!an,
           a.reset && { id: a.reset, name: a.reset_name || "Zurücksetzen" }
@@ -10462,8 +10722,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     const a = s.attributes || {}, groups = {};
     for (const [k, v] of Object.entries(a)) {
       if (["friendly_name", "device_class", "icon", "Count", "count"].includes(k) || v == null || typeof v === "object") continue;
-      const m = k.match(/^(\d+)[-_ ](.+)$/), n = m ? m[1] : "0", f2 = (m ? m[2] : k).toLowerCase();
-      (groups[n] ||= {})[f2] = String(v);
+      const m = k.match(/^(\d+)[-_ ](.+)$/), n = m ? m[1] : "0", f3 = (m ? m[2] : k).toLowerCase();
+      (groups[n] ||= {})[f3] = String(v);
     }
     const out = Object.values(groups).map((g) => {
       const raw = g.error || g.message || g.text || g.description || g.desc || "";
@@ -11152,7 +11412,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       const wnSlot = ["empty", "tangle"].includes(m.fx);
       e.sl.forEach((x, i) => {
         const s = aU?.slots[i];
-        const f2 = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f2, y = 75 - hh / 2;
+        const f3 = s ? s.empty ? 0 : s.rem == null ? 0.8 : s.rem / 100 : 0, hh = 12 + 20 * f3, y = 75 - hh / 2;
         [x.fl, x.fcl].forEach((r) => {
           r.setAttribute("y", y.toFixed(1));
           r.setAttribute("height", hh.toFixed(1));
@@ -11840,11 +12100,11 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       return { columns: 6, rows: "auto", min_columns: 4 };
     }
     disconnectedCallback() {
-      this._stops?.forEach((f2) => f2());
+      this._stops?.forEach((f3) => f3());
     }
     _build() {
       this._built = true;
-      this._stops?.forEach((f2) => f2());
+      this._stops?.forEach((f3) => f3());
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" });
       this._plat = platformOf(this._h, c);
       this._mp = playerOf(this._h, c);
@@ -12211,14 +12471,14 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
     _keys(b) {
       const plat = platformOf(this._hass, this._config), map = KEYMAPS[plat] || {};
       b.append(this._hint("Nur ausfüllen, wenn eine Taste anders belegt sein soll. Mehrere Befehle nacheinander mit Komma, abwechselnd bei jedem Druck mit | (z. B. Pause|Play)."));
-      const f2 = this._form(RKEYS, { ...this._config.keys }, (v) => {
+      const f3 = this._form(RKEYS, { ...this._config.keys }, (v) => {
         const keys = Object.fromEntries(KEYS.filter((k) => v[k]).map((k) => [k, v[k]])), c = { ...this._config };
         if (Object.keys(keys).length) c.keys = keys;
         else delete c.keys;
         this._emit(c);
       });
-      f2.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
-      b.append(f2);
+      f3.computeHelper = (s) => s.name === "power" ? "Standard: Ein/Aus der Entität" : `Standard: ${map[s.name] || "– (ausgeblendet)"}`;
+      b.append(f3);
     }
   };
   __publicField(NovaRemoteCardEditor, "labels", RLABELS);
@@ -12309,7 +12569,7 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset 1s linear,o
   var R = 80;
   var RING = 58;
   var SP = 10;
-  var SPEED = { slow: { k: 0.8, max: 1, fr: 0.94 }, normal: { k: 1.5, max: 2, fr: 0.955 }, fast: { k: 3, max: 4, fr: 0.965 } };
+  var SPEED2 = { slow: { k: 0.8, max: 1, fr: 0.94 }, normal: { k: 1.5, max: 2, fr: 0.955 }, fast: { k: 3, max: 4, fr: 0.965 } };
   var parseIn = (x) => {
     const p = String(x).trim().replace(",", ":").split(/[:.\s]+/).filter(Boolean).map(Number);
     if (!p.length || p.some((n) => !Number.isFinite(n) || n < 0)) return 0;
@@ -12816,14 +13076,14 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         this._sec = sec > 0 ? Math.min(sec, this._vals.at(-1)) : 300;
         return;
       }
-      const t = Math.max(0, Math.round(sec)), u = this._units(), H2 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
+      const t = Math.max(0, Math.round(sec)), u = this._units(), H3 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
       const c = { h: 0, m: 0, s: 0 };
-      if (H2) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
-      if (M) c.m = Math.min(this._max("m"), Math.floor((H2 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
-      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H2 ? t % 3600 : t) / 5) * 5);
+      if (H3) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
+      if (M) c.m = Math.min(this._max("m"), Math.floor((H3 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
+      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H3 ? t % 3600 : t) / 5) * 5);
       if (!c.h && !c.m && !c.s) {
         if (M) c.m = 5;
-        else if (H2) c.h = 1;
+        else if (H3) c.h = 1;
         else c.s = 30;
       }
       this._cust = c;
@@ -13041,7 +13301,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         const dy = ev.clientY - ly, dt = Math.max(1, ev.timeStamp - lt), sp = Math.abs(dy) / dt;
         ly = ev.clientY;
         lt = ev.timeStamp;
-        const S = SPEED[this._c.scale_speed] || SPEED.normal, gain = 1 + Math.min(S.max, Math.max(0, sp - 0.15) * S.k);
+        const S = SPEED2[this._c.scale_speed] || SPEED2.normal, gain = 1 + Math.min(S.max, Math.max(0, sp - 0.15) * S.k);
         want = this._clampOff(want + dy * gain);
         pts.push([ev.timeStamp, want]);
         if (pts.length > 8) pts.shift();
@@ -13084,7 +13344,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
             o = c;
             v = 0;
           }
-          v *= Math.pow((SPEED[this._c.scale_speed] || SPEED.normal).fr, dt / 16);
+          v *= Math.pow((SPEED2[this._c.scale_speed] || SPEED2.normal).fr, dt / 16);
           this._move(o, false);
           this._hit(o);
           if (Math.abs(v) > 0.05) this._raf = requestAnimationFrame(step);
@@ -13274,37 +13534,209 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
   __publicField(NovaTimerCardEditor, "openSections", ["general"]);
   define("timer-card-editor", NovaTimerCardEditor);
 
+  // src/clock-styles.js
+  var f2 = (n) => +n.toFixed(2);
+  var K = (v) => `calc(${v}*var(--kz,1)*var(--ks,1))`;
+  var flipDigit = () => '<span class="fd"><span class="h t"><b></b></span><span class="h b"><b></b></span><span class="h t fl"><b></b></span><span class="h b fl"><b></b></span><i class="pin"></i><i class="pin r"></i></span>';
+  function flipSet(el2, ch, anim) {
+    const [t, b, ft, fb] = el2.querySelectorAll("b");
+    const old = el2._ch;
+    if (old === ch) return false;
+    el2._ch = ch;
+    clearTimeout(el2._ft);
+    if (!anim || old == null) {
+      t.textContent = b.textContent = ft.textContent = fb.textContent = ch;
+      el2.classList.remove("go");
+      return false;
+    }
+    t.textContent = ch;
+    b.textContent = old;
+    ft.textContent = old;
+    fb.textContent = ch;
+    el2.classList.remove("go");
+    void el2.offsetWidth;
+    el2.classList.add("go");
+    el2._ft = setTimeout(() => {
+      b.textContent = ch;
+      el2.classList.remove("go");
+    }, 640);
+    return true;
+  }
+  var FLIP_CSS = `
+.flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:${K("clamp(34px,var(--nova-clock-size,19cqw),150px)")};line-height:1;font-weight:600;color:#eef1f6;font-variant-numeric:tabular-nums}
+.flp .grp{display:flex;gap:.05em}.flp .grp.sec{font-size:.45em;align-self:flex-end;margin-left:.1em}
+.flp .sep{display:flex;flex-direction:column;gap:.22em;padding:0 .02em}.flp .sep i{width:.1em;height:.1em;border-radius:50%;background:#fff;opacity:.35}
+.flp .ap{font-size:.24em;font-weight:500;opacity:.7;align-self:flex-start;margin-left:.15em;letter-spacing:0}
+.fd{position:relative;display:block;width:.7em;height:1.12em;border-radius:.08em;perspective:2.6em;
+box-shadow:0 .04em .1em rgba(0,0,0,.45),0 0 0 .5px rgba(255,255,255,.12)}
+.fd .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.fd .t{top:0;border-radius:.08em .08em 0 0;background:linear-gradient(180deg,${PAL.part},#2b313d)}
+.fd .b{bottom:0;border-radius:0 0 .08em .08em;background:linear-gradient(180deg,#232833,${PAL.partDark})}
+.fd .t::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 40%)}
+.fd b{position:absolute;left:0;right:0;height:200%;line-height:1.12em;text-align:center;font-weight:inherit;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.fd .t b{top:0}.fd .b b{bottom:0}
+/* Trennfuge in der Mitte und die Achsstifte links und rechts */
+.fd::after{content:"";position:absolute;left:0;right:0;top:calc(50% - .012em);height:.024em;background:rgba(0,0,0,.65);box-shadow:0 .012em 0 rgba(255,255,255,.06);z-index:3}
+.fd .pin{position:absolute;top:calc(50% - .05em);left:-.015em;width:.035em;height:.1em;border-radius:.02em;background:linear-gradient(90deg,${PAL.chromeDark},${PAL.chrome});z-index:4}.fd .pin.r{left:auto;right:-.015em;transform:scaleX(-1)}
+.fd .fl{visibility:hidden;z-index:2}
+.fd.go .t.fl{visibility:visible;transform-origin:50% 100%;animation:fl-t .3s cubic-bezier(.55,.06,.68,.19) forwards}
+.fd.go .b.fl{visibility:visible;transform-origin:50% 0;animation:fl-b .3s .3s cubic-bezier(.22,.61,.36,1) both}
+/* Schatten der fallenden Klappe auf der unteren Hälfte */
+.fd .b:not(.fl)::after{content:"";position:absolute;inset:0;background:#000;opacity:0}
+.fd.go .b:not(.fl)::after{animation:fl-sh .6s ease-out}
+@keyframes fl-t{0%{transform:rotateX(0);filter:brightness(1)}100%{transform:rotateX(-90deg);filter:brightness(.55)}}
+@keyframes fl-b{0%{transform:rotateX(90deg);filter:brightness(1.35)}80%{transform:rotateX(-7deg);filter:brightness(1)}100%{transform:rotateX(0)}}
+@keyframes fl-sh{0%{opacity:0}45%{opacity:.35}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.fd *,.fd::after{animation:none!important}}`;
+  var mix = (a, b, t) => {
+    t = Math.min(1, Math.max(0, t));
+    return `color-mix(in srgb,var(--nv-clock-${a}) ${f2((1 - t) * 100)}%,var(--nv-clock-${b}))`;
+  };
+  function glowColor(elev, rising) {
+    if (elev == null || isNaN(elev)) return null;
+    if (rising) return elev < 0 ? mix("night", "morning", (elev + 10) / 10) : elev < 10 ? "var(--nv-clock-morning)" : mix("morning", "noon", (elev - 10) / 25);
+    return elev > 34 ? "var(--nv-clock-noon)" : mix("noon", "night", (34 - elev) / 40);
+  }
+  var sunGuess = (hour) => ({ elev: 45 * Math.sin(Math.PI * (hour - 6) / 12), rising: hour < 12 });
+  var GLOW_CSS = `
+.tm.glow{font-weight:200;letter-spacing:-.02em;font-size:${K("clamp(40px,var(--nova-clock-size,27cqw),190px)")};color:var(--gc);
+text-shadow:0 0 .04em var(--gc),0 0 .18em color-mix(in srgb,var(--gc) 55%,transparent),0 0 .5em color-mix(in srgb,var(--gc) 30%,transparent);transition:color 90s linear,text-shadow 90s linear}
+.tm.glow .sc,.tm.glow .ap{opacity:.75}
+.tm.glow .cl{opacity:.8}`;
+  var SEG2 = { 0: "abcdef", 1: "bc", 2: "abged", 3: "abgcd", 4: "fgbc", 5: "afgcd", 6: "afgedc", 7: "abc", 8: "abcdefg", 9: "abcdfg", " ": "" };
+  var W = 34;
+  var H = 64;
+  var T2 = 8;
+  var G = 1.2;
+  var segPath = (x1, y1, x2, y2) => {
+    const hz = y1 === y2, h = T2 / 2;
+    if (hz) {
+      const a2 = x1 + G, b2 = x2 - G;
+      return `M${a2} ${y1}L${a2 + h} ${y1 - h}H${b2 - h}L${b2} ${y1}L${b2 - h} ${y1 + h}H${a2 + h}Z`;
+    }
+    const a = y1 + G, b = y2 - G;
+    return `M${x1} ${a}L${x1 + h} ${a + h}V${b - h}L${x1} ${b}L${x1 - h} ${b - h}V${a + h}Z`;
+  };
+  var SEGS = { a: [0, 0, W, 0], b: [W, 0, W, H / 2], c: [W, H / 2, W, H], d: [0, H, W, H], e: [0, H / 2, 0, H], f: [0, 0, 0, H / 2], g: [0, H / 2, W, H / 2] };
+  var digit = (x, y, s = 1) => `<g class="dg" transform="translate(${x} ${y}) scale(${s}) skewX(-6)">${Object.entries(SEGS).map(([k, p]) => `<path class="sg" data-s="${k}" d="${segPath(...p)}"/>`).join("")}</g>`;
+  function retroSvg(sec) {
+    const pad = 22, step = W + 16, colon = 22, sw = sec ? 2 * 21 + 10 : 0;
+    const dispW = 4 * step - 16 + colon + sw + 2 * pad, dispH = H + 2 * pad - 6;
+    const bw = dispW + 36, bh = dispH + 44, X = 18, Y = 26, vw = bw, vh = bh + 16;
+    const xs = [0, step, 2 * step + colon, 3 * step + colon].map((v) => X + pad + 6 + v), dy = Y + (dispH - H) / 2;
+    const cx = X + pad + 6 + 2 * step - 16 / 2 + colon / 2 - 2;
+    const secX = xs[3] + step + 4;
+    return `<svg class="scene rt-svg" viewBox="0 0 ${vw} ${vh}" aria-hidden="true"><defs>${sceneDefs("r")}
+<filter id="r-led" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<radialGradient id="r-vg" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+<clipPath id="r-gc"><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/></clipPath></defs>
+<ellipse class="s-shd" cx="${vw / 2}" cy="${bh + 12}" rx="${f2(bw * 0.42)}" ry="4"/>
+<rect class="s-part" x="${f2(bw * 0.3)}" y="4" width="${f2(bw * 0.4)}" height="8" rx="2" fill="url(#r-pt)"/><rect x="${f2(bw * 0.3 + 2)}" y="5" width="${f2(bw * 0.4 - 4)}" height=".6" fill="#fff" opacity=".18"/>
+<rect class="s-body" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-bd)"/><rect class="s-sheen" x="0" y="10" width="${bw}" height="${bh}" rx="9" fill="url(#r-sh)"/>
+<rect class="s-edge" x="9" y="10.4" width="${bw - 18}" height=".7" rx=".35"/>
+<rect class="s-part" x="${X - 6}" y="${Y - 6}" width="${dispW + 12}" height="${dispH + 12}" rx="3" fill="url(#r-pt)"/>
+<rect class="rt-scr" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3"/><rect x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-vg)"/>
+${["off", "on"].map((l) => `<g class="rt-${l}"${l === "on" ? ' filter="url(#r-led)"' : ""}>${xs.map((x) => digit(x, dy)).join("")}
+<g class="rt-col"><circle cx="${cx}" cy="${dy + H * 0.3}" r="3.6"/><circle cx="${cx}" cy="${dy + H * 0.7}" r="3.6"/></g>
+${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : ""}
+<circle class="rt-pm" cx="${X + 11}" cy="${dy + 4}" r="2.6"/></g>`).join("")}
+<rect class="s-glass" x="${X}" y="${Y}" width="${dispW}" height="${dispH}" rx="3" fill="url(#r-gl)"/>
+<g clip-path="url(#r-gc)"><path class="s-refl" d="M${X} ${Y + dispH * 0.7}L${X + dispW * 0.3} ${Y}h${f2(dispW * 0.08)}L${X} ${Y + dispH}z"/><path class="s-refl" d="M${X + dispW * 0.45} ${Y + dispH}L${X + dispW * 0.75} ${Y}h${f2(dispW * 0.03)}L${X + dispW * 0.48} ${Y + dispH}z"/>
+<g transform="rotate(18 ${X + dispW / 2} ${Y + dispH / 2})"><rect class="s-gls" x="${X - 30}" y="${Y - 40}" width="22" height="${dispH + 80}" fill="url(#r-gs)"/></g></g>
+<g opacity=".2" stroke="#fff" stroke-width=".6">${[0, 1, 2, 3, 4].map((i) => `<path d="M${bw - 60 + i * 9} ${Y + dispH + 14}v8"/>`).join("")}</g>
+<circle class="s-part" cx="${X + 8}" cy="${Y + dispH + 18}" r="4" fill="url(#r-cr)"/><circle class="s-part" cx="${X + 22}" cy="${Y + dispH + 18}" r="4" fill="url(#r-cr)"/>
+<rect class="s-part" x="14" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/><rect class="s-part" x="${bw - 30}" y="${bh + 9}" width="16" height="4" rx="1.5" fill="url(#r-pt)"/>
+</svg>`;
+  }
+  function retroSet(svg, chars, pm, h12) {
+    svg.querySelectorAll(".rt-on .dg").forEach((g, i) => {
+      const on = SEG2[chars[i]] ?? "";
+      if (g._ch === chars[i]) return;
+      g._ch = chars[i];
+      g.querySelectorAll(".sg").forEach((p) => p.classList.toggle("on", on.includes(p.dataset.s)));
+    });
+    svg.querySelectorAll(".rt-pm").forEach((c) => {
+      c.style.display = h12 ? "" : "none";
+    });
+    svg.querySelector(".rt-on .rt-pm")?.classList.toggle("on", !!pm);
+  }
+  var RETRO_COLORS = ["red", "green", "blue", "amber"];
+  var RETRO_CSS = `
+.rt{width:100%;max-width:${K("var(--nova-clock-size,520px)")}}.rt svg{display:block;width:100%;height:auto}
+.rt{--led:var(--nv-led-red)}.rt.green{--led:var(--nv-led-green)}.rt.blue{--led:var(--nv-led-blue)}.rt.amber{--led:var(--nv-led-amber)}
+/* Ziffernfläche: fast schwarz hinter dunkler Plexiglasscheibe, ganz leicht in der LED-Farbe getönt */
+.scene .rt-scr{fill:color-mix(in srgb,var(--led) 4%,#030303);stroke:rgba(255,255,255,.16);stroke-width:.5}
+/* Untere Ebene: alle Segmente mit 8 % („88:88“ zu erahnen), obere Ebene: nur leuchtende Segmente mit Glow */
+.scene .rt-off .sg,.scene .rt-off circle{fill:var(--led);opacity:.08}
+.scene .rt-on .sg,.scene .rt-on .rt-pm{fill:var(--led);opacity:0;transition:opacity .12s}
+.scene .rt-on .sg.on,.scene .rt-on .rt-pm.on{opacity:1}
+.scene .rt-on .rt-col circle{fill:var(--led)}
+.anim .scene .rt-on .rt-col{animation:rt-blink 1s steps(1,end) infinite}
+@keyframes rt-blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.scene .rt-col{animation:none!important}}`;
+
   // src/clock.js
-  var DEF6 = { mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true };
+  var KD = (v) => K(`${v}*var(--kd,1)`);
+  var DEF6 = { style: "default", second_hand: "sweep", retro_color: "red", sun_entity: "sun.sun", mode: "digital", show_seconds: false, show_weekday: true, show_date: true, date_format: "long", time_format: "auto", color: "accent-1", glass: true, size: "medium", date_size: "medium", layout: "auto" };
+  var SIZES = { small: 0.75, medium: 1, large: 1.3 };
+  var fontSize = (v) => typeof v === "number" && v > 0 ? `${v}px` : typeof v === "string" && /^\s*\d+(\.\d+)?\s*(px|rem|em)?\s*$/.test(v) ? /[a-z]/.test(v) ? v.trim().replace(/\s+/g, "") : `${v.trim()}px` : null;
   var C = 100;
   var R2 = 92;
-  var CCSS2 = `${DIAL_CSS}
+  var STYLES = ["default", "flip", "analog", "glow", "retro"];
+  var styleOf = (c) => STYLES.includes(c.style) && c.style !== "default" ? c.style : c.mode === "analog" ? "analog" : "default";
+  var handOf = (c) => c.style === "analog" ? ["sweep", "tick", "none"].includes(c.second_hand) ? c.second_hand : "sweep" : c.show_seconds ? "tick" : "none";
+  var reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  var CCSS2 = `${DIAL_CSS}${FLIP_CSS}${GLOW_CSS}${RETRO_CSS}
 :host{container-type:inline-size}
 .g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
 .g.ck.flat{background:none;border-color:transparent;box-shadow:none}
-.nm{font-size:12.5px;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
-.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:clamp(34px,var(--nova-clock-size,24cqw),160px)}
+.nm{font-size:${K("12.5px")};font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
+.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:${K("clamp(34px,var(--nova-clock-size,24cqw),160px)")}}
 .tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
 .tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
-.dt{font-size:clamp(13px,5cqw,22px);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.ana{width:100%;max-width:var(--nova-clock-size,240px);aspect-ratio:1}
+.dt{font-size:${KD("clamp(13px,5cqw,22px)")};opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ana{width:100%;max-width:${K("var(--nova-clock-size,240px)")};aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
 .scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
 .scene .cap{fill:url(#k-cr);stroke:rgba(255,255,255,.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
 .scene .hsh{fill:#000;opacity:.25}
+.scene .sw{transform-box:view-box;transform-origin:100px 100px}.anim .scene .sw.on{animation:k-spin 60s linear infinite}
+@keyframes k-spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
 @container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:clamp(28px,var(--nova-clock-size,12cqw),100px)}.row .dt{font-size:clamp(12px,3.6cqw,22px)}.row .inf{font-size:clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)}}
-.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:clamp(14px,var(--nova-clock-info-size,7.5cqw),26px);opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
+.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:${K("clamp(28px,var(--nova-clock-size,12cqw),100px)")}}.row .dt{font-size:${KD("clamp(12px,3.6cqw,22px)")}}.row .inf{font-size:${K("clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)")}}}
+.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:${K("clamp(14px,var(--nova-clock-info-size,7.5cqw),26px)")};opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
 .inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
 .row .inf{justify-content:flex-start}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0;max-width:100%}`;
+.txt{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;max-width:100%}
+.sub{display:contents}
+.probe>*{position:absolute!important;visibility:hidden}
+/* Feste Kartenhöhe (--kfix): Zifferblatt nie höher als die Karte */
+.ana{max-height:var(--kfix,none)}
+/* Breit und flach (layout: row bzw. automatisch, wenn untereinander nicht passt): Uhrzeit links, Überschrift, Datum und Werte rechts.
+   Die Größen folgen der Kartenhöhe (--kh, von _fit() gesetzt). */
+.g.ck.wide .txt{display:grid;grid-template-columns:auto auto;column-gap:calc(var(--kh,100px)*.22);row-gap:0;align-items:center;justify-content:center;text-align:left}
+.wide .tm,.wide .flp,.wide .rt{grid-area:1/1/3/2}
+.wide .nm{grid-area:1/2;align-self:end;font-size:${K("var(--kh,100px)*.12")}}
+.wide .sub{grid-area:2/2;display:flex;flex-direction:column;align-items:flex-start;gap:.15em;align-self:start;min-width:0}
+.wide.nn .sub{grid-area:1/2/3/3;align-self:center}
+.wide .tm{font-size:${K("var(--kh,100px)*.82")}}.wide .tm.glow{font-size:${K("var(--kh,100px)*.82")}}
+.wide .flp{font-size:${K("var(--kh,100px)*.74")}}
+.wide .rt{width:auto;max-width:none}.wide .rt svg{width:auto;height:${K("var(--kh,100px)*.88")}}
+.wide .dt{font-size:${KD("var(--kh,100px)*.24")}}.wide .inf{font-size:${K("var(--kh,100px)*.26")};justify-content:flex-start}
+/* Feste Schriftgröße (font_size → --kf): Datum und Werte wachsen mit */
+.fs .tm,.fs .tm.glow{font-size:calc(var(--kf)*var(--ks,1))}.fs .flp{font-size:calc(var(--kf)*.8*var(--ks,1))}
+.fs .rt{max-width:none;width:calc(var(--kf)*3.25*var(--ks,1))}.fs.wide .rt svg{width:100%;height:auto}
+.fs .ana{max-width:calc(var(--kf)*1.5*var(--ks,1))}
+.fs .dt{font-size:calc(var(--kf)*.3*var(--kd,1)*var(--ks,1))}.fs .inf{font-size:calc(var(--kf)*.34*var(--ks,1))}.fs .nm{font-size:calc(var(--kf)*.16*var(--ks,1))}
+/* Feste Schriftgröße für Wochentag und Datum (date_size als px/rem → --kdf), schrumpft beim Einpassen mit */
+.g.dfs .dt{font-size:calc(var(--kdf)*var(--ks,1))}`;
   var hand = (cls, w, len, back) => `<path class="${cls}" d="M${C - w / 2} ${C + back} L${C - w / 2 + 0.4} ${C - len} Q${C} ${C - len - w / 2} ${C + w / 2 - 0.4} ${C - len} L${C + w / 2} ${C + back} Z"/>`;
   var SVG2 = `<svg viewBox="0 0 200 200" aria-hidden="true" class="scene"><defs>${dialDefs("k", C, C, R2)}</defs>${dialBody("k", C, C, R2)}
 <g class="hh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 6, 44, 10)}</g>${hand("hd", 6, 44, 10)}</g>
 <g class="mh"><g transform="translate(1.2 1.6)" class="hsh">${hand("", 4.2, 64, 12)}</g>${hand("md", 4.2, 64, 12)}</g>
-<g class="sh">${hand("sd", 1.6, 70, 18)}<circle class="sd" cx="${C}" cy="${C + 14}" r="3"/></g>
+<g class="sh"><g class="sw">${hand("sd", 1.6, 70, 18)}<circle class="sd" cx="${C}" cy="${C + 14}" r="3"/></g></g>
 <circle class="cap" cx="${C}" cy="${C}" r="5"/><circle class="cap2" cx="${C}" cy="${C}" r="1.8"/>
 ${dialGlass("k", C, C, R2)}</svg>`;
   var NovaClockCard = class extends HTMLElement {
@@ -13319,9 +13751,12 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       this._c = { ...DEF6, ...c };
       this._ents = (Array.isArray(c.entities) ? c.entities : []).map((x) => typeof x === "string" ? { entity: x } : { ...x }).filter((x) => x.entity);
       this._ids = this._ents.map((x) => x.entity);
+      this._st = styleOf(this._c);
+      this._sun = this._st === "glow" ? this._c.sun_entity || DEF6.sun_entity : null;
       this._fmtKey = null;
       if (this._e) {
         this._layout();
+        this._sync();
         this._draw();
         this._vals();
         this._plan();
@@ -13344,15 +13779,19 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         this._draw();
       }
       if (this._ents.length && hassChanged(old, h, this._ids)) this._vals();
+      if (this._sun && old?.states[this._sun] !== h.states[this._sun]) this._glow();
     }
     connectedCallback() {
       this._quiet = inPicker(this);
       if (!this._e && this._c && this._h) this._build();
+      this._observe();
       this._stopVis?.();
       this._stopVis = watchVisible(this, (v) => {
         const was = this._vis;
         this._vis = v && !this._quiet;
-        if (this._vis && !was && this._c?.mode === "analog" && this._c.animation !== false) sweep(this._e?.g);
+        if (this._vis && !was && ["analog", "retro"].includes(this._st) && this._c.animation !== false) sweep(this._e?.g);
+        this._e?.g.classList.toggle("anim", !!this._vis);
+        this._sync();
         this._draw();
         this._plan();
       });
@@ -13363,9 +13802,13 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       this._vis = false;
       clearTimeout(this._t);
       this._t = null;
+      this._ro?.disconnect();
+      this._ro = null;
+      cancelAnimationFrame(this._fr);
+      this._fr = null;
     }
     getCardSize() {
-      return this._c?.mode === "analog" ? 4 : 2;
+      return this._st === "analog" ? 4 : this._st === "retro" || this._st === "flip" ? 3 : 2;
     }
     getGridOptions() {
       return { columns: 6, rows: "auto", min_columns: 3 };
@@ -13373,18 +13816,29 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${CCSS2}</style><div class="g ck"><div class="ana">${SVG2}</div>
-<div class="txt"><div class="nm"></div><div class="tm"></div><div class="dt"></div><div class="inf"></div></div></div>`;
+<div class="txt"><div class="nm"></div><div class="tm"></div><div class="flp"></div><div class="rt"></div><div class="sub"><div class="dt"></div><div class="inf"></div></div></div></div>`;
       const q = (s) => r.querySelector(s);
-      this._e = { g: q(".g"), ana: q(".ana"), nm: q(".nm"), tm: q(".tm"), dt: q(".dt"), inf: q(".inf"), hh: q(".hh"), mh: q(".mh"), sh: q(".sh") };
+      this._e = { g: q(".g"), ana: q(".ana"), nm: q(".nm"), tm: q(".tm"), dt: q(".dt"), inf: q(".inf"), flp: q(".flp"), rt: q(".rt"), sw: q(".sw"), hh: q(".hh"), mh: q(".mh"), sh: q(".sh") };
       const act = () => ({ tap_action: this._c.tap_action, hold_action: this._c.hold_action });
       press(this._e.g, { tap: () => runAction(this, act(), "tap", true), hold: () => runAction(this, act(), "hold") });
       this._layout();
+      this._observe();
     }
     _layout() {
-      const c = this._c, e = this._e, rv = roleVars(c.color), an = c.mode === "analog";
+      const c = this._c, e = this._e, rv = roleVars(c.color), st = this._st, an = st === "analog";
       e.g.style.setProperty("--kc", rv.c);
+      e.g.classList.toggle("still", !!this._quiet);
       e.ana.hidden = !an;
-      e.tm.hidden = an && !c.analog_digital;
+      e.tm.hidden = an && !c.analog_digital || st === "flip" || st === "retro";
+      e.tm.classList.toggle("glow", st === "glow");
+      this._tmH = null;
+      e.flp.hidden = st !== "flip";
+      e.flp.innerHTML = st === "flip" ? `<div class="grp">${flipDigit()}${flipDigit()}</div><div class="sep"><i></i><i></i></div><div class="grp">${flipDigit()}${flipDigit()}</div><div class="ap"></div>` : "";
+      e.rt.hidden = st !== "retro";
+      e.rt.className = `rt ${RETRO_COLORS.includes(c.retro_color) ? c.retro_color : "red"}`;
+      e.rt.innerHTML = st === "retro" ? retroSvg(!!c.show_seconds) : "";
+      e.sh.style.display = an && handOf(c) !== "none" ? "" : "none";
+      this._glow();
       e.g.classList.toggle("flat", c.glass === false);
       this.classList.toggle("nv-flat", c.glass === false);
       e.nm.hidden = !c.name;
@@ -13396,6 +13850,138 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         return sp;
       }));
       e.g.classList.toggle("row", an && !!(c.show_date || c.show_weekday || c.analog_digital || c.name || this._ents.length));
+      e.g.style.setProperty("--kz", SIZES[c.size] || 1);
+      const fs = fontSize(c.font_size);
+      e.g.classList.toggle("fs", !!fs);
+      if (fs) e.g.style.setProperty("--kf", fs);
+      else e.g.style.removeProperty("--kf");
+      const ds = SIZES[c.date_size] ? null : fontSize(c.date_size);
+      e.g.style.setProperty("--kd", SIZES[c.date_size] || 1);
+      e.g.classList.toggle("dfs", !!ds);
+      if (ds) e.g.style.setProperty("--kdf", ds);
+      else e.g.style.removeProperty("--kdf");
+      e.g.classList.toggle("nn", !c.name);
+      this._sync();
+      this._fitSoon();
+    }
+    // Kartengröße beobachten: bei jeder Änderung die Uhr neu einpassen
+    _observe() {
+      if (this._ro || !this._e || !window.ResizeObserver) return;
+      this._ro = new ResizeObserver(() => this._fitSoon());
+      this._ro.observe(this);
+    }
+    _fitSoon() {
+      if (!this._e || this._fr) return;
+      this._fr = requestAnimationFrame(() => {
+        this._fr = null;
+        this._fit();
+      });
+    }
+    // Einpassen: nichts darf über die Karte laufen. Passt der Inhalt untereinander nicht in eine breite, flache Karte,
+    // stehen Uhrzeit und Datum nebeneinander (layout: auto). Danach wird alles gemeinsam (--ks) verkleinert, bis es passt.
+    // Karten mit automatischer Höhe passen immer – dort bleibt alles wie gehabt.
+    _fit() {
+      const e = this._e, c = this._c;
+      if (!e || !this.isConnected) return;
+      const g = e.g, cs = getComputedStyle(g), can = this._st !== "analog", lay = c.layout;
+      g.classList.add("probe");
+      const H3 = g.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const W2 = g.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      g.classList.remove("probe");
+      g.style.setProperty("--ks", 1);
+      g.classList.toggle("wide", can && lay === "row");
+      if (!(W2 > 0)) return;
+      g.style.removeProperty("--kfix");
+      if (!(H3 > 24)) {
+        g.style.setProperty("--kh", `${Math.round(Math.min(160, W2 / 6))}px`);
+        return;
+      }
+      g.style.setProperty("--kh", `${Math.round(H3)}px`);
+      g.style.setProperty("--kfix", `${Math.round(H3)}px`);
+      const need = () => {
+        let t = Infinity, b = -Infinity, w2 = 0, rw2 = 1;
+        for (const k of g.children) {
+          if (k.hidden) continue;
+          const r = k.getBoundingClientRect();
+          if (!r.height) continue;
+          t = Math.min(t, r.top);
+          b = Math.max(b, r.bottom);
+          w2 = Math.max(w2, k.scrollWidth, r.width);
+        }
+        const tx = e.tm.parentElement;
+        for (const k of [...tx.children, ...e.dt.parentElement.children]) {
+          if (k.hidden) continue;
+          w2 = Math.max(w2, k.scrollWidth);
+          if (k.clientWidth && k.scrollWidth > k.clientWidth + 1) rw2 = Math.min(rw2, k.clientWidth / k.scrollWidth);
+        }
+        return [w2, b > t ? b - t : 0, rw2];
+      };
+      let [w, h, rw] = need();
+      if (can && lay !== "row" && lay !== "stacked" && h > H3 + 1 && W2 / H3 >= 2.2 && !(e.dt.hidden && e.inf.hidden && e.nm.hidden)) {
+        g.classList.add("wide");
+        [w, h, rw] = need();
+      }
+      let s = 1;
+      for (let i = 0; i < 4 && h; i++) {
+        const r = Math.min(H3 / h, W2 / (w || W2), rw);
+        if (r >= 0.995) break;
+        s = Math.max(0.15, s * r * 0.98);
+        g.style.setProperty("--ks", +s.toFixed(3));
+        [w, h, rw] = need();
+      }
+    }
+    // Leuchtziffern: Farbe aus dem Sonnenstand (sun.sun → elevation, rising); ohne Sonne grob aus der Uhrzeit
+    _glow() {
+      const e = this._e;
+      if (!e || this._st !== "glow") {
+        e?.tm.style.removeProperty("--gc");
+        return;
+      }
+      const s = this._h?.states[this._sun], a = s?.attributes;
+      const g = a && a.elevation != null ? { elev: +a.elevation, rising: !!a.rising } : sunGuess(this._hour());
+      const col = glowColor(g.elev, g.rising) || roleVars(this._c.color).c;
+      if (col !== this._gc) {
+        this._gc = col;
+        e.tm.style.setProperty("--gc", col);
+      }
+    }
+    // Nur Dev-Build: Bildrate der ersten drei echten Klapp-Animationen messen und ins HA-Log schreiben (Test auf echten Geräten)
+    _measure() {
+      if ((this._ms = (this._ms || 0) + 1) > 3 || !this._h?.callService) return;
+      const t = [];
+      const step = (ts) => {
+        t.push(ts);
+        if (ts - t[0] < 650) requestAnimationFrame(step);
+        else done();
+      };
+      const done = () => {
+        const gaps = t.slice(1).map((x, i) => x - t[i]), fps = Math.round((t.length - 1) / ((t[t.length - 1] - t[0]) / 1e3));
+        const msg = `Nova Dev Uhr (flip, echte Klappe): ${fps} Bilder/s, längste Pause ${Math.round(Math.max(...gaps))} ms, Fenster ${innerWidth}×${innerHeight}`;
+        this._h.callService("system_log", "write", { message: msg, level: "warning", logger: "nova_cards.dev" })?.catch?.(() => {
+        });
+      };
+      requestAnimationFrame(step);
+    }
+    // Stunde (mit Bruchteil) in der Zeitzone von HA – für die geschätzte Sonne ohne sun.sun
+    _hour() {
+      try {
+        const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { hour: "numeric", minute: "numeric", hourCycle: "h23", timeZone: this._h?.config?.time_zone }).formatToParts(/* @__PURE__ */ new Date()).map((x) => [x.type, x.value]));
+        return +p.hour + p.minute / 60;
+      } catch {
+        const d = /* @__PURE__ */ new Date();
+        return d.getHours() + d.getMinutes() / 60;
+      }
+    }
+    // Laufende Animationen (Sekundenzeiger „sweep“, blinkender Doppelpunkt) auf die echte Sekunde setzen
+    _sync() {
+      const e = this._e;
+      if (!e) return;
+      const now = /* @__PURE__ */ new Date(), off2 = `-${now.getSeconds() + now.getMilliseconds() / 1e3}s`;
+      const sw = this._st === "analog" && handOf(this._c) === "sweep" && !this._quiet && !reduced();
+      e.sw.classList.toggle("on", sw);
+      if (sw) e.sw.style.animationDelay = off2;
+      const col = e.rt.querySelector(".rt-on .rt-col");
+      if (col) col.style.animationDelay = `-${now.getMilliseconds() / 1e3}s`;
     }
     // Werte-Zeile: nur neu schreiben, wenn sich eine der Entitäten ändert
     _vals() {
@@ -13408,10 +13994,15 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         sp.lastChild.textContent = valueOf(h, s, o);
         sp.title = o.name ?? s?.attributes.friendly_name ?? o.entity;
       });
+      const n = e.inf.textContent.length;
+      if (n !== this._infN) {
+        this._infN = n;
+        this._fitSoon();
+      }
     }
     // Formatierer nur neu bauen, wenn sich Sprache/Zeitzone/Optionen ändern
     _fmts() {
-      const h = this._h, c = this._c, lang = langOf(h), tz = tzOf(h), tf = c.time_format === "auto" ? h?.locale?.time_format : c.time_format;
+      const h = this._h, c = this._c, lang = langOf(h), tz = h?.config?.time_zone || tzOf(h), tf = c.time_format === "auto" ? h?.locale?.time_format : c.time_format;
       const key = JSON.stringify([lang, tz, tf, c.date_format, c.show_seconds]);
       if (key === this._fmtKey) return this._f;
       this._fmtKey = key;
@@ -13424,43 +14015,61 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       };
       const h12 = tf === "12" ? true : tf === "24" ? false : void 0;
       const time = mk({ hour: "2-digit", minute: "2-digit", second: "2-digit", ...h12 != null ? { hour12: h12 } : {} });
-      const DF = { long: { day: "numeric", month: "long" }, short: { day: "numeric", month: "short" }, numeric: { day: "2-digit", month: "2-digit", year: "numeric" } };
+      const DF = { long: { day: "numeric", month: "long" }, long_year: { day: "numeric", month: "long", year: "numeric" }, short: { day: "numeric", month: "short" }, numeric: { day: "2-digit", month: "2-digit", year: "numeric" } };
       this._f = { time, wd: mk({ weekday: "long" }), date: mk(DF[c.date_format] || DF.long) };
       return this._f;
     }
     _draw() {
       const e = this._e, c = this._c;
       if (!e || !this._h) return;
-      const f2 = this._fmts(), now = /* @__PURE__ */ new Date();
-      const p = Object.fromEntries(f2.time.formatToParts(now).map((x) => [x.type, x.value]));
+      const f3 = this._fmts(), now = /* @__PURE__ */ new Date();
+      const p = Object.fromEntries(f3.time.formatToParts(now).map((x) => [x.type, x.value]));
       if (!e.tm.hidden) {
         const html = `${esc(p.hour)}<span class="cl">:</span>${esc(p.minute)}${c.show_seconds ? `<span class="sc">${esc(p.second)}</span>` : ""}${p.dayPeriod ? `<span class="ap">${esc(p.dayPeriod)}</span>` : ""}`;
         if (this._tmH !== html) {
+          if (this._tmH?.length !== html.length) this._fitSoon();
           this._tmH = html;
           e.tm.innerHTML = html;
         }
       }
-      const wd = c.show_weekday ? f2.wd.format(now) : "", dt = c.show_date ? f2.date.format(now) : "";
+      const wd = c.show_weekday ? f3.wd.format(now) : "", dt = c.show_date ? f3.date.format(now) : "";
       const dh = [wd && esc(wd), dt && esc(dt)].filter(Boolean).join(", ");
       e.dt.hidden = !dh;
       if (this._dtH !== dh) {
         this._dtH = dh;
         e.dt.innerHTML = dh;
+        this._fitSoon();
       }
       if (!e.ana.hidden) {
         const h24 = +p.hour % 12, mm = +p.minute, ss = +p.second;
         e.hh.setAttribute("transform", `rotate(${((h24 + mm / 60) * 30).toFixed(2)} ${C} ${C})`);
-        e.mh.setAttribute("transform", `rotate(${((mm + (c.show_seconds ? ss / 60 : 0)) * 6).toFixed(2)} ${C} ${C})`);
-        e.sh.style.display = c.show_seconds ? "" : "none";
-        if (c.show_seconds) e.sh.setAttribute("transform", `rotate(${ss * 6} ${C} ${C})`);
+        const hd = handOf(c), tick = hd === "tick" || hd === "sweep" && !e.sw.classList.contains("on");
+        e.mh.setAttribute("transform", `rotate(${((mm + (hd !== "none" ? ss / 60 : 0)) * 6).toFixed(2)} ${C} ${C})`);
+        if (tick) e.sh.setAttribute("transform", `rotate(${ss * 6} ${C} ${C})`);
+        else e.sh.removeAttribute("transform");
       }
+      const st = this._st, ap = p.dayPeriod || "";
+      const hr = ap && p.hour.length === 2 && p.hour[0] === "0" ? " " + p.hour[1] : p.hour.padStart(2, " ");
+      if (st === "flip") {
+        const ch = [...hr, ...p.minute], anim = !!this._vis && !this._quiet;
+        let flipped = false;
+        e.flp.querySelectorAll(".fd").forEach((d, i) => {
+          if (flipSet(d, ch[i] ?? "", anim)) flipped = true;
+        });
+        if (DEV && flipped) this._measure();
+        e.flp.querySelector(".ap").textContent = ap;
+      } else if (st === "retro") {
+        const svg = e.rt.firstElementChild;
+        if (svg) retroSet(svg, [...hr, ...p.minute, ...c.show_seconds ? p.second : ""], /pm|nachm/i.test(ap), !!ap);
+      }
+      if (st === "glow" && !(this._sun && this._h.states[this._sun])) this._glow();
     }
     // Ein Zeitgeber: zum nächsten Sekunden- (mit Sekunden) bzw. Minutenwechsel; nur sichtbar und nicht in der Kartenauswahl
     _plan() {
       clearTimeout(this._t);
       this._t = null;
       if (!this._vis || !this._e) return;
-      const step = this._c.show_seconds ? 1e3 : 6e4, now = Date.now();
+      const c = this._c, an = this._st === "analog", step = (an ? handOf(c) === "tick" || handOf(c) === "sweep" && !this._e.sw.classList.contains("on") : c.show_seconds && this._st !== "flip") ? 1e3 : 6e4, now = Date.now();
       this._t = setTimeout(() => {
         this._t = null;
         this._draw();
@@ -13468,21 +14077,33 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       }, step - now % step + 15);
     }
   };
-  define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit digital oder analog im Nova-Stil, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("nova-uhr-card") });
+  define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit im Nova-Stil: digital, Klappzahlen, analog, Leuchtziffern oder Radiowecker, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("nova-uhr-card") });
   var S_GEN6 = [
-    sel("mode", [["digital", "Digital"], ["analog", "Analog (Zifferblatt)"]]),
+    sel("style", [["default", "Standard (digital)"], ["flip", "Klappzahlen"], ["analog", "Analog (Zifferblatt)"], ["glow", "Leuchtziffern (Farbe nach Sonnenstand)"], ["retro", "Radiowecker (Sieben-Segment)"]]),
     { name: "name", selector: T }
   ];
+  var S_STYLE = (st) => st === "analog" ? [g2(sel("second_hand", [["sweep", "Gleitend"], ["tick", "Springend"], ["none", "Keiner"]]), { name: "analog_digital", selector: { boolean: {} } })] : st === "glow" ? [{ name: "sun_entity", selector: { entity: { domain: "sun" } } }] : st === "retro" ? [sel("retro_color", [["red", "Rot"], ["green", "Grün"], ["blue", "Blau"], ["amber", "Bernstein"]])] : [];
   var S_SHOW = (c) => [
-    g2({ name: "show_seconds", selector: { boolean: {} } }, ...c.mode === "analog" ? [{ name: "analog_digital", selector: { boolean: {} } }] : []),
+    ...["analog", "flip"].includes(styleOf(c)) ? [] : [{ name: "show_seconds", selector: { boolean: {} } }],
     g2({ name: "show_weekday", selector: { boolean: {} } }, { name: "show_date", selector: { boolean: {} } }),
     { name: "entities", selector: { entity: { multiple: true, domain: ["sensor", "binary_sensor", "input_number", "number", "input_text", "input_select"] } } },
-    g2(sel("date_format", [["long", "2. November"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]), sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]]))
+    sel("time_format", [["auto", "Wie im Profil"], ["24", "24 Stunden"], ["12", "12 Stunden (AM/PM)"]])
   ];
-  var S_LOOK4 = [g2(ROLE("color"), { name: "glass", selector: { boolean: {} } })];
+  var S_LOOK4 = [
+    g2(sel("size", [["small", "Klein"], ["medium", "Mittel"], ["large", "Groß"]]), { name: "font_size", selector: T }),
+    g2(
+      sel("date_format", [["long", "2. November"], ["long_year", "2. November 2026"], ["short", "2. Nov."], ["numeric", "02.11.2026"]]),
+      { name: "date_size", selector: { select: { mode: "dropdown", custom_value: true, options: [{ value: "small", label: "Klein" }, { value: "medium", label: "Mittel" }, { value: "large", label: "Groß" }] } } }
+    ),
+    sel("layout", [["auto", "Automatisch"], ["stacked", "Untereinander"], ["row", "Nebeneinander"]]),
+    g2(ROLE("color"), { name: "glass", selector: { boolean: {} } })
+  ];
   var S_ACT4 = [{ name: "tap_action", selector: A }, { name: "hold_action", selector: A }];
   var LABELS7 = {
-    mode: "Art der Uhr",
+    style: "Stil",
+    second_hand: "Sekundenzeiger",
+    sun_entity: "Sonne",
+    retro_color: "Farbe der Ziffern",
     name: "Überschrift (optional)",
     show_seconds: "Sekunden",
     analog_digital: "Zusätzlich digitale Zeit",
@@ -13492,31 +14113,51 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     time_format: "Zeitformat",
     color: "Akzentfarbe",
     glass: "Glas-Hintergrund",
+    size: "Größe",
+    font_size: "Schriftgröße (optional)",
+    date_size: "Größe von Wochentag und Datum",
+    layout: "Anordnung",
     tap_action: "Aktion beim Antippen",
     hold_action: "Aktion bei langem Drücken",
     entities: "Werte unter der Uhr"
   };
   var HELPERS7 = {
+    style: "Klappzahlen klappen bei jedem Wechsel um, Leuchtziffern färben sich nach dem Sonnenstand, der Radiowecker zeigt LED-Ziffern.",
+    second_hand: "Gleitend läuft ohne Zeitgeber per Animation, springend tickt jede Sekunde.",
+    sun_entity: "Standard sun.sun. Ohne Sonne wird der Sonnenstand aus der Uhrzeit geschätzt.",
     show_seconds: "Sekunden kosten etwas mehr Akku/Leistung – auf alten Tablets lieber aus.",
     color: "Sekundenzeiger der analogen Uhr. Die Farben selbst kommen aus dem Theme.",
     glass: "Aus = Uhr ohne Kartenhintergrund, z. B. direkt auf dem Dashboard-Bild.",
-    entities: "Optional: z. B. Temperatur und Luftfeuchte – erscheinen in einer Zeile unter der Uhrzeit."
+    entities: "Optional: z. B. Temperatur und Luftfeuchte – erscheinen in einer Zeile unter der Uhrzeit.",
+    size: "Datum, Wochentag und Werte wachsen mit. Ist die Karte zu klein, wird die Uhr automatisch kleiner – sie läuft nie über.",
+    font_size: "Feste Größe der Uhrzeit, z. B. 48px oder 3rem. Hat Vorrang vor der Größe.",
+    date_size: "Klein, Mittel, Groß oder ein eigener Wert wie 18px oder 1.2rem – unabhängig von der Uhrzeit. Bei fester Kartenhöhe wird trotzdem alles so eingepasst, dass nichts übersteht.",
+    layout: "Automatisch: in breiten, flachen Karten steht das Datum neben der Uhrzeit, wenn es untereinander nicht passt."
   };
   var NovaClockCardEditor = class extends NovaEditorBase {
     _build() {
       const r = this.shadowRoot;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const data = () => ({ ...DEF6, ...this._config });
+      const data = () => ({ ...DEF6, ...this._config, style: styleOf(this._config) });
       const form = (s) => this._form(s, data(), (v) => {
-        const was = this._config.mode, c = merge(this._config, names(s), v);
+        const was = styleOf(this._config);
+        let c = merge(this._config, names(s), v);
+        if (c.style && c.style !== was && c.mode) {
+          if (c.style === "analog" && c.mode === "analog" && c.second_hand == null) c.second_hand = c.show_seconds ? "tick" : "none";
+          delete c.mode;
+        }
         Object.keys(DEF6).forEach((k) => {
           if (c[k] === DEF6[k]) delete c[k];
         });
         this._emit(c);
-        if ((c.mode || DEF6.mode) !== (was || DEF6.mode)) this._rebuild();
+        if (styleOf(c) !== was) this._rebuild();
       });
+      const st = styleOf(this._config);
       r.querySelector(".wrap").append(
-        this._section("general", "mdi:clock-outline", "Uhr", (b) => b.append(form(S_GEN6))),
+        this._section("general", "mdi:clock-outline", "Uhr", (b) => {
+          b.append(form(S_GEN6));
+          if (S_STYLE(st).length) b.append(form(S_STYLE(st)));
+        }),
         this._section("show", "mdi:calendar-today", "Anzeige", (b) => b.append(form(S_SHOW(data())))),
         this._section("look", "mdi:palette-outline", "Aussehen", (b) => b.append(form(S_LOOK4))),
         this._section("actions", "mdi:gesture-tap", "Aktionen", (b) => b.append(form(S_ACT4)))
@@ -13697,7 +14338,7 @@ transition:background-color .2s,color .2s,border-color .2s,transform .2s,opacity
 .ab[disabled]{opacity:.4;cursor:default}
 .ab:active:not([disabled]){transform:scale(.92)}
 .ab:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
-.items{flex:1 1 0;min-height:var(--lh,200px);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:6px;
+.items{flex:1 1 0;min-height:var(--lh,200px);overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:6px;
 scrollbar-width:thin;margin:0 -4px;padding:0 4px;-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent);padding-bottom:10px}
 .it{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;min-width:0;flex:none;
 background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transition:background-color .25s,border-color .25s,opacity .4s}
@@ -13941,7 +14582,7 @@ transition:background-color .25s,border-color .25s,box-shadow .25s}
   var NCSS = `
 .g.nt{gap:10px}
 .fld.ta{flex:1 1 0;min-height:var(--th,180px);resize:none;border-radius:18px;padding:14px 16px;line-height:1.5;
-overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;white-space:pre-wrap}
+overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:thin;white-space:pre-wrap}
 .ft{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;container-type:inline-size;width:100%}
 .ft[hidden]{display:none}
 .cnt{flex:1;min-width:0;font-size:12px;opacity:.55;white-space:nowrap;overflow:hidden}
@@ -13959,7 +14600,7 @@ transition:opacity .2s,transform .2s,background-color .2s,border-color .2s,color
 .ns{flex:1 1 0;min-height:var(--nh,180px);display:flex;flex-direction:column;gap:6px}
 .ns[hidden]{display:none}
 .ns .bt{margin:2px 2px 0}
-.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;
+.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;
 margin:0 -4px;padding:0 4px 10px;-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent)}
 .nr{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:16px;flex:none;min-width:0;
 background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
@@ -14245,16 +14886,16 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
     }
   };
   define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Mehrzeiliges Notizfeld mit Druck-Knopf (z. B. für einen Bondrucker); Notizen lassen sich in einer todo-Liste speichern und später wieder drucken oder löschen.", documentationURL: docUrl("nova-notiz-card") });
-  var H = (n) => ({ name: n, selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } });
+  var H2 = (n) => ({ name: n, selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } });
   var GEN5 = [
     g2({ name: "name", selector: T }, { name: "icon", selector: I }),
     { name: "show_header", selector: { boolean: {} } },
     { name: "placeholder", selector: T },
-    g2({ name: "show_clear", selector: { boolean: {} } }, H("height"))
+    g2({ name: "show_clear", selector: { boolean: {} } }, H2("height"))
   ];
   var NOTES = [
     { name: "notes_entity", selector: { entity: { domain: "todo" } } },
-    g2(H("notes_height"), { name: "clear_after_save", selector: { boolean: {} } })
+    g2(H2("notes_height"), { name: "clear_after_save", selector: { boolean: {} } })
   ];
   var PRINT2 = printSchema([g2({ name: "print_field", selector: T }, { name: "clear_after_print", selector: { boolean: {} } })]);
   var LABELS9 = {
@@ -14300,5 +14941,5 @@ background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07)}
   define("note-card-editor", NovaNoteCardEditor);
 
   // src/index.js
-  console.info(`%c NOVA-CARDS %c v${"0.11.1"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+  console.info(`%c NOVA-CARDS %c v${"0.12.0"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
 })();

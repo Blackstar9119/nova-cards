@@ -80,7 +80,7 @@ export const chipSchema = (o, ctx = {}) => {
   return [
     sel('type', CHIP_TYPES),
     ...(btn ? [] : [ENT]),
-    NAMEICON, ROLE('color'),
+    NAMEICON, ...(btn ? [] : [{name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}]), ROLE('color'),
     ...(btn && presets.length ? [sel('preset', [['custom', 'Eigene Aktion'], ...presets.map(([k, p]) => [k, p.label])])] : []),
     ...(btn && CHIP_PRESETS[o.preset] ? [] : [{name: 'tap_action', selector: A}]),
     ...(btn ? [{name: 'entity', selector: {entity: {}}}] : []),
@@ -91,10 +91,11 @@ export const chipSchema = (o, ctx = {}) => {
 export const chipView = o => ({type: 'value', ...o, ...(o.type === 'button' ? {preset: o.preset || 'custom'} : {})});
 export const CHIP_LABELS = {
   type: 'Art', entity: 'Entität', name: 'Name', icon: 'Icon', color: 'Farbe', preset: 'Aktion', tap_action: 'Aktion beim Antippen',
-  state: 'Nur anzeigen bei Zustand',
+  state: 'Nur anzeigen bei Zustand', decimals: 'Nachkommastellen',
 };
 export const CHIP_HELPERS = {
   color: 'Leer = neutral.',
   state: 'z. B. on, mehrere mit Komma. Leer = immer anzeigen. Bei Knöpfen bezieht es sich auf die gewählte Entität.',
   tap_action: 'Bei Wert-Chips: leer = Details öffnen.',
+  decimals: 'Nur bei Zahlenwerten. Leer = wie in Home Assistant. Beispiel: 1 → 21,9 °C.',
 };
