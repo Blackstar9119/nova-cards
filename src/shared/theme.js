@@ -1,0 +1,91 @@
+/* Nova Design-Tokens – die EINZIGE Stelle für Farben, Radien, Schatten, Blur, Schrift, Abstände und Zeiten aller Karten.
+   Karten-CSS verwendet nur die Kurzform var(--nv-…). Jede Kurzform nimmt zuerst die gleichnamige Theme-Variable von
+   Home Assistant (--nova-…, zweite Spalte) und sonst den Wert des Nova-Themes (dritte Spalte = Nova Blau).
+   Beschreibung aller Tokens: docs/design-system.md. Neue Werte immer hier eintragen, nie in einer Karte. */
+
+// [Kurzname, Theme-Variable, Wert in Nova Blau]
+export const TOKENS = [
+  // Flächen und Text
+  ['bg', 'background', 'linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62))'],
+  ['border', 'border-color', 'rgba(255,255,255,.14)'],
+  ['fg', 'text-color', '#fff'],
+  ['chip', 'chip-color', 'rgba(255,255,255,.13)'],
+  ['box', 'box-background', 'rgba(255,255,255,.09)'],
+  ['box-border', 'box-border-color', 'rgba(255,255,255,.1)'],
+  // Farb-Grundtöne als R,G,B – verwendet als rgba(var(--nv-tint),.12): Deckkraft steht an der Stelle, der Ton kommt vom Theme
+  ['tint', 'tint', '255,255,255'],     // Aufheller der Oberfläche: Linien, Schienen, Flächen (helle Themes: dunkle Tinte)
+  ['shade', 'shade', '0,0,0'],         // Schattenfarbe der Oberfläche
+  ['scrim', 'scrim', '10,14,24'],      // Abdunklung über Bildern (Kamera, Media)
+  ['hi', 'device-light', '255,255,255'], // Licht in Zeichnungen (Kanten, Glanz) – kippt in keinem Theme
+  ['lo', 'device-dark', '0,0,0'],        // Schatten in Zeichnungen
+  ['knob', 'knob-color', '#fff'],      // Griff von Regler und Schalter
+  ['stage', 'stage-color', '#000'],    // Fläche hinter Vollbild-Video
+  ['cut', 'cutout-color', 'rgba(20,24,38,.6)'], // Rand um Icons, die auf einer Farbfläche sitzen (Müllkalender)
+  // Akzente und Farbrollen
+  ['accent', 'accent-color', '#f5b83d'], ['accent-fg', 'accent-text-color', '#3a2a00'],
+  ['active', 'active-color', '#3d8bf5'], ['active-fg', 'active-text-color', '#fff'],
+  ['warn', 'warning-color', '#7cc4ff'], ['error', 'error-color', '#ff6b6b'], ['error-fg', 'error-text-color', '#fff'],
+  ['a1', 'accent-1', '#3d8bf5'], ['a1-fg', 'accent-1-text', '#fff'],
+  ['a2', 'accent-2', '#f5b83d'], ['a2-fg', 'accent-2-text', '#3a2a00'],
+  ['a3', 'accent-3', '#b5794a'], ['a3-fg', 'accent-3-text', '#fff'],
+  ['a4', 'accent-4', '#4caf6a'], ['a4-fg', 'accent-4-text', '#fff'],
+  ['neutral', 'neutral', '#7b8794'], ['neutral-fg', 'neutral-text', '#fff'],
+  // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
+  ['clock-night', 'clock-night', '#4d6bff'], ['clock-morning', 'clock-morning', '#ffb36b'], ['clock-noon', 'clock-noon', '#f4f7ff'],
+  ['led-red', 'led-red', '#ff2414'], ['led-green', 'led-green', '#39ff7a'], ['led-blue', 'led-blue', '#3fa9ff'], ['led-amber', 'led-amber', '#ffb000'],
+  // Pop-up
+  ['popup-bg', 'popup-background', 'linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))'],
+  ['popup-base', 'popup-base-color', 'rgba(22,27,42,.88)'],
+  ['popup-head', 'popup-header-color', 'rgba(60,72,100,.85)'],
+  ['popup-backdrop', 'popup-backdrop', 'rgba(8,12,22,.5)'],
+  ['navi-popup-bg', 'navi-popup-background', 'linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9))'],
+  // Radien
+  ['radius', 'radius', '24px'], ['popup-r', 'popup-radius', '28px'],
+  ['r-lg', 'radius-lg', '20px'], ['r-md', 'radius-md', '16px'], ['r-sm', 'radius-sm', '12px'], ['r-xs', 'radius-xs', '4px'],
+  ['r-pill', 'radius-pill', '999px'],
+  // Schatten, Glow, Ringe
+  ['shadow', 'shadow-card', '0 10px 30px rgba(0,0,0,.25)'],
+  ['edge', 'edge', 'inset 0 1px 0 rgba(255,255,255,.12)'],
+  ['shadow-popup', 'shadow-popup', '0 20px 60px rgba(0,0,0,.45)'],
+  ['shadow-knob', 'shadow-knob', '0 1px 4px rgba(0,0,0,.4)'],
+  ['focus', 'focus-ring', '0 0 0 2px var(--nv-active)'],
+  ['glow', 'glow', '100%'],            // Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus
+  ['ring', 'ring', '100%'],            // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
+  // Blur
+  ['blur', 'blur', '20px'], ['blur-xs', 'blur-xs', '8px'], ['blur-sm', 'blur-sm', '10px'], ['blur-lg', 'blur-lg', '16px'],
+  ['sat', 'saturate', '150%'], ['sat-2', 'saturate-strong', '160%'],
+  // Schrift
+  ['font', 'font', 'var(--ha-font-family-body,Roboto,sans-serif)'],
+  ['fs-1', 'font-size-1', '10.5px'], ['fs-2', 'font-size-2', '11px'], ['fs-3', 'font-size-3', '11.5px'], ['fs-4', 'font-size-4', '12px'],
+  ['fs-5', 'font-size-5', '12.5px'], ['fs-6', 'font-size-6', '13px'], ['fs-7', 'font-size-7', '13.5px'], ['fs-8', 'font-size-8', '14px'],
+  ['fs-9', 'font-size-9', '15px'], ['fs-10', 'font-size-10', '16px'],
+  ['fd-1', 'font-display-1', '24px'], ['fd-2', 'font-display-2', '28px'], ['fd-3', 'font-display-3', '32px'],
+  ['fd-4', 'font-display-4', '40px'], ['fd-5', 'font-display-5', '48px'],
+  ['fw-light', 'font-weight-light', '300'], ['fw-medium', 'font-weight-medium', '500'], ['fw-bold', 'font-weight-bold', '600'],
+  ['fw-heavy', 'font-weight-heavy', '700'],
+  ['caps', 'tracking-caps', '.05em'],
+  ['icon-sm', 'icon-sm', '16px'], ['icon-md', 'icon-md', '18px'], ['icon-lg', 'icon-lg', '20px'], ['icon-xl', 'icon-xl', '24px'],
+  // Abstände
+  ['s1', 'space-1', '2px'], ['s2', 'space-2', '4px'], ['s3', 'space-3', '6px'], ['s4', 'space-4', '8px'],
+  ['s5', 'space-5', '10px'], ['s6', 'space-6', '12px'], ['s7', 'space-7', '14px'], ['s8', 'space-8', '16px'],
+  ['pad', 'card-padding', '14px 16px'],
+  // Zeiten (nur Übergänge der Oberfläche – die Choreografie der Zeichnungen bleibt in der jeweiligen Szene)
+  ['d1', 'dur-1', '.15s'], ['d2', 'dur-2', '.2s'], ['d3', 'dur-3', '.25s'], ['d4', 'dur-4', '.3s'], ['d5', 'dur-5', '.4s'],
+  ['d6', 'dur-6', '.6s'], ['d7', 'dur-7', '1s'],
+  ['ease', 'ease', 'cubic-bezier(.2,.8,.2,1)'], ['ease-soft', 'ease-soft', 'cubic-bezier(.3,.7,.3,1)'],
+  ['press', 'press-scale', '.92'],
+  ['sweep', 'sweep-dur', '.9s'],
+];
+
+// Themes: Name → abweichende Werte je Kurzname. Nova Blau ist die Tabelle oben.
+export const THEMES = {blau: {name: 'Nova Blau', vars: {}}};
+
+// Abweichungen der Nova Navi gegenüber den Karten (etwas kräftigerer Rand, ruhigere Chips, mehr Blur, Warnung in Gelb)
+const NAVI = {border: 'rgba(255,255,255,.16)', chip: 'rgba(255,255,255,.1)', blur: '22px', warn: '#f5b83d'};
+
+const block = (sel, over) => `${sel}{${TOKENS.filter(([k]) => !over || k in over)
+  .map(([k, pub, v]) => `--nv-${k}:var(--nova-${pub},${over?.[k] ?? v})`).join(';')}}`;
+
+// Variablen-Block für das Stylesheet einer Karte
+export const NOVA_VARS = block(':host');
+export const NAVI_VARS = block(':host', {...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI});
