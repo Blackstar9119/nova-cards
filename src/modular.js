@@ -1,6 +1,6 @@
 import {define, docUrl, tag} from './shared/define.js';
 import {dom, setIcon} from './shared/utils.js';
-import {isOn, TOGGLE, PRESS, SLIDE, fmtState, unitJoin, decOf, nameOf, iconOf, valueOf, alertHit} from './shared/state.js';
+import {isOn, TOGGLE, PRESS, SLIDE, fmtState, unitJoin, decOf, nameOf, iconOf, valueOf, alertHit, idleState} from './shared/state.js';
 import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS} from './shared/styles.js';
@@ -57,14 +57,20 @@ export const BLOCKS = {
       return [el, o];
     });
     w.append(box);
-    return h => els.forEach(([el, o]) => {
+    return h => {
+      // „bei 0 / aus ausblenden“: Zeile weg, und der ganze Baustein, wenn nichts übrig bleibt
+      let shown = 0;
+      els.forEach(([el, o]) => { const off = !!o.hide_idle && idleState(h.states[o.entity]); el.style.display = off ? 'none' : ''; shown += !off; });
+      w.style.display = shown ? '' : 'none';
+      els.forEach(([el, o]) => {
       const s = h.states[o.entity];
       el.classList.toggle('na', !s || s.state === 'unavailable');
       setIcon(el.firstChild, iconOf(h, o, 'mdi:information-outline'));
       const v = valueOf(h, s, o);
       if (chips) el.lastChild.textContent = o.name === '' ? v : `${nameOf(h, o)} · ${v}`;
       else { el.children[1].textContent = nameOf(h, o); el.children[2].textContent = v; }
-    });
+      });
+    };
   },
   entities(b, w) {
     const box = document.createElement('div');
@@ -125,7 +131,7 @@ export const BLOCKS = {
   },
   buttons(b, w) {
     const box = document.createElement('div');
-    box.className = `pills${b.layout === 'grid' ? ' grid' : ''}`;
+    box.className = `pills${b.layout === 'grid' ? ' grid' : b.layout === 'flat' ? ' flat' : ''}`;
     const els = b.buttons.map(o => {
       const el = document.createElement('div');
       el.className = 'pill';
@@ -239,7 +245,8 @@ const BM = {
   ]},
   info: {label: 'Info-Entitäten', icon: 'mdi:information-outline', item: 'Entität', plural: 'Entitäten', defaults: {layout: 'rows', columns: 1},
     schema: [TITLE, g2(sel('layout', [['rows', 'Liste'], ['chips', 'Chips']]), COLS)],
-    items: [ENT, NAMEICON, g2({name: 'unit', selector: T}, {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}), {name: 'tap_action', selector: A}]},
+    items: [ENT, NAMEICON, g2({name: 'unit', selector: T}, {name: 'decimals', selector: {number: {min: 0, max: 4, mode: 'box'}}}),
+      g2(sel('format', [['value', 'Wie die Entität'], ['clock', 'Dauer als Uhr (m:ss)']]), {name: 'hide_idle', selector: {boolean: {}}}), {name: 'tap_action', selector: A}]},
   entities: {label: 'Schalter & Entitäten', icon: 'mdi:toggle-switch-outline', item: 'Entität', plural: 'Entitäten', defaults: {columns: 1},
     schema: [TITLE, COLS],
     items: [ENT, NAMEICON, {name: 'tap_action', selector: A}, {name: 'hold_action', selector: A}, {name: 'confirm', selector: T}]},
@@ -248,7 +255,7 @@ const BM = {
     items: [{...ENT, selector: {entity: {domain: Object.keys(SLIDE)}}}, NAMEICON, g2(NUM('min'), NUM('max'), NUM('step')),
       g2({name: 'unit', selector: T}, sel('format', [['value', 'Zahl'], ['duration', 'Minuten → Std:Min']]))]},
   buttons: {label: 'Aktionsbuttons', icon: 'mdi:gesture-tap-button', item: 'Button', plural: 'Buttons', key: 'buttons', defaults: {layout: 'pills'},
-    schema: [TITLE, sel('layout', [['pills', 'Pillen'], ['grid', 'Kacheln']])],
+    schema: [TITLE, sel('layout', [['pills', 'Pillen'], ['flat', 'Flache Leiste'], ['grid', 'Kacheln']])],
     items: [NAMEICON, {name: 'entity', selector: {entity: {}}}, {name: 'tap_action', selector: A}, {name: 'confirm', selector: T}]},
   alerts: {label: 'Warnungen', icon: 'mdi:alert-outline', item: 'Warnung', plural: 'Warnungen', key: 'alerts', defaults: {layout: 'list', glow: true},
     schema: [TITLE, g2(sel('layout', [['list', 'Balken'], ['chips', 'Badges']]), {name: 'glow', selector: {boolean: {}}})],
@@ -268,13 +275,14 @@ const MHELPERS = {
   state: 'Mehrere mit Komma trennen. Ohne Bedingung: Warnung bei „on“ bzw. „problem“',
   message: 'Leer = Name: Zustand. {state} wird ersetzt',
   min: 'Leer = Werte der Entität',
+  hide_idle: 'Zeile nur zeigen, solange der Wert nicht 0 bzw. aus ist – z. B. Restzeit nur während das Gerät läuft',
 };
 
 // Kurzschreibweise "- sensor.x" im Editor als Objekt behandeln
 const normItems = b => { const k = ITEMS[b.type]; return k && Array.isArray(b[k]) ? {...b, [k]: b[k].map(x => typeof x === 'string' ? {entity: x} : x)} : {...b}; };
 
 class NovaModularCardEditor extends NovaEditorBase {
-  static labels = {...BASE_LABELS, size: 'Größe'};
+  static labels = {...BASE_LABELS, size: 'Größe', hide_idle: 'Bei 0 / aus ausblenden'};
   static helpers = MHELPERS;
   _blocks() { return (this._config.blocks || []).map(normItems); }
   _set(bl) { this._emit({...this._config, blocks: bl}); }

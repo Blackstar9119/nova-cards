@@ -24,3 +24,14 @@ export function ymdIn(d, tz) {
     return `${p.year}-${p.month}-${p.day}`;
   } catch { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 }
+
+// Beschriftungen lieber weglassen als abschneiden: passt ein Text nicht in seine Zeile, wird er unsichtbar (Platz bleibt,
+// Icon und Wert stehen weiter an ihrer Stelle) und steht nur noch im Tooltip. Bei jeder Größenänderung neu prüfen.
+export const fitLabels = (root, sel, collapse) => root?.querySelectorAll(sel).forEach(k => {
+  // collapse: Text ganz weg (z. B. Knopf zeigt dann nur sein Icon); sonst unsichtbar mit Platz
+  if (collapse) k.style.display = '';
+  const cut = k.offsetParent !== null && k.scrollWidth > k.clientWidth + 1;
+  if (collapse) k.style.display = cut ? 'none' : ''; else k.style.visibility = cut ? 'hidden' : '';
+  const p = k.parentElement;
+  if (cut) p.title = k.textContent; else if (p.title === k.textContent) p.removeAttribute('title');
+});

@@ -26,3 +26,6 @@ entities:
 | `show_header` / `show_all_off` | `true` | Kopfzeile, „Alle aus“ |
 | `use_light_color` | `true` | In Lichtfarbe leuchten |
 | `show_colors` / `colors` | `true` / – | Farbknöpfe (im Editor per Farbscheibe anlegen) |
+
+Je Lampe unter `entities` (statt nur der Entity-ID): `entity`, `name`, `icon`, `colors`, `tap_action`, `hold_action` und
+`slider: false` – dann hat die Kachel keinen Helligkeitsregler und wird flacher (praktisch für kleine Displays wie den Echo Show).

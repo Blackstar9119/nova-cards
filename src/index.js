@@ -11,9 +11,12 @@ import './waste.js';
 import './weather.js';
 import './popup.js';
 import './area.js';
+import './swipe.js';
 import './chips.js';
 import './appliance.js';
 import './printer.js';
 import './remote.js';
+import './timer.js';
+import './clock.js';
 
 console.info(`%c NOVA-CARDS %c v${__VERSION__} `, 'color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px', 'color:#fff;background:#1b2134;border-radius:0 4px 4px 0');
