@@ -6,7 +6,8 @@ Feste Referenz für das Aussehen aller Nova Cards. Neue Karten und Zeichnungen r
 
 - **Glas-Karte:** Kartenkasten mit Glas-Hintergrund (`PANEL_CSS` aus `src/shared/styles.js`), abschaltbar per `glass: false`.
 - **Farben:** wählbare Farben sind Farbrollen (`neutral`, `accent-1` … `accent-4`), im Editor per `ROLE()`, in der Karte per
-  `roleVars()`. Alle Standardfarben stehen nur zentral in `NOVA_VARS` und werden vom Theme überschrieben (`--nova-…`).
+  `roleVars()`. Alle Farben, Radien, Schatten, Schriftgrößen, Abstände und Zeiten stehen als Tokens zentral in
+  `src/shared/theme.js` und werden vom Theme überschrieben (`--nova-…`), siehe [design-system.md](design-system.md).
   Eigene Farbsätze einer Karte (z. B. LED- oder Tageszeit-Farben der Uhr) ebenfalls dort als `--nv-…` mit Theme-Variable.
 - **Schrift:** Schrift des Themes; Zahlen mit `font-variant-numeric: tabular-nums`. Große Werte dünn (300), Beschriftungen
   klein und gedämpft (Deckkraft 0,6–0,75).
@@ -18,7 +19,8 @@ Feste Referenz für das Aussehen aller Nova Cards. Neue Karten und Zeichnungen r
 
 Maßstab für alle animierten Gerätezeichnungen (Gerät, Saugroboter, künftige Karten) ist die Zeichnung der
 3D-Drucker Card. Gemeinsame Teile kommen aus `src/shared/scene.js` (`sceneDefs()`, `SCENE_CSS`, `frameGlow()`, `sweep()`,
-Palette `PAL`), nicht neu anlegen. Die Drucker-Card selbst bleibt unverändert und hat ihre eigene Kopie.
+Palette `PAL`), nicht neu anlegen. Die Drucker-Card hat aus ihrer Entstehung noch eine eigene Kopie der Zeichnung; ihre
+Optik bleibt unverändert.
 
 - **Perspektive:** gerade Frontansicht, keine Schrägsicht und keine Fluchtpunkte. Tiefe nur über Verläufe: Gehäuse
   oben hell → unten dunkel, Seitenglanz links hell → rechts dunkel (`s-sheen`), Lichtkante oben (`s-edge`), weicher

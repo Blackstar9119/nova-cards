@@ -7,7 +7,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node build.mjs --dev"
+    "dev": "node build.mjs --dev",
+    "check": "node tools/check-tokens.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"

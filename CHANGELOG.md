@@ -6,6 +6,11 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 ## [0.12.0] – unveröffentlicht
 
 ### Hinzugefügt
+- Design-Tokens: alle Farben, Radien, Schatten, Blur-Werte, Schriftgrößen, Abstände und Übergangszeiten der Karten stehen zentral in
+  `src/shared/theme.js` (rund 110 Tokens, Liste in `docs/design-system.md`). Nova Blau sieht aus wie vorher; Grundlage für weitere Themes.
+  Neue Theme-Variablen u. a. `--nova-tint`, `--nova-shade`, `--nova-glow`, `--nova-ring`, `--nova-radius-*`, `--nova-font-size-*`, `--nova-space-*`,
+  `--nova-dur-*`. Das Navi-Pop-up folgt jetzt `--nova-popup-header-color` und `--nova-popup-backdrop`.
+- Demo-Seite `demo/index.html` mit allen Karten und Testdaten (ohne Home Assistant), `npm run check` gegen feste Farben im Karten-CSS.
 - Nova Uhr Card: Option `style` mit vier neuen Stilen neben `default` – `flip` (Klappzahlen, nur Stunden und Minuten, nur geänderte
   Ziffern klappen in 600 ms um), `analog` (Zifferblatt, Sekundenzeiger per `second_hand`: `sweep`, `tick`, `none`), `glow` (Leuchtziffern,
   Farbe folgt dem Sonnenstand aus `sun.sun`) und `retro` (Radiowecker mit Sieben-Segment-Ziffern als SVG, ausgeschaltete Segmente mit 8 %,
