@@ -76,7 +76,7 @@ display:flex;align-items:center;justify-content:center;gap:var(--nv-s3);font-siz
 .bt2:active{transform:scale(.95)}
 /* Hauptknopf im Glas-Stil: nur leicht in der Kartenfarbe getönt, Icon in der Farbe – keine Vollfarbfläche */
 .bt2.pri{background:color-mix(in srgb,var(--dc) 22%,var(--nv-chip));border-color:color-mix(in srgb,var(--dc) 55%,transparent)}
-.bt2.pri ha-icon{color:var(--dc)}
+.bt2.pri ha-icon{color:color-mix(in srgb,var(--dc) var(--nv-tint-ink),var(--nv-fg))}
 /* Nur-Icon-Knöpfe in „Eigene Zeit“: Icon hell, sonst verschwindet z. B. das Häkchen auf dem getönten Knopf */
 .cust .bt2.pri ha-icon{color:inherit}
 .bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
@@ -127,7 +127,7 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 .alm:not(.anim) .snd path{opacity:.7}
 .st-active .dl-push.r{animation:none}
 .prs .dl-push.r,.prs .dl-crown{animation:tm-press .35s ease-out}
-.scene .tip{fill:rgb(var(--nv-hi));filter:drop-shadow(0 0 3px var(--dc));opacity:0;visibility:hidden;transition:opacity var(--nv-d5),visibility 0s var(--nv-d5)}
+.scene .tip{fill:rgb(var(--nv-hi));filter:drop-shadow(0 0 3px color-mix(in srgb,var(--dc) var(--nv-glow),transparent));opacity:0;visibility:hidden;transition:opacity var(--nv-d5),visibility 0s var(--nv-d5)}
 .st-active .scene .tip,.st-paused .scene .tip{opacity:1;visibility:visible;transition:opacity var(--nv-d5)}
 .scene .tipg{transition:transform var(--nv-d7) linear;transform-box:view-box;transform-origin:100px 112px}
 .st-idle .scene .dl-arc{opacity:.35}

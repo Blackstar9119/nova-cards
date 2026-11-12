@@ -169,8 +169,8 @@ const ROOM_CSS = `
 .b:focus-visible{box-shadow:var(--nv-focus)}
 .b:active{transform:scale(.9)}
 .b img{width:24px;height:24px;object-fit:contain}
-.b.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 55%,transparent) var(--nv-glow),transparent)}
-.b.on.alt{background:var(--nv-active);color:var(--nv-active-fg);box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 55%,transparent) var(--nv-glow),transparent)}
+.b.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.b.on.alt{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .b.na{opacity:.3}`;
 
 function normalize(c) {

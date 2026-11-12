@@ -376,9 +376,9 @@ const DCSS = `
 ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .g.dv.glow.t-feeder.st-ready{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 25%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
 .g.dv.glow.t-feeder.st-run{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 65%,transparent) var(--nv-ring),transparent),0 0 22px color-mix(in srgb,color-mix(in srgb,var(--dc) 35%,transparent) var(--nv-glow),transparent),var(--nv-edge)}
-.dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent)}
+.dv .on>.ic,.dv .hd .ic.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .dv .hd small.er{color:var(--nv-error);opacity:1}
-.dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
+.dv .hb.pw.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .mid{display:flex;gap:var(--nv-s7);align-items:center;min-width:0}
 .scene{flex:none;width:144px;height:144px;color:var(--nv-fg)}
 .scene svg{display:block;width:100%;height:100%;overflow:visible}
@@ -394,7 +394,7 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .ct .row .hb.go{width:32px;height:32px}
 .ct{border-top:1px solid rgba(var(--nv-tint),.08);padding:var(--nv-s4) 0 var(--nv-s3);min-width:0}
 .ct .kv{border:none;padding:0}.ct .kv .v{font-weight:var(--nv-fw-bold);opacity:1}
-.ct .pills{margin-top:var(--nv-s4)}.ct .pill.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-glow),transparent)}
+.ct .pills{margin-top:var(--nv-s4)}.ct .pill.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ct .cv{transition:transform var(--nv-d2)}.ct.open .cv{transform:rotate(180deg)}
 .stp{display:flex;align-items:center;gap:var(--nv-s4);flex:none}.stp .hb{width:32px;height:32px}.stp .v{min-width:64px;text-align:center}
 .ct input[type=range]{margin-top:var(--nv-s4);background:linear-gradient(90deg,var(--dc) 0 var(--p,0%),rgba(var(--nv-tint),.14) var(--p,0%) 100%)}
@@ -402,11 +402,11 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .ct.na,.ab.dis{opacity:.4;pointer-events:none}
 .acts{display:flex;gap:var(--nv-s4)}
 .sa .kv{gap:var(--nv-s4)}.sa input{flex:none;background:var(--nv-chip);color:inherit;border:1px solid rgba(var(--nv-tint),.08);border-radius:var(--nv-r-sm);padding:var(--nv-s3) var(--nv-s5);font:inherit;font-size:var(--nv-fs-7);font-weight:var(--nv-fw-bold);color-scheme:dark;min-width:0}
-.sa .pill.on{background:var(--dc);color:var(--dc-fg);border-color:transparent}
+.sa .pill.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:var(--nv-fill-edge)}
 .sa .sah{font-size:var(--nv-fs-4);opacity:.7;margin-top:var(--nv-s3)}.sa .sah:empty{display:none}
 .ab{flex:1;min-width:0;height:46px;border-radius:var(--nv-r-md);display:flex;align-items:center;justify-content:center;gap:var(--nv-s4);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);transition:background-color var(--nv-d2),opacity var(--nv-d2),transform var(--nv-d2)}
 .ab ha-icon{--mdc-icon-size:22px}
-.ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent)}
+.ab.pri{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ab.dis{box-shadow:none}
 .ab:active{transform:scale(.95)}
 .als:empty{display:none}
@@ -492,7 +492,7 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .w-airfryer .akc{fill:none;stroke:var(--dc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:16;opacity:0}
 .w-airfryer .atc path{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.12;stroke-width:1;stroke-linecap:round;transition:stroke var(--nv-d6),stroke-opacity var(--nv-d6)}
 .w-airfryer .apnh{fill:rgb(var(--nv-hi));opacity:.14}.w-airfryer .agb{opacity:1}
-.st-run .w-airfryer .atc path,.st-heat .w-airfryer .atc path,.st-warm .w-airfryer .atc path,.st-pause .w-airfryer .atc path,.st-prep .w-airfryer .atc path{stroke:var(--dc);stroke-opacity:.75;filter:drop-shadow(0 0 1.5px var(--dc))}
+.st-run .w-airfryer .atc path,.st-heat .w-airfryer .atc path,.st-warm .w-airfryer .atc path,.st-pause .w-airfryer .atc path,.st-prep .w-airfryer .atc path{stroke:var(--dc);stroke-opacity:.75;filter:drop-shadow(0 0 1.5px color-mix(in srgb,var(--dc) var(--nv-glow),transparent))}
 .st-ready .w-airfryer .atc path,.st-done .w-airfryer .atc path{stroke-opacity:.3}
 .st-off .w-airfryer .atc path{stroke-opacity:.06}
 .w-airfryer .psep{fill:rgb(var(--nv-lo));opacity:.3}.w-airfryer .psh{fill:rgb(var(--nv-hi));opacity:.06}
@@ -726,9 +726,9 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .w-fountain .bfi{transform-box:fill-box;transform-origin:center}
 /* Modus-LED: ruhiges Leuchten in der Modusfarbe, kein Blinken */
 .dv .w-fountain .led{fill:#5b6372;fill-opacity:.5;transition:fill var(--nv-d5),fill-opacity var(--nv-d5)}
-.m-normal.dv .w-fountain .led,.m-smart.dv .w-fountain .led{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
+.m-normal.dv .w-fountain .led,.m-smart.dv .w-fountain .led{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px color-mix(in srgb,var(--mc) var(--nv-glow),transparent))}
 .m-normal{--mc:var(--nova-mode-normal-color,var(--nv-a1))}.m-smart{--mc:var(--nova-mode-smart-color,var(--nv-a4))}
-.m-normal.dv .w-feeder .fled,.m-smart.dv .w-feeder .fled{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
+.m-normal.dv .w-feeder .fled,.m-smart.dv .w-feeder .fled{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px color-mix(in srgb,var(--mc) var(--nv-glow),transparent))}
 .w-fountain .bfi rect,.w-fountain .bfi path{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.3;stroke-width:.8;stroke-linejoin:round}
 /* Läuft: kleiner Sprudel wippt, Ringe laufen über die Schale, das Wasser fließt sanft über den Rand ab; aus/Pause = Wasser steht */
 .st-run .w-fountain .bdome,.st-run .w-fountain .bdhl,.st-run .w-fountain .bjet{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
@@ -740,7 +740,7 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 /* Wasser niedrig: Stand im Fenster sinkt, Ausrufezeichen; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
 .h-water .scene .wn{display:inline}
 .st-err .w-fountain .bdome,.st-err .w-fountain .bdhl{opacity:0}
-.h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px var(--fc))}
+.h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px color-mix(in srgb,var(--fc) var(--nv-glow),transparent))}
 .anim.h-filter .w-fountain .bfi{animation:dv-fpulse 1.6s ease-in-out infinite}
 .anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
 .scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}

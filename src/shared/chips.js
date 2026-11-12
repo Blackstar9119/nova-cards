@@ -27,7 +27,7 @@ export const NOVA_CHIPS_CSS = `
 .nchip{display:inline-flex;align-items:center;gap:var(--nv-s3);min-height:34px;box-sizing:border-box;padding:0 var(--nv-s6);border-radius:var(--nv-r-pill);flex:none;
 background:var(--c,var(--nv-chip));color:var(--cf,inherit);border:1px solid var(--nv-box-border);font-size:var(--nv-fs-5);white-space:nowrap;
 cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:none;transition:background-color var(--nv-d2),color var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
-.nchip.col{border-color:transparent}
+.nchip.col{border-color:transparent;background:color-mix(in srgb,var(--c) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--cf) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .nchip ha-icon{--mdc-icon-size:var(--nv-icon-sm);display:flex}.nchip img{width:16px;height:16px}
 .nchip .ci:empty,.nchip .cn:empty,.nchip .cv:empty{display:none}
 .nchip .cn:not(:empty)+.cv:not(:empty)::before{content:'· '}

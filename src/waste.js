@@ -22,7 +22,7 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);tr
 .wr.today .ic{box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--c) 60%,transparent) var(--nv-glow),transparent)}
 .wr.tomorrow{background:color-mix(in srgb,var(--c) 13%,transparent);border-color:color-mix(in srgb,var(--c) 35%,transparent)}
 .rel{flex:none;font-size:var(--nv-fs-4);font-weight:var(--nv-fw-bold);padding:var(--nv-s2) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);white-space:nowrap}
-.today .rel,.cp.today .rel{background:var(--nv-accent);color:var(--nv-accent-fg)}
+.today .rel,.cp.today .rel{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .tomorrow .rel,.cp.tomorrow .rel{background:color-mix(in srgb,var(--nv-accent) 30%,transparent)}
 .wr:active{transform:scale(.98)}
 .cp{display:flex;align-items:center;gap:var(--nv-s6);min-width:0}

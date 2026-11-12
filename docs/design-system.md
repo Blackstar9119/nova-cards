@@ -110,6 +110,10 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 | `--nova-glow` | `--nv-glow` | `100%` | Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus |
 | `--nova-ring` | `--nv-ring` | `100%` | Stärke der Zustandsringe (Warnung, Fehler, aktiv) |
 | `--nova-text-shadow` | `--nv-text-shadow` | `100%` | Stärke der Schrift-Schatten (Raumname, Media-Titel) |
+| `--nova-button-fill` | `--nv-fill` | `100%` | Gefüllte Knöpfe (aktiv, primär): Anteil der Farbe an der Fläche, Rest = Chip-Glas |
+| `--nova-button-fill-text` | `--nv-fill-ink` | `100%` | Schrift auf gefüllten Knöpfen: Anteil der Farbschrift, Rest = `--nv-fg` |
+| `--nova-button-edge` | `--nv-fill-edge` | `0 0 0 transparent` | Rand und Lichtkante gefüllter Knöpfe (zusätzlicher Schatten) |
+| `--nova-button-tint-text` | `--nv-tint-ink` | `100%` | Farbige Icons auf Glasknöpfen (Timer-Start): Anteil der Farbe, Rest = `--nv-fg` |
 
 ### Blur
 
@@ -205,7 +209,7 @@ Gerätezeichnungen (`hi`/`lo`, `PAL` in `scene.js`) bleiben in allen Themes dunk
 | --- | --- | --- |
 | Nova Blau | `blau` | Standard: blaues Glas, weiße Schrift, Glow |
 | Nova Hell | `hell` | helles Glas, Schiefer-Schrift, ruhige Schatten statt Glow |
-| Nova Midnight | `midnight` | reines Schwarz ohne Glas (OLED, Nachtbetrieb), gedimmte Schrift, Glow 30 % |
+| Nova Midnight | `midnight` | wie Apple Dark Mode: dunkelgraue Karten, getönte Glasknöpfe, kein Glow, kein Blur |
 
 ### Welches Theme eine Karte zeigt
 
@@ -251,28 +255,28 @@ Kontraste gerechnet auf der Kartenfläche über einem hellen Dashboard (`#ebeef2
 
 ### Nova Midnight (Abweichungen von Blau)
 
+Vorbild ist der Dark Mode von Apple: Seite schwarz, Karten dunkelgrau, innere Kacheln etwas heller, feine Linien, kein Glow,
+kein Blur (schnell auf dem Echo Show). Aktive und primäre Knöpfe sind getöntes Glas wie der Start-Knopf der Timer Card: 22 % Farbe
+über der Kachel, feiner heller Rand, Lichtkante oben, Schrift hell.
+
 | Token | Wert | Hinweis |
 | --- | --- | --- |
-| `bg` / `popup-bg` / `popup-base` / `navi-popup-bg` | `#000` | kein Glas, kein Verlauf |
-| `blur` / `sat` | `0px` / `100%` | spart Rechenzeit auf schwachen Geräten (Echo Show) |
-| `border` / `chip` / `box` / `box-border` | Weiß mit 9 / 7 / 5 / 8 % | |
-| `fg` / `knob` | `#d5d9e0` | 14,8:1, mit 60 % Deckkraft 5,5:1 – blendet nachts nicht |
-| `accent` / `accent-fg` / `accent-ink` | `#c08f30` / `#1a1200` / `#d6a548` | Schrift auf Gold 6,4:1, Akzent als Schrift 9,3:1 |
-| `active`, `a1` | `#3676ca` | Weiß darauf 4,6:1, als Schrift 4,6:1 |
-| `warn` / `error` | `#5f9fd4` / `#c84a4a` | als Schrift 7,4:1 / 4,5:1, Weiß auf Fehler 4,6:1 |
-| `a2` / `a3` / `a4` / `neutral` | `#c08f30` / `#8f6040` / `#3a8352` / `#5d6773` | Schrift darauf 6,4 / 5,4 / 4,6 / 5,8:1 |
-| `clock-night` / `-morning` / `-noon` | `#3a4fb8` / `#c98a4e` / `#b9c2d4` | Leuchtziffern gedimmt |
-| `popup-head` / `popup-backdrop` | `#0b0d12` / `rgba(0,0,0,.72)` | |
-| `shadow` / `shadow-popup` / `edge` | keiner / Ring Weiß 8 % / Kante Weiß 6 % | Schatten sieht man auf Schwarz nicht |
-| `glow` / `ring` | `30%` / `70%` | Glows nur angedeutet |
-| Navi | Rand 10 %, Chips 6 %, kein Blur, Warnung `#d6a548` | |
+| `bg` / `popup-bg` / `popup-base` / `navi-popup-bg` | `#1c1c1e` | Karten und Pop-ups |
+| `chip` / `box` / `popup-head` | `#2c2c2e` | Kacheln, Chips, Eingabefelder |
+| `border` / `box-border` | Weiß 6 % | feine Trennlinien |
+| `blur` / `sat` | `0px` / `100%` | kein backdrop-filter |
+| `fg` / `knob` | `#e5e5ea` | 13,6:1 auf der Karte, mit 60 % Deckkraft 5,7:1, auf Kacheln 11,1:1 |
+| `fill` / `fill-ink` / `tint-ink` | `22%` / `0%` / `0%` | getönte Knöpfe, Schrift und Icons darauf hell (7,5:1 bis 8,6:1) |
+| `fill-edge` | `inset 0 1px 0` Weiß 12 % + `inset 0 0 0 1px` Weiß 10 % | Lichtkante und Rand |
+| `active`, `a1` | `#6b8db5` | gedämpftes Stahlblau, als Schrift 4,9:1 |
+| `accent`, `a2` / `accent-ink` | `#b08d57` | gedämpftes Gold, als Schrift 5,5:1 |
+| `a3` / `a4` / `neutral` | `#ad805c` / `#5f9a72` / `#8a929c` | als Schrift 4,9 / 5,2 / 5,4:1 |
+| `warn` / `error` | `#7fa6c9` / `#c86a6a` | als Schrift 6,6:1 / 4,6:1 |
+| `*-fg` | `#121214` | dunkle Schrift, wo eine Fläche doch voll gefüllt ist (z. B. farbige Chips mit eigenem Theme-Wert), über 5:1 |
+| `clock-night` / `-morning` / `-noon` | `#5a6fb8` / `#c98a4e` / `#c7ccd6` | |
+| `shadow` / `shadow-popup` / `edge` | keiner / Ring Weiß 8 % / Kante Weiß 5 % | |
+| `glow` / `ring` | `0%` / `70%` | keine Glows, auch nicht in den Zeichnungen; Zustandsringe gedämpft |
+| Navi | Rand 8 %, Chips `#2c2c2e`, kein Blur, Warnung `#b08d57` | |
 
-Kontraste gerechnet auf reinem Schwarz. Gerätezeichnungen bleiben unverändert (`PAL`); sehr dunkle Teile wie der Saugroboter
-heben sich auf Schwarz nur schwach ab.
+Kontraste gerechnet auf `#1c1c1e` bzw. auf der getönten Kachel. Gerätezeichnungen behalten die Gehäusefarben von Nova Blau (`PAL`).
 
-## Prüfen
-
-- `npm run check` – keine festen Farben im Karten-CSS.
-- `demo/index.html` – alle Karten mit Testdaten, ohne Home Assistant (über einen lokalen Webserver im Repo-Root öffnen,
-  z. B. `npx serve .` und dann `/demo/`). Mit `?src=…` lässt sich ein anderer Build laden, mit `?theme=hell` bzw. `?theme=midnight` ein Theme setzen (wirkt wie die Theme-Variable `nova-theme`).
-  Bei Umbauten an den Tokens vorher und nachher fotografieren und vergleichen: Nova Blau muss pixelgleich bleiben.

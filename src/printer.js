@@ -195,9 +195,9 @@ const PCSS = `
 .g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
 --sb1:var(--nova-printer-color-light,${PAL.bodyLight});--sb2:var(--nova-printer-color,${PAL.body})}
 .g.pr.glow.on{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
-.pr .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent)}
+.pr .hd .ic.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .pr .hd small.er{color:var(--nv-error);opacity:1}
-.pr .hb.li.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent)}
+.pr .hb.li.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .pr .demo{font-size:var(--nv-fs-1);font-weight:var(--nv-fw-bold);letter-spacing:var(--nv-caps);text-transform:uppercase;padding:3px var(--nv-s4);border-radius:var(--nv-r-pill);background:var(--nv-chip);opacity:.75}
 .mid{display:flex;gap:var(--nv-s7);align-items:center;min-width:0}
 .scene{flex:none;width:48%;max-width:300px;min-width:150px;color:var(--nv-fg)}
@@ -215,7 +215,7 @@ const PCSS = `
 .xtra{display:flex;flex-direction:column;gap:var(--nv-s5)}.xtra:empty{display:none}
 .xtra .fans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--nv-s7)}
 .xtra .row{cursor:pointer}.xtra .row .ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);flex:none}
-.xtra .row.on .ic{background:var(--dc);color:var(--dc-fg)}.xtra .row .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.xtra .row.on .ic{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}.xtra .row .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .xtra .row b,.xtra .row small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xtra .row b{font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-6)}.xtra .row small{opacity:.65;font-size:var(--nv-fs-3)}
 .xtra .na{opacity:.45}
 @container (max-width:340px){.xtra .fans{grid-template-columns:1fr}}
@@ -237,7 +237,7 @@ const PCSS = `
 .als:empty{display:none}.pr .al[data-e]{cursor:pointer}.pr .al small{opacity:.7;margin-left:auto;font-size:var(--nv-fs-2);white-space:nowrap}
 .acts{display:flex;gap:var(--nv-s4)}.acts:empty,.acts[hidden]{display:none}
 .ab{flex:1;min-width:0;height:44px;border-radius:var(--nv-r-md);display:flex;align-items:center;justify-content:center;gap:var(--nv-s4);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);transition:background-color var(--nv-d2),opacity var(--nv-d2),transform var(--nv-d2)}
-.ab ha-icon{--mdc-icon-size:22px}.ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent)}
+.ab ha-icon{--mdc-icon-size:22px}.ab.pri{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ab.na{opacity:.4;pointer-events:none}.ab:active{transform:scale(.95)}
 @container (max-width:380px){.mid{flex-direction:column;align-items:stretch}.scene{width:100%;max-width:240px;align-self:center}.au .ss{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Zeichnung */

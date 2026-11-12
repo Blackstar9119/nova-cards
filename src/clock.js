@@ -40,7 +40,7 @@ const CCSS = `${DIAL_CSS}${FLIP_CSS}${GLOW_CSS}${RETRO_CSS}
 .ana{width:100%;max-width:${K('var(--nova-clock-size,240px)')};aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(var(--nv-lo),.35);stroke-width:.5}
-.scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
+.scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px color-mix(in srgb,var(--kc) var(--nv-glow),transparent))}
 .scene .cap{fill:url(#k-cr);stroke:rgba(var(--nv-hi),.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
 .scene .hsh{fill:rgb(var(--nv-lo));opacity:.25}
 .scene .sw{transform-box:view-box;transform-origin:100px 100px}.anim .scene .sw.on{animation:k-spin 60s linear infinite}
