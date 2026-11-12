@@ -12690,7 +12690,7 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset var(--nv-d7
   var fmtLeft = (s) => {
     s = Math.max(0, Math.ceil(s));
     const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = String(s % 60).padStart(2, "0");
-    return h ? `${h}:${String(m).padStart(2, "0")}:${x}` : `${m}:${x}`;
+    return h ? `${h}:${String(m).padStart(2, "0")}` : `${m}:${x}`;
   };
   var presetSecs = (v) => list(v).map((x) => {
     const m = String(x).match(/^(\d+(?:[.,]\d+)?)\s*(s|sek|min|m|h|std)?$/i);
@@ -13137,23 +13137,30 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       void g.offsetWidth;
       g.classList.add("prs");
     }
-    _svc(svc, data = {}) {
+    _svc(svc, data = {}, quiet = false) {
       if (!this._c.entity) return;
       this._press();
-      return this._h.callService("timer", svc, { entity_id: this._c.entity, ...data });
+      return quiet ? this._h.callService("timer", svc, { entity_id: this._c.entity, ...data }, void 0, false) : this._h.callService("timer", svc, { entity_id: this._c.entity, ...data });
     }
     _start(sec) {
       this._armed = 0;
       return sec > 0 ? this._svc("start", { duration: hms(Math.round(sec)) }) : this._svc("start");
     }
-    // +1 Minute: timer.change (ab HA 2024.x); geht nicht über die eingestellte Dauer hinaus → dann neu starten mit Rest + 60 s
+    // +1 Minute: timer.change geht nicht über die eingestellte Dauer hinaus → dann gleich neu starten mit Rest + 60 s
+    // (pausiert bleibt pausiert). Keine Fehlermeldung von HA.
     async _add(sec) {
       const v = this._calc();
+      const restart = async () => {
+        if (!v) return;
+        await this._start(Math.round(v.left + sec));
+        if (v.st === "paused") await this._svc("pause");
+      };
+      if (v && v.left + sec > v.total) return restart();
       try {
-        await this._svc("change", { duration: hms(sec) });
+        await this._svc("change", { duration: hms(sec) }, true);
       } catch (err) {
         console.warn("[nova-cards] Timer: +1 Min per Neustart", err);
-        if (v) this._start(Math.round(v.left + sec));
+        restart();
       }
     }
     // Stepper: läuft am Ende rundherum (59 → 0); Sekunden in 5er-Schritten, kompakt ohne Stunden bis 180 Minuten
@@ -13308,7 +13315,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       this._click();
     }
     _showSec() {
-      const e = this._e, txt = this._fmt(this._sec);
+      const e = this._e, txt = fmtLeft(this._sec);
       const b = e.rd.querySelector("b");
       if (b) b.textContent = txt;
       e.scl.setAttribute("aria-valuetext", txt);
