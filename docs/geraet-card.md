@@ -91,7 +91,7 @@ hints:
 
 | Option | Bedeutung |
 |---|---|
-| `device_type` | `washer`, `dishwasher`, `airfryer`, `coffee`, `feeder`, `fountain` oder `generic` (Allgemein). Bestimmt nur Symbol, Texte, Standardfarbe und Animation |
+| `device_type` | `washer`, `dryer` (Trockner), `dishwasher`, `airfryer`, `coffee`, `feeder`, `fountain` oder `generic` (Allgemein). Bestimmt nur Symbol, Texte, Standardfarbe und Animation |
 | `name`, `icon` | Name und Icon |
 | `entity` | Betriebszustand, z. B. `sensor.waschmaschine_betriebszustand`, auch `binary_sensor` (an = läuft) |
 | `power` | Optional: Schalter für den runden Knopf oben rechts |

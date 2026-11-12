@@ -20,5 +20,6 @@ import './timer.js';
 import './clock.js';
 import './shopping.js';
 import './note.js';
+import './theme-switch.js';
 
 console.info(`%c NOVA-CARDS %c v${__VERSION__} `, 'color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px', 'color:#fff;background:#1b2134;border-radius:0 4px 4px 0');

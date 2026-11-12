@@ -87,18 +87,18 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .d[hidden]{display:none}
 .d:focus-visible{box-shadow:var(--nv-focus)}
 .d:active{transform:scale(.9)}
-.d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 60%,transparent) var(--nv-glow),transparent)}
+.d.act{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 60%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 /* Aktiver Eintrag: runde Markierung .hl gleitet unter die Buttons; Farbe nur übers Theme (--nova-navi-active-color), Standard Akzent 2.
    Animiert werden nur transform, opacity und max-width – schont schwache Tablets. */
 .dk{--hc:var(--nova-navi-active-color,var(--nv-a2));--ease:cubic-bezier(.25,.8,.25,1)}
 /* Glas der Leiste als eigene Ebene: gleitet beim Wechsel per transform auf die neue Breite (Blur bleibt unverändert) */
 .dk>.bg{position:absolute;inset:0;border-radius:inherit;z-index:0;pointer-events:none;transform-origin:0 50%}
-.hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:var(--hc);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--hc) 50%,transparent) var(--nv-glow),transparent);pointer-events:none;opacity:0;will-change:transform}
+.hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:color-mix(in srgb,var(--hc) var(--nv-fill),var(--nv-chip));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--hc) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge);pointer-events:none;opacity:0;will-change:transform}
 .hl.on{opacity:1}
-.d.here{color:var(--nova-navi-active-text-color,var(--nv-a2-fg))}
+.d.here{color:var(--nova-navi-active-text-color,color-mix(in srgb,var(--nv-a2-fg) var(--nv-fill-ink),var(--nv-fg)))}
 /* Inaktiv-Farbe bleibt immer die Grundfarbe des Buttons; Gelb liegt als eigene Ebene darüber (unter dem Icon).
    So geht der alte Button direkt von Gelb zu Blau über, nie über transparent */
-.d::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:50%;background:var(--hc);opacity:0;pointer-events:none}
+.d::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:50%;background:color-mix(in srgb,var(--hc) var(--nv-fill),var(--nv-chip));box-shadow:var(--nv-fill-edge);opacity:0;pointer-events:none}
 .d.lit::before{opacity:1}
 /* Während einer Animation: nur transform und opacity, gleiche Dauer und Kurve für alle Teile */
 .run .d,.run .d::before,.run .nm,.run+.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
@@ -128,7 +128,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .mb .tx b{font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold)}.mb .tx span{font-size:var(--nv-fs-2);opacity:.7}
 .mb .tx span.warn{opacity:1;color:var(--nv-warn)}
 .mb .pp,.mb .sp{flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;transition:transform var(--nv-d1)}
-.mb .pp{width:40px;height:40px;background:var(--nv-active);color:var(--nv-active-fg)}
+.mb .pp{width:40px;height:40px;background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .mb .sp{width:32px;height:32px;background:var(--nv-chip);color:var(--nv-fg);opacity:.85}.mb .sp ha-icon{--mdc-icon-size:var(--nv-icon-md)}
 .mb .sp[hidden]{display:none}
 .mb .pp:active,.mb .sp:active{transform:scale(.9)}
@@ -697,6 +697,7 @@ class NovaNaviCard extends HTMLElement {
     const p = document.createElement(tag('navi-popup'));
     p.onclose = () => this._close();
     p.cfg = {title: it.popup_title || it.label || '', icon: it.icon, cards: it.cards};
+    if (this.hasAttribute('nova-theme')) p.setAttribute('nova-theme', this.getAttribute('nova-theme'));
     p.hass = this._h;
     this.shadowRoot.appendChild(p); // im eigenen Shadow-DOM, damit more-info & Aktionen der Karten bei HA ankommen
     this._opened(i, p);

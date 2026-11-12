@@ -1,6 +1,12 @@
 import {esc, toObj} from './utils.js';
 import {fire} from './actions.js';
 import {hassChanged, entityIds} from './lifecycle.js';
+import {THEMES, THEME_KEYS} from './theme.js';
+import {sel} from './editor-schema.js';
+
+// Theme je Karte: „Global“ (Standard, steht nicht in der Konfig) oder ein festes Nova-Theme
+const THEME_FIELD = [sel('theme', [['global', 'Global (wie alle Nova Cards)'], ...THEME_KEYS.map(k => [k, THEMES[k].name])])];
+const COMMON_LABELS = {theme: 'Theme dieser Karte'};
 
 // ha-form ist lazy – einmal über den Editor einer Standardkarte nachladen
 let preload;
@@ -53,7 +59,7 @@ export class NovaEditorBase extends HTMLElement {
     if (id !== this._bid) return;
     this._forms = [];
     this._pool = this._keep; this._keep = new Map();
-    try { this._build(); } finally { this._pool = null; }
+    try { this._build(); this._themeSection(); } finally { this._pool = null; }
   }
   _emit(c) {
     this._config = c;
@@ -80,7 +86,7 @@ export class NovaEditorBase extends HTMLElement {
     const f = this._reuse(`form:${JSON.stringify(schema)}`, () => {
       const f = document.createElement('ha-form');
       f.schema = schema;
-      f.computeLabel = s => this.constructor.labels?.[s.name] ?? s.name;
+      f.computeLabel = s => this.constructor.labels?.[s.name] ?? COMMON_LABELS[s.name] ?? s.name;
       f.computeHelper = s => this.constructor.helpers?.[s.name];
       f.addEventListener('value-changed', e => { e.stopPropagation(); f.data = e.detail.value; f._dk = JSON.stringify(f.data); f._cb(e.detail.value); });
       return f;
@@ -91,6 +97,19 @@ export class NovaEditorBase extends HTMLElement {
     f._cb = cb;
     this._forms.push(f);
     return f;
+  }
+  // Bereich „Theme“ am Ende jedes Karteneditors (abschalten mit static noTheme)
+  _themeSection() {
+    const w = !this.constructor.noTheme && this.shadowRoot.querySelector('.wrap');
+    if (!w) return;
+    w.append(this._section('theme', 'mdi:palette-outline', 'Theme', b => {
+      b.append(this._hint('Global folgt dem Theme, das du mit dem Nova Themes Schalter für alle Geräte wählst. Ein festes Theme gilt nur für diese Karte (und Karten darin).'));
+      b.append(this._form(THEME_FIELD, {theme: this._config.theme || 'global'}, v => {
+        const c = {...this._config};
+        if (!v.theme || v.theme === 'global') delete c.theme; else c.theme = v.theme;
+        this._emit(c);
+      }));
+    }));
   }
   // Runder Icon-Button (Verschieben, Löschen …)
   _btn(icon, title, fn, dis) {

@@ -54,6 +54,7 @@ const TCSS = `${DIAL_CSS}
 .g.tm{--dc:var(--tc);--dcfg:var(--tcfg);padding:var(--nv-s7);gap:var(--nv-s5);transition:box-shadow var(--nv-d5)}
 ${frameGlow('.g.tm.glow.st-active')}
 .g.tm.alm{--dc:var(--ac);--dcfg:var(--acfg)}
+.scene{--dc:var(--tg)}.alm .scene{--dc:var(--ag)}
 .g.tm.glow.alm{box-shadow:var(--nv-shadow),0 0 0 2px var(--ac),0 0 24px color-mix(in srgb,color-mix(in srgb,var(--ac) 55%,transparent) var(--nv-glow),transparent),var(--nv-edge)}
 .anim.glow.alm{animation:tm-frame 1.2s ease-in-out infinite}
 .still{animation-play-state:paused!important}.still *{animation-play-state:paused!important}
@@ -61,7 +62,7 @@ ${frameGlow('.g.tm.glow.st-active')}
 .bd{display:flex;flex-direction:column;gap:var(--nv-s6);align-items:stretch;flex:1;min-height:0}
 .dial{position:relative;align-self:center;width:100%;max-width:var(--nova-timer-size,240px);aspect-ratio:1;flex:none}
 .dial svg{display:block;width:100%;height:100%;overflow:visible}
-.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%}
+.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%;color:rgb(var(--nv-hi))}
 .ro .t{display:block;font-size:clamp(22px,calc(var(--dw,240px) * .16),46px);font-weight:var(--nv-fw-bold);letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.05;white-space:nowrap}
 .ro .s{display:block;font-size:clamp(11px,calc(var(--dw,240px) * .05),14px);opacity:.65;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .st-idle .scene{opacity:.55}.st-idle .ro .t{opacity:.7}
@@ -76,7 +77,7 @@ display:flex;align-items:center;justify-content:center;gap:var(--nv-s3);font-siz
 .bt2:active{transform:scale(.95)}
 /* Hauptknopf im Glas-Stil: nur leicht in der Kartenfarbe getönt, Icon in der Farbe – keine Vollfarbfläche */
 .bt2.pri{background:color-mix(in srgb,var(--dc) 22%,var(--nv-chip));border-color:color-mix(in srgb,var(--dc) 55%,transparent)}
-.bt2.pri ha-icon{color:var(--dc)}
+.bt2.pri ha-icon{color:color-mix(in srgb,var(--dc) var(--nv-tint-ink),var(--nv-fg))}
 /* Nur-Icon-Knöpfe in „Eigene Zeit“: Icon hell, sonst verschwindet z. B. das Häkchen auf dem getönten Knopf */
 .cust .bt2.pri ha-icon{color:inherit}
 .bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
@@ -127,7 +128,7 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 .alm:not(.anim) .snd path{opacity:.7}
 .st-active .dl-push.r{animation:none}
 .prs .dl-push.r,.prs .dl-crown{animation:tm-press .35s ease-out}
-.scene .tip{fill:rgb(var(--nv-hi));filter:drop-shadow(0 0 3px var(--dc));opacity:0;visibility:hidden;transition:opacity var(--nv-d5),visibility 0s var(--nv-d5)}
+.scene .tip{fill:rgb(var(--nv-hi));filter:drop-shadow(0 0 3px color-mix(in srgb,var(--dc) var(--nv-glow),transparent));opacity:0;visibility:hidden;transition:opacity var(--nv-d5),visibility 0s var(--nv-d5)}
 .st-active .scene .tip,.st-paused .scene .tip{opacity:1;visibility:visible;transition:opacity var(--nv-d5)}
 .scene .tipg{transition:transform var(--nv-d7) linear;transform-box:view-box;transform-origin:100px 112px}
 .st-idle .scene .dl-arc{opacity:.35}
@@ -249,7 +250,7 @@ class NovaTimerCard extends HTMLElement {
   }
   _layout() {
     const c = this._c, e = this._e, rv = roleVars(c.color), av = roleVars(c.alarm_color);
-    e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--ac:${av.c};--acfg:${av.fg}`;
+    e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--tg:${rv.dev};--ac:${av.c};--acfg:${av.fg};--ag:${av.dev}`;
     e.g.classList.toggle('cmp', c.layout === 'compact');
     e.g.classList.toggle('full', c.layout !== 'compact');
     e.g.classList.toggle('glow', c.glow !== false);

@@ -23,11 +23,11 @@ const CCSS = `
 .ovl.bot{left:8px;right:8px;bottom:8px;justify-content:center}
 .ovl .pill,.ovl .al{background:rgba(var(--nv-scrim),.55);backdrop-filter:blur(var(--nv-blur-sm));-webkit-backdrop-filter:blur(var(--nv-blur-sm));border-color:rgba(var(--nv-tint),.14)}
 .ovl .pill{padding:5px var(--nv-s5);font-size:var(--nv-fs-4)}
-.ovl .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:none}
+.ovl .pill.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .ovl .al{background:color-mix(in srgb,var(--c) 55%,rgba(var(--nv-scrim),.6))}
 .ovl .al ha-icon{color:inherit}
 .cb{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(var(--nv-scrim),.5);backdrop-filter:blur(var(--nv-blur-sm));-webkit-backdrop-filter:blur(var(--nv-blur-sm));border:1px solid rgba(var(--nv-tint),.16)}
-.cb.on{background:var(--nv-active);color:var(--nv-active-fg)}
+.cb.on{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .cb:active,.pill:active{transform:scale(var(--nv-press))}
 .dot{position:absolute;left:10px;bottom:10px;z-index:1;display:flex;align-items:center;gap:5px;font-size:var(--nv-fs-1);font-weight:var(--nv-fw-heavy);letter-spacing:.06em;padding:3px var(--nv-s4);border-radius:var(--nv-r-pill);background:rgba(var(--nv-scrim),.55)}
 .dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--nv-error)}
@@ -49,7 +49,7 @@ background:rgba(var(--nv-scrim),.5);backdrop-filter:blur(var(--nv-blur-sm));-web
 .zm{display:flex;flex-direction:column;gap:var(--nv-s4)}
 .zm>i{width:36px;height:36px;background:rgba(var(--nv-scrim),.5);backdrop-filter:blur(var(--nv-blur-sm));-webkit-backdrop-filter:blur(var(--nv-blur-sm));border:1px solid rgba(var(--nv-tint),.16)}
 .below .zm>i{background:var(--nv-chip)}
-.pad>i.act,.zm>i.act{background:var(--nv-active);color:var(--nv-active-fg)}
+.pad>i.act,.zm>i.act{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .has-ptz .ovl.bot{right:calc(var(--nova-camera-ptz-size,108px) + 64px);justify-content:flex-start}
 @container (max-width:320px){.pad{--nova-camera-ptz-size:88px}}
 .split{display:grid;gap:var(--nv-s4);grid-template-columns:repeat(2,minmax(0,1fr));--nova-camera-ptz-size:84px}

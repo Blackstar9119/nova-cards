@@ -23,6 +23,7 @@ export const TOKENS = [
   ['cut', 'cutout-color', 'rgba(20,24,38,.6)'], // Rand um Icons, die auf einer Farbfläche sitzen (Müllkalender)
   // Akzente und Farbrollen
   ['accent', 'accent-color', '#f5b83d'], ['accent-fg', 'accent-text-color', '#3a2a00'],
+  ['accent-ink', 'accent-ink-color', '#f5b83d'], // Akzent als Schrift- oder Icon-Farbe direkt auf der Fläche (helle Themes: dunkler)
   ['active', 'active-color', '#3d8bf5'], ['active-fg', 'active-text-color', '#fff'],
   ['warn', 'warning-color', '#7cc4ff'], ['error', 'error-color', '#ff6b6b'], ['error-fg', 'error-text-color', '#fff'],
   ['a1', 'accent-1', '#3d8bf5'], ['a1-fg', 'accent-1-text', '#fff'],
@@ -30,10 +31,16 @@ export const TOKENS = [
   ['a3', 'accent-3', '#b5794a'], ['a3-fg', 'accent-3-text', '#fff'],
   ['a4', 'accent-4', '#4caf6a'], ['a4-fg', 'accent-4-text', '#fff'],
   ['neutral', 'neutral', '#7b8794'], ['neutral-fg', 'neutral-text', '#fff'],
+  // Farbrolle in Gerätezeichnungen (Leuchten auf dunklem Gehäuse) – Standard = die Rolle selbst, ein Theme kann sie aufhellen
+  ['a1-dev', 'accent-1-device', 'var(--nv-a1)'], ['a2-dev', 'accent-2-device', 'var(--nv-a2)'], ['a3-dev', 'accent-3-device', 'var(--nv-a3)'],
+  ['a4-dev', 'accent-4-device', 'var(--nv-a4)'], ['neutral-dev', 'neutral-device', 'var(--nv-neutral)'],
+  // Standardfarbe der Kaffeemaschine (nur dort, nicht im Editor wählbar): Kupfer aus Akzent 3, Velvet eigenes Braun
+  ['coffee', 'coffee-color', 'var(--nv-a3)'], ['coffee-fg', 'coffee-color-text', 'var(--nv-a3-fg)'], ['coffee-dev', 'coffee-color-device', 'var(--nv-a3-dev)'],
   // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
   ['clock-night', 'clock-night', '#4d6bff'], ['clock-morning', 'clock-morning', '#ffb36b'], ['clock-noon', 'clock-noon', '#f4f7ff'],
   ['led-red', 'led-red', '#ff2414'], ['led-green', 'led-green', '#39ff7a'], ['led-blue', 'led-blue', '#3fa9ff'], ['led-amber', 'led-amber', '#ffb000'],
   // Pop-up
+  ['area-bg', 'area-background', 'var(--nv-bg)'], // Rahmen der Bereich Card (Midnight: schwarz, Karten darin grau)
   ['popup-bg', 'popup-background', 'linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))'],
   ['popup-base', 'popup-base-color', 'rgba(22,27,42,.88)'],
   ['popup-head', 'popup-header-color', 'rgba(60,72,100,.85)'],
@@ -50,7 +57,12 @@ export const TOKENS = [
   ['shadow-knob', 'shadow-knob', '0 1px 4px rgba(0,0,0,.4)'],
   ['focus', 'focus-ring', '0 0 0 2px var(--nv-active)'],
   ['glow', 'glow', '100%'],            // Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus
-  ['ring', 'ring', '100%'],            // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
+  ['ring', 'ring', '100%'],
+  // Gefüllte Knöpfe (aktiv, primär): Anteil der Farbe an der Fläche (Rest = Chip-Glas), Anteil der Farbschrift (Rest = --nv-fg),
+  // Lichtkante/Rand obendrauf; tint-ink = Anteil der Farbe an farbigen Icons auf Glasknöpfen
+  ['fill', 'button-fill', '100%'], ['fill-ink', 'button-fill-text', '100%'], ['fill-edge', 'button-edge', '0 0 0 transparent'],
+  ['tint-ink', 'button-tint-text', '100%'],            // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
+  ['text-shadow', 'text-shadow', '100%'], // Stärke der Schrift-Schatten über Bildern (Raumname, Media-Titel)
   // Blur
   ['blur', 'blur', '20px'], ['blur-xs', 'blur-xs', '8px'], ['blur-sm', 'blur-sm', '10px'], ['blur-lg', 'blur-lg', '16px'],
   ['sat', 'saturate', '150%'], ['sat-2', 'saturate-strong', '160%'],
@@ -77,15 +89,75 @@ export const TOKENS = [
   ['sweep', 'sweep-dur', '.9s'],
 ];
 
-// Themes: Name → abweichende Werte je Kurzname. Nova Blau ist die Tabelle oben.
-export const THEMES = {blau: {name: 'Nova Blau', vars: {}}};
+// Themes: Schlüssel → Name und abweichende Werte je Kurzname. Nova Blau ist die Tabelle oben (keine Abweichungen).
+// Gewählt wird ein Theme über das Attribut nova-theme am Kartenelement (setzt theme-apply.js); Blau = kein Attribut.
+// Zeichnungen (hi/lo, PAL in scene.js) bleiben in allen Themes dunkle Geräte.
+const INK = '20,28,45'; // Grundton von Nova Hell: Schiefer
+const MOKKA = '74,48,28'; // Grundton von Nova Velvet: Mokka
+export const THEMES = {
+  blau: {name: 'Nova Blau', vars: {}},
+  hell: {name: 'Nova Hell', vars: {
+    bg: 'linear-gradient(160deg,rgba(236,238,242,.94),rgba(225,228,233,.94))',
+    border: `rgba(${INK},.1)`, fg: '#0e121a', chip: `rgba(${INK},.07)`,
+    box: `rgba(${INK},.04)`, 'box-border': `rgba(${INK},.08)`,
+    tint: INK, shade: INK, scrim: '236,238,242', knob: '#fff', cut: 'rgba(236,238,242,.9)',
+    accent: '#f0b02e', 'accent-fg': '#3a2a00', 'accent-ink': '#8a5a00',
+    active: '#1a66cc', 'active-fg': '#fff', warn: '#0f65b8', error: '#c62f2f', 'error-fg': '#fff',
+    a1: '#1a66cc', a2: '#f0b02e', 'a2-fg': '#3a2a00', a3: '#9a5f33', a4: '#2a7a46', neutral: '#5b6673',
+    'clock-night': '#2f4fd6', 'clock-morning': '#c4621a', 'clock-noon': '#0e121a',
+    'popup-bg': 'linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))',
+    'popup-base': 'rgba(236,239,243,.97)', 'popup-head': 'rgba(226,230,236,.97)', 'popup-backdrop': 'rgba(30,38,55,.28)',
+    'navi-popup-bg': 'linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))',
+    shadow: `0 1px 2px rgba(${INK},.06),0 6px 18px rgba(${INK},.08)`, edge: 'inset 0 1px 0 rgba(255,255,255,.7)',
+    'shadow-popup': `0 20px 60px rgba(${INK},.2)`, 'shadow-knob': `0 1px 4px rgba(${INK},.3)`,
+    glow: '0%', 'text-shadow': '0%', blur: '12px', sat: '120%', 'sat-2': '120%',
+  }, navi: {border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: '14px', warn: '#8a5a00'}},
+  midnight: {name: 'Nova Midnight', vars: {
+    // Wie der Dark Mode von Apple: Seite schwarz, Karten #1c1c1e, Kacheln #2c2c2e, feine Linien, kein Glow, kein Blur.
+    // Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante), Schrift darauf hell.
+    bg: '#1c1c1e', border: 'rgba(255,255,255,.06)', fg: '#e5e5ea', chip: '#2c2c2e',
+    box: '#2c2c2e', 'box-border': 'rgba(255,255,255,.06)', knob: '#e5e5ea', cut: 'rgba(28,28,30,.85)',
+    accent: '#b08d57', 'accent-fg': '#121214', 'accent-ink': '#b08d57',
+    active: '#6b8db5', 'active-fg': '#121214', warn: '#7fa6c9', error: '#c86a6a', 'error-fg': '#121214',
+    a1: '#6b8db5', 'a1-fg': '#121214', a2: '#b08d57', 'a2-fg': '#121214', a3: '#ad805c', 'a3-fg': '#121214',
+    a4: '#5f9a72', 'a4-fg': '#121214', neutral: '#8a929c', 'neutral-fg': '#121214',
+    'clock-night': '#5a6fb8', 'clock-morning': '#c98a4e', 'clock-noon': '#c7ccd6',
+    'area-bg': '#000', 'popup-bg': '#000', 'popup-base': '#1c1c1e', 'popup-head': '#2c2c2e', 'popup-backdrop': 'rgba(0,0,0,.72)', 'navi-popup-bg': '#1c1c1e',
+    shadow: '0 0 0 transparent', edge: 'inset 0 1px 0 rgba(255,255,255,.05)', 'shadow-popup': '0 0 0 1px rgba(255,255,255,.08)',
+    glow: '0%', ring: '70%', blur: '0px', sat: '100%', 'sat-2': '100%',
+    fill: '22%', 'fill-ink': '0%', 'tint-ink': '0%', 'fill-edge': 'inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.1)',
+  }, navi: {border: 'rgba(255,255,255,.08)', chip: '#2c2c2e', blur: '0px', warn: '#b08d57'}},
+  velvet: {name: 'Nova Velvet', vars: {
+    // Warm und edel: cremiges Beige, Espresso-Schrift, Gold und Cognac, weiche warme Schatten statt Glow
+    bg: `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))`,
+    border: 'rgba(90,62,40,.14)', fg: '#1a0f09', chip: `rgba(${MOKKA},.08)`, box: `rgba(${MOKKA},.05)`, 'box-border': `rgba(${MOKKA},.1)`,
+    tint: MOKKA, shade: MOKKA, scrim: '239,230,214', knob: '#fbf6ec', cut: 'rgba(239,230,214,.9)',
+    accent: '#b8935a', 'accent-fg': '#1a0f09', 'accent-ink': '#7a5a1e',
+    active: '#7d4f24', 'active-fg': '#fbf6ec', warn: '#7a4f00', error: '#a3322b', 'error-fg': '#fbf6ec',
+    a1: '#4a3226', 'a1-fg': '#fbf6ec', 'a1-dev': '#b8935a', // Espresso auf der Fläche, Gold auf den Geräten
+    a2: '#b8935a', 'a2-fg': '#1a0f09', a3: '#7a2f3a', 'a3-fg': '#fbf6ec',
+    coffee: '#8a5a33', 'coffee-fg': '#fbf6ec', 'coffee-dev': '#b07a48', // Kaffee warmes Braun statt Bordeaux
+    a4: '#4f5f2a', 'a4-fg': '#fbf6ec', neutral: '#62554c', 'neutral-fg': '#fbf6ec',
+    'clock-night': '#6b3a2a', 'clock-morning': '#9a5a1e', 'clock-noon': '#1a0f09',
+    'popup-bg': 'linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))',
+    'popup-base': 'rgba(243,236,223,.97)', 'popup-head': 'rgba(233,223,205,.97)', 'popup-backdrop': 'rgba(40,26,16,.32)',
+    'navi-popup-bg': 'linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))',
+    shadow: `0 1px 2px rgba(${MOKKA},.08),0 8px 22px rgba(${MOKKA},.12)`, edge: 'inset 0 1px 0 rgba(255,255,255,.6)',
+    'shadow-popup': `0 20px 60px rgba(${MOKKA},.22)`, 'shadow-knob': `0 1px 4px rgba(${MOKKA},.35)`,
+    glow: '0%', 'text-shadow': '0%', blur: '12px', sat: '115%', 'sat-2': '115%',
+  }, navi: {border: 'rgba(90,62,40,.16)', chip: `rgba(${MOKKA},.06)`, blur: '14px', warn: '#7a5a1e'}},
+};
+export const THEME_KEYS = Object.keys(THEMES);
 
 // Abweichungen der Nova Navi gegenüber den Karten (etwas kräftigerer Rand, ruhigere Chips, mehr Blur, Warnung in Gelb)
 const NAVI = {border: 'rgba(255,255,255,.16)', chip: 'rgba(255,255,255,.1)', blur: '22px', warn: '#f5b83d'};
 
 const block = (sel, over) => `${sel}{${TOKENS.filter(([k]) => !over || k in over)
   .map(([k, pub, v]) => `--nv-${k}:var(--nova-${pub},${over?.[k] ?? v})`).join(';')}}`;
+// Ein Block je Theme; :host([nova-theme=…]) wiegt schwerer als :host, Blau braucht keinen eigenen Block
+const themed = navi => Object.entries(THEMES).filter(([, t]) => Object.keys(t.vars).length)
+  .map(([k, t]) => block(`:host([nova-theme=${k}])`, navi ? {...t.vars, ...t.navi} : t.vars)).join('');
 
 // Variablen-Block für das Stylesheet einer Karte
-export const NOVA_VARS = block(':host');
-export const NAVI_VARS = block(':host', {...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI});
+export const NOVA_VARS = block(':host') + themed(false);
+export const NAVI_VARS = block(':host', {...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI}) + themed(true);

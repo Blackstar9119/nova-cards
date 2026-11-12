@@ -20,11 +20,11 @@ const MPCSS = `
 .mp>.shade{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(var(--nv-scrim),.05),rgba(var(--nv-scrim),.55));opacity:0;transition:opacity var(--nv-d6);pointer-events:none}
 .mp.has-art>.shade{opacity:1}
 .mp .hd .ic img{width:26px;height:26px;border-radius:6px}
-.hb.on{background:var(--nv-accent);color:var(--nv-accent-fg)}
+.hb.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .now{display:flex;align-items:center;gap:var(--nv-s6);min-width:0}
 .thumb{width:72px;height:72px;flex:none;border-radius:14px;background:var(--nv-chip) center/cover no-repeat;box-shadow:0 4px 14px rgba(var(--nv-shade),.35);display:none}
 .mp.cover.has-art .thumb{display:block}
-.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(var(--nv-shade),.35)}
+.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px color-mix(in srgb,rgba(var(--nv-shade),.35) var(--nv-text-shadow),transparent)}
 .tt b{font-size:17px;font-weight:var(--nv-fw-bold)}.tt span{font-size:var(--nv-fs-6);opacity:.75;margin-top:var(--nv-s1)}
 .bar{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-2);opacity:.85;font-variant-numeric:tabular-nums}
 .bar .tr{flex:1;height:6px;border-radius:3px;background:rgba(var(--nv-tint),.14);overflow:hidden}
@@ -33,19 +33,19 @@ const MPCSS = `
 .ctl{display:flex;align-items:center;justify-content:center;gap:var(--nv-s7)}
 .ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
 .ctl .cb ha-icon{--mdc-icon-size:var(--nv-icon-xl)}
-.ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent)}
+.ctl .cb.pp{width:56px;height:56px;background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
 .cb:active{transform:scale(.9)}
 .vol{display:flex;align-items:center;gap:var(--nv-s5)}
 .vol .cb{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
 .vol .cb ha-icon{--mdc-icon-size:var(--nv-icon-md)}
-.vol .cb.on{background:var(--nv-error);color:var(--nv-error-fg)}
+.vol .cb.on{background:color-mix(in srgb,var(--nv-error) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-error-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .vol .v{min-width:38px;text-align:right;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold)}
 .vol input{flex:1}
 .vol .step{flex:1;display:flex;justify-content:center;gap:var(--nv-s5)}
 .src,.pls{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:var(--nv-s1)}
 .src::-webkit-scrollbar,.pls::-webkit-scrollbar{display:none}
-.pls .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:none}
+.pls .pill.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .pls .pill .eq{display:none;--mdc-icon-size:14px}.pls .pill.pl .eq{display:flex}
 .mp.off .now,.mp.off .bar,.mp.off .ctl,.mp.off .vol,.mp.off .src{display:none}
 @container (max-width:300px){.ctl{gap:var(--nv-s4)}.ctl .cb{width:38px;height:38px}.ctl .cb.pp{width:48px;height:48px}.thumb{width:56px;height:56px}.tt b{font-size:var(--nv-fs-9)}}`;

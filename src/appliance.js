@@ -13,9 +13,10 @@ import {PAL, sceneDefs, SCENE_CSS, frameGlow, sweep, badgeAt} from './shared/sce
 // Gerätetypen: bestimmen nur Symbol, Standardtexte, Standardfarbe und Animation – die Entitäten wählt der Nutzer
 const TYPES = {
   washer: {label: 'Waschmaschine', icon: 'mdi:washing-machine', color: 'accent-1', run: 'Wäscht', alt: 'Schleudert', door: 'Tür offen', phase: ['spin', 'spinning', 'schleudern'], anims: ['detergent', 'softener'], dview: true},
+  dryer: {label: 'Trockner', icon: 'mdi:tumble-dryer', color: 'accent-1', run: 'Trocknet', door: 'Tür offen', phase: [], anims: ['condensate', 'lint'], dview: true},
   dishwasher: {label: 'Spülmaschine', icon: 'mdi:dishwasher', color: 'accent-1', run: 'Spült', alt: 'Trocknet', door: 'Tür offen', phase: ['drying', 'dry', 'trocknen', 'ending'], dview: true},
   airfryer: {label: 'Airfryer', icon: 'mdi:toaster-oven', color: 'accent-1', run: 'Gart', heat: 'Heizt vor', door: 'Schublade offen', phase: [], dview: true},
-  coffee: {label: 'Kaffeemaschine', icon: 'mdi:coffee-maker-outline', color: 'accent-1', run: 'Brüht', door: 'Tür offen', phase: [], anims: ['tank', 'beans', 'descale'], drink: true},
+  coffee: {label: 'Kaffeemaschine', icon: 'mdi:coffee-maker-outline', color: 'coffee', run: 'Brüht', door: 'Tür offen', phase: [], anims: ['tank', 'beans', 'descale'], drink: true},
   feeder: {label: 'Futterautomat', icon: 'mdi:bowl-mix-outline', color: 'accent-1', run: 'Füttert', door: 'Deckel offen', phase: [], anims: ['food'], level: true, feed: true, mode: true, lvl: ['Füllstand', 'Futter ausreichend', 'Wenig Futter'], pick: 'Portion'},
   fountain: {label: 'Trinkbrunnen', icon: 'mdi:fountain', color: 'accent-1', run: 'Läuft', door: 'Deckel offen', phase: [], anims: ['water', 'filter'], level: true, nodone: true, mode: true, lvl: ['Wasserstand', 'Wasser ok', 'Wasser fehlt'], binEmpty: true, filter: true},
   generic: {label: 'Gerät', icon: 'mdi:power-plug-outline', color: 'accent-1', run: 'Läuft', door: 'Tür offen', phase: []},
@@ -24,7 +25,8 @@ const typeOf = c => TYPES[c.device_type] ? c.device_type : 'generic';
 // Hinweis-Animationen im Bild; Standardtext, falls der Hinweis keinen eigenen hat
 const HANIM = {tank: ['Wassertank', 'Wassertank leer', 'mdi:cup-water'], beans: ['Bohnen', 'Bohnen nachfüllen', 'mdi:coffee-outline'], descale: ['Entkalken', 'Entkalken', 'mdi:water-alert-outline'],
   detergent: ['Waschmittel', 'Waschmittel leer', 'mdi:bottle-tonic-outline'], softener: ['Weichspüler', 'Weichspüler leer', 'mdi:bottle-tonic-plus-outline'],
-  food: ['Futter leer', 'Futter nachfüllen', 'mdi:food-off'], water: ['Wasser niedrig', 'Wasser nachfüllen', 'mdi:water-alert-outline'], filter: ['Filter', 'Filter wechseln', 'mdi:air-filter'], warning: ['Allgemeine Warnung', '', 'mdi:alert-outline']};
+  food: ['Futter leer', 'Futter nachfüllen', 'mdi:food-off'], water: ['Wasser niedrig', 'Wasser nachfüllen', 'mdi:water-alert-outline'], filter: ['Filter', 'Filter wechseln', 'mdi:air-filter'],
+  condensate: ['Kondensbehälter', 'Kondensbehälter leeren', 'mdi:cup-water'], lint: ['Flusensieb', 'Flusensieb reinigen', 'mdi:air-filter'], warning: ['Allgemeine Warnung', '', 'mdi:alert-outline']};
 const animsOf = t => [...(TYPES[t].anims || []), 'warning'];
 // Zustandsgruppen; Rohzustände der gängigen Integrationen (Home Connect, WashData, Philips, Miele …), im Editor überschreibbar
 const STATES = {
@@ -369,16 +371,24 @@ ${WARN}</svg>`,
   generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
 <path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}<g transform="scale(.5)">${WARN}</g></svg>`,
 };
+// Trockner (Wärmepumpe, Vorbild Bosch/Siemens): Gehäuse, Bullauge und Trommel wie die Waschmaschine; statt Wasser
+// warme Luft und mehr Wäsche, links oben Kondensbehälter statt Waschmittelschublade, unten Flusensieb-Klappe mit Lüftungsschlitzen
+SV.dryer = SV.washer
+  .replace(/<g class="wl">[\s\S]*?<\/g><\/g>\n/, `<g class="hz"><path d="M80 132 q3 -6 0 -12 t0 -12"/><path d="M100 136 q3 -6 0 -12 t0 -12"/><path d="M120 132 q3 -6 0 -12 t0 -12"/></g>\n`)
+  .replace(/<rect class="lbl" x="42"[\s\S]*?<rect class="dwg" x="43"[^>]*>/, '<rect class="lbl" x="42" y="23.5" width="10" height="1.3" rx=".65"/><rect class="tkw" x="43" y="28" width="28" height="9" rx="1.6"/><rect class="tkl" x="43" y="33.5" width="28" height="3.5" rx="1.2"/><rect class="dwg" x="54" y="23" width="6" height="2.2" rx="1.1"/>')
+  .replace(/<circle class="fl"[\s\S]*?<rect class="dwg" x="145"[^>]*>/, `<rect class="lint s-part" x="124" y="158" width="38" height="18" rx="2.5" fill="url(#w-pt)"/>${[0, 1, 2, 3, 4].map(i => `<rect class="vnt" x="${128 + i * 6.4}" y="161.5" width="3.2" height="11" rx="1.6"/>`).join('')}`)
+  .replace('<path class="cl c2"', '<path class="cl c3" d="M108 98 q10 -4 16 4 q2 8 -6 10 q-8 1 -10 -14 Z"/><path class="cl" d="M82 106 q6 -6 12 0 q2 6 -5 8 q-6 1 -7 -8 Z"/><path class="cl c2"');
 const scene = t => `<div class="scene">${SV[t]}</div>`;
 
 const DCSS = `
+.scene{--dc:var(--dg,var(--nv-a1-dev))}
 .g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--nova-filter-color,var(--nv-a2))}
 ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .g.dv.glow.t-feeder.st-ready{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 25%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
 .g.dv.glow.t-feeder.st-run{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 65%,transparent) var(--nv-ring),transparent),0 0 22px color-mix(in srgb,color-mix(in srgb,var(--dc) 35%,transparent) var(--nv-glow),transparent),var(--nv-edge)}
-.dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent)}
+.dv .on>.ic,.dv .hd .ic.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .dv .hd small.er{color:var(--nv-error);opacity:1}
-.dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
+.dv .hb.pw.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .mid{display:flex;gap:var(--nv-s7);align-items:center;min-width:0}
 .scene{flex:none;width:144px;height:144px;color:var(--nv-fg)}
 .scene svg{display:block;width:100%;height:100%;overflow:visible}
@@ -394,7 +404,7 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .ct .row .hb.go{width:32px;height:32px}
 .ct{border-top:1px solid rgba(var(--nv-tint),.08);padding:var(--nv-s4) 0 var(--nv-s3);min-width:0}
 .ct .kv{border:none;padding:0}.ct .kv .v{font-weight:var(--nv-fw-bold);opacity:1}
-.ct .pills{margin-top:var(--nv-s4)}.ct .pill.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-glow),transparent)}
+.ct .pills{margin-top:var(--nv-s4)}.ct .pill.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ct .cv{transition:transform var(--nv-d2)}.ct.open .cv{transform:rotate(180deg)}
 .stp{display:flex;align-items:center;gap:var(--nv-s4);flex:none}.stp .hb{width:32px;height:32px}.stp .v{min-width:64px;text-align:center}
 .ct input[type=range]{margin-top:var(--nv-s4);background:linear-gradient(90deg,var(--dc) 0 var(--p,0%),rgba(var(--nv-tint),.14) var(--p,0%) 100%)}
@@ -402,11 +412,11 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .ct.na,.ab.dis{opacity:.4;pointer-events:none}
 .acts{display:flex;gap:var(--nv-s4)}
 .sa .kv{gap:var(--nv-s4)}.sa input{flex:none;background:var(--nv-chip);color:inherit;border:1px solid rgba(var(--nv-tint),.08);border-radius:var(--nv-r-sm);padding:var(--nv-s3) var(--nv-s5);font:inherit;font-size:var(--nv-fs-7);font-weight:var(--nv-fw-bold);color-scheme:dark;min-width:0}
-.sa .pill.on{background:var(--dc);color:var(--dc-fg);border-color:transparent}
+.sa .pill.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:var(--nv-fill-edge)}
 .sa .sah{font-size:var(--nv-fs-4);opacity:.7;margin-top:var(--nv-s3)}.sa .sah:empty{display:none}
 .ab{flex:1;min-width:0;height:46px;border-radius:var(--nv-r-md);display:flex;align-items:center;justify-content:center;gap:var(--nv-s4);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);transition:background-color var(--nv-d2),opacity var(--nv-d2),transform var(--nv-d2)}
 .ab ha-icon{--mdc-icon-size:22px}
-.ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent)}
+.ab.pri{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ab.dis{box-shadow:none}
 .ab:active{transform:scale(.95)}
 .als:empty{display:none}
@@ -492,7 +502,7 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .w-airfryer .akc{fill:none;stroke:var(--dc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:16;opacity:0}
 .w-airfryer .atc path{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.12;stroke-width:1;stroke-linecap:round;transition:stroke var(--nv-d6),stroke-opacity var(--nv-d6)}
 .w-airfryer .apnh{fill:rgb(var(--nv-hi));opacity:.14}.w-airfryer .agb{opacity:1}
-.st-run .w-airfryer .atc path,.st-heat .w-airfryer .atc path,.st-warm .w-airfryer .atc path,.st-pause .w-airfryer .atc path,.st-prep .w-airfryer .atc path{stroke:var(--dc);stroke-opacity:.75;filter:drop-shadow(0 0 1.5px var(--dc))}
+.st-run .w-airfryer .atc path,.st-heat .w-airfryer .atc path,.st-warm .w-airfryer .atc path,.st-pause .w-airfryer .atc path,.st-prep .w-airfryer .atc path{stroke:var(--dc);stroke-opacity:.75;filter:drop-shadow(0 0 1.5px color-mix(in srgb,var(--dc) var(--nv-glow),transparent))}
 .st-ready .w-airfryer .atc path,.st-done .w-airfryer .atc path{stroke-opacity:.3}
 .st-off .w-airfryer .atc path{stroke-opacity:.06}
 .w-airfryer .psep{fill:rgb(var(--nv-lo));opacity:.3}.w-airfryer .psh{fill:rgb(var(--nv-hi));opacity:.06}
@@ -562,6 +572,15 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .w-washer .scene .lk{stroke:rgb(var(--nv-hi));stroke-opacity:.85;stroke-width:.7}.w-washer .scene .lk rect{fill:rgb(var(--nv-hi))}
 .st-off .w-washer .wdt,.st-off .w-washer .pdots .on{display:none}
 /* Spülmaschine im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
+.w-dryer .hz path{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.35;stroke-width:1.4;stroke-linecap:round;opacity:0;transform-box:fill-box;transform-origin:center bottom}
+.w-dryer .hz path:nth-child(2){animation-delay:1.2s}.w-dryer .hz path:nth-child(3){animation-delay:2.4s}
+.anim.st-run .w-dryer .hz path,.anim.st-heat .w-dryer .hz path{animation:dv-hz 3.6s ease-out infinite}
+.anim.st-warm .w-dryer .drum{animation:dv-tumble 9s ease-in-out infinite}
+.w-dryer .cl.c3{fill:color-mix(in srgb,var(--dc) 30%,#b8c0ce);fill-opacity:.5}
+.w-dryer .tkw{fill:#0b0e13;stroke:rgba(var(--nv-hi),.12);stroke-width:.5}.w-dryer .tkl{fill:${PAL.glass};fill-opacity:.35;transition:fill var(--nv-d4)}
+.w-dryer .vnt{fill:#0b0e13;opacity:.75}
+.h-condensate .w-dryer .tkl{fill:var(--nv-warn);fill-opacity:.95}.h-lint .w-dryer .lint{fill:var(--nv-warn);fill-opacity:.95}
+.anim.h-condensate .w-dryer .tkl,.anim.h-lint .w-dryer .lint{animation:dv-blinko 1.3s ease-in-out infinite}
 .w-dishwasher{--gx:150px}
 .w-dishwasher .qplin{fill:#0d1016}.w-dishwasher .qvent{fill:rgb(var(--nv-lo));opacity:.45}
 .w-dishwasher .qrail{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.07;stroke-width:1.2}
@@ -726,9 +745,9 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .w-fountain .bfi{transform-box:fill-box;transform-origin:center}
 /* Modus-LED: ruhiges Leuchten in der Modusfarbe, kein Blinken */
 .dv .w-fountain .led{fill:#5b6372;fill-opacity:.5;transition:fill var(--nv-d5),fill-opacity var(--nv-d5)}
-.m-normal.dv .w-fountain .led,.m-smart.dv .w-fountain .led{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
+.m-normal.dv .w-fountain .led,.m-smart.dv .w-fountain .led{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px color-mix(in srgb,var(--mc) var(--nv-glow),transparent))}
 .m-normal{--mc:var(--nova-mode-normal-color,var(--nv-a1))}.m-smart{--mc:var(--nova-mode-smart-color,var(--nv-a4))}
-.m-normal.dv .w-feeder .fled,.m-smart.dv .w-feeder .fled{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
+.m-normal.dv .w-feeder .fled,.m-smart.dv .w-feeder .fled{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px color-mix(in srgb,var(--mc) var(--nv-glow),transparent))}
 .w-fountain .bfi rect,.w-fountain .bfi path{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.3;stroke-width:.8;stroke-linejoin:round}
 /* Läuft: kleiner Sprudel wippt, Ringe laufen über die Schale, das Wasser fließt sanft über den Rand ab; aus/Pause = Wasser steht */
 .st-run .w-fountain .bdome,.st-run .w-fountain .bdhl,.st-run .w-fountain .bjet{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
@@ -740,7 +759,7 @@ ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 /* Wasser niedrig: Stand im Fenster sinkt, Ausrufezeichen; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
 .h-water .scene .wn{display:inline}
 .st-err .w-fountain .bdome,.st-err .w-fountain .bdhl{opacity:0}
-.h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px var(--fc))}
+.h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px color-mix(in srgb,var(--fc) var(--nv-glow),transparent))}
 .anim.h-filter .w-fountain .bfi{animation:dv-fpulse 1.6s ease-in-out infinite}
 .anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
 .scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}
@@ -796,7 +815,7 @@ class NovaApplianceCard extends HTMLElement {
   static getStubConfig() { return {device_type: 'washer'}; }
   setConfig(c) {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
-    if (c.device_type && !TYPES[c.device_type]) throw new Error('device_type muss washer, dishwasher, airfryer, coffee, feeder, fountain oder generic sein');
+    if (c.device_type && !TYPES[c.device_type]) throw new Error('device_type muss washer, dryer, dishwasher, airfryer, coffee, feeder, fountain oder generic sein');
     this._c = {...GDEF, ...c, controls: [].concat(c.controls || []).map(toObj).filter(o => o.entity), hints: [].concat(c.hints || []).map(toObj).filter(o => o.entity)};
     this._ids = entityIds(this._c);
     this._built = false;
@@ -881,9 +900,9 @@ class NovaApplianceCard extends HTMLElement {
     const rv = roleVars(c.color || TYPES[t].color);
     const anim = c.animation !== false && !cmp;
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${SCENE_CSS}${DCSS}:host([hidden]){display:none}</style>
-<div class="g dv t-${t}${c.window === false ? ' nowin' : ''}${cmp ? ' cmp' : ''}${anim ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg};--hc:${roleVars(c.heat_color || 'accent-2').c}">
+<div class="g dv t-${t}${c.window === false ? ' nowin' : ''}${cmp ? ' cmp' : ''}${anim ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg};--dg:${rv.dev};--hc:${roleVars(c.heat_color || 'accent-2').c}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ''}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ''}</div>
-${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
+${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}${t === 'dryer' ? ' w-washer' : ''}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
 <div class="ctls"></div>${c.start_at === 'home_connect' && c.start ? SA : ''}${['select', 'input_select'].includes(dom(c.start)) && !c.start_option ? PICK : ''}<div class="acts"></div>`}<div class="als"></div></div>`;
     const q = s => r.querySelector(s);
     this._e = {g: q('.g'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), pw: q('.pw'), pg: q('.pg'), ph: q('.ph'), bar: q('.bar'), bari: q('.bar i'),
@@ -1426,7 +1445,7 @@ class NovaApplianceCardEditor extends NovaEditorBase {
     r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
     const w = r.querySelector('.wrap');
     const strip = c => { Object.entries(GDEF).forEach(([k, x]) => c[k] === x && delete c[k]); if (c.color === TYPES[typeOf(c)].color) delete c.color; return c; };
-    const data = {...GDEF, color: TYPES[t].color, ...c0};
+    const data = {...GDEF, color: TYPES[t].color === 'coffee' ? undefined : TYPES[t].color, ...c0}; // Kaffeebraun steht nicht in der Auswahl
     const form = schema => this._form(schema, data, v => {
       const c = strip(merge(this._config, names(schema), v));
       this._emit(c);

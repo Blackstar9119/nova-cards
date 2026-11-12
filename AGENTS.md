@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Navi,
-Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf und Notiz – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz und Themes Schalter – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -36,6 +36,7 @@ src/
   clock-styles.js     Stile der Uhr: Klappzahlen, Leuchtziffern (Farbe nach Sonnenstand), Radiowecker (Sieben-Segment-SVG)
   shopping.js         Nova Einkauf Card + Editor (todo-Liste: Eingabefeld, abhaken, Druck-Knopf)
   note.js             Nova Notiz Card + Editor (mehrzeiliges Notizfeld, Entwurf im Browser, Druck-Knopf)
+  theme-switch.js     Nova Themes Schalter + Editor (globales Theme wählen: Chip, Button oder Dropdown)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
                       tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
@@ -46,6 +47,10 @@ src/
     sparkline.js      Flächen-Sparkline als SVG (Thermostat-Verlauf, Wetter-Stundenvorhersage)
     theme.js          Design-Tokens und Themes: EINZIGE Stelle für Farben, Radien, Schatten, Blur, Schrift, Abstände, Zeiten
                       (TOKENS, THEMES, NOVA_VARS, NAVI_VARS) – siehe docs/design-system.md
+    theme-apply.js    Theme am Kartenelement setzen (Attribut nova-theme): Option theme → Theme-Variable nova-theme → global → Blau;
+                      läuft zentral über define(), Karten müssen nichts tun
+    theme-store.js    Speicher des globalen Themes (input_select.nova_theme, legt ihn selbst an) – EINZIGE Stelle, zieht später
+                      in die Nova-Integration um
     styles.js         Gemeinsame CSS-Bausteine (Glas-Hintergrund, Karten- und Panel-CSS, Farbrollen, Editor-Styles)
     scene.js          Zeichenstil der Gerätezeichnungen: Farbpalette, Verläufe (Gehäuse, Glas, Chrom), Glas-Spiegelung,
                       Lichtstreifen beim Reinscrollen (sweep), Rahmen-Glow, Badge-Stelle (badgeAt) – siehe „Stil der Zeichnungen“

@@ -16,7 +16,8 @@ const DEF = {stack_below: 500, chips_layout: 'wrap'};
 
 const ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
-:host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
+:host::before{background:var(--nv-area-bg)}
+:host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-area-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:var(--nv-s6);padding:var(--nv-s7)}
 .hd{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s3);border-radius:var(--nv-r-pill);background:var(--nv-chip)}
 .hd.nb{padding-left:var(--nv-s7)}

@@ -47,6 +47,7 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 | --- | --- | --- | --- |
 | `--nova-accent-color` | `--nv-accent` | `#f5b83d` | Akzent („an“, Fortschritt) |
 | `--nova-accent-text-color` | `--nv-accent-fg` | `#3a2a00` | Schrift auf Akzent |
+| `--nova-accent-ink-color` | `--nv-accent-ink` | `#f5b83d` | Akzent als Schrift-/Icon-Farbe direkt auf der Fläche (in hellen Themes dunkler) |
 | `--nova-active-color` | `--nv-active` | `#3d8bf5` | aktiv/gewählt (Schalter, Pillen) |
 | `--nova-active-text-color` | `--nv-active-fg` | `#fff` | Schrift auf Aktiv |
 | `--nova-warning-color` | `--nv-warn` | `#7cc4ff` | Warnung (Navi: Gelb) |
@@ -62,6 +63,15 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 | `--nova-accent-4-text` | `--nv-a4-fg` | `#fff` | Farbrolle Akzent 4 – Schrift darauf |
 | `--nova-neutral` | `--nv-neutral` | `#7b8794` | Farbrolle Neutral |
 | `--nova-neutral-text` | `--nv-neutral-fg` | `#fff` | Farbrolle Neutral – Schrift darauf |
+
+Zu jeder Farbrolle gibt es eine Gerätefarbe `--nova-accent-1-device` … `--nova-neutral-device` (Kurzform `--nv-a1-dev` …,
+Standard = die Rolle selbst). Sie gilt nur in Gerätezeichnungen (`.scene`: Gerät, Drucker, Timer, analoge Uhr), damit ein Theme
+dort eine hellere Variante zeigen kann, wenn die Rolle auf dunklem Gehäuse untergeht (Velvet: Akzent 1 Espresso → Gold).
+
+Ohne Auswahl im Editor nutzt jede Karte die Primärfarbe Akzent 1. Einzige Ausnahme ist die Kaffeemaschine der Gerät Card:
+`--nova-coffee-color` (`--nv-coffee`, Standard = Akzent 3, Kupfer), dazu `--nova-coffee-color-text` und
+`--nova-coffee-color-device`. Velvet setzt ein eigenes warmes Braun `#8a5a33` (Creme darauf 5,4:1, auf dem Gerät `#b07a48`).
+Gegenstandsfarben in Zeichnungen (Wasser, Kaffee, Futter, Wäsche) hängen nicht am Theme.
 
 ### Uhr
 
@@ -79,6 +89,7 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 
 | Token | Kurzform | Wert | Wofür |
 | --- | --- | --- | --- |
+| `--nova-area-background` | `--nv-area-bg` | `var(--nv-bg)` | Rahmen der Bereich Card |
 | `--nova-popup-background` | `--nv-popup-bg` | `linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))` | Fläche der Pop-up Card |
 | `--nova-popup-base-color` | `--nv-popup-base` | `rgba(22,27,42,.88)` | Grundton hinter Kacheln im Pop-up |
 | `--nova-popup-header-color` | `--nv-popup-head` | `rgba(60,72,100,.85)` | Kopfzeile von Pop-up und Navi-Pop-up |
@@ -108,6 +119,11 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 | `--nova-focus-ring` | `--nv-focus` | `0 0 0 2px var(--nv-active)` | Tastatur-Fokus |
 | `--nova-glow` | `--nv-glow` | `100%` | Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus |
 | `--nova-ring` | `--nv-ring` | `100%` | Stärke der Zustandsringe (Warnung, Fehler, aktiv) |
+| `--nova-text-shadow` | `--nv-text-shadow` | `100%` | Stärke der Schrift-Schatten (Raumname, Media-Titel) |
+| `--nova-button-fill` | `--nv-fill` | `100%` | Gefüllte Knöpfe (aktiv, primär): Anteil der Farbe an der Fläche, Rest = Chip-Glas |
+| `--nova-button-fill-text` | `--nv-fill-ink` | `100%` | Schrift auf gefüllten Knöpfen: Anteil der Farbschrift, Rest = `--nv-fg` |
+| `--nova-button-edge` | `--nv-fill-edge` | `0 0 0 transparent` | Rand und Lichtkante gefüllter Knöpfe (zusätzlicher Schatten) |
+| `--nova-button-tint-text` | `--nv-tint-ink` | `100%` | Farbige Icons auf Glasknöpfen (Timer-Start): Anteil der Farbe, Rest = `--nv-fg` |
 
 ### Blur
 
@@ -197,10 +213,119 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 
 Ein Theme ist eine Liste abweichender Token-Werte (`THEMES` in `theme.js`). Nova Blau ist die Tabelle oben. Form, Schrift,
 Abstände, Radien und Zeiten sind in allen Themes gleich, daran erkennt man Nova. Es ändern sich nur Fläche, Licht und Farbe.
+Gerätezeichnungen (`hi`/`lo`, `PAL` in `scene.js`) bleiben in allen Themes dunkle Geräte.
+
+| Theme | Schlüssel | Kurz |
+| --- | --- | --- |
+| Nova Blau | `blau` | Standard: blaues Glas, weiße Schrift, Glow |
+| Nova Hell | `hell` | helles Glas, Schiefer-Schrift, ruhige Schatten statt Glow |
+| Nova Midnight | `midnight` | wie Apple Dark Mode: dunkelgraue Karten, getönte Glasknöpfe, kein Glow, kein Blur |
+| Nova Velvet | `velvet` | cremiges Beige, Espresso-Schrift, Gold und Cognac, warme Schatten statt Glow |
+
+### Welches Theme eine Karte zeigt
+
+1. Option `theme` der Karte (im Editor unter „Theme“, Standard „Global“ = steht nicht in der Konfiguration).
+2. Theme-Variable `nova-theme` – aus dem HA-Theme des Geräts (z. B. `nova-theme: hell` im Theme des Wandtablets) oder von einer
+   umgebenden Nova-Karte mit eigenem Theme (Pop-up, Bereich, Swipe, Navi-Pop-up geben ihr Theme an die Karten darin weiter).
+3. Globales Theme aus dem Speicher (`src/shared/theme-store.js`) – gesetzt mit dem [Nova Themes Schalter](theme-card.md).
+4. Nova Blau.
+
+Technik: `theme-apply.js` setzt das Ergebnis als Attribut `nova-theme` an das Kartenelement (Blau = kein Attribut), `theme.js` liefert
+dazu je Theme einen Block `:host([nova-theme=hell]){--nv-…}`. Das geschieht zentral in `define()` für jede Karte – Karten selbst
+müssen nichts tun. Einzelne `--nova-…`-Variablen aus einem HA-Theme übersteuern weiterhin jedes Theme.
+
+### Speicher
+
+`src/shared/theme-store.js` ist die einzige Stelle, die weiß, wo das globale Theme liegt: vorerst der Helfer
+`input_select.nova_theme` („Nova Theme“, Optionen = Theme-Namen). Der Themes Schalter legt ihn beim ersten Umschalten selbst an
+(WebSocket `input_select/create`, darf nur ein Administrator) und trägt neue Themes später als Optionen nach. Zieht das Theme in eine
+eigene Nova-Integration um, wird nur dieses Modul getauscht (`readTheme`, `setTheme`, `hasStore`, `canSetup`, `storeIds`).
+
+### Nova Hell (Abweichungen von Blau)
+
+| Token | Wert | Hinweis |
+| --- | --- | --- |
+| `bg` | `linear-gradient(160deg,rgba(236,238,242,.94),rgba(225,228,233,.94))` | helles Glas |
+| `border` / `chip` / `box` / `box-border` | Schiefer `20,28,45` mit 10 / 7 / 4 / 8 % | |
+| `fg` | `#0e121a` | 16:1 auf der Fläche; auch mit 60 % Deckkraft noch 4,7:1 |
+| `tint` / `shade` | `20,28,45` | Linien und Schienen werden dunkel |
+| `scrim` | `236,238,242` | Pillen über Kamerabild und Cover hell statt dunkel |
+| `accent` / `accent-fg` / `accent-ink` | `#f0b02e` / `#3a2a00` / `#8a5a00` | Schrift auf Gelb 7,3:1, Akzent als Schrift 5,1:1 |
+| `active`, `a1` | `#1a66cc` | Weiß darauf 5,5:1, als Schrift 4,7:1 |
+| `warn` / `error` | `#0f65b8` / `#c62f2f` | als Schrift 5,1:1 / 4,7:1 |
+| `a2` / `a3` / `a4` / `neutral` | `#f0b02e` / `#9a5f33` / `#2a7a46` / `#5b6673` | Schrift darauf 7,3 / 5,2 / 5,3 / 5,8:1 |
+| `clock-night` / `-morning` / `-noon` | `#2f4fd6` / `#c4621a` / `#0e121a` | Leuchtziffern auf hellem Grund |
+| Pop-up | `popup-bg` hell 97 %, `popup-head` `rgba(226,230,236,.97)`, Abdunklung `rgba(30,38,55,.28)` | |
+| `shadow` | `0 1px 2px` 6 % + `0 6px 18px` 8 % Schiefer | weich statt dunkel |
+| `edge` | `inset 0 1px 0 rgba(255,255,255,.7)` | |
+| `glow` / `text-shadow` | `0%` | keine Glows, keine Schrift-Schatten; Zustandsringe bleiben |
+| `blur` / `sat` | `12px` / `120%` | |
+| Navi | Rand 12 %, Chips 6 %, Blur `14px`, Warnung `#8a5a00` | |
+
+Kontraste gerechnet auf der Kartenfläche über einem hellen Dashboard (`#ebeef2`), Ziel WCAG AA (4,5:1 für Schrift).
+
+### Nova Midnight (Abweichungen von Blau)
+
+Vorbild ist der Dark Mode von Apple: Seite schwarz, Karten dunkelgrau, innere Kacheln etwas heller, feine Linien, kein Glow,
+kein Blur (schnell auf dem Echo Show). Aktive und primäre Knöpfe sind getöntes Glas wie der Start-Knopf der Timer Card: 22 % Farbe
+über der Kachel, feiner heller Rand, Lichtkante oben, Schrift hell.
+
+| Token | Wert | Hinweis |
+| --- | --- | --- |
+| `bg` / `popup-base` / `navi-popup-bg` | `#1c1c1e` | Karten |
+| `area-bg` / `popup-bg` | `#000` | Rahmen von Bereich und Pop-up: schwarz wie die Seite, die Karten darin grau |
+| `chip` / `box` / `popup-head` | `#2c2c2e` | Kacheln, Chips, Eingabefelder |
+| `border` / `box-border` | Weiß 6 % | feine Trennlinien |
+| `blur` / `sat` | `0px` / `100%` | kein backdrop-filter |
+| `fg` / `knob` | `#e5e5ea` | 13,6:1 auf der Karte, mit 60 % Deckkraft 5,7:1, auf Kacheln 11,1:1 |
+| `fill` / `fill-ink` / `tint-ink` | `22%` / `0%` / `0%` | getönte Knöpfe, Schrift und Icons darauf hell (7,5:1 bis 8,6:1) |
+| `fill-edge` | `inset 0 1px 0` Weiß 12 % + `inset 0 0 0 1px` Weiß 10 % | Lichtkante und Rand |
+| `active`, `a1` | `#6b8db5` | gedämpftes Stahlblau, als Schrift 4,9:1 |
+| `accent`, `a2` / `accent-ink` | `#b08d57` | gedämpftes Gold, als Schrift 5,5:1 |
+| `a3` / `a4` / `neutral` | `#ad805c` / `#5f9a72` / `#8a929c` | als Schrift 4,9 / 5,2 / 5,4:1 |
+| `warn` / `error` | `#7fa6c9` / `#c86a6a` | als Schrift 6,6:1 / 4,6:1 |
+| `*-fg` | `#121214` | dunkle Schrift, wo eine Fläche doch voll gefüllt ist (z. B. farbige Chips mit eigenem Theme-Wert), über 5:1 |
+| `clock-night` / `-morning` / `-noon` | `#5a6fb8` / `#c98a4e` / `#c7ccd6` | |
+| `shadow` / `shadow-popup` / `edge` | keiner / Ring Weiß 8 % / Kante Weiß 5 % | |
+| `glow` / `ring` | `0%` / `70%` | keine Glows, auch nicht in den Zeichnungen; Zustandsringe gedämpft |
+| Navi | Rand 8 %, Chips `#2c2c2e`, kein Blur, Warnung `#b08d57` | |
+
+Kontraste gerechnet auf `#1c1c1e` bzw. auf der getönten Kachel. Gerätezeichnungen behalten die Gehäusefarben von Nova Blau (`PAL`).
+
+### Nova Velvet (Abweichungen von Blau)
+
+| Token | Wert | Hinweis |
+| --- | --- | --- |
+| `bg` | `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))` | cremiges Beige |
+| `border` / `chip` / `box` / `box-border` | Mokka `90,62,40` 14 % / Mokka `74,48,28` mit 8 / 5 / 10 % | |
+| `fg` | `#1a0f09` | Espresso: 14,5:1, mit 60 % Deckkraft 4,5:1 |
+| `tint` / `shade` / `scrim` | `74,48,28` / `74,48,28` / `239,230,214` | |
+| `knob` | `#fbf6ec` | Creme |
+| `accent` / `accent-fg` / `accent-ink` | Gold `#b8935a` / `#1a0f09` / `#7a5a1e` | Espresso auf Gold 6,6:1, Gold als Schrift 4,9:1 |
+| `active` / `active-fg` | Cognac `#7d4f24` / Creme `#fbf6ec` | 6,5:1, Cognac als Schrift 5,4:1 |
+| `a1` | Espresso `#4a3226`, Schrift Creme | Creme darauf 11,0:1, als Schrift 9,1:1 |
+| `a1-dev` | Gold `#b8935a` | Leuchten von Akzent 1 in Gerätezeichnungen: Espresso hätte auf dunklem Gehäuse nur 1,4:1, Gold rund 6:1 |
+| `a3` / `a4` / `neutral` | Bordeaux `#7a2f3a` / Oliv `#4f5f2a` / Taupe `#62554c` | Creme darauf, alle über 6,9:1 |
+| `a2` | Gold `#b8935a`, Schrift Espresso | |
+| `warn` / `error` | Bernstein `#7a4f00` / `#a3322b` | als Schrift 5,5:1 / 5,3:1 |
+| `clock-night` / `-morning` / `-noon` | Rost `#6b3a2a` / `#9a5a1e` / `#1a0f09` | Nacht als Schrift 7,2:1 |
+| Pop-up | Creme 97 %, Kopf `rgba(233,223,205,.97)`, Abdunklung `rgba(40,26,16,.32)` | |
+| `shadow` | `0 1px 2px` 8 % + `0 8px 22px` 12 % Mokka | warm und weich |
+| `edge` | `inset 0 1px 0 rgba(255,255,255,.6)` | |
+| `glow` / `text-shadow` | `0%` | |
+| `blur` / `sat` | `12px` / `115%` | |
+| Navi | Rand 16 %, Chips 6 %, Blur `14px`, Warnung `#7a5a1e` | |
+
+Kontraste gerechnet auf der Kartenfläche über einem Beige-Dashboard. Abweichung vom Konzept: Schrift Espresso `#1a0f09` statt
+Mokka `#3b2a20`, weil Mokka mit 60 % Deckkraft (Untertitel) nur 3,5:1 schafft. Der Cognac-Rand an Gold-Flächen aus dem Konzept fehlt
+noch (bräuchte eigenes CSS in den Karten).
+
+Velvet hat keine Blau- oder Petrol-Töne. Blau bleibt nur, wo es Inhalt ist: Farben von Lampen und Filamenten, die Radiowecker-Farbe
+`blue`/`green`, die man selbst wählt (`led-*`), und Wasser in den Zeichnungen (`PAL.water`).
 
 ## Prüfen
 
 - `npm run check` – keine festen Farben im Karten-CSS.
 - `demo/index.html` – alle Karten mit Testdaten, ohne Home Assistant (über einen lokalen Webserver im Repo-Root öffnen,
-  z. B. `npx serve .` und dann `/demo/`). Mit `?src=…` lässt sich ein anderer Build laden, mit `?theme=…` ein Theme setzen.
+  z. B. `npx serve .` und dann `/demo/`). Mit `?src=…` lässt sich ein anderer Build laden, mit `?theme=hell` bzw. `?theme=midnight` oder `?theme=velvet` ein Theme setzen (wirkt wie die Theme-Variable `nova-theme`).
   Bei Umbauten an den Tokens vorher und nachher fotografieren und vergleichen: Nova Blau muss pixelgleich bleiben.

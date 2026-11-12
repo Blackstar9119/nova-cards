@@ -97,8 +97,8 @@ const THERMO_CSS = `
 .th.warn{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-warn) 60%,transparent) var(--nv-ring),transparent)}
 .hd{display:flex;align-items:center;gap:var(--nv-s5);cursor:pointer}
 .ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color var(--nv-d4),color var(--nv-d4),border-color var(--nv-d4),box-shadow var(--nv-d4),transform var(--nv-d4),opacity var(--nv-d4)}
-.ic.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent)}
-.ic.cool{background:var(--nv-active);color:var(--nv-active-fg)}
+.ic.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.ic.cool{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg))}
 .nm{flex:1;min-width:0}.nm b{display:block;font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nm small{display:block;font-size:var(--nv-fs-4);opacity:.65}
 .w{display:none;--mdc-icon-size:var(--nv-icon-md);color:var(--nv-warn)}.th.warn .w{display:flex}
@@ -109,12 +109,12 @@ const THERMO_CSS = `
 .stp span{min-width:52px;text-align:center}
 .sb{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .sb:active{transform:scale(.9)}.sb ha-icon{--mdc-icon-size:var(--nv-icon-md)}
-.stp.pend span{color:var(--nv-accent)}
+.stp.pend span{color:var(--nv-accent-ink)}
 .spk{width:100%;height:56px;display:block}
 .pills{display:flex;flex-wrap:wrap;gap:7px}
 .pill{padding:7px var(--nv-s6);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-5);cursor:pointer;display:inline-flex;gap:var(--nv-s3);align-items:center;border:1px solid rgba(var(--nv-tint),.08);white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .pill:active{transform:scale(.94)}.pill ha-icon{--mdc-icon-size:var(--nv-icon-sm)}
-.pill.on{background:var(--nv-accent);color:var(--nv-accent-fg)}.pill.on.off{background:var(--nv-active);color:var(--nv-active-fg)}
+.pill.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}.pill.on.off{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .na{opacity:.4;pointer-events:none}`;
 // Kompakt (Standard): kleiner, Modi oben, Verlauf unten
 const COMPACT_CSS = `:host{container-type:inline-size}

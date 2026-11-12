@@ -6,11 +6,412 @@
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
+  // src/shared/theme.js
+  var TOKENS = [
+    // Flächen und Text
+    ["bg", "background", "linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62))"],
+    ["border", "border-color", "rgba(255,255,255,.14)"],
+    ["fg", "text-color", "#fff"],
+    ["chip", "chip-color", "rgba(255,255,255,.13)"],
+    ["box", "box-background", "rgba(255,255,255,.09)"],
+    ["box-border", "box-border-color", "rgba(255,255,255,.1)"],
+    // Farb-Grundtöne als R,G,B – verwendet als rgba(var(--nv-tint),.12): Deckkraft steht an der Stelle, der Ton kommt vom Theme
+    ["tint", "tint", "255,255,255"],
+    // Aufheller der Oberfläche: Linien, Schienen, Flächen (helle Themes: dunkle Tinte)
+    ["shade", "shade", "0,0,0"],
+    // Schattenfarbe der Oberfläche
+    ["scrim", "scrim", "10,14,24"],
+    // Abdunklung über Bildern (Kamera, Media)
+    ["hi", "device-light", "255,255,255"],
+    // Licht in Zeichnungen (Kanten, Glanz) – kippt in keinem Theme
+    ["lo", "device-dark", "0,0,0"],
+    // Schatten in Zeichnungen
+    ["knob", "knob-color", "#fff"],
+    // Griff von Regler und Schalter
+    ["stage", "stage-color", "#000"],
+    // Fläche hinter Vollbild-Video
+    ["cut", "cutout-color", "rgba(20,24,38,.6)"],
+    // Rand um Icons, die auf einer Farbfläche sitzen (Müllkalender)
+    // Akzente und Farbrollen
+    ["accent", "accent-color", "#f5b83d"],
+    ["accent-fg", "accent-text-color", "#3a2a00"],
+    ["accent-ink", "accent-ink-color", "#f5b83d"],
+    // Akzent als Schrift- oder Icon-Farbe direkt auf der Fläche (helle Themes: dunkler)
+    ["active", "active-color", "#3d8bf5"],
+    ["active-fg", "active-text-color", "#fff"],
+    ["warn", "warning-color", "#7cc4ff"],
+    ["error", "error-color", "#ff6b6b"],
+    ["error-fg", "error-text-color", "#fff"],
+    ["a1", "accent-1", "#3d8bf5"],
+    ["a1-fg", "accent-1-text", "#fff"],
+    ["a2", "accent-2", "#f5b83d"],
+    ["a2-fg", "accent-2-text", "#3a2a00"],
+    ["a3", "accent-3", "#b5794a"],
+    ["a3-fg", "accent-3-text", "#fff"],
+    ["a4", "accent-4", "#4caf6a"],
+    ["a4-fg", "accent-4-text", "#fff"],
+    ["neutral", "neutral", "#7b8794"],
+    ["neutral-fg", "neutral-text", "#fff"],
+    // Farbrolle in Gerätezeichnungen (Leuchten auf dunklem Gehäuse) – Standard = die Rolle selbst, ein Theme kann sie aufhellen
+    ["a1-dev", "accent-1-device", "var(--nv-a1)"],
+    ["a2-dev", "accent-2-device", "var(--nv-a2)"],
+    ["a3-dev", "accent-3-device", "var(--nv-a3)"],
+    ["a4-dev", "accent-4-device", "var(--nv-a4)"],
+    ["neutral-dev", "neutral-device", "var(--nv-neutral)"],
+    // Standardfarbe der Kaffeemaschine (nur dort, nicht im Editor wählbar): Kupfer aus Akzent 3, Velvet eigenes Braun
+    ["coffee", "coffee-color", "var(--nv-a3)"],
+    ["coffee-fg", "coffee-color-text", "var(--nv-a3-fg)"],
+    ["coffee-dev", "coffee-color-device", "var(--nv-a3-dev)"],
+    // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
+    ["clock-night", "clock-night", "#4d6bff"],
+    ["clock-morning", "clock-morning", "#ffb36b"],
+    ["clock-noon", "clock-noon", "#f4f7ff"],
+    ["led-red", "led-red", "#ff2414"],
+    ["led-green", "led-green", "#39ff7a"],
+    ["led-blue", "led-blue", "#3fa9ff"],
+    ["led-amber", "led-amber", "#ffb000"],
+    // Pop-up
+    ["area-bg", "area-background", "var(--nv-bg)"],
+    // Rahmen der Bereich Card (Midnight: schwarz, Karten darin grau)
+    ["popup-bg", "popup-background", "linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))"],
+    ["popup-base", "popup-base-color", "rgba(22,27,42,.88)"],
+    ["popup-head", "popup-header-color", "rgba(60,72,100,.85)"],
+    ["popup-backdrop", "popup-backdrop", "rgba(8,12,22,.5)"],
+    ["navi-popup-bg", "navi-popup-background", "linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9))"],
+    // Radien
+    ["radius", "radius", "24px"],
+    ["popup-r", "popup-radius", "28px"],
+    ["r-lg", "radius-lg", "20px"],
+    ["r-md", "radius-md", "16px"],
+    ["r-sm", "radius-sm", "12px"],
+    ["r-xs", "radius-xs", "4px"],
+    ["r-pill", "radius-pill", "999px"],
+    // Schatten, Glow, Ringe
+    ["shadow", "shadow-card", "0 10px 30px rgba(0,0,0,.25)"],
+    ["edge", "edge", "inset 0 1px 0 rgba(255,255,255,.12)"],
+    ["shadow-popup", "shadow-popup", "0 20px 60px rgba(0,0,0,.45)"],
+    ["shadow-knob", "shadow-knob", "0 1px 4px rgba(0,0,0,.4)"],
+    ["focus", "focus-ring", "0 0 0 2px var(--nv-active)"],
+    ["glow", "glow", "100%"],
+    // Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus
+    ["ring", "ring", "100%"],
+    // Gefüllte Knöpfe (aktiv, primär): Anteil der Farbe an der Fläche (Rest = Chip-Glas), Anteil der Farbschrift (Rest = --nv-fg),
+    // Lichtkante/Rand obendrauf; tint-ink = Anteil der Farbe an farbigen Icons auf Glasknöpfen
+    ["fill", "button-fill", "100%"],
+    ["fill-ink", "button-fill-text", "100%"],
+    ["fill-edge", "button-edge", "0 0 0 transparent"],
+    ["tint-ink", "button-tint-text", "100%"],
+    // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
+    ["text-shadow", "text-shadow", "100%"],
+    // Stärke der Schrift-Schatten über Bildern (Raumname, Media-Titel)
+    // Blur
+    ["blur", "blur", "20px"],
+    ["blur-xs", "blur-xs", "8px"],
+    ["blur-sm", "blur-sm", "10px"],
+    ["blur-lg", "blur-lg", "16px"],
+    ["sat", "saturate", "150%"],
+    ["sat-2", "saturate-strong", "160%"],
+    // Schrift
+    ["font", "font", "var(--ha-font-family-body,Roboto,sans-serif)"],
+    ["fs-1", "font-size-1", "10.5px"],
+    ["fs-2", "font-size-2", "11px"],
+    ["fs-3", "font-size-3", "11.5px"],
+    ["fs-4", "font-size-4", "12px"],
+    ["fs-5", "font-size-5", "12.5px"],
+    ["fs-6", "font-size-6", "13px"],
+    ["fs-7", "font-size-7", "13.5px"],
+    ["fs-8", "font-size-8", "14px"],
+    ["fs-9", "font-size-9", "15px"],
+    ["fs-10", "font-size-10", "16px"],
+    ["fd-1", "font-display-1", "24px"],
+    ["fd-2", "font-display-2", "28px"],
+    ["fd-3", "font-display-3", "32px"],
+    ["fd-4", "font-display-4", "40px"],
+    ["fd-5", "font-display-5", "48px"],
+    ["fw-light", "font-weight-light", "300"],
+    ["fw-medium", "font-weight-medium", "500"],
+    ["fw-bold", "font-weight-bold", "600"],
+    ["fw-heavy", "font-weight-heavy", "700"],
+    ["caps", "tracking-caps", ".05em"],
+    ["icon-sm", "icon-sm", "16px"],
+    ["icon-md", "icon-md", "18px"],
+    ["icon-lg", "icon-lg", "20px"],
+    ["icon-xl", "icon-xl", "24px"],
+    // Abstände
+    ["s1", "space-1", "2px"],
+    ["s2", "space-2", "4px"],
+    ["s3", "space-3", "6px"],
+    ["s4", "space-4", "8px"],
+    ["s5", "space-5", "10px"],
+    ["s6", "space-6", "12px"],
+    ["s7", "space-7", "14px"],
+    ["s8", "space-8", "16px"],
+    ["pad", "card-padding", "14px 16px"],
+    // Zeiten (nur Übergänge der Oberfläche – die Choreografie der Zeichnungen bleibt in der jeweiligen Szene)
+    ["d1", "dur-1", ".15s"],
+    ["d2", "dur-2", ".2s"],
+    ["d3", "dur-3", ".25s"],
+    ["d4", "dur-4", ".3s"],
+    ["d5", "dur-5", ".4s"],
+    ["d6", "dur-6", ".6s"],
+    ["d7", "dur-7", "1s"],
+    ["ease", "ease", "cubic-bezier(.2,.8,.2,1)"],
+    ["ease-soft", "ease-soft", "cubic-bezier(.3,.7,.3,1)"],
+    ["press", "press-scale", ".92"],
+    ["sweep", "sweep-dur", ".9s"]
+  ];
+  var INK = "20,28,45";
+  var MOKKA = "74,48,28";
+  var THEMES = {
+    blau: { name: "Nova Blau", vars: {} },
+    hell: { name: "Nova Hell", vars: {
+      bg: "linear-gradient(160deg,rgba(236,238,242,.94),rgba(225,228,233,.94))",
+      border: `rgba(${INK},.1)`,
+      fg: "#0e121a",
+      chip: `rgba(${INK},.07)`,
+      box: `rgba(${INK},.04)`,
+      "box-border": `rgba(${INK},.08)`,
+      tint: INK,
+      shade: INK,
+      scrim: "236,238,242",
+      knob: "#fff",
+      cut: "rgba(236,238,242,.9)",
+      accent: "#f0b02e",
+      "accent-fg": "#3a2a00",
+      "accent-ink": "#8a5a00",
+      active: "#1a66cc",
+      "active-fg": "#fff",
+      warn: "#0f65b8",
+      error: "#c62f2f",
+      "error-fg": "#fff",
+      a1: "#1a66cc",
+      a2: "#f0b02e",
+      "a2-fg": "#3a2a00",
+      a3: "#9a5f33",
+      a4: "#2a7a46",
+      neutral: "#5b6673",
+      "clock-night": "#2f4fd6",
+      "clock-morning": "#c4621a",
+      "clock-noon": "#0e121a",
+      "popup-bg": "linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))",
+      "popup-base": "rgba(236,239,243,.97)",
+      "popup-head": "rgba(226,230,236,.97)",
+      "popup-backdrop": "rgba(30,38,55,.28)",
+      "navi-popup-bg": "linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))",
+      shadow: `0 1px 2px rgba(${INK},.06),0 6px 18px rgba(${INK},.08)`,
+      edge: "inset 0 1px 0 rgba(255,255,255,.7)",
+      "shadow-popup": `0 20px 60px rgba(${INK},.2)`,
+      "shadow-knob": `0 1px 4px rgba(${INK},.3)`,
+      glow: "0%",
+      "text-shadow": "0%",
+      blur: "12px",
+      sat: "120%",
+      "sat-2": "120%"
+    }, navi: { border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: "14px", warn: "#8a5a00" } },
+    midnight: { name: "Nova Midnight", vars: {
+      // Wie der Dark Mode von Apple: Seite schwarz, Karten #1c1c1e, Kacheln #2c2c2e, feine Linien, kein Glow, kein Blur.
+      // Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante), Schrift darauf hell.
+      bg: "#1c1c1e",
+      border: "rgba(255,255,255,.06)",
+      fg: "#e5e5ea",
+      chip: "#2c2c2e",
+      box: "#2c2c2e",
+      "box-border": "rgba(255,255,255,.06)",
+      knob: "#e5e5ea",
+      cut: "rgba(28,28,30,.85)",
+      accent: "#b08d57",
+      "accent-fg": "#121214",
+      "accent-ink": "#b08d57",
+      active: "#6b8db5",
+      "active-fg": "#121214",
+      warn: "#7fa6c9",
+      error: "#c86a6a",
+      "error-fg": "#121214",
+      a1: "#6b8db5",
+      "a1-fg": "#121214",
+      a2: "#b08d57",
+      "a2-fg": "#121214",
+      a3: "#ad805c",
+      "a3-fg": "#121214",
+      a4: "#5f9a72",
+      "a4-fg": "#121214",
+      neutral: "#8a929c",
+      "neutral-fg": "#121214",
+      "clock-night": "#5a6fb8",
+      "clock-morning": "#c98a4e",
+      "clock-noon": "#c7ccd6",
+      "area-bg": "#000",
+      "popup-bg": "#000",
+      "popup-base": "#1c1c1e",
+      "popup-head": "#2c2c2e",
+      "popup-backdrop": "rgba(0,0,0,.72)",
+      "navi-popup-bg": "#1c1c1e",
+      shadow: "0 0 0 transparent",
+      edge: "inset 0 1px 0 rgba(255,255,255,.05)",
+      "shadow-popup": "0 0 0 1px rgba(255,255,255,.08)",
+      glow: "0%",
+      ring: "70%",
+      blur: "0px",
+      sat: "100%",
+      "sat-2": "100%",
+      fill: "22%",
+      "fill-ink": "0%",
+      "tint-ink": "0%",
+      "fill-edge": "inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.1)"
+    }, navi: { border: "rgba(255,255,255,.08)", chip: "#2c2c2e", blur: "0px", warn: "#b08d57" } },
+    velvet: { name: "Nova Velvet", vars: {
+      // Warm und edel: cremiges Beige, Espresso-Schrift, Gold und Cognac, weiche warme Schatten statt Glow
+      bg: `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))`,
+      border: "rgba(90,62,40,.14)",
+      fg: "#1a0f09",
+      chip: `rgba(${MOKKA},.08)`,
+      box: `rgba(${MOKKA},.05)`,
+      "box-border": `rgba(${MOKKA},.1)`,
+      tint: MOKKA,
+      shade: MOKKA,
+      scrim: "239,230,214",
+      knob: "#fbf6ec",
+      cut: "rgba(239,230,214,.9)",
+      accent: "#b8935a",
+      "accent-fg": "#1a0f09",
+      "accent-ink": "#7a5a1e",
+      active: "#7d4f24",
+      "active-fg": "#fbf6ec",
+      warn: "#7a4f00",
+      error: "#a3322b",
+      "error-fg": "#fbf6ec",
+      a1: "#4a3226",
+      "a1-fg": "#fbf6ec",
+      "a1-dev": "#b8935a",
+      // Espresso auf der Fläche, Gold auf den Geräten
+      a2: "#b8935a",
+      "a2-fg": "#1a0f09",
+      a3: "#7a2f3a",
+      "a3-fg": "#fbf6ec",
+      coffee: "#8a5a33",
+      "coffee-fg": "#fbf6ec",
+      "coffee-dev": "#b07a48",
+      // Kaffee warmes Braun statt Bordeaux
+      a4: "#4f5f2a",
+      "a4-fg": "#fbf6ec",
+      neutral: "#62554c",
+      "neutral-fg": "#fbf6ec",
+      "clock-night": "#6b3a2a",
+      "clock-morning": "#9a5a1e",
+      "clock-noon": "#1a0f09",
+      "popup-bg": "linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))",
+      "popup-base": "rgba(243,236,223,.97)",
+      "popup-head": "rgba(233,223,205,.97)",
+      "popup-backdrop": "rgba(40,26,16,.32)",
+      "navi-popup-bg": "linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))",
+      shadow: `0 1px 2px rgba(${MOKKA},.08),0 8px 22px rgba(${MOKKA},.12)`,
+      edge: "inset 0 1px 0 rgba(255,255,255,.6)",
+      "shadow-popup": `0 20px 60px rgba(${MOKKA},.22)`,
+      "shadow-knob": `0 1px 4px rgba(${MOKKA},.35)`,
+      glow: "0%",
+      "text-shadow": "0%",
+      blur: "12px",
+      sat: "115%",
+      "sat-2": "115%"
+    }, navi: { border: "rgba(90,62,40,.16)", chip: `rgba(${MOKKA},.06)`, blur: "14px", warn: "#7a5a1e" } }
+  };
+  var THEME_KEYS = Object.keys(THEMES);
+  var NAVI = { border: "rgba(255,255,255,.16)", chip: "rgba(255,255,255,.1)", blur: "22px", warn: "#f5b83d" };
+  var block = (sel2, over) => `${sel2}{${TOKENS.filter(([k]) => !over || k in over).map(([k, pub, v]) => `--nv-${k}:var(--nova-${pub},${over?.[k] ?? v})`).join(";")}}`;
+  var themed = (navi) => Object.entries(THEMES).filter(([, t]) => Object.keys(t.vars).length).map(([k, t]) => block(`:host([nova-theme=${k}])`, navi ? { ...t.vars, ...t.navi } : t.vars)).join("");
+  var NOVA_VARS = block(":host") + themed(false);
+  var NAVI_VARS = block(":host", { ...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI }) + themed(true);
+
+  // src/shared/theme-store.js
+  var STORE_ENTITY = "input_select.nova_theme";
+  var ID = "nova_theme";
+  var NAME = "Nova Theme";
+  var ICON = "mdi:palette-outline";
+  var options = () => THEME_KEYS.map((k) => THEMES[k].name);
+  var keyOf = (v) => THEME_KEYS.find((k) => THEMES[k].name === v || k === v);
+  var storeIds = () => [STORE_ENTITY];
+  var readTheme = (h) => keyOf(h?.states?.[STORE_ENTITY]?.state);
+  var hasStore = (h) => !!h?.states?.[STORE_ENTITY];
+  var canSetup = (h) => !!h?.user?.is_admin;
+  var fail = (code, msg) => Object.assign(new Error(msg), { code });
+  async function setup(h) {
+    if (!canSetup(h)) throw fail("admin", "Das Theme kann erst ein Administrator einrichten.");
+    const items = await h.callWS({ type: "input_select/list" }).catch(() => []);
+    const it = items.find((i) => i.id === ID);
+    if (!it) await h.callWS({ type: "input_select/create", name: NAME, icon: ICON, options: options() });
+    else await h.callWS({
+      type: "input_select/update",
+      input_select_id: ID,
+      name: it.name || NAME,
+      icon: it.icon || ICON,
+      options: [.../* @__PURE__ */ new Set([...it.options || [], ...options()])]
+    });
+  }
+  async function setTheme(h, key) {
+    const name = THEMES[key]?.name;
+    if (!name) throw fail("failed", `Unbekanntes Theme: ${key}`);
+    const st = h.states[STORE_ENTITY];
+    if (!st || !st.attributes.options?.includes(name)) await setup(h);
+    try {
+      await h.callService("input_select", "select_option", { option: name }, { entity_id: STORE_ENTITY });
+    } catch (e) {
+      throw fail("failed", e?.message || "Theme konnte nicht gespeichert werden.");
+    }
+  }
+
+  // src/shared/theme-apply.js
+  var valid = (v) => {
+    const k = String(v || "").trim().toLowerCase();
+    return k && k !== "global" && THEMES[k] ? k : void 0;
+  };
+  function apply(el2) {
+    const own = valid(el2._nvTheme);
+    if (own) el2.style.setProperty("--nova-theme", own);
+    else el2.style.removeProperty("--nova-theme");
+    const t = own || el2._nvInh || readTheme(el2._nvHass) || "blau";
+    if (t === "blau") {
+      if (el2.hasAttribute("nova-theme")) el2.removeAttribute("nova-theme");
+    } else if (el2.getAttribute("nova-theme") !== t) el2.setAttribute("nova-theme", t);
+  }
+  function inherit(el2) {
+    cancelAnimationFrame(el2._nvRaf);
+    el2._nvRaf = requestAnimationFrame(() => {
+      const p = el2.parentElement || el2.getRootNode?.().host;
+      el2._nvInh = p && el2.isConnected ? valid(getComputedStyle(p).getPropertyValue("--nova-theme")) : void 0;
+      apply(el2);
+    });
+  }
+  function themeable(cls) {
+    const p = cls.prototype;
+    if (p._nvThemed) return;
+    p._nvThemed = true;
+    const sc = p.setConfig;
+    if (sc) p.setConfig = function(c) {
+      this._nvTheme = c?.theme;
+      apply(this);
+      return sc.call(this, c);
+    };
+    const hd = Object.getOwnPropertyDescriptor(p, "hass");
+    if (hd?.set) Object.defineProperty(p, "hass", { ...hd, set(h) {
+      const o = this._nvHass;
+      this._nvHass = h;
+      if (o?.states?.[STORE_ENTITY] !== h?.states?.[STORE_ENTITY]) apply(this);
+      if (o && (o.themes !== h?.themes || o.selectedTheme !== h?.selectedTheme)) inherit(this);
+      hd.set.call(this, h);
+    } });
+    const cc = p.connectedCallback;
+    p.connectedCallback = function() {
+      inherit(this);
+      return cc?.call(this);
+    };
+  }
+
   // src/shared/define.js
   var DEV = false;
   var tag = (name) => `${DEV ? "nova-dev-" : "nova-"}${name}`;
   var define = (name, cls, meta) => {
     const t = tag(name);
+    if (meta) themeable(cls);
     if (!customElements.get(t)) customElements.define(t, cls);
     if (meta) {
       window.customCards = window.customCards || [];
@@ -248,148 +649,11 @@
     });
   }
 
-  // src/shared/theme.js
-  var TOKENS = [
-    // Flächen und Text
-    ["bg", "background", "linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62))"],
-    ["border", "border-color", "rgba(255,255,255,.14)"],
-    ["fg", "text-color", "#fff"],
-    ["chip", "chip-color", "rgba(255,255,255,.13)"],
-    ["box", "box-background", "rgba(255,255,255,.09)"],
-    ["box-border", "box-border-color", "rgba(255,255,255,.1)"],
-    // Farb-Grundtöne als R,G,B – verwendet als rgba(var(--nv-tint),.12): Deckkraft steht an der Stelle, der Ton kommt vom Theme
-    ["tint", "tint", "255,255,255"],
-    // Aufheller der Oberfläche: Linien, Schienen, Flächen (helle Themes: dunkle Tinte)
-    ["shade", "shade", "0,0,0"],
-    // Schattenfarbe der Oberfläche
-    ["scrim", "scrim", "10,14,24"],
-    // Abdunklung über Bildern (Kamera, Media)
-    ["hi", "device-light", "255,255,255"],
-    // Licht in Zeichnungen (Kanten, Glanz) – kippt in keinem Theme
-    ["lo", "device-dark", "0,0,0"],
-    // Schatten in Zeichnungen
-    ["knob", "knob-color", "#fff"],
-    // Griff von Regler und Schalter
-    ["stage", "stage-color", "#000"],
-    // Fläche hinter Vollbild-Video
-    ["cut", "cutout-color", "rgba(20,24,38,.6)"],
-    // Rand um Icons, die auf einer Farbfläche sitzen (Müllkalender)
-    // Akzente und Farbrollen
-    ["accent", "accent-color", "#f5b83d"],
-    ["accent-fg", "accent-text-color", "#3a2a00"],
-    ["active", "active-color", "#3d8bf5"],
-    ["active-fg", "active-text-color", "#fff"],
-    ["warn", "warning-color", "#7cc4ff"],
-    ["error", "error-color", "#ff6b6b"],
-    ["error-fg", "error-text-color", "#fff"],
-    ["a1", "accent-1", "#3d8bf5"],
-    ["a1-fg", "accent-1-text", "#fff"],
-    ["a2", "accent-2", "#f5b83d"],
-    ["a2-fg", "accent-2-text", "#3a2a00"],
-    ["a3", "accent-3", "#b5794a"],
-    ["a3-fg", "accent-3-text", "#fff"],
-    ["a4", "accent-4", "#4caf6a"],
-    ["a4-fg", "accent-4-text", "#fff"],
-    ["neutral", "neutral", "#7b8794"],
-    ["neutral-fg", "neutral-text", "#fff"],
-    // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
-    ["clock-night", "clock-night", "#4d6bff"],
-    ["clock-morning", "clock-morning", "#ffb36b"],
-    ["clock-noon", "clock-noon", "#f4f7ff"],
-    ["led-red", "led-red", "#ff2414"],
-    ["led-green", "led-green", "#39ff7a"],
-    ["led-blue", "led-blue", "#3fa9ff"],
-    ["led-amber", "led-amber", "#ffb000"],
-    // Pop-up
-    ["popup-bg", "popup-background", "linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))"],
-    ["popup-base", "popup-base-color", "rgba(22,27,42,.88)"],
-    ["popup-head", "popup-header-color", "rgba(60,72,100,.85)"],
-    ["popup-backdrop", "popup-backdrop", "rgba(8,12,22,.5)"],
-    ["navi-popup-bg", "navi-popup-background", "linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9))"],
-    // Radien
-    ["radius", "radius", "24px"],
-    ["popup-r", "popup-radius", "28px"],
-    ["r-lg", "radius-lg", "20px"],
-    ["r-md", "radius-md", "16px"],
-    ["r-sm", "radius-sm", "12px"],
-    ["r-xs", "radius-xs", "4px"],
-    ["r-pill", "radius-pill", "999px"],
-    // Schatten, Glow, Ringe
-    ["shadow", "shadow-card", "0 10px 30px rgba(0,0,0,.25)"],
-    ["edge", "edge", "inset 0 1px 0 rgba(255,255,255,.12)"],
-    ["shadow-popup", "shadow-popup", "0 20px 60px rgba(0,0,0,.45)"],
-    ["shadow-knob", "shadow-knob", "0 1px 4px rgba(0,0,0,.4)"],
-    ["focus", "focus-ring", "0 0 0 2px var(--nv-active)"],
-    ["glow", "glow", "100%"],
-    // Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus
-    ["ring", "ring", "100%"],
-    // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
-    // Blur
-    ["blur", "blur", "20px"],
-    ["blur-xs", "blur-xs", "8px"],
-    ["blur-sm", "blur-sm", "10px"],
-    ["blur-lg", "blur-lg", "16px"],
-    ["sat", "saturate", "150%"],
-    ["sat-2", "saturate-strong", "160%"],
-    // Schrift
-    ["font", "font", "var(--ha-font-family-body,Roboto,sans-serif)"],
-    ["fs-1", "font-size-1", "10.5px"],
-    ["fs-2", "font-size-2", "11px"],
-    ["fs-3", "font-size-3", "11.5px"],
-    ["fs-4", "font-size-4", "12px"],
-    ["fs-5", "font-size-5", "12.5px"],
-    ["fs-6", "font-size-6", "13px"],
-    ["fs-7", "font-size-7", "13.5px"],
-    ["fs-8", "font-size-8", "14px"],
-    ["fs-9", "font-size-9", "15px"],
-    ["fs-10", "font-size-10", "16px"],
-    ["fd-1", "font-display-1", "24px"],
-    ["fd-2", "font-display-2", "28px"],
-    ["fd-3", "font-display-3", "32px"],
-    ["fd-4", "font-display-4", "40px"],
-    ["fd-5", "font-display-5", "48px"],
-    ["fw-light", "font-weight-light", "300"],
-    ["fw-medium", "font-weight-medium", "500"],
-    ["fw-bold", "font-weight-bold", "600"],
-    ["fw-heavy", "font-weight-heavy", "700"],
-    ["caps", "tracking-caps", ".05em"],
-    ["icon-sm", "icon-sm", "16px"],
-    ["icon-md", "icon-md", "18px"],
-    ["icon-lg", "icon-lg", "20px"],
-    ["icon-xl", "icon-xl", "24px"],
-    // Abstände
-    ["s1", "space-1", "2px"],
-    ["s2", "space-2", "4px"],
-    ["s3", "space-3", "6px"],
-    ["s4", "space-4", "8px"],
-    ["s5", "space-5", "10px"],
-    ["s6", "space-6", "12px"],
-    ["s7", "space-7", "14px"],
-    ["s8", "space-8", "16px"],
-    ["pad", "card-padding", "14px 16px"],
-    // Zeiten (nur Übergänge der Oberfläche – die Choreografie der Zeichnungen bleibt in der jeweiligen Szene)
-    ["d1", "dur-1", ".15s"],
-    ["d2", "dur-2", ".2s"],
-    ["d3", "dur-3", ".25s"],
-    ["d4", "dur-4", ".3s"],
-    ["d5", "dur-5", ".4s"],
-    ["d6", "dur-6", ".6s"],
-    ["d7", "dur-7", "1s"],
-    ["ease", "ease", "cubic-bezier(.2,.8,.2,1)"],
-    ["ease-soft", "ease-soft", "cubic-bezier(.3,.7,.3,1)"],
-    ["press", "press-scale", ".92"],
-    ["sweep", "sweep-dur", ".9s"]
-  ];
-  var NAVI = { border: "rgba(255,255,255,.16)", chip: "rgba(255,255,255,.1)", blur: "22px", warn: "#f5b83d" };
-  var block = (sel2, over) => `${sel2}{${TOKENS.filter(([k]) => !over || k in over).map(([k, pub, v]) => `--nv-${k}:var(--nova-${pub},${over?.[k] ?? v})`).join(";")}}`;
-  var NOVA_VARS = block(":host");
-  var NAVI_VARS = block(":host", { ...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI });
-
   // src/shared/styles.js
-  var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
+  var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4", coffee: "coffee" };
   var roleVars = (r) => {
     const k = ROLES[r] || ROLES.neutral;
-    return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)` };
+    return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`, dev: `var(--nv-${k}-dev)` };
   };
   var GLASS = `:host{position:relative}
 :host::before{content:'';position:absolute;inset:0;border-radius:var(--nv-radius);background:var(--nv-bg);pointer-events:none;
@@ -421,7 +685,7 @@ img{object-fit:contain}
 .na{opacity:.4}
 .ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color var(--nv-d3),color var(--nv-d3),border-color var(--nv-d3),box-shadow var(--nv-d3),transform var(--nv-d3),opacity var(--nv-d3)}
 .ic ha-icon{--mdc-icon-size:var(--nv-icon-md)}.ic img{width:20px;height:20px}
-.on>.ic{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 55%,transparent) var(--nv-glow),transparent)}
+.on>.ic{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .nm{flex:1;min-width:0}.nm b,.nm small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nm b{font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-7)}.nm small{font-size:var(--nv-fs-3);opacity:.6}
 .hd{display:flex;align-items:center;gap:var(--nv-s5)}
@@ -440,7 +704,7 @@ img{object-fit:contain}
 .pills{display:flex;flex-wrap:wrap;gap:7px}
 .pill{padding:7px var(--nv-s6);border-radius:var(--nv-r-pill);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);font-size:var(--nv-fs-5);display:inline-flex;gap:var(--nv-s3);align-items:center;white-space:nowrap;transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2);min-width:0}
 .pill ha-icon{--mdc-icon-size:var(--nv-icon-sm)}.pill img{width:16px;height:16px}
-.pill.on{background:var(--nv-active);color:var(--nv-active-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent)}
+.pill.on{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .pills.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-modular-button-width,104px),1fr));gap:var(--nv-s4)}
 .pills.grid .pill{flex-direction:column;justify-content:center;border-radius:var(--nv-r-md);padding:var(--nv-s5) var(--nv-s4);white-space:normal;text-align:center}
 .pills.grid .pill ha-icon{--mdc-icon-size:22px}.pills.grid .pill img{width:22px;height:22px}
@@ -493,10 +757,10 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
 
   // src/shared/lifecycle.js
   var GLOBAL = ["entities", "devices", "areas", "floors", "localize", "locale", "language", "themes", "selectedTheme", "config", "user", "connected"];
-  var ID = /^[a-z_]+\.[a-z0-9_]+$/;
+  var ID2 = /^[a-z_]+\.[a-z0-9_]+$/;
   var entityIds = (o, out = /* @__PURE__ */ new Set()) => {
     if (typeof o === "string") {
-      if (ID.test(o)) out.add(o);
+      if (ID2.test(o)) out.add(o);
     } else if (o && typeof o === "object") Object.values(o).forEach((v) => entityIds(v, out));
     return out;
   };
@@ -542,7 +806,51 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
     };
   };
 
+  // src/shared/editor-schema.js
+  var g2 = (...schema) => ({ type: "grid", name: "", schema });
+  var T = { text: {} };
+  var I = { icon: {} };
+  var A = { ui_action: {} };
+  var ENT = { name: "entity", required: true, selector: { entity: {} } };
+  var TITLE = { name: "title", selector: T };
+  var COLS = { name: "columns", selector: { number: { min: 1, max: 4, mode: "slider" } } };
+  var NUM = (n) => ({ name: n, selector: { number: { mode: "box", step: "any" } } });
+  var sel = (n, opts) => ({ name: n, selector: { select: { mode: "dropdown", options: opts.map(([value, label]) => ({ value, label })) } } });
+  var ROLE = (n) => sel(n, [["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]);
+  var NAMEICON = g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } });
+  var BASE_LABELS = {
+    name: "Name",
+    icon: "Icon",
+    status: "Status-Entität",
+    active: "Aktiv-Entität",
+    progress: "Fortschritt (%)",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken",
+    button_icon: "Touch-Button oben: Icon",
+    button_action: "Touch-Button oben: Aktion",
+    title: "Überschrift (optional)",
+    layout: "Darstellung",
+    columns: "Spalten",
+    entity: "Entität",
+    unit: "Einheit",
+    decimals: "Nachkommastellen",
+    min: "Min",
+    max: "Max",
+    step: "Schritt",
+    format: "Anzeige",
+    confirm: "Sicherheitsabfrage",
+    state: "Warnen bei Zustand",
+    state_not: "Warnen außer bei",
+    above: "Warnen über",
+    below: "Warnen unter",
+    message: "Meldung",
+    level: "Stufe",
+    glow: "Kartenrahmen einfärben"
+  };
+
   // src/shared/editor-base.js
+  var THEME_FIELD = [sel("theme", [["global", "Global (wie alle Nova Cards)"], ...THEME_KEYS.map((k) => [k, THEMES[k].name])])];
+  var COMMON_LABELS = { theme: "Theme dieser Karte" };
   var preload;
   var loadForm = () => customElements.get("ha-form") ? Promise.resolve() : preload ||= (async () => {
     try {
@@ -603,6 +911,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
       this._keep = /* @__PURE__ */ new Map();
       try {
         this._build();
+        this._themeSection();
       } finally {
         this._pool = null;
       }
@@ -632,7 +941,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
       const f3 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
         const f4 = document.createElement("ha-form");
         f4.schema = schema;
-        f4.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f4.computeLabel = (s) => this.constructor.labels?.[s.name] ?? COMMON_LABELS[s.name] ?? s.name;
         f4.computeHelper = (s) => this.constructor.helpers?.[s.name];
         f4.addEventListener("value-changed", (e) => {
           e.stopPropagation();
@@ -651,6 +960,20 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
       f3._cb = cb;
       this._forms.push(f3);
       return f3;
+    }
+    // Bereich „Theme“ am Ende jedes Karteneditors (abschalten mit static noTheme)
+    _themeSection() {
+      const w = !this.constructor.noTheme && this.shadowRoot.querySelector(".wrap");
+      if (!w) return;
+      w.append(this._section("theme", "mdi:palette-outline", "Theme", (b) => {
+        b.append(this._hint("Global folgt dem Theme, das du mit dem Nova Themes Schalter für alle Geräte wählst. Ein festes Theme gilt nur für diese Karte (und Karten darin)."));
+        b.append(this._form(THEME_FIELD, { theme: this._config.theme || "global" }, (v) => {
+          const c = { ...this._config };
+          if (!v.theme || v.theme === "global") delete c.theme;
+          else c.theme = v.theme;
+          this._emit(c);
+        }));
+      }));
     }
     // Runder Icon-Button (Verschieben, Löschen …)
     _btn(icon2, title, fn, dis) {
@@ -1124,10 +1447,10 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
 .room.click{cursor:pointer}
 .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.45;filter:grayscale(.7);transition:opacity .5s,filter .5s}
 .bgi{position:absolute;right:-14px;top:4px;--mdc-icon-size:130px;opacity:.07;transition:opacity .5s,color .5s}
-.room.lit .bgi{opacity:.18;color:var(--nv-accent)}.room.lit .bg{opacity:.85;filter:none}
+.room.lit .bgi{opacity:.18;color:var(--nv-accent-ink)}.room.lit .bg{opacity:.85;filter:none}
 .room.lit{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 40%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
 .room.warn{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-warn) 60%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
-.head{display:flex;align-items:center;gap:var(--nv-s1);position:relative;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9);text-shadow:0 1px 4px rgba(var(--nv-shade),.4)}
+.head{display:flex;align-items:center;gap:var(--nv-s1);position:relative;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9);text-shadow:0 1px 4px color-mix(in srgb,rgba(var(--nv-shade),.4) var(--nv-text-shadow),transparent)}
 .head .chev{--mdc-icon-size:var(--nv-icon-md);opacity:.6}
 .t{margin-left:auto;font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-6);opacity:.85;display:flex;gap:var(--nv-s4);align-items:center}
 .w{display:none;--mdc-icon-size:var(--nv-icon-sm);color:var(--nv-warn)}.room.warn .w{display:flex}
@@ -1136,8 +1459,8 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
 .b:focus-visible{box-shadow:var(--nv-focus)}
 .b:active{transform:scale(.9)}
 .b img{width:24px;height:24px;object-fit:contain}
-.b.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 55%,transparent) var(--nv-glow),transparent)}
-.b.on.alt{background:var(--nv-active);color:var(--nv-active-fg);box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 55%,transparent) var(--nv-glow),transparent)}
+.b.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.b.on.alt{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .b.na{opacity:.3}`;
   function normalize(c) {
     if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
@@ -1380,8 +1703,8 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
 .th.warn{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-warn) 60%,transparent) var(--nv-ring),transparent)}
 .hd{display:flex;align-items:center;gap:var(--nv-s5);cursor:pointer}
 .ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);transition:background-color var(--nv-d4),color var(--nv-d4),border-color var(--nv-d4),box-shadow var(--nv-d4),transform var(--nv-d4),opacity var(--nv-d4)}
-.ic.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent)}
-.ic.cool{background:var(--nv-active);color:var(--nv-active-fg)}
+.ic.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.ic.cool{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg))}
 .nm{flex:1;min-width:0}.nm b{display:block;font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nm small{display:block;font-size:var(--nv-fs-4);opacity:.65}
 .w{display:none;--mdc-icon-size:var(--nv-icon-md);color:var(--nv-warn)}.th.warn .w{display:flex}
@@ -1392,12 +1715,12 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
 .stp span{min-width:52px;text-align:center}
 .sb{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .sb:active{transform:scale(.9)}.sb ha-icon{--mdc-icon-size:var(--nv-icon-md)}
-.stp.pend span{color:var(--nv-accent)}
+.stp.pend span{color:var(--nv-accent-ink)}
 .spk{width:100%;height:56px;display:block}
 .pills{display:flex;flex-wrap:wrap;gap:7px}
 .pill{padding:7px var(--nv-s6);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-5);cursor:pointer;display:inline-flex;gap:var(--nv-s3);align-items:center;border:1px solid rgba(var(--nv-tint),.08);white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .pill:active{transform:scale(.94)}.pill ha-icon{--mdc-icon-size:var(--nv-icon-sm)}
-.pill.on{background:var(--nv-accent);color:var(--nv-accent-fg)}.pill.on.off{background:var(--nv-active);color:var(--nv-active-fg)}
+.pill.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}.pill.on.off{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .na{opacity:.4;pointer-events:none}`;
   var COMPACT_CSS = `:host{container-type:inline-size}
 .th{padding:var(--nv-s5) var(--nv-s6);gap:var(--nv-s3);min-width:0}.ic{width:30px;height:30px}.ic ha-icon{--mdc-icon-size:17px}.nm b{font-size:var(--nv-fs-6)}.nm small{font-size:var(--nv-fs-2)}
@@ -2033,48 +2356,6 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   };
   define(TAG3, NovaLightCard, { name: "Nova Licht Card", description: "Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.", documentationURL: docUrl("nova-licht-card") });
 
-  // src/shared/editor-schema.js
-  var g2 = (...schema) => ({ type: "grid", name: "", schema });
-  var T = { text: {} };
-  var I = { icon: {} };
-  var A = { ui_action: {} };
-  var ENT = { name: "entity", required: true, selector: { entity: {} } };
-  var TITLE = { name: "title", selector: T };
-  var COLS = { name: "columns", selector: { number: { min: 1, max: 4, mode: "slider" } } };
-  var NUM = (n) => ({ name: n, selector: { number: { mode: "box", step: "any" } } });
-  var sel = (n, opts) => ({ name: n, selector: { select: { mode: "dropdown", options: opts.map(([value, label]) => ({ value, label })) } } });
-  var ROLE = (n) => sel(n, [["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]);
-  var NAMEICON = g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } });
-  var BASE_LABELS = {
-    name: "Name",
-    icon: "Icon",
-    status: "Status-Entität",
-    active: "Aktiv-Entität",
-    progress: "Fortschritt (%)",
-    tap_action: "Aktion beim Antippen",
-    hold_action: "Aktion bei langem Drücken",
-    button_icon: "Touch-Button oben: Icon",
-    button_action: "Touch-Button oben: Aktion",
-    title: "Überschrift (optional)",
-    layout: "Darstellung",
-    columns: "Spalten",
-    entity: "Entität",
-    unit: "Einheit",
-    decimals: "Nachkommastellen",
-    min: "Min",
-    max: "Max",
-    step: "Schritt",
-    format: "Anzeige",
-    confirm: "Sicherheitsabfrage",
-    state: "Warnen bei Zustand",
-    state_not: "Warnen außer bei",
-    above: "Warnen über",
-    below: "Warnen unter",
-    message: "Meldung",
-    level: "Stufe",
-    glow: "Kartenrahmen einfärben"
-  };
-
   // src/navi.js
   var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
   var PCSS = `
@@ -2159,18 +2440,18 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .d[hidden]{display:none}
 .d:focus-visible{box-shadow:var(--nv-focus)}
 .d:active{transform:scale(.9)}
-.d.act{background:var(--nv-active);box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 60%,transparent) var(--nv-glow),transparent)}
+.d.act{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 60%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 /* Aktiver Eintrag: runde Markierung .hl gleitet unter die Buttons; Farbe nur übers Theme (--nova-navi-active-color), Standard Akzent 2.
    Animiert werden nur transform, opacity und max-width – schont schwache Tablets. */
 .dk{--hc:var(--nova-navi-active-color,var(--nv-a2));--ease:cubic-bezier(.25,.8,.25,1)}
 /* Glas der Leiste als eigene Ebene: gleitet beim Wechsel per transform auf die neue Breite (Blur bleibt unverändert) */
 .dk>.bg{position:absolute;inset:0;border-radius:inherit;z-index:0;pointer-events:none;transform-origin:0 50%}
-.hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:var(--hc);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--hc) 50%,transparent) var(--nv-glow),transparent);pointer-events:none;opacity:0;will-change:transform}
+.hl{position:absolute;left:0;top:0;z-index:0;width:var(--sz);height:var(--sz);border-radius:50%;background:color-mix(in srgb,var(--hc) var(--nv-fill),var(--nv-chip));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--hc) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge);pointer-events:none;opacity:0;will-change:transform}
 .hl.on{opacity:1}
-.d.here{color:var(--nova-navi-active-text-color,var(--nv-a2-fg))}
+.d.here{color:var(--nova-navi-active-text-color,color-mix(in srgb,var(--nv-a2-fg) var(--nv-fill-ink),var(--nv-fg)))}
 /* Inaktiv-Farbe bleibt immer die Grundfarbe des Buttons; Gelb liegt als eigene Ebene darüber (unter dem Icon).
    So geht der alte Button direkt von Gelb zu Blau über, nie über transparent */
-.d::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:50%;background:var(--hc);opacity:0;pointer-events:none}
+.d::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:50%;background:color-mix(in srgb,var(--hc) var(--nv-fill),var(--nv-chip));box-shadow:var(--nv-fill-edge);opacity:0;pointer-events:none}
 .d.lit::before{opacity:1}
 /* Während einer Animation: nur transform und opacity, gleiche Dauer und Kurve für alle Teile */
 .run .d,.run .d::before,.run .nm,.run+.bg,.run .hl,.run .ghost{transition:transform var(--dur) var(--ease),opacity var(--dur) var(--ease),color var(--dur) var(--ease)}
@@ -2200,7 +2481,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .mb .tx b{font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold)}.mb .tx span{font-size:var(--nv-fs-2);opacity:.7}
 .mb .tx span.warn{opacity:1;color:var(--nv-warn)}
 .mb .pp,.mb .sp{flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;transition:transform var(--nv-d1)}
-.mb .pp{width:40px;height:40px;background:var(--nv-active);color:var(--nv-active-fg)}
+.mb .pp{width:40px;height:40px;background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .mb .sp{width:32px;height:32px;background:var(--nv-chip);color:var(--nv-fg);opacity:.85}.mb .sp ha-icon{--mdc-icon-size:var(--nv-icon-md)}
 .mb .sp[hidden]{display:none}
 .mb .pp:active,.mb .sp:active{transform:scale(.9)}
@@ -2931,6 +3212,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       const p = document.createElement(tag("navi-popup"));
       p.onclose = () => this._close();
       p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
+      if (this.hasAttribute("nova-theme")) p.setAttribute("nova-theme", this.getAttribute("nova-theme"));
       p.hass = this._h;
       this.shadowRoot.appendChild(p);
       this._opened(i, p);
@@ -3759,11 +4041,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .ovl.bot{left:8px;right:8px;bottom:8px;justify-content:center}
 .ovl .pill,.ovl .al{background:rgba(var(--nv-scrim),.55);backdrop-filter:blur(var(--nv-blur-sm));-webkit-backdrop-filter:blur(var(--nv-blur-sm));border-color:rgba(var(--nv-tint),.14)}
 .ovl .pill{padding:5px var(--nv-s5);font-size:var(--nv-fs-4)}
-.ovl .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:none}
+.ovl .pill.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .ovl .al{background:color-mix(in srgb,var(--c) 55%,rgba(var(--nv-scrim),.6))}
 .ovl .al ha-icon{color:inherit}
 .cb{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(var(--nv-scrim),.5);backdrop-filter:blur(var(--nv-blur-sm));-webkit-backdrop-filter:blur(var(--nv-blur-sm));border:1px solid rgba(var(--nv-tint),.16)}
-.cb.on{background:var(--nv-active);color:var(--nv-active-fg)}
+.cb.on{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .cb:active,.pill:active{transform:scale(var(--nv-press))}
 .dot{position:absolute;left:10px;bottom:10px;z-index:1;display:flex;align-items:center;gap:5px;font-size:var(--nv-fs-1);font-weight:var(--nv-fw-heavy);letter-spacing:.06em;padding:3px var(--nv-s4);border-radius:var(--nv-r-pill);background:rgba(var(--nv-scrim),.55)}
 .dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--nv-error)}
@@ -3785,7 +4067,7 @@ background:rgba(var(--nv-scrim),.5);backdrop-filter:blur(var(--nv-blur-sm));-web
 .zm{display:flex;flex-direction:column;gap:var(--nv-s4)}
 .zm>i{width:36px;height:36px;background:rgba(var(--nv-scrim),.5);backdrop-filter:blur(var(--nv-blur-sm));-webkit-backdrop-filter:blur(var(--nv-blur-sm));border:1px solid rgba(var(--nv-tint),.16)}
 .below .zm>i{background:var(--nv-chip)}
-.pad>i.act,.zm>i.act{background:var(--nv-active);color:var(--nv-active-fg)}
+.pad>i.act,.zm>i.act{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .has-ptz .ovl.bot{right:calc(var(--nova-camera-ptz-size,108px) + 64px);justify-content:flex-start}
 @container (max-width:320px){.pad{--nova-camera-ptz-size:88px}}
 .split{display:grid;gap:var(--nv-s4);grid-template-columns:repeat(2,minmax(0,1fr));--nova-camera-ptz-size:84px}
@@ -4396,11 +4678,11 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
 .mp>.shade{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(var(--nv-scrim),.05),rgba(var(--nv-scrim),.55));opacity:0;transition:opacity var(--nv-d6);pointer-events:none}
 .mp.has-art>.shade{opacity:1}
 .mp .hd .ic img{width:26px;height:26px;border-radius:6px}
-.hb.on{background:var(--nv-accent);color:var(--nv-accent-fg)}
+.hb.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .now{display:flex;align-items:center;gap:var(--nv-s6);min-width:0}
 .thumb{width:72px;height:72px;flex:none;border-radius:14px;background:var(--nv-chip) center/cover no-repeat;box-shadow:0 4px 14px rgba(var(--nv-shade),.35);display:none}
 .mp.cover.has-art .thumb{display:block}
-.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(var(--nv-shade),.35)}
+.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px color-mix(in srgb,rgba(var(--nv-shade),.35) var(--nv-text-shadow),transparent)}
 .tt b{font-size:17px;font-weight:var(--nv-fw-bold)}.tt span{font-size:var(--nv-fs-6);opacity:.75;margin-top:var(--nv-s1)}
 .bar{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-2);opacity:.85;font-variant-numeric:tabular-nums}
 .bar .tr{flex:1;height:6px;border-radius:3px;background:rgba(var(--nv-tint),.14);overflow:hidden}
@@ -4409,19 +4691,19 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
 .ctl{display:flex;align-items:center;justify-content:center;gap:var(--nv-s7)}
 .ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
 .ctl .cb ha-icon{--mdc-icon-size:var(--nv-icon-xl)}
-.ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent)}
+.ctl .cb.pp{width:56px;height:56px;background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
 .cb:active{transform:scale(.9)}
 .vol{display:flex;align-items:center;gap:var(--nv-s5)}
 .vol .cb{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
 .vol .cb ha-icon{--mdc-icon-size:var(--nv-icon-md)}
-.vol .cb.on{background:var(--nv-error);color:var(--nv-error-fg)}
+.vol .cb.on{background:color-mix(in srgb,var(--nv-error) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-error-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .vol .v{min-width:38px;text-align:right;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold)}
 .vol input{flex:1}
 .vol .step{flex:1;display:flex;justify-content:center;gap:var(--nv-s5)}
 .src,.pls{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:var(--nv-s1)}
 .src::-webkit-scrollbar,.pls::-webkit-scrollbar{display:none}
-.pls .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:none}
+.pls .pill.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .pls .pill .eq{display:none;--mdc-icon-size:14px}.pls .pill.pl .eq{display:flex}
 .mp.off .now,.mp.off .bar,.mp.off .ctl,.mp.off .vol,.mp.off .src{display:none}
 @container (max-width:300px){.ctl{gap:var(--nv-s4)}.ctl .cb{width:38px;height:38px}.ctl .cb.pp{width:48px;height:48px}.thumb{width:56px;height:56px}.tt b{font-size:var(--nv-fs-9)}}`;
@@ -4912,7 +5194,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
 .bat{display:inline-flex;align-items:center;gap:var(--nv-s2);padding:var(--nv-s3) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-5);font-weight:var(--nv-fw-bold);flex:none}
 .bat ha-icon{--mdc-icon-size:17px}
 .bat.low{background:color-mix(in srgb,var(--nv-error) 30%,transparent)}
-.bat.chg ha-icon{color:var(--nv-accent)}
+.bat.chg ha-icon{color:var(--nv-accent-ink)}
 .vc>.main{display:contents}.vc .hd{order:0}.vc .mpnl{order:1}.vc>.main>:not(.hd){order:2}
 .mpnl{display:flex;flex-direction:column;gap:var(--nv-s4);min-width:0}
 .mpnl .bt{margin:0}
@@ -4923,18 +5205,18 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
 .ctl{display:flex;align-items:center;justify-content:center;gap:var(--nv-s7)}
 .ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
 .ctl .cb ha-icon{--mdc-icon-size:var(--nv-icon-xl)}
-.ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent)}
+.ctl .cb.pp{width:56px;height:56px;background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
 .cb:active{transform:scale(.9)}
 .ctl.pl{justify-content:flex-start;gap:7px;flex-wrap:wrap}
 .fs .pill,.ctl.pl .pill{flex:none}
 .rooms .pill{background:color-mix(in srgb,var(--nv-active) 45%,transparent);border-color:color-mix(in srgb,var(--nv-active) 60%,transparent)}
-.rooms .pill.on{background:var(--nv-active);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent)}
-.rooms .pill.go{order:99;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:none}
+.rooms .pill.on{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.rooms .pill.go{order:99;background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:var(--nv-fill-edge)}
 .vc .sws .list{row-gap:var(--nv-s1)}
 .rooms .pill.cur{box-shadow:0 0 0 2px var(--nv-accent),0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent)}
 .hd .all{flex:none}
-.hd .all.on{background:var(--nv-active);color:var(--nv-active-fg);border-color:transparent}
+.hd .all.on{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:var(--nv-fill-edge)}
 .cons .kv{flex-wrap:wrap;row-gap:var(--nv-s2)}
 .cons .kv .cbar{flex-basis:100%;height:4px;border-radius:2px;background:rgba(var(--nv-tint),.12);overflow:hidden}
 .cons .kv .cbar i{display:block;height:100%;background:var(--nv-active);border-radius:2px}
@@ -5878,7 +6160,7 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);tr
 .wr.today .ic{box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--c) 60%,transparent) var(--nv-glow),transparent)}
 .wr.tomorrow{background:color-mix(in srgb,var(--c) 13%,transparent);border-color:color-mix(in srgb,var(--c) 35%,transparent)}
 .rel{flex:none;font-size:var(--nv-fs-4);font-weight:var(--nv-fw-bold);padding:var(--nv-s2) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);white-space:nowrap}
-.today .rel,.cp.today .rel{background:var(--nv-accent);color:var(--nv-accent-fg)}
+.today .rel,.cp.today .rel{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .tomorrow .rel,.cp.tomorrow .rel{background:color-mix(in srgb,var(--nv-accent) 30%,transparent)}
 .wr:active{transform:scale(.98)}
 .cp{display:flex;align-items:center;gap:var(--nv-s6);min-width:0}
@@ -6901,7 +7183,7 @@ background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid c
 .chip{display:inline-flex;align-items:center;gap:var(--nv-s3);padding:7px var(--nv-s6);border-radius:var(--nv-r-pill);background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:var(--nv-fs-5);white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
 .chip ha-icon{--mdc-icon-size:var(--nv-icon-sm)}.chip img{width:16px;height:16px}.chip:focus-visible{box-shadow:var(--nv-focus)}.chip:active{transform:scale(.95)}
 .chip .cn:empty{display:none}.chip .cn:not(:empty)::after{content:' ·'}
-.chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--c) 45%,transparent) var(--nv-glow),transparent)}`;
+.chip.al{background:color-mix(in srgb,var(--c) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--cf) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--c) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}`;
   function renderChips(card, bar, items, h) {
     bar.hidden = !items.length;
     const key = JSON.stringify(items);
@@ -8134,7 +8416,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
 .nchip{display:inline-flex;align-items:center;gap:var(--nv-s3);min-height:34px;box-sizing:border-box;padding:0 var(--nv-s6);border-radius:var(--nv-r-pill);flex:none;
 background:var(--c,var(--nv-chip));color:var(--cf,inherit);border:1px solid var(--nv-box-border);font-size:var(--nv-fs-5);white-space:nowrap;
 cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:none;transition:background-color var(--nv-d2),color var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
-.nchip.col{border-color:transparent}
+.nchip.col{border-color:transparent;background:color-mix(in srgb,var(--c) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--cf) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .nchip ha-icon{--mdc-icon-size:var(--nv-icon-sm);display:flex}.nchip img{width:16px;height:16px}
 .nchip .ci:empty,.nchip .cn:empty,.nchip .cv:empty{display:none}
 .nchip .cn:not(:empty)+.cv:not(:empty)::before{content:'· '}
@@ -8230,7 +8512,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var DEF2 = { stack_below: 500, chips_layout: "wrap" };
   var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
-:host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
+:host::before{background:var(--nv-area-bg)}
+:host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-area-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:var(--nv-s6);padding:var(--nv-s7)}
 .hd{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s3);border-radius:var(--nv-r-pill);background:var(--nv-chip)}
 .hd.nb{padding-left:var(--nv-s7)}
@@ -9005,9 +9288,10 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   // src/appliance.js
   var TYPES2 = {
     washer: { label: "Waschmaschine", icon: "mdi:washing-machine", color: "accent-1", run: "Wäscht", alt: "Schleudert", door: "Tür offen", phase: ["spin", "spinning", "schleudern"], anims: ["detergent", "softener"], dview: true },
+    dryer: { label: "Trockner", icon: "mdi:tumble-dryer", color: "accent-1", run: "Trocknet", door: "Tür offen", phase: [], anims: ["condensate", "lint"], dview: true },
     dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", alt: "Trocknet", door: "Tür offen", phase: ["drying", "dry", "trocknen", "ending"], dview: true },
     airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-1", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
-    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-1", run: "Brüht", door: "Tür offen", phase: [], anims: ["tank", "beans", "descale"], drink: true },
+    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "coffee", run: "Brüht", door: "Tür offen", phase: [], anims: ["tank", "beans", "descale"], drink: true },
     feeder: { label: "Futterautomat", icon: "mdi:bowl-mix-outline", color: "accent-1", run: "Füttert", door: "Deckel offen", phase: [], anims: ["food"], level: true, feed: true, mode: true, lvl: ["Füllstand", "Futter ausreichend", "Wenig Futter"], pick: "Portion" },
     fountain: { label: "Trinkbrunnen", icon: "mdi:fountain", color: "accent-1", run: "Läuft", door: "Deckel offen", phase: [], anims: ["water", "filter"], level: true, nodone: true, mode: true, lvl: ["Wasserstand", "Wasser ok", "Wasser fehlt"], binEmpty: true, filter: true },
     generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
@@ -9022,6 +9306,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     food: ["Futter leer", "Futter nachfüllen", "mdi:food-off"],
     water: ["Wasser niedrig", "Wasser nachfüllen", "mdi:water-alert-outline"],
     filter: ["Filter", "Filter wechseln", "mdi:air-filter"],
+    condensate: ["Kondensbehälter", "Kondensbehälter leeren", "mdi:cup-water"],
+    lint: ["Flusensieb", "Flusensieb reinigen", "mdi:air-filter"],
     warning: ["Allgemeine Warnung", "", "mdi:alert-outline"]
   };
   var animsOf = (t) => [...TYPES2[t].anims || [], "warning"];
@@ -9376,15 +9662,18 @@ ${WARN}</svg>`,
     generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
 <path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}<g transform="scale(.5)">${WARN}</g></svg>`
   };
+  SV.dryer = SV.washer.replace(/<g class="wl">[\s\S]*?<\/g><\/g>\n/, `<g class="hz"><path d="M80 132 q3 -6 0 -12 t0 -12"/><path d="M100 136 q3 -6 0 -12 t0 -12"/><path d="M120 132 q3 -6 0 -12 t0 -12"/></g>
+`).replace(/<rect class="lbl" x="42"[\s\S]*?<rect class="dwg" x="43"[^>]*>/, '<rect class="lbl" x="42" y="23.5" width="10" height="1.3" rx=".65"/><rect class="tkw" x="43" y="28" width="28" height="9" rx="1.6"/><rect class="tkl" x="43" y="33.5" width="28" height="3.5" rx="1.2"/><rect class="dwg" x="54" y="23" width="6" height="2.2" rx="1.1"/>').replace(/<circle class="fl"[\s\S]*?<rect class="dwg" x="145"[^>]*>/, `<rect class="lint s-part" x="124" y="158" width="38" height="18" rx="2.5" fill="url(#w-pt)"/>${[0, 1, 2, 3, 4].map((i) => `<rect class="vnt" x="${128 + i * 6.4}" y="161.5" width="3.2" height="11" rx="1.6"/>`).join("")}`).replace('<path class="cl c2"', '<path class="cl c3" d="M108 98 q10 -4 16 4 q2 8 -6 10 q-8 1 -10 -14 Z"/><path class="cl" d="M82 106 q6 -6 12 0 q2 6 -5 8 q-6 1 -7 -8 Z"/><path class="cl c2"');
   var scene = (t) => `<div class="scene">${SV[t]}</div>`;
   var DCSS2 = `
+.scene{--dc:var(--dg,var(--nv-a1-dev))}
 .g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--nova-filter-color,var(--nv-a2))}
 ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .g.dv.glow.t-feeder.st-ready{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 25%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
 .g.dv.glow.t-feeder.st-run{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 65%,transparent) var(--nv-ring),transparent),0 0 22px color-mix(in srgb,color-mix(in srgb,var(--dc) 35%,transparent) var(--nv-glow),transparent),var(--nv-edge)}
-.dv .on>.ic,.dv .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent)}
+.dv .on>.ic,.dv .hd .ic.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .dv .hd small.er{color:var(--nv-error);opacity:1}
-.dv .hb.pw.on{background:var(--dc);color:var(--dc-fg)}
+.dv .hb.pw.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .mid{display:flex;gap:var(--nv-s7);align-items:center;min-width:0}
 .scene{flex:none;width:144px;height:144px;color:var(--nv-fg)}
 .scene svg{display:block;width:100%;height:100%;overflow:visible}
@@ -9400,7 +9689,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .ct .row .hb.go{width:32px;height:32px}
 .ct{border-top:1px solid rgba(var(--nv-tint),.08);padding:var(--nv-s4) 0 var(--nv-s3);min-width:0}
 .ct .kv{border:none;padding:0}.ct .kv .v{font-weight:var(--nv-fw-bold);opacity:1}
-.ct .pills{margin-top:var(--nv-s4)}.ct .pill.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-glow),transparent)}
+.ct .pills{margin-top:var(--nv-s4)}.ct .pill.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ct .cv{transition:transform var(--nv-d2)}.ct.open .cv{transform:rotate(180deg)}
 .stp{display:flex;align-items:center;gap:var(--nv-s4);flex:none}.stp .hb{width:32px;height:32px}.stp .v{min-width:64px;text-align:center}
 .ct input[type=range]{margin-top:var(--nv-s4);background:linear-gradient(90deg,var(--dc) 0 var(--p,0%),rgba(var(--nv-tint),.14) var(--p,0%) 100%)}
@@ -9408,11 +9697,11 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .ct.na,.ab.dis{opacity:.4;pointer-events:none}
 .acts{display:flex;gap:var(--nv-s4)}
 .sa .kv{gap:var(--nv-s4)}.sa input{flex:none;background:var(--nv-chip);color:inherit;border:1px solid rgba(var(--nv-tint),.08);border-radius:var(--nv-r-sm);padding:var(--nv-s3) var(--nv-s5);font:inherit;font-size:var(--nv-fs-7);font-weight:var(--nv-fw-bold);color-scheme:dark;min-width:0}
-.sa .pill.on{background:var(--dc);color:var(--dc-fg);border-color:transparent}
+.sa .pill.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:var(--nv-fill-edge)}
 .sa .sah{font-size:var(--nv-fs-4);opacity:.7;margin-top:var(--nv-s3)}.sa .sah:empty{display:none}
 .ab{flex:1;min-width:0;height:46px;border-radius:var(--nv-r-md);display:flex;align-items:center;justify-content:center;gap:var(--nv-s4);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);transition:background-color var(--nv-d2),opacity var(--nv-d2),transform var(--nv-d2)}
 .ab ha-icon{--mdc-icon-size:22px}
-.ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent)}
+.ab.pri{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ab.dis{box-shadow:none}
 .ab:active{transform:scale(.95)}
 .als:empty{display:none}
@@ -9498,7 +9787,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .w-airfryer .akc{fill:none;stroke:var(--dc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:16;opacity:0}
 .w-airfryer .atc path{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.12;stroke-width:1;stroke-linecap:round;transition:stroke var(--nv-d6),stroke-opacity var(--nv-d6)}
 .w-airfryer .apnh{fill:rgb(var(--nv-hi));opacity:.14}.w-airfryer .agb{opacity:1}
-.st-run .w-airfryer .atc path,.st-heat .w-airfryer .atc path,.st-warm .w-airfryer .atc path,.st-pause .w-airfryer .atc path,.st-prep .w-airfryer .atc path{stroke:var(--dc);stroke-opacity:.75;filter:drop-shadow(0 0 1.5px var(--dc))}
+.st-run .w-airfryer .atc path,.st-heat .w-airfryer .atc path,.st-warm .w-airfryer .atc path,.st-pause .w-airfryer .atc path,.st-prep .w-airfryer .atc path{stroke:var(--dc);stroke-opacity:.75;filter:drop-shadow(0 0 1.5px color-mix(in srgb,var(--dc) var(--nv-glow),transparent))}
 .st-ready .w-airfryer .atc path,.st-done .w-airfryer .atc path{stroke-opacity:.3}
 .st-off .w-airfryer .atc path{stroke-opacity:.06}
 .w-airfryer .psep{fill:rgb(var(--nv-lo));opacity:.3}.w-airfryer .psh{fill:rgb(var(--nv-hi));opacity:.06}
@@ -9568,6 +9857,15 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .w-washer .scene .lk{stroke:rgb(var(--nv-hi));stroke-opacity:.85;stroke-width:.7}.w-washer .scene .lk rect{fill:rgb(var(--nv-hi))}
 .st-off .w-washer .wdt,.st-off .w-washer .pdots .on{display:none}
 /* Spülmaschine im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
+.w-dryer .hz path{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.35;stroke-width:1.4;stroke-linecap:round;opacity:0;transform-box:fill-box;transform-origin:center bottom}
+.w-dryer .hz path:nth-child(2){animation-delay:1.2s}.w-dryer .hz path:nth-child(3){animation-delay:2.4s}
+.anim.st-run .w-dryer .hz path,.anim.st-heat .w-dryer .hz path{animation:dv-hz 3.6s ease-out infinite}
+.anim.st-warm .w-dryer .drum{animation:dv-tumble 9s ease-in-out infinite}
+.w-dryer .cl.c3{fill:color-mix(in srgb,var(--dc) 30%,#b8c0ce);fill-opacity:.5}
+.w-dryer .tkw{fill:#0b0e13;stroke:rgba(var(--nv-hi),.12);stroke-width:.5}.w-dryer .tkl{fill:${PAL.glass};fill-opacity:.35;transition:fill var(--nv-d4)}
+.w-dryer .vnt{fill:#0b0e13;opacity:.75}
+.h-condensate .w-dryer .tkl{fill:var(--nv-warn);fill-opacity:.95}.h-lint .w-dryer .lint{fill:var(--nv-warn);fill-opacity:.95}
+.anim.h-condensate .w-dryer .tkl,.anim.h-lint .w-dryer .lint{animation:dv-blinko 1.3s ease-in-out infinite}
 .w-dishwasher{--gx:150px}
 .w-dishwasher .qplin{fill:#0d1016}.w-dishwasher .qvent{fill:rgb(var(--nv-lo));opacity:.45}
 .w-dishwasher .qrail{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.07;stroke-width:1.2}
@@ -9732,9 +10030,9 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .w-fountain .bfi{transform-box:fill-box;transform-origin:center}
 /* Modus-LED: ruhiges Leuchten in der Modusfarbe, kein Blinken */
 .dv .w-fountain .led{fill:#5b6372;fill-opacity:.5;transition:fill var(--nv-d5),fill-opacity var(--nv-d5)}
-.m-normal.dv .w-fountain .led,.m-smart.dv .w-fountain .led{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
+.m-normal.dv .w-fountain .led,.m-smart.dv .w-fountain .led{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px color-mix(in srgb,var(--mc) var(--nv-glow),transparent))}
 .m-normal{--mc:var(--nova-mode-normal-color,var(--nv-a1))}.m-smart{--mc:var(--nova-mode-smart-color,var(--nv-a4))}
-.m-normal.dv .w-feeder .fled,.m-smart.dv .w-feeder .fled{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px var(--mc))}
+.m-normal.dv .w-feeder .fled,.m-smart.dv .w-feeder .fled{fill:var(--mc);fill-opacity:1;filter:drop-shadow(0 0 1.6px color-mix(in srgb,var(--mc) var(--nv-glow),transparent))}
 .w-fountain .bfi rect,.w-fountain .bfi path{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.3;stroke-width:.8;stroke-linejoin:round}
 /* Läuft: kleiner Sprudel wippt, Ringe laufen über die Schale, das Wasser fließt sanft über den Rand ab; aus/Pause = Wasser steht */
 .st-run .w-fountain .bdome,.st-run .w-fountain .bdhl,.st-run .w-fountain .bjet{opacity:1}.st-run .w-fountain .bflow{stroke-opacity:.35}
@@ -9746,7 +10044,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 /* Wasser niedrig: Stand im Fenster sinkt, Ausrufezeichen; Filter wechseln: Filter-Symbol pulsiert (--nova-filter-color, Standard Akzent 2) */
 .h-water .scene .wn{display:inline}
 .st-err .w-fountain .bdome,.st-err .w-fountain .bdhl{opacity:0}
-.h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px var(--fc))}
+.h-filter .w-fountain .bfi rect,.h-filter .w-fountain .bfi path{stroke:var(--fc);stroke-opacity:1;stroke-width:1;filter:drop-shadow(0 0 1.5px color-mix(in srgb,var(--fc) var(--nv-glow),transparent))}
 .anim.h-filter .w-fountain .bfi{animation:dv-fpulse 1.6s ease-in-out infinite}
 .anim.st-run .w-generic .pulse{animation:dv-pulse 2.6s ease-out infinite}
 .scene .drops circle:nth-child(2),.scene .heat path:nth-child(2),.scene .puff path:nth-child(2){animation-delay:.5s}
@@ -9805,7 +10103,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      if (c.device_type && !TYPES2[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee, feeder, fountain oder generic sein");
+      if (c.device_type && !TYPES2[c.device_type]) throw new Error("device_type muss washer, dryer, dishwasher, airfryer, coffee, feeder, fountain oder generic sein");
       this._c = { ...GDEF, ...c, controls: [].concat(c.controls || []).map(toObj).filter((o) => o.entity), hints: [].concat(c.hints || []).map(toObj).filter((o) => o.entity) };
       this._ids = entityIds(this._c);
       this._built = false;
@@ -9917,9 +10215,9 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
       const rv = roleVars(c.color || TYPES2[t].color);
       const anim = c.animation !== false && !cmp;
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${SCENE_CSS}${DCSS2}:host([hidden]){display:none}</style>
-<div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--hc:${roleVars(c.heat_color || "accent-2").c}">
+<div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--dg:${rv.dev};--hc:${roleVars(c.heat_color || "accent-2").c}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ""}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
-${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
+${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}${t === "dryer" ? " w-washer" : ""}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
 <div class="ctls"></div>${c.start_at === "home_connect" && c.start ? SA : ""}${["select", "input_select"].includes(dom(c.start)) && !c.start_option ? PICK : ""}<div class="acts"></div>`}<div class="als"></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
@@ -10647,7 +10945,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         if (c.color === TYPES2[typeOf(c)].color) delete c.color;
         return c;
       };
-      const data = { ...GDEF, color: TYPES2[t].color, ...c0 };
+      const data = { ...GDEF, color: TYPES2[t].color === "coffee" ? void 0 : TYPES2[t].color, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
         const c = strip3(merge(this._config, names(schema), v));
         this._emit(c);
@@ -11049,12 +11347,13 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 <g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g></g>
 </svg>`;
   var PCSS4 = `
+.scene{--dc:var(--dg,var(--nv-a1-dev))}
 .g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
 --sb1:var(--nova-printer-color-light,${PAL.bodyLight});--sb2:var(--nova-printer-color,${PAL.body})}
 .g.pr.glow.on{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
-.pr .hd .ic.on{background:var(--dc);color:var(--dc-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent)}
+.pr .hd .ic.on{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--dc) 55%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .pr .hd small.er{color:var(--nv-error);opacity:1}
-.pr .hb.li.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent)}
+.pr .hb.li.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .pr .demo{font-size:var(--nv-fs-1);font-weight:var(--nv-fw-bold);letter-spacing:var(--nv-caps);text-transform:uppercase;padding:3px var(--nv-s4);border-radius:var(--nv-r-pill);background:var(--nv-chip);opacity:.75}
 .mid{display:flex;gap:var(--nv-s7);align-items:center;min-width:0}
 .scene{flex:none;width:48%;max-width:300px;min-width:150px;color:var(--nv-fg)}
@@ -11072,7 +11371,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .xtra{display:flex;flex-direction:column;gap:var(--nv-s5)}.xtra:empty{display:none}
 .xtra .fans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--nv-s7)}
 .xtra .row{cursor:pointer}.xtra .row .ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);flex:none}
-.xtra .row.on .ic{background:var(--dc);color:var(--dc-fg)}.xtra .row .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.xtra .row.on .ic{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}.xtra .row .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .xtra .row b,.xtra .row small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xtra .row b{font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-6)}.xtra .row small{opacity:.65;font-size:var(--nv-fs-3)}
 .xtra .na{opacity:.45}
 @container (max-width:340px){.xtra .fans{grid-template-columns:1fr}}
@@ -11094,7 +11393,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .als:empty{display:none}.pr .al[data-e]{cursor:pointer}.pr .al small{opacity:.7;margin-left:auto;font-size:var(--nv-fs-2);white-space:nowrap}
 .acts{display:flex;gap:var(--nv-s4)}.acts:empty,.acts[hidden]{display:none}
 .ab{flex:1;min-width:0;height:44px;border-radius:var(--nv-r-md);display:flex;align-items:center;justify-content:center;gap:var(--nv-s4);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);transition:background-color var(--nv-d2),opacity var(--nv-d2),transform var(--nv-d2)}
-.ab ha-icon{--mdc-icon-size:22px}.ab.pri{background:var(--dc);color:var(--dc-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent)}
+.ab ha-icon{--mdc-icon-size:22px}.ab.pri{background:color-mix(in srgb,var(--dc) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--dc-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--dc) 40%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .ab.na{opacity:.4;pointer-events:none}.ab:active{transform:scale(.95)}
 @container (max-width:380px){.mid{flex-direction:column;align-items:stretch}.scene{width:100%;max-width:240px;align-self:center}.au .ss{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Zeichnung */
@@ -11315,7 +11614,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._built = true;
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" }), rv = roleVars(c.color);
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${PCSS4}</style>
-<div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}${c.show_display === false ? " nodisp" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}${c.show_display === false ? " nodisp" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--dg:${rv.dev}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
 <div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
 <div class="tm"><span class="rm"></span><span class="en"></span></div><div class="kvs"></div></div></div>
@@ -11945,7 +12244,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   var RCSS = `
 .g.rc{gap:var(--nv-s7);align-items:stretch}
 .rc .ic img{border-radius:6px}
-.hb.on{background:var(--nv-accent);color:var(--nv-accent-fg)}
+.hb.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .cb{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);transition:background-color var(--nv-d1),transform var(--nv-d1)}
 .cb ha-icon{--mdc-icon-size:22px}
 .cb:active,.cb.hit{transform:scale(.9);background:color-mix(in srgb,var(--nv-active) 40%,var(--nv-chip))}
@@ -11955,20 +12254,20 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 .pad .k ha-icon{--mdc-icon-size:30px;opacity:.85}
 .pad .k:active,.pad .k.hit{background:rgba(var(--nv-tint),.12)}
 .pad .up{top:2%;left:34%}.pad .down{bottom:2%;left:34%}.pad .left{left:2%;top:34%}.pad .right{right:2%;top:34%}
-.pad .ok{left:29%;top:29%;width:42%;height:42%;background:var(--nv-accent);color:var(--nv-accent-fg);font-weight:var(--nv-fw-heavy);font-size:var(--nv-fs-9);letter-spacing:.04em;box-shadow:0 0 18px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent)}
-.pad .ok:active,.pad .ok.hit{transform:scale(.93);background:var(--nv-accent)}
+.pad .ok{left:29%;top:29%;width:42%;height:42%;background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));font-weight:var(--nv-fw-heavy);font-size:var(--nv-fs-9);letter-spacing:.04em;box-shadow:0 0 18px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.pad .ok:active,.pad .ok.hit{transform:scale(.93);background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip))}
 .tp{position:relative;height:min(230px,62cqw);border-radius:22px;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);touch-action:none;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
 .tp>ha-icon{--mdc-icon-size:42px;opacity:.25;transition:opacity var(--nv-d2),transform var(--nv-d2)}
 .tp.hit>ha-icon{opacity:.6;transform:scale(1.15)}
 .tp .ok{position:absolute;inset:0;background:radial-gradient(circle,color-mix(in srgb,var(--nv-accent) 35%,transparent),transparent 60%);opacity:0;transition:opacity var(--nv-d3);pointer-events:none}
 .tp.ok-hit .ok{opacity:1}
-.apps .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent)}
+.apps .pill.on{background:color-mix(in srgb,var(--nv-accent) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-accent-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .rc.off .pad,.rc.off .tp{opacity:.55}
 .vol{display:flex;align-items:center;gap:var(--nv-s6)}
 .vol input{flex:1;height:30px;border-radius:15px;touch-action:none}
 .vol input::-webkit-slider-thumb{width:30px;height:30px}.vol input::-moz-range-thumb{width:30px;height:30px}
 .vol .v{min-width:40px;text-align:right;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold);font-variant-numeric:tabular-nums}
-.vol .cb.on{background:var(--nv-error);color:var(--nv-error-fg)}
+.vol .cb.on{background:color-mix(in srgb,var(--nv-error) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-error-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:var(--nv-fill-edge)}
 .vs{position:relative;height:64px;border-radius:var(--nv-r-lg);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);touch-action:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
 .vs ha-icon{--mdc-icon-size:var(--nv-icon-xl);opacity:.6;transition:opacity var(--nv-d1),transform var(--nv-d1)}
 .vs .mid{display:flex;flex-direction:column;align-items:center;gap:var(--nv-s1);font-size:var(--nv-fs-4);opacity:.7}
@@ -12639,14 +12938,14 @@ ${ring ? `<circle class="dl-tr" cx="${cx}" cy="${cy}" r="${ring}"/><circle class
 .scene .tk{stroke:rgb(var(--nv-hi));stroke-opacity:.14;stroke-width:.6}.scene .tkm{stroke:rgb(var(--nv-hi));stroke-opacity:.3;stroke-width:1.4;stroke-linecap:round}
 .scene .dl-tr{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.06;stroke-width:6}
 .scene .dl-arc{fill:none;stroke:var(--dc);stroke-width:6;stroke-linecap:round;stroke-dasharray:1000;stroke-dashoffset:calc(1000 - var(--p,0) * 1000);
-filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset var(--nv-d7) linear,opacity var(--nv-d5)}
+filter:drop-shadow(0 0 2.5px color-mix(in srgb,var(--dc) var(--nv-glow),transparent));transition:stroke-dashoffset var(--nv-d7) linear,opacity var(--nv-d5)}
 .scene .dl-arcl{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.16;stroke-width:1.2;stroke-linecap:round}
 .scene .dl-cr{stroke:rgba(var(--nv-hi),.2);stroke-width:.5}.scene .dl-grv{stroke:rgb(var(--nv-lo));stroke-opacity:.3;stroke-width:.8}
 .scene .dl-cap{stroke:rgba(var(--nv-hi),.2);stroke-width:.4}
 .scene .dl-push,.scene .dl-crown{transform-box:view-box}
 /* Unsichtbares mit Leuchten (drop-shadow) zusätzlich per visibility weg – manche Browser (Echo Show) malen den Schatten sonst als Fleck */
 .scene .dl-bell{opacity:0;visibility:hidden;transform-box:fill-box;transform-origin:center}
-.scene .dl-br{fill:var(--dc);filter:drop-shadow(0 0 4px var(--dc))}.scene .dl-bk{fill:var(--dcfg,rgb(var(--nv-hi)))}
+.scene .dl-br{fill:var(--dc);filter:drop-shadow(0 0 4px color-mix(in srgb,var(--dc) var(--nv-glow),transparent))}.scene .dl-bk{fill:var(--dcfg,rgb(var(--nv-hi)))}
 @media (prefers-reduced-motion:reduce){.scene *{animation:none!important;transition:none!important}}`;
 
   // src/timer.js
@@ -12700,11 +12999,12 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset var(--nv-d7
     return Math.round(n * (u[0] === "s" ? 1 : u[0] === "h" ? 3600 : 60));
   }).filter((n) => n > 0).slice(0, 8);
   var presetLbl = (s) => s % 3600 === 0 ? `${s / 3600} h` : s % 60 === 0 ? `${s / 60}` : s > 60 ? fmtLeft(s) : `${s} s`;
-  var ICON = { play: "mdi:play", pause: "mdi:pause", stop: "mdi:stop", plus: "mdi:plus", tune: "mdi:timer-edit-outline", ok: "mdi:check", again: "mdi:restart" };
+  var ICON2 = { play: "mdi:play", pause: "mdi:pause", stop: "mdi:stop", plus: "mdi:plus", tune: "mdi:timer-edit-outline", ok: "mdi:check", again: "mdi:restart" };
   var TCSS = `${DIAL_CSS}
 .g.tm{--dc:var(--tc);--dcfg:var(--tcfg);padding:var(--nv-s7);gap:var(--nv-s5);transition:box-shadow var(--nv-d5)}
 ${frameGlow(".g.tm.glow.st-active")}
 .g.tm.alm{--dc:var(--ac);--dcfg:var(--acfg)}
+.scene{--dc:var(--tg)}.alm .scene{--dc:var(--ag)}
 .g.tm.glow.alm{box-shadow:var(--nv-shadow),0 0 0 2px var(--ac),0 0 24px color-mix(in srgb,color-mix(in srgb,var(--ac) 55%,transparent) var(--nv-glow),transparent),var(--nv-edge)}
 .anim.glow.alm{animation:tm-frame 1.2s ease-in-out infinite}
 .still{animation-play-state:paused!important}.still *{animation-play-state:paused!important}
@@ -12712,7 +13012,7 @@ ${frameGlow(".g.tm.glow.st-active")}
 .bd{display:flex;flex-direction:column;gap:var(--nv-s6);align-items:stretch;flex:1;min-height:0}
 .dial{position:relative;align-self:center;width:100%;max-width:var(--nova-timer-size,240px);aspect-ratio:1;flex:none}
 .dial svg{display:block;width:100%;height:100%;overflow:visible}
-.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%}
+.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%;color:rgb(var(--nv-hi))}
 .ro .t{display:block;font-size:clamp(22px,calc(var(--dw,240px) * .16),46px);font-weight:var(--nv-fw-bold);letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.05;white-space:nowrap}
 .ro .s{display:block;font-size:clamp(11px,calc(var(--dw,240px) * .05),14px);opacity:.65;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .st-idle .scene{opacity:.55}.st-idle .ro .t{opacity:.7}
@@ -12727,7 +13027,7 @@ display:flex;align-items:center;justify-content:center;gap:var(--nv-s3);font-siz
 .bt2:active{transform:scale(.95)}
 /* Hauptknopf im Glas-Stil: nur leicht in der Kartenfarbe getönt, Icon in der Farbe – keine Vollfarbfläche */
 .bt2.pri{background:color-mix(in srgb,var(--dc) 22%,var(--nv-chip));border-color:color-mix(in srgb,var(--dc) 55%,transparent)}
-.bt2.pri ha-icon{color:var(--dc)}
+.bt2.pri ha-icon{color:color-mix(in srgb,var(--dc) var(--nv-tint-ink),var(--nv-fg))}
 /* Nur-Icon-Knöpfe in „Eigene Zeit“: Icon hell, sonst verschwindet z. B. das Häkchen auf dem getönten Knopf */
 .cust .bt2.pri ha-icon{color:inherit}
 .bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
@@ -12778,7 +13078,7 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 .alm:not(.anim) .snd path{opacity:.7}
 .st-active .dl-push.r{animation:none}
 .prs .dl-push.r,.prs .dl-crown{animation:tm-press .35s ease-out}
-.scene .tip{fill:rgb(var(--nv-hi));filter:drop-shadow(0 0 3px var(--dc));opacity:0;visibility:hidden;transition:opacity var(--nv-d5),visibility 0s var(--nv-d5)}
+.scene .tip{fill:rgb(var(--nv-hi));filter:drop-shadow(0 0 3px color-mix(in srgb,var(--dc) var(--nv-glow),transparent));opacity:0;visibility:hidden;transition:opacity var(--nv-d5),visibility 0s var(--nv-d5)}
 .st-active .scene .tip,.st-paused .scene .tip{opacity:1;visibility:visible;transition:opacity var(--nv-d5)}
 .scene .tipg{transition:transform var(--nv-d7) linear;transform-box:view-box;transform-origin:100px 112px}
 .st-idle .scene .dl-arc{opacity:.35}
@@ -12956,7 +13256,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
     }
     _layout() {
       const c = this._c, e = this._e, rv = roleVars(c.color), av = roleVars(c.alarm_color);
-      e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--ac:${av.c};--acfg:${av.fg}`;
+      e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--tg:${rv.dev};--ac:${av.c};--acfg:${av.fg};--ag:${av.dev}`;
       e.g.classList.toggle("cmp", c.layout === "compact");
       e.g.classList.toggle("full", c.layout !== "compact");
       e.g.classList.toggle("glow", c.glow !== false);
@@ -13064,21 +13364,21 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       const B = (cls, icon2, label, fn) => b.push([cls, icon2, label, fn]);
       if (!this._S()) {
       } else if (al) {
-        B("pri", ICON.ok, "OK", () => this._dismiss());
-        if (v?.total) B("", ICON.again, "Nochmal", () => {
+        B("pri", ICON2.ok, "OK", () => this._dismiss());
+        if (v?.total) B("", ICON2.again, "Nochmal", () => {
           this._dismiss();
           this._start(v.total);
         });
       } else if (st === "active") {
-        B("", ICON.pause, "Pause", () => this._svc("pause"));
-        if (c.show_add !== false) B("", ICON.plus, "+1 Min", () => this._add(60));
-        B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
+        B("", ICON2.pause, "Pause", () => this._svc("pause"));
+        if (c.show_add !== false) B("", ICON2.plus, "+1 Min", () => this._add(60));
+        B("", ICON2.stop, "Abbrechen", () => this._svc("cancel"));
       } else if (st === "paused") {
-        B("pri", ICON.play, "Weiter", () => this._svc("start"));
-        B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
+        B("pri", ICON2.play, "Weiter", () => this._svc("start"));
+        B("", ICON2.stop, "Abbrechen", () => this._svc("cancel"));
       } else {
-        B("pri", ICON.play, "Start", () => this._start(v?.total || 0));
-        if (c.show_custom !== false) B(this._showCust ? "sel" : "", ICON.tune, "Eigene Zeit", () => {
+        B("pri", ICON2.play, "Start", () => this._start(v?.total || 0));
+        if (c.show_custom !== false) B(this._showCust ? "sel" : "", ICON2.tune, "Eigene Zeit", () => {
           this._showCust = !this._showCust;
           if (this._showCust) this._custFrom(v?.total || 0);
           this._key = null;
@@ -13809,7 +14109,8 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 .ana{width:100%;max-width:${K("var(--nova-clock-size,240px)")};aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(var(--nv-lo),.35);stroke-width:.5}
-.scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
+.scene{--dc:var(--kg);--kc:var(--kg)}
+.scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px color-mix(in srgb,var(--kc) var(--nv-glow),transparent))}
 .scene .cap{fill:url(#k-cr);stroke:rgba(var(--nv-hi),.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
 .scene .hsh{fill:rgb(var(--nv-lo));opacity:.25}
 .scene .sw{transform-box:view-box;transform-origin:100px 100px}.anim .scene .sw.on{animation:k-spin 60s linear infinite}
@@ -13938,6 +14239,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _layout() {
       const c = this._c, e = this._e, rv = roleVars(c.color), st = this._st, an = st === "analog";
       e.g.style.setProperty("--kc", rv.c);
+      e.g.style.setProperty("--kg", rv.dev);
       e.g.classList.toggle("still", !!this._quiet);
       e.ana.hidden = !an;
       e.tm.hidden = an && !c.analog_digital || st === "flip" || st === "retro";
@@ -14459,7 +14761,7 @@ transition:background-color var(--nv-d3),border-color var(--nv-d3),box-shadow va
 .ck ha-icon{--mdc-icon-size:15px;opacity:0;transform:scale(.4);transition:opacity var(--nv-d2),transform var(--nv-d3)}
 .it .tx{flex:1;min-width:0;font-size:var(--nv-fs-8);overflow-wrap:anywhere;transition:opacity var(--nv-d3)}
 .it .tx small{display:block;font-size:var(--nv-fs-3);opacity:.6;margin-top:var(--nv-s1)}
-.it.done .ck{background:var(--nv-active);border-color:var(--nv-active);color:var(--nv-active-fg);box-shadow:0 0 12px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent)}
+.it.done .ck{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));border-color:var(--nv-active);color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 12px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .it.done .ck ha-icon{opacity:1;transform:scale(1)}
 .it.done .tx{text-decoration:line-through;opacity:.5}
 .it.leave{opacity:.35}
@@ -15050,6 +15352,130 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07)}
   __publicField(NovaNoteCardEditor, "helpers", HELPERS9);
   __publicField(NovaNoteCardEditor, "openSections", ["general"]);
   define("note-card-editor", NovaNoteCardEditor);
+
+  // src/theme-switch.js
+  var DEF7 = { display: "button", name: "Theme", icon: "mdi:palette-outline" };
+  var MSG2 = { admin: "Einmal als Admin umschalten", failed: "Hat nicht geklappt" };
+  var CSS2 = `${NOVA_VARS}${PANEL_CSS}${NOVA_CHIPS_CSS}
+:host([data-display=chip]){height:auto}:host([data-display=chip])::before{display:none}
+.g.ts{flex-direction:row;align-items:center;justify-content:center}
+.ts .hd{flex:1;min-width:0}
+.ts .go{flex:none;opacity:.6}
+.ts select{flex:none;max-width:55%;height:36px;box-sizing:border-box;padding:0 var(--nv-s7) 0 var(--nv-s6);border-radius:var(--nv-r-pill);
+border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-fg);font:inherit;font-size:var(--nv-fs-6);cursor:pointer;outline:none}
+.ts select:focus-visible{box-shadow:var(--nv-focus)}
+.ts option{background:var(--nv-popup-base);color:var(--nv-fg)}
+.ts.busy .ic,.nchip.busy{opacity:.6}
+.nchips{display:flex}`;
+  var NovaThemeSwitchCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("theme-card-editor"));
+    }
+    static getStubConfig() {
+      return { display: "button" };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (c.display && !["chip", "button", "dropdown"].includes(c.display)) throw new Error("display: chip, button oder dropdown");
+      this._c = { ...DEF7, ...c };
+      this.dataset.display = this._c.display;
+      this._built = false;
+      if (this._h) this._render();
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (this._c && (!this._built || hassChanged(old, h, storeIds()))) this._render();
+    }
+    getCardSize() {
+      return 1;
+    }
+    getGridOptions() {
+      return this._c?.display === "chip" ? { columns: 3, rows: "auto" } : { columns: 6, rows: 1, min_rows: 1 };
+    }
+    _cur() {
+      return this._want || readTheme(this._h) || "blau";
+    }
+    _next() {
+      const i = THEME_KEYS.indexOf(this._cur());
+      return THEME_KEYS[(i + 1) % THEME_KEYS.length];
+    }
+    async _pick(k) {
+      if (!k || k === this._cur() || this._busy) return;
+      this._want = k;
+      this._busy = true;
+      this._msg = "";
+      this._render();
+      try {
+        await setTheme(this._h, k);
+      } catch (e) {
+        this._msg = MSG2[e.code] || MSG2.failed;
+        console.warn("[nova-cards] Theme", e);
+        clearTimeout(this._mt);
+        this._mt = setTimeout(() => {
+          this._msg = "";
+          this._render();
+        }, 5e3);
+      }
+      this._want = null;
+      this._busy = false;
+      this._render();
+    }
+    disconnectedCallback() {
+      clearTimeout(this._mt);
+    }
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" }), c = this._c;
+      const nm = `<div class="nm"><b>${esc(c.name)}</b><small></small></div>`;
+      r.innerHTML = `<style>${CSS2}</style>${c.display === "chip" ? `<div class="nchips"><div class="nchip"><span class="ci"></span><span class="cn">${esc(c.name)}</span><span class="cv"></span></div></div>` : `<div class="g ts"><div class="hd"><div class="ic"></div>${nm}</div>${c.display === "dropdown" ? `<select aria-label="${esc(c.name)}">${THEME_KEYS.map((k) => `<option value="${k}">${esc(THEMES[k].name)}</option>`).join("")}</select>` : '<ha-icon class="go" icon="mdi:chevron-right"></ha-icon>'}</div>`}`;
+      const hit = r.querySelector(c.display === "chip" ? ".nchip" : ".g");
+      if (c.display === "dropdown") r.querySelector("select").addEventListener("change", (e) => this._pick(e.target.value));
+      else press(hit, { tap: () => this._pick(this._next()) });
+      if (c.display === "chip") hit.setAttribute("aria-label", `${c.name}: weiterschalten`);
+      setIcon(r.querySelector(c.display === "chip" ? ".ci" : ".ic"), c.icon);
+      this._built = true;
+    }
+    _render() {
+      if (!this._built) this._build();
+      const r = this.shadowRoot, k = this._cur(), name = THEMES[k].name;
+      const msg = this._msg || (this._h && !hasStore(this._h) && !canSetup(this._h) ? MSG2.admin : "");
+      const txt = msg || name;
+      const v = r.querySelector(".cv, small");
+      if (v.textContent !== txt) v.textContent = txt;
+      const s = r.querySelector("select");
+      if (s && s.value !== k) s.value = k;
+      r.querySelector(".nchip, .g").classList.toggle("busy", !!this._busy);
+    }
+  };
+  define("theme-card", NovaThemeSwitchCard, { name: "Nova Themes Schalter", description: "Wählt das Nova-Theme (Blau, Hell …) für alle Nova Cards auf allen Geräten – als Chip, Button oder Dropdown. Richtet sich beim ersten Umschalten selbst ein.", documentationURL: docUrl("nova-themes-schalter") });
+  var S_GEN7 = [
+    sel("display", [["button", "Button (Antippen schaltet weiter)"], ["chip", "Chip (wie die Chips Card)"], ["dropdown", "Dropdown (Liste)"]]),
+    g2({ name: "name", selector: T }, { name: "icon", selector: I })
+  ];
+  var LABELS10 = { display: "Darstellung", name: "Beschriftung", icon: "Icon" };
+  var NovaThemeSwitchCardEditor = class extends NovaEditorBase {
+    // der Schalter zeigt immer das globale Theme
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      r.querySelector(".wrap").append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
+          b.append(this._hint("Gilt für alle Nova Cards auf allen Geräten. Beim ersten Umschalten legt die Karte dafür selbst einen Helfer „Nova Theme“ an – das darf in Home Assistant nur ein Administrator, danach können alle umschalten."));
+          b.append(this._form(S_GEN7, { ...DEF7, ...this._config }, (v) => {
+            const c = merge(this._config, names(S_GEN7), v);
+            Object.entries(DEF7).forEach(([k, x]) => {
+              if (c[k] === x) delete c[k];
+            });
+            this._emit(c);
+          }));
+        })
+      );
+    }
+  };
+  __publicField(NovaThemeSwitchCardEditor, "labels", LABELS10);
+  __publicField(NovaThemeSwitchCardEditor, "openSections", ["general"]);
+  __publicField(NovaThemeSwitchCardEditor, "noTheme", true);
+  define("theme-card-editor", NovaThemeSwitchCardEditor);
 
   // src/index.js
   console.info(`%c NOVA-CARDS %c v${"0.12.0"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");

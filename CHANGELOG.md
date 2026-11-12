@@ -6,6 +6,16 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 ## [0.12.0] – unveröffentlicht
 
 ### Hinzugefügt
+- Nova Gerät Card: neuer Gerätetyp Trockner (`device_type: dryer`) mit eigener Zeichnung (Bullauge mit Wäsche, warme Luft, Kondensbehälter, Flusensieb) und Hinweis-Animationen `condensate` und `lint`.
+- Theme Nova Velvet: cremiges Beige, Espresso-Schrift, Gold, Cognac und Espresso als Akzente (keine Blautöne), weiche warme Schatten statt Glow, Kontraste nach WCAG AA.
+- Theme Nova Midnight im Stil des Apple Dark Mode: Karten `#1c1c1e`, Kacheln `#2c2c2e`, feine Linien, kein Glow und kein Blur (schnell auf dem Echo Show), gedämpfte Akzente. Rahmen von Bereich und Pop-up schwarz (`--nova-area-background`), Karten darin grau. Aktive und primäre Knöpfe aller Karten als getöntes Glas wie der Start-Knopf der Timer Card, Schrift darauf hell. Kontraste nach WCAG AA.
+- Gemeinsamer Knopf-Stil über Tokens (`--nova-button-fill`, `-fill-text`, `-edge`, `-tint-text`); in Nova Blau unverändert. Glows in Gerätezeichnungen folgen jetzt `--nova-glow`.
+- Theme Nova Hell: helles Glas, dunkle Schiefer-Schrift, weiche Schatten statt Glow, Kontraste nach WCAG AA. Gerätezeichnungen bleiben dunkel.
+- Nova Themes Schalter (`custom:nova-theme-card`): wählt das Theme für alle Nova Cards auf allen Geräten, als Chip, Button oder Dropdown.
+  Legt beim ersten Umschalten selbst den Helfer „Nova Theme“ (`input_select.nova_theme`) an – einmal als Administrator, danach können alle umschalten.
+- Option `theme` in jeder Karte (Editor: Bereich „Theme“): „Global“ (Standard) oder ein festes Theme nur für diese Karte und Karten darin.
+  Je Gerät geht es über die Theme-Variable `nova-theme` im HA-Theme (z. B. `nova-theme: hell`).
+- Theme-Variablen `--nova-accent-ink-color`, `--nova-text-shadow` und `--nova-accent-1-device` … `--nova-neutral-device` (Farbrolle in Gerätezeichnungen).
 - Design-Tokens: alle Farben, Radien, Schatten, Blur-Werte, Schriftgrößen, Abstände und Übergangszeiten der Karten stehen zentral in
   `src/shared/theme.js` (rund 110 Tokens, Liste in `docs/design-system.md`). Nova Blau sieht aus wie vorher; Grundlage für weitere Themes.
   Neue Theme-Variablen u. a. `--nova-tint`, `--nova-shade`, `--nova-glow`, `--nova-ring`, `--nova-radius-*`, `--nova-font-size-*`, `--nova-space-*`,
@@ -43,6 +53,7 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
   Fokus hat, springt die Karte nicht zurück.
 
 ### Geändert
+- Farbrollen: Ohne Auswahl im Editor nutzt jede Karte die Primärfarbe des Themes (Akzent 1). Einzige Ausnahme: die Kaffeemaschine behält ihr Kaffeebraun (Nova Blau Kupfer, Velvet eigenes warmes Braun `#8a5a33`, Token `--nova-coffee-color`).
 - Nova Uhr Card: `mode: analog` gilt als ältere Schreibweise von `style: analog` und funktioniert unverändert weiter.
 
 ## [0.11.1] – 2026-10-30
