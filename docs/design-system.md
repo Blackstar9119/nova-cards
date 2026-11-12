@@ -280,3 +280,10 @@ kein Blur (schnell auf dem Echo Show). Aktive und primäre Knöpfe sind getönte
 
 Kontraste gerechnet auf `#1c1c1e` bzw. auf der getönten Kachel. Gerätezeichnungen behalten die Gehäusefarben von Nova Blau (`PAL`).
 
+
+## Prüfen
+
+- `npm run check` – keine festen Farben im Karten-CSS.
+- `demo/index.html` – alle Karten mit Testdaten, ohne Home Assistant (über einen lokalen Webserver im Repo-Root öffnen,
+  z. B. `npx serve .` und dann `/demo/`). Mit `?src=…` lässt sich ein anderer Build laden, mit `?theme=hell` bzw. `?theme=midnight` ein Theme setzen (wirkt wie die Theme-Variable `nova-theme`).
+  Bei Umbauten an den Tokens vorher und nachher fotografieren und vergleichen: Nova Blau muss pixelgleich bleiben.
