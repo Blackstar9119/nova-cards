@@ -56,6 +56,10 @@
     ["a3-dev", "accent-3-device", "var(--nv-a3)"],
     ["a4-dev", "accent-4-device", "var(--nv-a4)"],
     ["neutral-dev", "neutral-device", "var(--nv-neutral)"],
+    // Standardfarbe der Kaffeemaschine (nur dort, nicht im Editor wählbar): Kupfer aus Akzent 3, Velvet eigenes Braun
+    ["coffee", "coffee-color", "var(--nv-a3)"],
+    ["coffee-fg", "coffee-color-text", "var(--nv-a3-fg)"],
+    ["coffee-dev", "coffee-color-device", "var(--nv-a3-dev)"],
     // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
     ["clock-night", "clock-night", "#4d6bff"],
     ["clock-morning", "clock-morning", "#ffb36b"],
@@ -279,6 +283,10 @@
       "a2-fg": "#1a0f09",
       a3: "#7a2f3a",
       "a3-fg": "#fbf6ec",
+      coffee: "#8a5a33",
+      "coffee-fg": "#fbf6ec",
+      "coffee-dev": "#b07a48",
+      // Kaffee warmes Braun statt Bordeaux
       a4: "#4f5f2a",
       "a4-fg": "#fbf6ec",
       neutral: "#62554c",
@@ -637,7 +645,7 @@
   }
 
   // src/shared/styles.js
-  var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
+  var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4", coffee: "coffee" };
   var roleVars = (r) => {
     const k = ROLES[r] || ROLES.neutral;
     return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`, dev: `var(--nv-${k}-dev)` };
@@ -9274,9 +9282,10 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   // src/appliance.js
   var TYPES2 = {
     washer: { label: "Waschmaschine", icon: "mdi:washing-machine", color: "accent-1", run: "Wäscht", alt: "Schleudert", door: "Tür offen", phase: ["spin", "spinning", "schleudern"], anims: ["detergent", "softener"], dview: true },
+    dryer: { label: "Trockner", icon: "mdi:tumble-dryer", color: "accent-1", run: "Trocknet", door: "Tür offen", phase: [], anims: ["condensate", "lint"], dview: true },
     dishwasher: { label: "Spülmaschine", icon: "mdi:dishwasher", color: "accent-1", run: "Spült", alt: "Trocknet", door: "Tür offen", phase: ["drying", "dry", "trocknen", "ending"], dview: true },
     airfryer: { label: "Airfryer", icon: "mdi:toaster-oven", color: "accent-1", run: "Gart", heat: "Heizt vor", door: "Schublade offen", phase: [], dview: true },
-    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "accent-1", run: "Brüht", door: "Tür offen", phase: [], anims: ["tank", "beans", "descale"], drink: true },
+    coffee: { label: "Kaffeemaschine", icon: "mdi:coffee-maker-outline", color: "coffee", run: "Brüht", door: "Tür offen", phase: [], anims: ["tank", "beans", "descale"], drink: true },
     feeder: { label: "Futterautomat", icon: "mdi:bowl-mix-outline", color: "accent-1", run: "Füttert", door: "Deckel offen", phase: [], anims: ["food"], level: true, feed: true, mode: true, lvl: ["Füllstand", "Futter ausreichend", "Wenig Futter"], pick: "Portion" },
     fountain: { label: "Trinkbrunnen", icon: "mdi:fountain", color: "accent-1", run: "Läuft", door: "Deckel offen", phase: [], anims: ["water", "filter"], level: true, nodone: true, mode: true, lvl: ["Wasserstand", "Wasser ok", "Wasser fehlt"], binEmpty: true, filter: true },
     generic: { label: "Gerät", icon: "mdi:power-plug-outline", color: "accent-1", run: "Läuft", door: "Tür offen", phase: [] }
@@ -9291,6 +9300,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
     food: ["Futter leer", "Futter nachfüllen", "mdi:food-off"],
     water: ["Wasser niedrig", "Wasser nachfüllen", "mdi:water-alert-outline"],
     filter: ["Filter", "Filter wechseln", "mdi:air-filter"],
+    condensate: ["Kondensbehälter", "Kondensbehälter leeren", "mdi:cup-water"],
+    lint: ["Flusensieb", "Flusensieb reinigen", "mdi:air-filter"],
     warning: ["Allgemeine Warnung", "", "mdi:alert-outline"]
   };
   var animsOf = (t) => [...TYPES2[t].anims || [], "warning"];
@@ -9645,6 +9656,8 @@ ${WARN}</svg>`,
     generic: `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="pulse" cx="50" cy="50" r="30"/><circle class="bd" cx="50" cy="50" r="26"/>
 <path class="pw" d="M41 40 a14 14 0 1 0 18 0"/><line class="pw" x1="50" y1="33" x2="50" y2="48"/>${DONE}<g transform="scale(.5)">${WARN}</g></svg>`
   };
+  SV.dryer = SV.washer.replace(/<g class="wl">[\s\S]*?<\/g><\/g>\n/, `<g class="hz"><path d="M80 132 q3 -6 0 -12 t0 -12"/><path d="M100 136 q3 -6 0 -12 t0 -12"/><path d="M120 132 q3 -6 0 -12 t0 -12"/></g>
+`).replace(/<rect class="lbl" x="42"[\s\S]*?<rect class="dwg" x="43"[^>]*>/, '<rect class="lbl" x="42" y="23.5" width="10" height="1.3" rx=".65"/><rect class="tkw" x="43" y="28" width="28" height="9" rx="1.6"/><rect class="tkl" x="43" y="33.5" width="28" height="3.5" rx="1.2"/><rect class="dwg" x="54" y="23" width="6" height="2.2" rx="1.1"/>').replace(/<circle class="fl"[\s\S]*?<rect class="dwg" x="145"[^>]*>/, `<rect class="lint s-part" x="124" y="158" width="38" height="18" rx="2.5" fill="url(#w-pt)"/>${[0, 1, 2, 3, 4].map((i) => `<rect class="vnt" x="${128 + i * 6.4}" y="161.5" width="3.2" height="11" rx="1.6"/>`).join("")}`).replace('<path class="cl c2"', '<path class="cl c3" d="M108 98 q10 -4 16 4 q2 8 -6 10 q-8 1 -10 -14 Z"/><path class="cl" d="M82 106 q6 -6 12 0 q2 6 -5 8 q-6 1 -7 -8 Z"/><path class="cl c2"');
   var scene = (t) => `<div class="scene">${SV[t]}</div>`;
   var DCSS2 = `
 .scene{--dc:var(--dg,var(--nv-a1-dev))}
@@ -9838,6 +9851,15 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .w-washer .scene .lk{stroke:rgb(var(--nv-hi));stroke-opacity:.85;stroke-width:.7}.w-washer .scene .lk rect{fill:rgb(var(--nv-hi))}
 .st-off .w-washer .wdt,.st-off .w-washer .pdots .on{display:none}
 /* Spülmaschine im Nova-Zeichenstil (Maßstab 3D-Drucker, Grundteile aus shared/scene.js) */
+.w-dryer .hz path{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.35;stroke-width:1.4;stroke-linecap:round;opacity:0;transform-box:fill-box;transform-origin:center bottom}
+.w-dryer .hz path:nth-child(2){animation-delay:1.2s}.w-dryer .hz path:nth-child(3){animation-delay:2.4s}
+.anim.st-run .w-dryer .hz path,.anim.st-heat .w-dryer .hz path{animation:dv-hz 3.6s ease-out infinite}
+.anim.st-warm .w-dryer .drum{animation:dv-tumble 9s ease-in-out infinite}
+.w-dryer .cl.c3{fill:color-mix(in srgb,var(--dc) 30%,#b8c0ce);fill-opacity:.5}
+.w-dryer .tkw{fill:#0b0e13;stroke:rgba(var(--nv-hi),.12);stroke-width:.5}.w-dryer .tkl{fill:${PAL.glass};fill-opacity:.35;transition:fill var(--nv-d4)}
+.w-dryer .vnt{fill:#0b0e13;opacity:.75}
+.h-condensate .w-dryer .tkl{fill:var(--nv-warn);fill-opacity:.95}.h-lint .w-dryer .lint{fill:var(--nv-warn);fill-opacity:.95}
+.anim.h-condensate .w-dryer .tkl,.anim.h-lint .w-dryer .lint{animation:dv-blinko 1.3s ease-in-out infinite}
 .w-dishwasher{--gx:150px}
 .w-dishwasher .qplin{fill:#0d1016}.w-dishwasher .qvent{fill:rgb(var(--nv-lo));opacity:.45}
 .w-dishwasher .qrail{fill:none;stroke:rgb(var(--nv-hi));stroke-opacity:.07;stroke-width:1.2}
@@ -10075,7 +10097,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      if (c.device_type && !TYPES2[c.device_type]) throw new Error("device_type muss washer, dishwasher, airfryer, coffee, feeder, fountain oder generic sein");
+      if (c.device_type && !TYPES2[c.device_type]) throw new Error("device_type muss washer, dryer, dishwasher, airfryer, coffee, feeder, fountain oder generic sein");
       this._c = { ...GDEF, ...c, controls: [].concat(c.controls || []).map(toObj).filter((o) => o.entity), hints: [].concat(c.hints || []).map(toObj).filter((o) => o.entity) };
       this._ids = entityIds(this._c);
       this._built = false;
@@ -10189,7 +10211,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${SCENE_CSS}${DCSS2}:host([hidden]){display:none}</style>
 <div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--dg:${rv.dev};--hc:${roleVars(c.heat_color || "accent-2").c}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ""}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
-${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
+${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}${t === "dryer" ? " w-washer" : ""}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
 <div class="ctls"></div>${c.start_at === "home_connect" && c.start ? SA : ""}${["select", "input_select"].includes(dom(c.start)) && !c.start_option ? PICK : ""}<div class="acts"></div>`}<div class="als"></div></div>`;
       const q = (s) => r.querySelector(s);
       this._e = {
@@ -10917,7 +10939,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
         if (c.color === TYPES2[typeOf(c)].color) delete c.color;
         return c;
       };
-      const data = { ...GDEF, color: TYPES2[t].color, ...c0 };
+      const data = { ...GDEF, color: TYPES2[t].color === "coffee" ? void 0 : TYPES2[t].color, ...c0 };
       const form = (schema) => this._form(schema, data, (v) => {
         const c = strip3(merge(this._config, names(schema), v));
         this._emit(c);
