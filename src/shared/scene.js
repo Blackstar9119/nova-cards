@@ -12,6 +12,8 @@ export const PAL = {
   chrome: '#a3adbf', chromeMid: '#566074', chromeDark: '#232833',
   glass: '#a9c6ff', glassMid: '#5d7397', glassDark: '#0c111c',
   line: 'rgba(255,255,255,.18)',              // Kanten
+  flap: '#eef1f6', flapMid: '#2b313d',        // Klappzahlen der Uhr: Ziffern, Mitte der Klappe
+  robot: '#3d4452', station: '#2f3542', water: '#6fb6f2', // Saugroboter, Station, Wassertank (Theme: --nova-vacuum-…-color)
 };
 
 // Verläufe mit Präfix p (Ids eindeutig je Zeichnung): bd Gehäuse, sh Seitenglanz, gl Glas, in Innenraum, pt Anbauteil,
@@ -30,20 +32,20 @@ export const sceneDefs = p => `<linearGradient id="${p}-bd" x1="0" y1="0" x2="0"
 export const SCENE_CSS = `
 .scene{--sb1:var(--nova-device-color-light,${PAL.bodyLight});--sb2:var(--nova-device-color,${PAL.body})}
 .scene .s-sb1{stop-color:var(--sb1)}.scene .s-sb2{stop-color:var(--sb2)}
-.scene .s-shd{fill:#000;opacity:.35}
-.scene .s-body{stroke:${PAL.line};stroke-width:.6;transition:stroke .4s}.scene .s-sheen{opacity:.4}.scene .s-edge{fill:#fff;opacity:.12}
-.scene .s-part{stroke:rgba(255,255,255,.15);stroke-width:.5}
-.scene .s-glass{stroke:rgba(255,255,255,.22);stroke-width:.7}.scene .s-refl{fill:#fff;opacity:.035}
+.scene .s-shd{fill:rgb(var(--nv-lo));opacity:.35}
+.scene .s-body{stroke:${PAL.line};stroke-width:.6;transition:stroke var(--nv-d5)}.scene .s-sheen{opacity:.4}.scene .s-edge{fill:rgb(var(--nv-hi));opacity:.12}
+.scene .s-part{stroke:rgba(var(--nv-hi),.15);stroke-width:.5}
+.scene .s-glass{stroke:rgba(var(--nv-hi),.22);stroke-width:.7}.scene .s-refl{fill:rgb(var(--nv-hi));opacity:.035}
 /* Außerhalb der Animation zusätzlich unsichtbar: manche Browser (Echo Show) zeigen den geparkten Streifen sonst als hellen Balken neben dem Glas */
 .scene .s-gls{opacity:0;visibility:hidden;transform-box:view-box}
-.sweep .scene .s-gls{animation:nv-glare .9s .1s ease-in-out both}
-.scene .s-scr{fill:${PAL.screen};stroke:rgba(255,255,255,.18);stroke-width:.5}.scene .s-tgl{fill:#fff;opacity:.05}
+.sweep .scene .s-gls{animation:nv-glare var(--nv-sweep) .1s ease-in-out both}
+.scene .s-scr{fill:${PAL.screen};stroke:rgba(var(--nv-hi),.18);stroke-width:.5}.scene .s-tgl{fill:rgb(var(--nv-hi));opacity:.05}
 .still .scene .s-gls{animation-play-state:paused!important}
 @keyframes nv-glare{0%{opacity:0;visibility:visible;transform:translateX(0)}15%{opacity:.7}85%{opacity:.7}99%{opacity:0;visibility:visible}100%{opacity:0;visibility:hidden;transform:translateX(var(--gx,70px))}}
 @media (prefers-reduced-motion:reduce){.sweep .scene .s-gls{animation:none}}`;
 
 // Rahmen-Glow der Karte, solange das Gerät arbeitet (sel = Selektor der Karte im aktiven Zustand)
-export const frameGlow = sel => `${sel}{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--dc) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}`;
+export const frameGlow = sel => `${sel}{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-ring),transparent),var(--nv-edge)}`;
 
 // Lichtstreifen einmal durchs Glas schicken (beim Reinscrollen, bei „fertig“): Klasse neu setzen startet die Animation neu
 export function sweep(el) {

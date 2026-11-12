@@ -44,7 +44,9 @@ src/
     actions.js        Events (more-info, hass-action), Navigation, tap/hold-Aktionen
     long-press.js     press(): Antippen / lange drücken / Tastatur
     sparkline.js      Flächen-Sparkline als SVG (Thermostat-Verlauf, Wetter-Stundenvorhersage)
-    styles.js         Gemeinsame CSS-Bausteine (Variablen, Glas-Hintergrund, Editor-Styles)
+    theme.js          Design-Tokens und Themes: EINZIGE Stelle für Farben, Radien, Schatten, Blur, Schrift, Abstände, Zeiten
+                      (TOKENS, THEMES, NOVA_VARS, NAVI_VARS) – siehe docs/design-system.md
+    styles.js         Gemeinsame CSS-Bausteine (Glas-Hintergrund, Karten- und Panel-CSS, Farbrollen, Editor-Styles)
     scene.js          Zeichenstil der Gerätezeichnungen: Farbpalette, Verläufe (Gehäuse, Glas, Chrom), Glas-Spiegelung,
                       Lichtstreifen beim Reinscrollen (sweep), Rahmen-Glow, Badge-Stelle (badgeAt) – siehe „Stil der Zeichnungen“
     editor-base.js    NovaEditorBase – Basisklasse ALLER Editoren
@@ -65,6 +67,11 @@ src/
 docs/
   <karte>.md          Alle Optionen je Karte (z. B. room-card.md, popup-card.md)
   DESIGN.md           Design-Referenz: Grundlagen, Stil der Zeichnungen
+  design-system.md    Alle Design-Tokens (--nova-…) mit Wert und Zweck, Themes
+demo/
+  index.html, mock.js Alle Karten mit Testdaten ohne Home Assistant – Vorschau und Bildvergleich bei Umbauten
+tools/
+  check-tokens.mjs    „npm run check“: keine festen Farben im Karten-CSS
 dev/
   nova-dev-cards.js   ERZEUGT von „npm run dev“ – gitignored, nur Zwischenablage
 nova-dev-cards.js     Kopie des Dev-Builds für jsDelivr – nur auf Feature-Branches, nie nach main mergen
@@ -92,9 +99,13 @@ hacs.json             HACS-Metadaten
   Editoren erben von `NovaEditorBase`, nicht voneinander.
 - **Grafischer Editor für alles:** jede Option ist im Editor einstellbar, nichts hartkodiert (Entitäten,
   Texte, Icons, Farben kommen aus der Konfiguration oder werden automatisch erkannt).
-- **Keine festen Farben in Karten:** wählbare Farben sind Farbrollen (`neutral`, `accent-1` … `accent-4`), im Editor
-  per `ROLE()` aus `editor-schema.js`, in der Karte per `roleVars()` aus `styles.js`. Die Standardfarben stehen nur
-  zentral in `NOVA_VARS` (`--nova-accent-1` …) und werden vom Theme überschrieben.
+- **Keine festen Werte in Karten:** Farben, Radien, Schatten, Blur, Schriftgrößen, Abstände und Übergangszeiten kommen als
+  `var(--nv-…)` aus den Tokens in `src/shared/theme.js` (Liste: `docs/design-system.md`). Fehlt ein Wert, kommt ein neues
+  Token in `theme.js`, nicht ein fester Wert in die Karte. Wählbare Farben sind Farbrollen (`neutral`, `accent-1` … `accent-4`),
+  im Editor per `ROLE()` aus `editor-schema.js`, in der Karte per `roleVars()` aus `styles.js`. Vor dem Commit `npm run check`.
+  Ausnahmen: Materialfarben der Zeichnungen (`PAL` in `scene.js` bzw. in der Zeichnung) und Editoren (HA-Variablen).
+- **Nova Blau bleibt pixelgleich:** nach Änderungen an Tokens oder gemeinsamem CSS die Demo-Seite (`demo/index.html`) vorher
+  und nachher fotografieren und vergleichen.
 - **Alles auf Deutsch:** Beschriftungen, Hilfetexte, Fehlermeldungen, Kommentare, README.
 - **Sparsam mit hass:** Karten und Editoren zeichnen nur neu, wenn `hassChanged()` aus `lifecycle.js` für ihre Entitäten
   anschlägt. Editoren melden Änderungen gesammelt (`_emit` mit 300 ms Pause) und verwenden ha-form-Felder beim Neuaufbau weiter

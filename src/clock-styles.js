@@ -27,26 +27,26 @@ export function flipSet(el, ch, anim) {
 }
 
 export const FLIP_CSS = `
-.flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:${K('clamp(34px,var(--nova-clock-size,19cqw),150px)')};line-height:1;font-weight:600;color:#eef1f6;font-variant-numeric:tabular-nums}
+.flp{display:flex;align-items:center;justify-content:center;gap:.12em;font-size:${K('clamp(34px,var(--nova-clock-size,19cqw),150px)')};line-height:1;font-weight:var(--nv-fw-bold);color:${PAL.flap};font-variant-numeric:tabular-nums}
 .flp .grp{display:flex;gap:.05em}.flp .grp.sec{font-size:.45em;align-self:flex-end;margin-left:.1em}
-.flp .sep{display:flex;flex-direction:column;gap:.22em;padding:0 .02em}.flp .sep i{width:.1em;height:.1em;border-radius:50%;background:#fff;opacity:.35}
-.flp .ap{font-size:.24em;font-weight:500;opacity:.7;align-self:flex-start;margin-left:.15em;letter-spacing:0}
+.flp .sep{display:flex;flex-direction:column;gap:.22em;padding:0 .02em}.flp .sep i{width:.1em;height:.1em;border-radius:50%;background:rgb(var(--nv-hi));opacity:.35}
+.flp .ap{font-size:.24em;font-weight:var(--nv-fw-medium);opacity:.7;align-self:flex-start;margin-left:.15em;letter-spacing:0}
 .fd{position:relative;display:block;width:.7em;height:1.12em;border-radius:.08em;perspective:2.6em;
-box-shadow:0 .04em .1em rgba(0,0,0,.45),0 0 0 .5px rgba(255,255,255,.12)}
+box-shadow:0 .04em .1em rgba(var(--nv-lo),.45),0 0 0 .5px rgba(var(--nv-hi),.12)}
 .fd .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.fd .t{top:0;border-radius:.08em .08em 0 0;background:linear-gradient(180deg,${PAL.part},#2b313d)}
-.fd .b{bottom:0;border-radius:0 0 .08em .08em;background:linear-gradient(180deg,#232833,${PAL.partDark})}
-.fd .t::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 40%)}
-.fd b{position:absolute;left:0;right:0;height:200%;line-height:1.12em;text-align:center;font-weight:inherit;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.fd .t{top:0;border-radius:.08em .08em 0 0;background:linear-gradient(180deg,${PAL.part},${PAL.flapMid})}
+.fd .b{bottom:0;border-radius:0 0 .08em .08em;background:linear-gradient(180deg,${PAL.chromeDark},${PAL.partDark})}
+.fd .t::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(var(--nv-hi),.08),transparent 40%)}
+.fd b{position:absolute;left:0;right:0;height:200%;line-height:1.12em;text-align:center;font-weight:inherit;text-shadow:0 1px 2px rgba(var(--nv-lo),.4)}
 .fd .t b{top:0}.fd .b b{bottom:0}
 /* Trennfuge in der Mitte und die Achsstifte links und rechts */
-.fd::after{content:"";position:absolute;left:0;right:0;top:calc(50% - .012em);height:.024em;background:rgba(0,0,0,.65);box-shadow:0 .012em 0 rgba(255,255,255,.06);z-index:3}
+.fd::after{content:"";position:absolute;left:0;right:0;top:calc(50% - .012em);height:.024em;background:rgba(var(--nv-lo),.65);box-shadow:0 .012em 0 rgba(var(--nv-hi),.06);z-index:3}
 .fd .pin{position:absolute;top:calc(50% - .05em);left:-.015em;width:.035em;height:.1em;border-radius:.02em;background:linear-gradient(90deg,${PAL.chromeDark},${PAL.chrome});z-index:4}.fd .pin.r{left:auto;right:-.015em;transform:scaleX(-1)}
 .fd .fl{visibility:hidden;z-index:2}
 .fd.go .t.fl{visibility:visible;transform-origin:50% 100%;animation:fl-t .3s cubic-bezier(.55,.06,.68,.19) forwards}
 .fd.go .b.fl{visibility:visible;transform-origin:50% 0;animation:fl-b .3s .3s cubic-bezier(.22,.61,.36,1) both}
 /* Schatten der fallenden Klappe auf der unteren Hälfte */
-.fd .b:not(.fl)::after{content:"";position:absolute;inset:0;background:#000;opacity:0}
+.fd .b:not(.fl)::after{content:"";position:absolute;inset:0;background:rgb(var(--nv-lo));opacity:0}
 .fd.go .b:not(.fl)::after{animation:fl-sh .6s ease-out}
 @keyframes fl-t{0%{transform:rotateX(0);filter:brightness(1)}100%{transform:rotateX(-90deg);filter:brightness(.55)}}
 @keyframes fl-b{0%{transform:rotateX(90deg);filter:brightness(1.35)}80%{transform:rotateX(-7deg);filter:brightness(1)}100%{transform:rotateX(0)}}
@@ -134,7 +134,7 @@ export const RETRO_CSS = `
 .rt{width:100%;max-width:${K('var(--nova-clock-size,520px)')}}.rt svg{display:block;width:100%;height:auto}
 .rt{--led:var(--nv-led-red)}.rt.green{--led:var(--nv-led-green)}.rt.blue{--led:var(--nv-led-blue)}.rt.amber{--led:var(--nv-led-amber)}
 /* Ziffernfläche: fast schwarz hinter dunkler Plexiglasscheibe, ganz leicht in der LED-Farbe getönt */
-.scene .rt-scr{fill:color-mix(in srgb,var(--led) 4%,#030303);stroke:rgba(255,255,255,.16);stroke-width:.5}
+.scene .rt-scr{fill:color-mix(in srgb,var(--led) 4%,#030303);stroke:rgba(var(--nv-hi),.16);stroke-width:.5}
 /* Untere Ebene: alle Segmente mit 8 % („88:88“ zu erahnen), obere Ebene: nur leuchtende Segmente mit Glow */
 .scene .rt-off .sg,.scene .rt-off circle{fill:var(--led);opacity:.08}
 .scene .rt-on .sg,.scene .rt-on .rt-pm{fill:var(--led);opacity:0;transition:opacity .12s}

@@ -7,7 +7,7 @@ export const MARQUEE_CSS = `
 .mq{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .mq>.mqi{display:inline}
 .mq.run{text-overflow:clip;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 14px),transparent)}
-.mq.run>.mqi{display:inline-block;padding-left:4px;animation:nv-mq var(--mqd,8s) ease-in-out infinite alternate;will-change:transform}
+.mq.run>.mqi{display:inline-block;padding-left:var(--nv-s2);animation:nv-mq var(--mqd,8s) ease-in-out infinite alternate;will-change:transform}
 @keyframes nv-mq{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--mqx,0))}}
 @media(prefers-reduced-motion:reduce){.mq.run{text-overflow:ellipsis;-webkit-mask-image:none;mask-image:none}.mq.run>.mqi{display:inline;padding-left:0;animation:none}}`;
 

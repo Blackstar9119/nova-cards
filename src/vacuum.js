@@ -1,3 +1,4 @@
+import {PAL} from './shared/scene.js';
 import {define, docUrl, tag} from './shared/define.js';
 import {esc, dom, setIcon, list, NUMRE, toObj, stamp, mapIcon} from './shared/utils.js';
 import {isOn, TOGGLE, fmtState, nameOf, iconOf, valueOf, hasF} from './shared/state.js';
@@ -11,83 +12,83 @@ import {g2, T, I, A, ENT, NUM, sel, NAMEICON, BASE_LABELS} from './shared/editor
 
 /* ---------- Nova Saugroboter Card ---------- */
 const VCSS = `
-.g.vc.run{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.g.vc.run{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 40%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
 .vc.run .hd .ic ha-icon{animation:nv-vc 2.4s ease-in-out infinite}
 @keyframes nv-vc{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 .vc .hd small.er{color:var(--nv-error);opacity:1}
 .erb .pill{background:color-mix(in srgb,var(--nv-error) 30%,transparent);border-color:color-mix(in srgb,var(--nv-error) 50%,transparent)}
-.bat{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:var(--nv-chip);font-size:12.5px;font-weight:600;flex:none}
+.bat{display:inline-flex;align-items:center;gap:var(--nv-s2);padding:var(--nv-s3) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-5);font-weight:var(--nv-fw-bold);flex:none}
 .bat ha-icon{--mdc-icon-size:17px}
 .bat.low{background:color-mix(in srgb,var(--nv-error) 30%,transparent)}
 .bat.chg ha-icon{color:var(--nv-accent)}
 .vc>.main{display:contents}.vc .hd{order:0}.vc .mpnl{order:1}.vc>.main>:not(.hd){order:2}
-.mpnl{display:flex;flex-direction:column;gap:8px;min-width:0}
+.mpnl{display:flex;flex-direction:column;gap:var(--nv-s4);min-width:0}
 .mpnl .bt{margin:0}
-.map{position:relative;border-radius:calc(var(--nv-radius) - 8px);overflow:hidden;background:rgba(0,0,0,.25)}
+.map{position:relative;border-radius:calc(var(--nv-radius) - 8px);overflow:hidden;background:rgba(var(--nv-shade),.25)}
 .map.ar{aspect-ratio:var(--ar)}.map{max-height:var(--nv-map-max,280px)}
 .map img{display:block;width:100%;height:auto;max-height:var(--nv-map-max,280px);object-fit:contain}
 .map.ar img{height:100%;object-fit:contain}
-.ctl{display:flex;align-items:center;justify-content:center;gap:14px}
-.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
-.ctl .cb ha-icon{--mdc-icon-size:24px}
-.ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.ctl{display:flex;align-items:center;justify-content:center;gap:var(--nv-s7)}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
+.ctl .cb ha-icon{--mdc-icon-size:var(--nv-icon-xl)}
+.ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
 .cb:active{transform:scale(.9)}
 .ctl.pl{justify-content:flex-start;gap:7px;flex-wrap:wrap}
 .fs .pill,.ctl.pl .pill{flex:none}
 .rooms .pill{background:color-mix(in srgb,var(--nv-active) 45%,transparent);border-color:color-mix(in srgb,var(--nv-active) 60%,transparent)}
-.rooms .pill.on{background:var(--nv-active);box-shadow:0 0 14px color-mix(in srgb,var(--nv-active) 50%,transparent)}
+.rooms .pill.on{background:var(--nv-active);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent)}
 .rooms .pill.go{order:99;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:none}
-.vc .sws .list{row-gap:2px}
-.rooms .pill.cur{box-shadow:0 0 0 2px var(--nv-accent),0 0 14px color-mix(in srgb,var(--nv-accent) 50%,transparent)}
+.vc .sws .list{row-gap:var(--nv-s1)}
+.rooms .pill.cur{box-shadow:0 0 0 2px var(--nv-accent),0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 50%,transparent) var(--nv-glow),transparent)}
 .hd .all{flex:none}
 .hd .all.on{background:var(--nv-active);color:var(--nv-active-fg);border-color:transparent}
-.cons .kv{flex-wrap:wrap;row-gap:4px}
-.cons .kv .cbar{flex-basis:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.cons .kv{flex-wrap:wrap;row-gap:var(--nv-s2)}
+.cons .kv .cbar{flex-basis:100%;height:4px;border-radius:2px;background:rgba(var(--nv-tint),.12);overflow:hidden}
 .cons .kv .cbar i{display:block;height:100%;background:var(--nv-active);border-radius:2px}
 .cons .warn .cbar i{background:var(--nv-warn)}.cons .warn .v{color:var(--nv-warn);opacity:1}
 .cons .pill.warn{background:color-mix(in srgb,var(--nv-warn) 25%,transparent)}
-.vc.narrow .ctl{gap:8px}.vc.narrow .ctl .cb{width:38px;height:38px}.vc.narrow .ctl .cb.pp{width:48px;height:48px}
+.vc.narrow .ctl{gap:var(--nv-s4)}.vc.narrow .ctl .cb{width:38px;height:38px}.vc.narrow .ctl .cb.pp{width:48px;height:48px}
 :host{height:auto;container-type:normal}.g.vc{height:auto}
-.g.vc.side{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:stretch}
-.vc.side>.main{display:flex;flex-direction:column;gap:12px;min-width:0;padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
-.vc.side .mpnl{padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.g.vc.side{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:var(--nv-s7);align-items:stretch}
+.vc.side>.main{display:flex;flex-direction:column;gap:var(--nv-s6);min-width:0;padding:var(--nv-s6);border-radius:calc(var(--nv-radius) - 6px);background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.08)}
+.vc.side .mpnl{padding:var(--nv-s6);border-radius:calc(var(--nv-radius) - 6px);background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.08)}
 .vc.side .map{flex:1;min-height:var(--nova-vacuum-map-min-height,240px);max-height:none;aspect-ratio:auto}
 .vc.side .map img{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain}
-.g.vc.auto.wide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:stretch}
-.vc.auto.wide>.main{display:flex;flex-direction:column;gap:12px;min-width:0;padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
-.vc.auto.wide .mpnl{padding:12px;border-radius:calc(var(--nv-radius) - 6px);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.g.vc.auto.wide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:var(--nv-s7);align-items:stretch}
+.vc.auto.wide>.main{display:flex;flex-direction:column;gap:var(--nv-s6);min-width:0;padding:var(--nv-s6);border-radius:calc(var(--nv-radius) - 6px);background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.08)}
+.vc.auto.wide .mpnl{padding:var(--nv-s6);border-radius:calc(var(--nv-radius) - 6px);background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.08)}
 .vc.auto.wide .map{flex:1;min-height:var(--nova-vacuum-map-min-height,240px);max-height:none;aspect-ratio:auto}
 .vc.auto.wide .map img{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain}
-.scene{--rc:var(--nova-vacuum-robot-color,#3d4452);--sc:var(--nova-vacuum-station-color,#2f3542);--wc:var(--nova-vacuum-water-color,#6fb6f2);
+.scene{--rc:var(--nova-vacuum-robot-color,${PAL.robot});--sc:var(--nova-vacuum-station-color,${PAL.station});--wc:var(--nova-vacuum-water-color,${PAL.water});
 position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
 .scene svg{display:block;width:100%;height:100%;overflow:visible}
-.scene .cap{position:absolute;left:0;top:0;padding:4px 10px;border-radius:999px;background:var(--nv-chip);font-size:11px;font-weight:500;letter-spacing:.02em;opacity:.85}
+.scene .cap{position:absolute;left:0;top:0;padding:var(--nv-s2) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-2);font-weight:var(--nv-fw-medium);letter-spacing:.02em;opacity:.85}
 .scene .cap:empty{display:none}
 .sc .floor{fill:currentColor;opacity:.1}
 .sc .trail{fill:var(--wc);opacity:0;transform-box:fill-box;transform-origin:left center}
-.sc .shd{fill:#000;opacity:.3}
-.sc .body{fill:url(#vgr);stroke:rgba(255,255,255,.14);stroke-width:.6}.sc .top{fill:rgba(255,255,255,.1)}.sc .bump{fill:rgba(0,0,0,.35)}
-.sc .lid{fill:color-mix(in srgb,var(--rc) 55%,#000);stroke:rgba(255,255,255,.12);stroke-width:.5}.sc .lidl{fill:rgba(255,255,255,.25)}
-.sc .mop{fill:var(--wc);opacity:0;transition:opacity .4s}
-.sc .br line{stroke:rgba(255,255,255,.35);stroke-width:1;stroke-linecap:round}
+.sc .shd{fill:rgb(var(--nv-lo));opacity:.3}
+.sc .body{fill:url(#vgr);stroke:rgba(var(--nv-hi),.14);stroke-width:.6}.sc .top{fill:rgba(var(--nv-hi),.1)}.sc .bump{fill:rgba(var(--nv-lo),.35)}
+.sc .lid{fill:color-mix(in srgb,var(--rc) 55%,rgb(var(--nv-lo)));stroke:rgba(var(--nv-hi),.12);stroke-width:.5}.sc .lidl{fill:rgba(var(--nv-hi),.25)}
+.sc .mop{fill:var(--wc);opacity:0;transition:opacity var(--nv-d5)}
+.sc .br line{stroke:rgba(var(--nv-hi),.35);stroke-width:1;stroke-linecap:round}
 .sc .br{transform-box:fill-box;transform-origin:center}
 .sc .led{fill:var(--nv-active);opacity:.9}
 .sc .bolt{fill:none;stroke:var(--nv-accent);stroke-width:1;stroke-linejoin:round;opacity:0}
 .sc .err{opacity:0}.sc .err circle{fill:none;stroke:var(--nv-error);stroke-width:1.2}.sc .err rect,.sc .err .dot{fill:var(--nv-error);stroke:none}
 .sc .dust circle{fill:currentColor;opacity:0}
-.sc .ramp{fill:color-mix(in srgb,var(--sc) 80%,#000)}.sc .tower{fill:url(#vgs);stroke:rgba(255,255,255,.12);stroke-width:.6}.sc .seam{fill:rgba(0,0,0,.35)}
+.sc .ramp{fill:color-mix(in srgb,var(--sc) 80%,rgb(var(--nv-lo)))}.sc .tower{fill:url(#vgs);stroke:rgba(var(--nv-hi),.12);stroke-width:.6}.sc .seam{fill:rgba(var(--nv-lo),.35)}
 .sc .sled{fill:var(--nv-active);opacity:.35}
-.sc .tank{fill:rgba(0,0,0,.4)}.sc .tkc{fill:var(--wc)}.sc .tkd{fill:#9a7a52}.sc .tkc,.sc .tkd{transition:all .6s}
+.sc .tank{fill:rgba(var(--nv-lo),.4)}.sc .tkc{fill:var(--wc)}.sc .tkd{fill:#9a7a52}.sc .tkc,.sc .tkd{transition:all var(--nv-d6)}
 .sc .tkc.low,.sc .tkd.low{fill:var(--nv-error);animation:vc-blink 1.6s infinite}
 .sc .parts circle{fill:#b8a993;opacity:0}
-.sc .duct,.sc .pipe{fill:rgba(0,0,0,.35);transition:fill .4s}.sc.empty .duct{fill:rgba(184,169,147,.6)}
-.sc .bin{fill:rgba(0,0,0,.3)}.sc .bag{fill:#b8a993;opacity:.35;transform-box:fill-box;transform-origin:center bottom;transition:opacity .4s}
+.sc .duct,.sc .pipe{fill:rgba(var(--nv-lo),.35);transition:fill var(--nv-d5)}.sc.empty .duct{fill:rgba(184,169,147,.6)}
+.sc .bin{fill:rgba(var(--nv-lo),.3)}.sc .bag{fill:#b8a993;opacity:.35;transform-box:fill-box;transform-origin:center bottom;transition:opacity var(--nv-d5)}
 .sc.empty .bag{opacity:.75;animation:vc-bag .6s ease-in-out infinite alternate}
 .sc.wash .pipe{fill:color-mix(in srgb,var(--wc) 45%,transparent)}.sc.wash .pipe:last-of-type{fill:rgba(154,122,82,.55)}
 .sc .water ellipse,.sc .water circle{fill:var(--wc);opacity:0;transform-box:fill-box;transform-origin:center}
-.sc .bubl circle{fill:none;stroke:color-mix(in srgb,var(--wc) 60%,#fff);stroke-width:.5}
-.sc .heat path{fill:none;stroke:color-mix(in srgb,var(--nv-accent) 70%,#fff);stroke-width:1;stroke-linecap:round;opacity:0}
+.sc .bubl circle{fill:none;stroke:color-mix(in srgb,var(--wc) 60%,rgb(var(--nv-hi)));stroke-width:.5}
+.sc .heat path{fill:none;stroke:color-mix(in srgb,var(--nv-accent) 70%,rgb(var(--nv-hi)));stroke-width:1;stroke-linecap:round;opacity:0}
 .sc .rob{transform:translateX(110px);transition:transform 1.4s ease-in-out}
 .sc.docked .rob{transform:translateX(240px)}
 .sc.cleaning .rob{animation:vc-drive 16s ease-in-out infinite}

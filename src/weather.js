@@ -11,46 +11,46 @@ import {g2, T, I, A, sel, BASE_LABELS} from './shared/editor-schema.js';
 
 /* ---------- Nova Wetter Card ---------- */
 const WCSS = `
-.g.wt{gap:14px}
-.clk{text-align:center;padding:2px 0 12px;border-bottom:1px solid rgba(255,255,255,.1)}
-.clk .dt{font-size:14px;opacity:.75;margin-top:2px}
-.clk .tm{font-size:64px;font-weight:300;letter-spacing:-.04em;line-height:1.05;font-variant-numeric:tabular-nums}
-.cur{display:flex;align-items:center;gap:14px;min-width:0;border-radius:18px}
-.cur .ic{width:64px;height:64px;background:var(--c);color:var(--cf);box-shadow:0 0 22px color-mix(in srgb,var(--c) 45%,transparent)}
+.g.wt{gap:var(--nv-s7)}
+.clk{text-align:center;padding:var(--nv-s1) 0 var(--nv-s6);border-bottom:1px solid rgba(var(--nv-tint),.1)}
+.clk .dt{font-size:var(--nv-fs-8);opacity:.75;margin-top:var(--nv-s1)}
+.clk .tm{font-size:64px;font-weight:var(--nv-fw-light);letter-spacing:-.04em;line-height:1.05;font-variant-numeric:tabular-nums}
+.cur{display:flex;align-items:center;gap:var(--nv-s7);min-width:0;border-radius:18px}
+.cur .ic{width:64px;height:64px;background:var(--c);color:var(--cf);box-shadow:0 0 22px color-mix(in srgb,color-mix(in srgb,var(--c) 45%,transparent) var(--nv-glow),transparent)}
 .cur .ic ha-icon{--mdc-icon-size:36px}.cur .ic img{width:40px;height:40px}
 .cur:active .ic{transform:scale(.94)}
 .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.tx .t{font-size:38px;font-weight:600;line-height:1;letter-spacing:-.02em;white-space:nowrap}
+.tx .t{font-size:38px;font-weight:var(--nv-fw-bold);line-height:1;letter-spacing:-.02em;white-space:nowrap}
 .tx b,.tx small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tx b{font-weight:500;font-size:14.5px}.tx small{font-size:12px;opacity:.65}
+.tx b{font-weight:var(--nv-fw-medium);font-size:14.5px}.tx small{font-size:var(--nv-fs-4);opacity:.65}
 .pills.det .pill{cursor:default}
 .pill .lb{opacity:.65}
-.fc{display:flex;flex-direction:column;gap:14px}
-.sec{display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)}
-.sec>.bt{margin-bottom:6px}
+.fc{display:flex;flex-direction:column;gap:var(--nv-s7)}
+.sec{display:flex;flex-direction:column;gap:var(--nv-s1);padding-top:var(--nv-s6);border-top:1px solid rgba(var(--nv-tint),.1)}
+.sec>.bt{margin-bottom:var(--nv-s3)}
 .wi{--c:var(--nv-neutral);color:var(--c)}
-.day{display:grid;grid-template-columns:minmax(42px,auto) 22px 34px minmax(30px,1fr) 34px;align-items:center;gap:8px;font-size:13px;padding:5px 0}
+.day{display:grid;grid-template-columns:minmax(42px,auto) 22px 34px minmax(30px,1fr) 34px;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-6);padding:5px 0}
 .day.pp{grid-template-columns:minmax(42px,auto) 22px 34px minmax(30px,1fr) 34px 54px}
 .day.nb{grid-template-columns:minmax(42px,1fr) 22px 34px 34px}
 .day.nb.pp{grid-template-columns:minmax(42px,1fr) 22px 34px 34px 54px}
-.day .wi{--mdc-icon-size:20px}
+.day .wi{--mdc-icon-size:var(--nv-icon-lg)}
 .day .d{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.day .lo{opacity:.6}.day .lo,.day .hi{text-align:right}.day .hi{font-weight:600}
-.day .p{text-align:right;font-size:12px;opacity:.7;white-space:nowrap}
-.rb{height:6px;border-radius:3px;background:rgba(255,255,255,.12);position:relative}
+.day .lo{opacity:.6}.day .lo,.day .hi{text-align:right}.day .hi{font-weight:var(--nv-fw-bold)}
+.day .p{text-align:right;font-size:var(--nv-fs-4);opacity:.7;white-space:nowrap}
+.rb{height:6px;border-radius:3px;background:rgba(var(--nv-tint),.12);position:relative}
 .rb i{position:absolute;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,var(--nv-a1),var(--nv-a2))}
-.spk{width:100%;height:48px;display:block;margin-bottom:6px}
+.spk{width:100%;height:48px;display:block;margin-bottom:var(--nv-s3)}
 .hcols{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));text-align:center}
-.hcols>div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;min-width:0}
-.hcols .wi{--mdc-icon-size:20px}.hcols b{font-size:13px}.hcols small{opacity:.6;white-space:nowrap}
-.hr{display:grid;grid-template-columns:44px 20px 36px 1fr 40px;align-items:center;gap:8px;font-size:12.5px;padding:4px 0}
-.hr .wi{--mdc-icon-size:18px}.hr .p{text-align:right;opacity:.7}
-.hr .rb{height:8px;border-radius:4px}
-.hr .dot{position:absolute;top:-3px;width:14px;height:14px;border-radius:50%;background:#fff;transform:translateX(-50%);box-shadow:0 1px 4px rgba(0,0,0,.4)}
-.fmsg{display:flex;align-items:center;gap:8px;font-size:12.5px;opacity:.7;padding:4px 0}
+.hcols>div{display:flex;flex-direction:column;align-items:center;gap:var(--nv-s2);font-size:var(--nv-fs-4);min-width:0}
+.hcols .wi{--mdc-icon-size:var(--nv-icon-lg)}.hcols b{font-size:var(--nv-fs-6)}.hcols small{opacity:.6;white-space:nowrap}
+.hr{display:grid;grid-template-columns:44px 20px 36px 1fr 40px;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-5);padding:var(--nv-s2) 0}
+.hr .wi{--mdc-icon-size:var(--nv-icon-md)}.hr .p{text-align:right;opacity:.7}
+.hr .rb{height:8px;border-radius:var(--nv-r-xs)}
+.hr .dot{position:absolute;top:-3px;width:14px;height:14px;border-radius:50%;background:var(--nv-knob);transform:translateX(-50%);box-shadow:var(--nv-shadow-knob)}
+.fmsg{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-5);opacity:.7;padding:var(--nv-s2) 0}
 .fmsg.err{color:var(--nv-error);opacity:1}
-.fmsg ha-icon{--mdc-icon-size:18px}
-@container (max-width:280px){.clk .tm{font-size:48px}.tx .t{font-size:32px}.cur .ic{width:54px;height:54px}.cur .ic ha-icon{--mdc-icon-size:30px}
+.fmsg ha-icon{--mdc-icon-size:var(--nv-icon-md)}
+@container (max-width:280px){.clk .tm{font-size:var(--nv-fd-5)}.tx .t{font-size:var(--nv-fd-3)}.cur .ic{width:54px;height:54px}.cur .ic ha-icon{--mdc-icon-size:30px}
 .day,.day.pp{grid-template-columns:minmax(36px,auto) 20px 30px minmax(20px,1fr) 30px}.day .p{display:none}}`;
 
 // Wetterzustände von HA → Icon (Nacht-Variante, wenn die Sonne unter dem Horizont ist)

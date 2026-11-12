@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Nova Demo: alle Karten mit Testdaten, ohne Home Assistant. Aufruf über einen lokalen Webserver im Repo-Root:
+     demo/index.html            lädt ../nova-cards.js
+     demo/index.html?src=…      lädt einen anderen Build (z. B. ../dev/nova-dev-cards.js)
+     demo/index.html?theme=…    setzt das Nova-Theme für alle Karten -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nova Demo</title>
+<style>
+html{background:linear-gradient(160deg,#6a7fa3 0%,#34405e 50%,#1b2134 100%) fixed;min-height:100%}
+body{margin:0;padding:24px;font-family:Roboto,Arial,sans-serif;color:#fff;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+figure{margin:0;display:flex;flex-direction:column;gap:6px}
+figcaption{font-size:12px;opacity:.7}
+.slot{display:block}
+</style>
+</head>
+<body>
+<script type="module">
+import {hass, cards} from './mock.js';
+const q = new URLSearchParams(location.search);
+// Platzhalter für Elemente, die sonst Home Assistant mitbringt
+for (const t of ['ha-icon', 'ha-state-icon', 'ha-svg-icon', 'ha-card']) customElements.get(t) || customElements.define(t, class extends HTMLElement {});
+window.loadCardHelpers = async () => ({createCardElement: c => { const el = document.createElement(String(c.type).replace(/^custom:/, '')); try { el.setConfig?.(c); } catch (e) { el.textContent = e.message; } return el; }});
+await new Promise((ok, no) => { const s = document.createElement('script'); s.src = q.get('src') || '../nova-cards.js'; s.onload = ok; s.onerror = no; document.head.append(s); });
+const pre = (window.customCards || []).some(c => c.type.startsWith('nova-dev-')) ? 'nova-dev-' : 'nova-';
+for (const [type, conf, width] of cards) {
+  const tag = pre + type, cls = customElements.get(tag), fig = document.createElement('figure');
+  fig.innerHTML = `<figcaption>${type}${conf ? ' · ' + Object.entries(conf).filter(([, v]) => typeof v !== 'object').map(([k, v]) => `${k}: ${v}`).join(', ') : ''}</figcaption><div class="slot" style="width:${width || 380}px"></div>`;
+  document.body.append(fig);
+  if (!cls) { fig.querySelector('.slot').textContent = 'fehlt im Build'; continue; }
+  try {
+    const el = document.createElement(tag);
+    if (q.get('theme')) el.setAttribute('nova-theme', q.get('theme'));
+    el.setConfig({type: 'custom:' + tag, ...(conf || await cls.getStubConfig?.(hass) || {})});
+    el.hass = hass;
+    fig.querySelector('.slot').append(el);
+  } catch (e) { fig.querySelector('.slot').textContent = 'Fehler: ' + e.message; }
+}
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

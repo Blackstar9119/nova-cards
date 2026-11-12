@@ -30,28 +30,28 @@ const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').ma
 
 const CCSS = `${DIAL_CSS}${FLIP_CSS}${GLOW_CSS}${RETRO_CSS}
 :host{container-type:inline-size}
-.g.ck{--dc:var(--kc);padding:14px 16px;gap:6px;justify-content:center;align-items:center;text-align:center}
+.g.ck{--dc:var(--kc);padding:var(--nv-pad);gap:var(--nv-s3);justify-content:center;align-items:center;text-align:center}
 .g.ck.flat{background:none;border-color:transparent;box-shadow:none}
-.nm{font-size:${K('12.5px')};font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
-.tm{font-weight:300;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:${K('clamp(34px,var(--nova-clock-size,24cqw),160px)')}}
+.nm{font-size:${K('12.5px')};font-weight:var(--nv-fw-bold);opacity:.6;text-transform:uppercase;letter-spacing:.06em}
+.tm{font-weight:var(--nv-fw-light);font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.04em;white-space:nowrap;font-size:${K('clamp(34px,var(--nova-clock-size,24cqw),160px)')}}
 .tm .sc{font-size:.42em;opacity:.6;margin-left:.08em;font-weight:400}
-.tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:500;letter-spacing:0}
+.tm .ap{font-size:.3em;opacity:.65;margin-left:.15em;font-weight:var(--nv-fw-medium);letter-spacing:0}
 .dt{font-size:${KD('clamp(13px,5cqw,22px)')};opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .ana{width:100%;max-width:${K('var(--nova-clock-size,240px)')};aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
-.scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(0,0,0,.35);stroke-width:.5}
+.scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(var(--nv-lo),.35);stroke-width:.5}
 .scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
-.scene .cap{fill:url(#k-cr);stroke:rgba(255,255,255,.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
-.scene .hsh{fill:#000;opacity:.25}
+.scene .cap{fill:url(#k-cr);stroke:rgba(var(--nv-hi),.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
+.scene .hsh{fill:rgb(var(--nv-lo));opacity:.25}
 .scene .sw{transform-box:view-box;transform-origin:100px 100px}.anim .scene .sw.on{animation:k-spin 60s linear infinite}
 @keyframes k-spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
 @container (min-width:420px){.g.ck.row{flex-direction:row;gap:20px;text-align:left}.row .ana{width:45%}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:1}.row .tm{font-size:${K('clamp(28px,var(--nova-clock-size,12cqw),100px)')}}.row .dt{font-size:${KD('clamp(12px,3.6cqw,22px)')}}.row .inf{font-size:${K('clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)')}}}
-.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:${K('clamp(14px,var(--nova-clock-info-size,7.5cqw),26px)')};opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
-.inf span{display:inline-flex;align-items:center;gap:4px}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
+.txt{display:flex;flex-direction:column;gap:var(--nv-s3);align-items:flex-start;flex:1}.row .tm{font-size:${K('clamp(28px,var(--nova-clock-size,12cqw),100px)')}}.row .dt{font-size:${KD('clamp(12px,3.6cqw,22px)')}}.row .inf{font-size:${K('clamp(14px,var(--nova-clock-info-size,4.4cqw),26px)')}}}
+.inf{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--nv-s2) var(--nv-s8);font-size:${K('clamp(14px,var(--nova-clock-info-size,7.5cqw),26px)')};opacity:.85;font-variant-numeric:tabular-nums;white-space:nowrap}
+.inf span{display:inline-flex;align-items:center;gap:var(--nv-s2)}.inf i{display:inline-flex;opacity:.8}.inf ha-icon{--mdc-icon-size:1.1em}.inf img{width:1.1em;height:1.1em}.inf b{font-weight:400}
 .row .inf{justify-content:flex-start}
-.txt{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-width:0;max-width:100%}
+.txt{display:flex;flex-direction:column;gap:var(--nv-s3);align-items:center;justify-content:center;min-width:0;max-width:100%}
 .sub{display:contents}
 .probe>*{position:absolute!important;visibility:hidden}
 /* Feste Kartenhöhe (--kfix): Zifferblatt nie höher als die Karte */

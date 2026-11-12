@@ -54,24 +54,24 @@ const takeOver = (kind, k) => HANDOFF.get(`${kind}|${k}`)?.shift();
 
 // Raster und Chips in der Karte
 export const GRID_CSS = `
-.rw{display:flex;flex-wrap:wrap;gap:12px;flex:none;align-items:flex-start}
+.rw{display:flex;flex-wrap:wrap;gap:var(--nv-s6);flex:none;align-items:flex-start}
 .eqh .rw{align-items:stretch}.eqh .rw>.cell{display:grid}
 .rw>.cell.auto{min-width:min(100%,140px)}
 .stack .rw>.cell{flex:1 1 100%!important}
 .cell{min-width:0}
 .cell.empty{min-height:0}
-.err{display:flex;gap:8px;align-items:flex-start;padding:12px 14px;border-radius:20px;font-size:13px;
+.err{display:flex;gap:var(--nv-s4);align-items:flex-start;padding:var(--nv-s6) var(--nv-s7);border-radius:var(--nv-r-lg);font-size:var(--nv-fs-6);
 background:color-mix(in srgb,var(--nv-error) 18%,transparent);border:1px solid color-mix(in srgb,var(--nv-error) 50%,transparent)}
 .err ha-icon{color:var(--nv-error);flex:none}
-.hint{font-size:13px;opacity:.7;padding:8px 2px}`;
+.hint{font-size:var(--nv-fs-6);opacity:.7;padding:var(--nv-s4) var(--nv-s1)}`;
 export const CHIP_CSS = `
 .info{display:flex;flex-wrap:wrap;gap:7px;flex:none}
 .info.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.info.scroll::-webkit-scrollbar{display:none}
 .info[hidden]{display:none}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:12.5px;white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
-.chip ha-icon{--mdc-icon-size:16px}.chip img{width:16px;height:16px}.chip:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}.chip:active{transform:scale(.95)}
+.chip{display:inline-flex;align-items:center;gap:var(--nv-s3);padding:7px var(--nv-s6);border-radius:var(--nv-r-pill);background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:var(--nv-fs-5);white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
+.chip ha-icon{--mdc-icon-size:var(--nv-icon-sm)}.chip img{width:16px;height:16px}.chip:focus-visible{box-shadow:var(--nv-focus)}.chip:active{transform:scale(.95)}
 .chip .cn:empty{display:none}.chip .cn:not(:empty)::after{content:' ·'}
-.chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}`;
+.chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--c) 45%,transparent) var(--nv-glow),transparent)}`;
 
 // Info-Chips in bar: Icon, optional Name, Wert; Antippen öffnet die Details, Hervorheben bei Achtung mit Farbrolle.
 // Die Chips werden nur neu angelegt, wenn sich die Einträge ändern.

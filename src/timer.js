@@ -51,26 +51,26 @@ const presetLbl = s => s % 3600 === 0 ? `${s / 3600} h` : s % 60 === 0 ? `${s / 
 const ICON = {play: 'mdi:play', pause: 'mdi:pause', stop: 'mdi:stop', plus: 'mdi:plus', tune: 'mdi:timer-edit-outline', ok: 'mdi:check', again: 'mdi:restart'};
 
 const TCSS = `${DIAL_CSS}
-.g.tm{--dc:var(--tc);--dcfg:var(--tcfg);padding:14px;gap:10px;transition:box-shadow .4s}
+.g.tm{--dc:var(--tc);--dcfg:var(--tcfg);padding:var(--nv-s7);gap:var(--nv-s5);transition:box-shadow var(--nv-d5)}
 ${frameGlow('.g.tm.glow.st-active')}
 .g.tm.alm{--dc:var(--ac);--dcfg:var(--acfg)}
-.g.tm.glow.alm{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 2px var(--ac),0 0 24px color-mix(in srgb,var(--ac) 55%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.g.tm.glow.alm{box-shadow:var(--nv-shadow),0 0 0 2px var(--ac),0 0 24px color-mix(in srgb,color-mix(in srgb,var(--ac) 55%,transparent) var(--nv-glow),transparent),var(--nv-edge)}
 .anim.glow.alm{animation:tm-frame 1.2s ease-in-out infinite}
 .still{animation-play-state:paused!important}.still *{animation-play-state:paused!important}
 .hd .nm small{font-variant-numeric:tabular-nums}
-.bd{display:flex;flex-direction:column;gap:12px;align-items:stretch;flex:1;min-height:0}
+.bd{display:flex;flex-direction:column;gap:var(--nv-s6);align-items:stretch;flex:1;min-height:0}
 .dial{position:relative;align-self:center;width:100%;max-width:var(--nova-timer-size,240px);aspect-ratio:1;flex:none}
 .dial svg{display:block;width:100%;height:100%;overflow:visible}
 .ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%}
-.ro .t{display:block;font-size:clamp(22px,calc(var(--dw,240px) * .16),46px);font-weight:600;letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.05;white-space:nowrap}
+.ro .t{display:block;font-size:clamp(22px,calc(var(--dw,240px) * .16),46px);font-weight:var(--nv-fw-bold);letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.05;white-space:nowrap}
 .ro .s{display:block;font-size:clamp(11px,calc(var(--dw,240px) * .05),14px);opacity:.65;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .st-idle .scene{opacity:.55}.st-idle .ro .t{opacity:.7}
 .alm .scene{opacity:1}
 .anim.st-paused .ro .t{animation:tm-blink 1.4s ease-in-out infinite}
-.ctl{display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
-.row2{display:flex;gap:8px;flex-wrap:wrap}
-.bt2{flex:1 1 0;min-width:0;box-sizing:border-box;min-height:var(--nova-timer-button-height,52px);padding:0 8px;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);
-display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:500;color:inherit;white-space:nowrap;overflow:hidden;transition:background-color .2s,transform .15s,box-shadow .2s}
+.ctl{display:flex;flex-direction:column;gap:var(--nv-s5);justify-content:center;min-width:0}
+.row2{display:flex;gap:var(--nv-s4);flex-wrap:wrap}
+.bt2{flex:1 1 0;min-width:0;box-sizing:border-box;min-height:var(--nova-timer-button-height,52px);padding:0 var(--nv-s4);border-radius:var(--nv-r-md);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);
+display:flex;align-items:center;justify-content:center;gap:var(--nv-s3);font-size:var(--nv-fs-9);font-weight:var(--nv-fw-medium);color:inherit;white-space:nowrap;overflow:hidden;transition:background-color var(--nv-d2),transform var(--nv-d1),box-shadow var(--nv-d2)}
 .bt2 span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .bt2 ha-icon{--mdc-icon-size:21px;flex:none}
 .bt2:active{transform:scale(.95)}
@@ -80,41 +80,41 @@ display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;fo
 /* Nur-Icon-Knöpfe in „Eigene Zeit“: Icon hell, sonst verschwindet z. B. das Häkchen auf dem getönten Knopf */
 .cust .bt2.pri ha-icon{color:inherit}
 .bt2.sel{border-color:color-mix(in srgb,var(--dc) 70%,transparent);background:color-mix(in srgb,var(--dc) 14%,var(--nv-chip))}
-.pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px}
-.pre .bt2{font-size:16px;font-weight:600}
-.zone{position:relative;display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
+.pre{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:var(--nv-s4)}
+.pre .bt2{font-size:var(--nv-fs-10);font-weight:var(--nv-fw-bold)}
+.zone{position:relative;display:flex;flex-direction:column;gap:var(--nv-s5);justify-content:center;min-width:0}
 /* Eigene Zeit liegt über Start/Schnellwahl (die bleiben unsichtbar stehen) – die Karte wird nie höher oder niedriger */
 .zone.op>.main,.zone.op>.pre{visibility:hidden}
-.cust{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;justify-content:center;min-height:0}
-.cust.sc{display:grid;grid-template-columns:minmax(0,1fr) minmax(84px,40%);grid-template-rows:minmax(0,1fr) auto;gap:10px}
+.cust{position:absolute;inset:0;display:flex;flex-direction:column;gap:var(--nv-s5);justify-content:center;min-height:0}
+.cust.sc{display:grid;grid-template-columns:minmax(0,1fr) minmax(84px,40%);grid-template-rows:minmax(0,1fr) auto;gap:var(--nv-s5)}
 .cust:not(.sc) .scl,.cust:not(.sc) .rd,.cust.sc .stps{display:none}
 .cust.sc .rd{grid-column:1;grid-row:1}.cust.sc .row2{grid-column:1;grid-row:2;flex-wrap:nowrap}.cust.sc .scl{grid-column:2;grid-row:1/3}
 /* Tuner-Skala: Striche wandern beim Ziehen (nur transform), die Marke in der Mitte zeigt die Zeit */
 .rd{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;contain:strict}
-.rd b{font-size:clamp(26px,10cqw,52px);font-weight:600;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
+.rd b{font-size:clamp(26px,10cqw,52px);font-weight:var(--nv-fw-bold);font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
 .rd.in b{cursor:text}
-.rd input{width:100%;max-width:6.5em;box-sizing:border-box;font:inherit;font-size:clamp(20px,7cqw,36px);font-weight:600;text-align:center;color:inherit;background:var(--nv-chip);border:1px solid color-mix(in srgb,var(--dc) 60%,transparent);border-radius:12px;padding:6px;outline:none}
-.scl{position:relative;overflow:hidden;min-height:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);touch-action:none;cursor:grab;outline:none;user-select:none;-webkit-user-select:none;
+.rd input{width:100%;max-width:6.5em;box-sizing:border-box;font:inherit;font-size:clamp(20px,7cqw,36px);font-weight:var(--nv-fw-bold);text-align:center;color:inherit;background:var(--nv-chip);border:1px solid color-mix(in srgb,var(--dc) 60%,transparent);border-radius:var(--nv-r-sm);padding:var(--nv-s3);outline:none}
+.scl{position:relative;overflow:hidden;min-height:0;border-radius:var(--nv-r-md);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);touch-action:none;cursor:grab;outline:none;user-select:none;-webkit-user-select:none;
 contain:strict}
 /* Abdunkeln oben/unten als feste Ebene darüber – eine Maske müsste bei jeder Bewegung neu gerechnet werden (ruckelt auf schwachen Geräten) */
 .scl::before,.scl::after{content:'';position:absolute;left:0;right:0;height:26%;z-index:1;pointer-events:none}
-.scl::before{top:0;background:linear-gradient(rgba(0,0,0,.35),transparent)}.scl::after{bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.35))}
+.scl::before{top:0;background:linear-gradient(rgba(var(--nv-shade),.35),transparent)}.scl::after{bottom:0;background:linear-gradient(transparent,rgba(var(--nv-shade),.35))}
 .scl:focus-visible{border-color:color-mix(in srgb,var(--dc) 70%,transparent)}
 .scl .str{position:absolute;left:0;right:0;top:0;height:0;will-change:transform}
 .scl .str.snap{transition:transform .22s cubic-bezier(.2,.8,.3,1)}
 .scene .dl-gv{transform-box:view-box}
-.scl i{position:absolute;left:10px;width:16%;height:1.5px;margin-top:-.75px;background:rgba(255,255,255,.2)}
-.scl i.m{width:34%;background:rgba(255,255,255,.5)}
-.scl b{position:absolute;left:calc(10px + 34% + 8px);height:16px;margin-top:-8px;line-height:16px;font-size:13px;font-weight:600;opacity:.7;font-variant-numeric:tabular-nums;white-space:nowrap}
-.scl .mk{z-index:2;position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:var(--dc);box-shadow:0 0 8px color-mix(in srgb,var(--dc) 60%,transparent);pointer-events:none}
+.scl i{position:absolute;left:10px;width:16%;height:1.5px;margin-top:-.75px;background:rgba(var(--nv-tint),.2)}
+.scl i.m{width:34%;background:rgba(var(--nv-tint),.5)}
+.scl b{position:absolute;left:calc(10px + 34% + 8px);height:16px;margin-top:-8px;line-height:16px;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold);opacity:.7;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scl .mk{z-index:2;position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:var(--dc);box-shadow:0 0 8px color-mix(in srgb,color-mix(in srgb,var(--dc) 60%,transparent) var(--nv-glow),transparent);pointer-events:none}
 .scl .mk::before{content:'';position:absolute;left:0;top:-5px;border:6px solid transparent;border-left:7px solid var(--dc);border-right:0}
 /* Eigene Zeit: je Einheit [−] 05 Min [+] nebeneinander, so hoch wie Schnellwahl + Knöpfe – die Karte wächst nicht */
-.stps{display:flex;gap:8px}
-.stp{flex:1 1 0;display:flex;align-items:center;justify-content:space-between;gap:2px;padding:0 3px;min-width:0;border-radius:16px;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);height:var(--nova-timer-button-height,52px);box-sizing:border-box}
-.stp .mi{order:0}.stp .v{order:1;flex:1;text-align:right;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}.stp small{order:2;flex:1;text-align:left;font-size:11px;opacity:.6;margin-left:4px}.stp .pl{order:3}
-.stp .hb{width:34px;height:42px;flex:none;border-radius:12px}
+.stps{display:flex;gap:var(--nv-s4)}
+.stp{flex:1 1 0;display:flex;align-items:center;justify-content:space-between;gap:var(--nv-s1);padding:0 3px;min-width:0;border-radius:var(--nv-r-md);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);height:var(--nova-timer-button-height,52px);box-sizing:border-box}
+.stp .mi{order:0}.stp .v{order:1;flex:1;text-align:right;font-size:19px;font-weight:var(--nv-fw-bold);font-variant-numeric:tabular-nums}.stp small{order:2;flex:1;text-align:left;font-size:var(--nv-fs-2);opacity:.6;margin-left:var(--nv-s2)}.stp .pl{order:3}
+.stp .hb{width:34px;height:42px;flex:none;border-radius:var(--nv-r-sm)}
 .stp .hb ha-icon{--mdc-icon-size:22px}
-.msg{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;font-size:16px;font-weight:600;
+.msg{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s6) var(--nv-s7);border-radius:var(--nv-r-md);font-size:var(--nv-fs-10);font-weight:var(--nv-fw-bold);
 background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid color-mix(in srgb,var(--ac) 50%,transparent)}
 .msg ha-icon{color:var(--ac);--mdc-icon-size:26px}
 .anim .msg ha-icon{animation:tm-ring 1.2s ease-in-out infinite;transform-origin:50% 10%}
@@ -127,14 +127,14 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 .alm:not(.anim) .snd path{opacity:.7}
 .st-active .dl-push.r{animation:none}
 .prs .dl-push.r,.prs .dl-crown{animation:tm-press .35s ease-out}
-.scene .tip{fill:#fff;filter:drop-shadow(0 0 3px var(--dc));opacity:0;visibility:hidden;transition:opacity .4s,visibility 0s .4s}
-.st-active .scene .tip,.st-paused .scene .tip{opacity:1;visibility:visible;transition:opacity .4s}
-.scene .tipg{transition:transform 1s linear;transform-box:view-box;transform-origin:100px 112px}
+.scene .tip{fill:rgb(var(--nv-hi));filter:drop-shadow(0 0 3px var(--dc));opacity:0;visibility:hidden;transition:opacity var(--nv-d5),visibility 0s var(--nv-d5)}
+.st-active .scene .tip,.st-paused .scene .tip{opacity:1;visibility:visible;transition:opacity var(--nv-d5)}
+.scene .tipg{transition:transform var(--nv-d7) linear;transform-box:view-box;transform-origin:100px 112px}
 .st-idle .scene .dl-arc{opacity:.35}
 [hidden]{display:none!important}
 /* Kompakt: kleine Stoppuhr links, Zeit daneben, Knöpfe rechts; Schnellwahl und eigene Zeit darunter über die ganze Breite */
 .cmp .hd{display:none}
-.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;align-content:center;column-gap:14px;row-gap:10px}
+.cmp .bd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;align-content:center;column-gap:var(--nv-s7);row-gap:var(--nv-s5)}
 .cmp .ctl{display:contents}
 .cmp .dial{grid-column:1;grid-row:1;width:84px;max-width:84px}.cmp .ro{display:none}
 .cmp .ct2{grid-column:2;grid-row:1;min-width:0}
@@ -142,12 +142,12 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 .cmp .zone,.cmp .msg{grid-column:1/-1}
 .cmp .zone{min-height:calc(2 * var(--nova-timer-button-height,52px) + 10px)}
 .cmp .msg{display:none}
-.ct2 .tt b{display:block;font-size:42px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
-.ct2 .tt small{display:block;font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct2 .tt b{display:block;font-size:42px;font-weight:var(--nv-fw-bold);font-variant-numeric:tabular-nums;line-height:1.1}
+.ct2 .tt small{display:block;font-size:var(--nv-fs-5);opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ct2 .tt i{font-style:normal;opacity:.75}
 .full .ct2{display:none}
 .cmp.alm .tt b{color:var(--ac)}
-@container (max-width:340px){.main.n3 .bt2 ha-icon{display:none}.bt2{font-size:14px}}
+@container (max-width:340px){.main.n3 .bt2 ha-icon{display:none}.bt2{font-size:var(--nv-fs-8)}}
 @container (max-width:260px){.main .bt2 span{display:none}.main .bt2 ha-icon{display:flex!important}}
 @container (min-width:400px){.full .bd{flex-direction:row;align-items:center}.full .dial{width:46%;max-width:var(--nova-timer-size,260px)}.full .ctl{flex:1;align-self:stretch}.full .zone{flex:1}}
 /* Stoppuhr neben den Knöpfen, aber wenig Platz rechts: Hauptknöpfe untereinander, damit kein Text abgeschnitten wird */
@@ -158,7 +158,7 @@ background:color-mix(in srgb,var(--ac) 18%,var(--nv-chip));border:1px solid colo
 @keyframes tm-press{0%,100%{transform:translateY(0)}20%{transform:translateY(3px)}}
 @keyframes tm-snd{0%{opacity:0;transform:scale(.8)}30%{opacity:.85}100%{opacity:0;transform:scale(1.25)}}
 @keyframes tm-pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
-@keyframes tm-frame{0%,100%{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 2px var(--ac),0 0 10px color-mix(in srgb,var(--ac) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}50%{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 2px var(--ac),0 0 30px color-mix(in srgb,var(--ac) 75%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}}
+@keyframes tm-frame{0%,100%{box-shadow:var(--nv-shadow),0 0 0 2px var(--ac),0 0 10px color-mix(in srgb,color-mix(in srgb,var(--ac) 30%,transparent) var(--nv-glow),transparent),var(--nv-edge)}50%{box-shadow:var(--nv-shadow),0 0 0 2px var(--ac),0 0 30px color-mix(in srgb,color-mix(in srgb,var(--ac) 75%,transparent) var(--nv-glow),transparent),var(--nv-edge)}}
 @media (prefers-reduced-motion:reduce){.anim *,.anim{animation:none!important}}`;
 
 // Schallbögen links und rechts der Krone (nur beim Klingeln sichtbar)

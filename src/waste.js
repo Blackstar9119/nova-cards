@@ -10,30 +10,30 @@ import {g2, T, I, sel, ROLE, BASE_LABELS} from './shared/editor-schema.js';
 
 /* ---------- Nova Müllkalender Card ---------- */
 const WCSS = `
-.g.ws{gap:10px}
-.g.ws.due{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--due) 60%,transparent),0 0 22px color-mix(in srgb,var(--due) 25%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
-.hd.due .ic{background:var(--due);color:var(--due-fg);box-shadow:0 0 14px color-mix(in srgb,var(--due) 55%,transparent)}
-.rows{display:flex;flex-direction:column;gap:6px}
-.wr{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:16px;min-width:0;
-background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);transition:background .25s,border-color .25s}
+.g.ws{gap:var(--nv-s5)}
+.g.ws.due{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--due) 60%,transparent) var(--nv-ring),transparent),0 0 22px color-mix(in srgb,color-mix(in srgb,var(--due) 25%,transparent) var(--nv-glow),transparent),var(--nv-edge)}
+.hd.due .ic{background:var(--due);color:var(--due-fg);box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--due) 55%,transparent) var(--nv-glow),transparent)}
+.rows{display:flex;flex-direction:column;gap:var(--nv-s3)}
+.wr{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s4) var(--nv-s5);border-radius:var(--nv-r-md);min-width:0;
+background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);transition:background var(--nv-d3),border-color var(--nv-d3)}
 .wr,.cp .ic{--c:var(--nv-neutral);--cf:var(--nv-neutral-fg)}
 .wr .ic,.cp .ic{background:var(--c);color:var(--cf)}
 .wr.today{background:color-mix(in srgb,var(--c) 26%,transparent);border-color:color-mix(in srgb,var(--c) 60%,transparent)}
-.wr.today .ic{box-shadow:0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
+.wr.today .ic{box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--c) 60%,transparent) var(--nv-glow),transparent)}
 .wr.tomorrow{background:color-mix(in srgb,var(--c) 13%,transparent);border-color:color-mix(in srgb,var(--c) 35%,transparent)}
-.rel{flex:none;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--nv-chip);white-space:nowrap}
+.rel{flex:none;font-size:var(--nv-fs-4);font-weight:var(--nv-fw-bold);padding:var(--nv-s2) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);white-space:nowrap}
 .today .rel,.cp.today .rel{background:var(--nv-accent);color:var(--nv-accent-fg)}
 .tomorrow .rel,.cp.tomorrow .rel{background:color-mix(in srgb,var(--nv-accent) 30%,transparent)}
 .wr:active{transform:scale(.98)}
-.cp{display:flex;align-items:center;gap:12px;min-width:0}
+.cp{display:flex;align-items:center;gap:var(--nv-s6);min-width:0}
 .cp .ics{display:flex;flex:none}
-.cp .ic{width:44px;height:44px;border:2px solid rgba(20,24,38,.6)}
+.cp .ic{width:44px;height:44px;border:2px solid var(--nv-cut)}
 .cp .ic+.ic{margin-left:-14px}
-.cp .ic ha-icon{--mdc-icon-size:24px}
-.cp .nm b{font-weight:600;font-size:15px}.cp .nm small{font-size:12px;opacity:.65}
-.cp.today .ic{box-shadow:0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
-.msg{display:flex;align-items:center;gap:8px;font-size:13px;opacity:.7;padding:4px 2px}
-.msg ha-icon{--mdc-icon-size:18px}`;
+.cp .ic ha-icon{--mdc-icon-size:var(--nv-icon-xl)}
+.cp .nm b{font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9)}.cp .nm small{font-size:var(--nv-fs-4);opacity:.65}
+.cp.today .ic{box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--c) 60%,transparent) var(--nv-glow),transparent)}
+.msg{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-6);opacity:.7;padding:var(--nv-s2) var(--nv-s1)}
+.msg ha-icon{--mdc-icon-size:var(--nv-icon-md)}`;
 
 const WDEF = {title: 'Müllkalender', icon: 'mdi:trash-can-outline', layout: 'list', count: 5, days: 30, hide_unmatched: false, show_header: true, glow: true};
 // Vorschlag für neue Karten und den Editor-Button „Standard-Müllarten“ – danach frei änderbar

@@ -10,45 +10,45 @@ import {g2, T, I, A, sel, NAMEICON, BASE_LABELS} from './shared/editor-schema.js
 
 /* ---------- Nova Media Card ---------- */
 const MPCSS = `
-.g.mp{gap:12px;min-height:var(--nova-media-min-height,0)}
-.g.mp.play{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 0 1px color-mix(in srgb,var(--nv-accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.12)}
+.g.mp{gap:var(--nv-s6);min-height:var(--nova-media-min-height,0)}
+.g.mp.play{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 40%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
 .mp>*{position:relative;z-index:1}
-.mp>.art{position:absolute;inset:0;z-index:0;background:center/cover no-repeat;opacity:0;transition:opacity .6s,filter .6s;pointer-events:none}
+.mp>.art{position:absolute;inset:0;z-index:0;background:center/cover no-repeat;opacity:0;transition:opacity var(--nv-d6),filter var(--nv-d6);pointer-events:none}
 .mp.has-art>.art{opacity:var(--nova-media-artwork-opacity,.5)}
 .mp.cover>.art{filter:blur(22px) saturate(140%);transform:scale(1.2)}
 .mp:not(.play)>.art{filter:grayscale(.6)}.mp.cover:not(.play)>.art{filter:blur(22px) grayscale(.6)}
-.mp>.shade{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(10,14,24,.05),rgba(10,14,24,.55));opacity:0;transition:opacity .6s;pointer-events:none}
+.mp>.shade{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(var(--nv-scrim),.05),rgba(var(--nv-scrim),.55));opacity:0;transition:opacity var(--nv-d6);pointer-events:none}
 .mp.has-art>.shade{opacity:1}
 .mp .hd .ic img{width:26px;height:26px;border-radius:6px}
 .hb.on{background:var(--nv-accent);color:var(--nv-accent-fg)}
-.now{display:flex;align-items:center;gap:12px;min-width:0}
-.thumb{width:72px;height:72px;flex:none;border-radius:14px;background:var(--nv-chip) center/cover no-repeat;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none}
+.now{display:flex;align-items:center;gap:var(--nv-s6);min-width:0}
+.thumb{width:72px;height:72px;flex:none;border-radius:14px;background:var(--nv-chip) center/cover no-repeat;box-shadow:0 4px 14px rgba(var(--nv-shade),.35);display:none}
 .mp.cover.has-art .thumb{display:block}
-.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,.35)}
-.tt b{font-size:17px;font-weight:600}.tt span{font-size:13px;opacity:.75;margin-top:2px}
-.bar{display:flex;align-items:center;gap:8px;font-size:11px;opacity:.85;font-variant-numeric:tabular-nums}
-.bar .tr{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
+.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(var(--nv-shade),.35)}
+.tt b{font-size:17px;font-weight:var(--nv-fw-bold)}.tt span{font-size:var(--nv-fs-6);opacity:.75;margin-top:var(--nv-s1)}
+.bar{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-2);opacity:.85;font-variant-numeric:tabular-nums}
+.bar .tr{flex:1;height:6px;border-radius:3px;background:rgba(var(--nv-tint),.14);overflow:hidden}
 .bar.seek .tr{cursor:pointer}
-.bar .tr i{display:block;height:100%;width:0;background:var(--nv-accent);border-radius:3px;transition:width 1s linear}
-.ctl{display:flex;align-items:center;justify-content:center;gap:14px}
-.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(255,255,255,.08);transition:background-color .2s,color .2s,border-color .2s,box-shadow .2s,transform .2s,opacity .2s}
-.ctl .cb ha-icon{--mdc-icon-size:24px}
-.ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,var(--nv-accent) 45%,transparent)}
+.bar .tr i{display:block;height:100%;width:0;background:var(--nv-accent);border-radius:3px;transition:width var(--nv-d7) linear}
+.ctl{display:flex;align-items:center;justify-content:center;gap:var(--nv-s7)}
+.ctl .cb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
+.ctl .cb ha-icon{--mdc-icon-size:var(--nv-icon-xl)}
+.ctl .cb.pp{width:56px;height:56px;background:var(--nv-accent);color:var(--nv-accent-fg);border-color:transparent;box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 45%,transparent) var(--nv-glow),transparent)}
 .ctl .cb.pp ha-icon{--mdc-icon-size:30px}
 .cb:active{transform:scale(.9)}
-.vol{display:flex;align-items:center;gap:10px}
+.vol{display:flex;align-items:center;gap:var(--nv-s5)}
 .vol .cb{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip)}
-.vol .cb ha-icon{--mdc-icon-size:18px}
-.vol .cb.on{background:var(--nv-error);color:#fff}
-.vol .v{min-width:38px;text-align:right;font-size:13px;font-weight:600}
+.vol .cb ha-icon{--mdc-icon-size:var(--nv-icon-md)}
+.vol .cb.on{background:var(--nv-error);color:var(--nv-error-fg)}
+.vol .v{min-width:38px;text-align:right;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold)}
 .vol input{flex:1}
-.vol .step{flex:1;display:flex;justify-content:center;gap:10px}
-.src,.pls{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:2px}
+.vol .step{flex:1;display:flex;justify-content:center;gap:var(--nv-s5)}
+.src,.pls{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:var(--nv-s1)}
 .src::-webkit-scrollbar,.pls::-webkit-scrollbar{display:none}
 .pls .pill.on{background:var(--nv-accent);color:var(--nv-accent-fg);box-shadow:none}
 .pls .pill .eq{display:none;--mdc-icon-size:14px}.pls .pill.pl .eq{display:flex}
 .mp.off .now,.mp.off .bar,.mp.off .ctl,.mp.off .vol,.mp.off .src{display:none}
-@container (max-width:300px){.ctl{gap:8px}.ctl .cb{width:38px;height:38px}.ctl .cb.pp{width:48px;height:48px}.thumb{width:56px;height:56px}.tt b{font-size:15px}}`;
+@container (max-width:300px){.ctl{gap:var(--nv-s4)}.ctl .cb{width:38px;height:38px}.ctl .cb.pp{width:48px;height:48px}.thumb{width:56px;height:56px}.tt b{font-size:var(--nv-fs-9)}}`;
 
 // supported_features von media_player
 const MF = {PAUSE: 1, SEEK: 2, VOL_SET: 4, MUTE: 8, PREV: 16, NEXT: 32, ON: 128, OFF: 256, VOL_STEP: 1024, SOURCE: 2048, STOP: 4096, PLAY: 16384};

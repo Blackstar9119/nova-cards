@@ -5,20 +5,20 @@ import {g2, T, I, sel} from './editor-schema.js';
 
 // Erfolg in der Grün-Rolle (Theme: --nova-success-color, sonst --nova-accent-4)
 export const PRINT_CSS = `
-.pb{--ok:var(--nova-success-color,var(--nv-a4));display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;box-sizing:border-box;
-height:44px;min-width:44px;padding:0;border-radius:999px;border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;
-font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:none;
-transition:background-color .25s,color .25s,border-color .25s,box-shadow .25s,transform .2s,opacity .25s}
+.pb{--ok:var(--nova-success-color,var(--nv-a4));display:inline-flex;align-items:center;justify-content:center;gap:var(--nv-s4);flex:none;box-sizing:border-box;
+height:44px;min-width:44px;padding:0;border-radius:var(--nv-r-pill);border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;
+font:inherit;font-size:var(--nv-fs-7);font-weight:var(--nv-fw-medium);cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:none;
+transition:background-color var(--nv-d3),color var(--nv-d3),border-color var(--nv-d3),box-shadow var(--nv-d3),transform var(--nv-d2),opacity var(--nv-d3)}
 .pb.pill{flex:1 1 auto;padding:0 18px;min-width:0}
 .pb .pl{white-space:nowrap;overflow:hidden}
 .pb ha-icon{--mdc-icon-size:22px;display:flex}
-.pb:focus-visible{box-shadow:0 0 0 2px var(--nv-active)}
+.pb:focus-visible{box-shadow:var(--nv-focus)}
 .pb:active:not([disabled]){transform:scale(.94)}
 .pb[disabled]{opacity:.4;cursor:default}
 .pb.busy{pointer-events:none}
 .pb.busy ha-icon{animation:pb-spin 1s linear infinite}
 .pb.ok{border-color:color-mix(in srgb,var(--ok) 70%,transparent);background:color-mix(in srgb,var(--ok) 26%,transparent);
-box-shadow:0 0 16px color-mix(in srgb,var(--ok) 45%,transparent);opacity:1}
+box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--ok) 45%,transparent) var(--nv-glow),transparent);opacity:1}
 .pb.ok ha-icon{color:var(--ok);animation:pb-pop .35s ease-out}
 .pb.err{border-color:color-mix(in srgb,var(--nv-error) 70%,transparent);background:color-mix(in srgb,var(--nv-error) 22%,transparent);opacity:1}
 .pb.err ha-icon{color:var(--nv-error)}
