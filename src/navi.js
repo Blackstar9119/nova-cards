@@ -697,6 +697,7 @@ class NovaNaviCard extends HTMLElement {
     const p = document.createElement(tag('navi-popup'));
     p.onclose = () => this._close();
     p.cfg = {title: it.popup_title || it.label || '', icon: it.icon, cards: it.cards};
+    if (this.hasAttribute('nova-theme')) p.setAttribute('nova-theme', this.getAttribute('nova-theme'));
     p.hass = this._h;
     this.shadowRoot.appendChild(p); // im eigenen Shadow-DOM, damit more-info & Aktionen der Karten bei HA ankommen
     this._opened(i, p);

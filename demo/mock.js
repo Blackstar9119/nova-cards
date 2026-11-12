@@ -68,4 +68,5 @@ export const cards = [
   ['remote-card', null], ['timer-card', null],
   ...['default', 'flip', 'analog', 'glow', 'retro'].map(s => ['clock-card', {style: s}]),
   ['shopping-card', null], ['note-card', null],
+  ...['button', 'chip', 'dropdown'].map(d => ['theme-card', {display: d}]),
 ];

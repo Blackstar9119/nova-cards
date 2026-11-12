@@ -24,7 +24,7 @@ const MPCSS = `
 .now{display:flex;align-items:center;gap:var(--nv-s6);min-width:0}
 .thumb{width:72px;height:72px;flex:none;border-radius:14px;background:var(--nv-chip) center/cover no-repeat;box-shadow:0 4px 14px rgba(var(--nv-shade),.35);display:none}
 .mp.cover.has-art .thumb{display:block}
-.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(var(--nv-shade),.35)}
+.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px color-mix(in srgb,rgba(var(--nv-shade),.35) var(--nv-text-shadow),transparent)}
 .tt b{font-size:17px;font-weight:var(--nv-fw-bold)}.tt span{font-size:var(--nv-fs-6);opacity:.75;margin-top:var(--nv-s1)}
 .bar{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-2);opacity:.85;font-variant-numeric:tabular-nums}
 .bar .tr{flex:1;height:6px;border-radius:3px;background:rgba(var(--nv-tint),.14);overflow:hidden}

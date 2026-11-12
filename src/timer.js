@@ -61,7 +61,7 @@ ${frameGlow('.g.tm.glow.st-active')}
 .bd{display:flex;flex-direction:column;gap:var(--nv-s6);align-items:stretch;flex:1;min-height:0}
 .dial{position:relative;align-self:center;width:100%;max-width:var(--nova-timer-size,240px);aspect-ratio:1;flex:none}
 .dial svg{display:block;width:100%;height:100%;overflow:visible}
-.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%}
+.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%;color:rgb(var(--nv-hi))}
 .ro .t{display:block;font-size:clamp(22px,calc(var(--dw,240px) * .16),46px);font-weight:var(--nv-fw-bold);letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.05;white-space:nowrap}
 .ro .s{display:block;font-size:clamp(11px,calc(var(--dw,240px) * .05),14px);opacity:.65;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .st-idle .scene{opacity:.55}.st-idle .ro .t{opacity:.7}

@@ -23,6 +23,7 @@ export const TOKENS = [
   ['cut', 'cutout-color', 'rgba(20,24,38,.6)'], // Rand um Icons, die auf einer Farbfläche sitzen (Müllkalender)
   // Akzente und Farbrollen
   ['accent', 'accent-color', '#f5b83d'], ['accent-fg', 'accent-text-color', '#3a2a00'],
+  ['accent-ink', 'accent-ink-color', '#f5b83d'], // Akzent als Schrift- oder Icon-Farbe direkt auf der Fläche (helle Themes: dunkler)
   ['active', 'active-color', '#3d8bf5'], ['active-fg', 'active-text-color', '#fff'],
   ['warn', 'warning-color', '#7cc4ff'], ['error', 'error-color', '#ff6b6b'], ['error-fg', 'error-text-color', '#fff'],
   ['a1', 'accent-1', '#3d8bf5'], ['a1-fg', 'accent-1-text', '#fff'],
@@ -51,6 +52,7 @@ export const TOKENS = [
   ['focus', 'focus-ring', '0 0 0 2px var(--nv-active)'],
   ['glow', 'glow', '100%'],            // Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus
   ['ring', 'ring', '100%'],            // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
+  ['text-shadow', 'text-shadow', '100%'], // Stärke der Schrift-Schatten über Bildern (Raumname, Media-Titel)
   // Blur
   ['blur', 'blur', '20px'], ['blur-xs', 'blur-xs', '8px'], ['blur-sm', 'blur-sm', '10px'], ['blur-lg', 'blur-lg', '16px'],
   ['sat', 'saturate', '150%'], ['sat-2', 'saturate-strong', '160%'],
@@ -77,15 +79,40 @@ export const TOKENS = [
   ['sweep', 'sweep-dur', '.9s'],
 ];
 
-// Themes: Name → abweichende Werte je Kurzname. Nova Blau ist die Tabelle oben.
-export const THEMES = {blau: {name: 'Nova Blau', vars: {}}};
+// Themes: Schlüssel → Name und abweichende Werte je Kurzname. Nova Blau ist die Tabelle oben (keine Abweichungen).
+// Gewählt wird ein Theme über das Attribut nova-theme am Kartenelement (setzt theme-apply.js); Blau = kein Attribut.
+// Zeichnungen (hi/lo, PAL in scene.js) bleiben in allen Themes dunkle Geräte.
+const INK = '20,28,45'; // Grundton von Nova Hell: Schiefer
+export const THEMES = {
+  blau: {name: 'Nova Blau', vars: {}},
+  hell: {name: 'Nova Hell', vars: {
+    bg: 'linear-gradient(160deg,rgba(236,238,242,.94),rgba(225,228,233,.94))',
+    border: `rgba(${INK},.1)`, fg: '#0e121a', chip: `rgba(${INK},.07)`,
+    box: `rgba(${INK},.04)`, 'box-border': `rgba(${INK},.08)`,
+    tint: INK, shade: INK, scrim: '236,238,242', knob: '#fff', cut: 'rgba(236,238,242,.9)',
+    accent: '#f0b02e', 'accent-fg': '#3a2a00', 'accent-ink': '#8a5a00',
+    active: '#1a66cc', 'active-fg': '#fff', warn: '#0f65b8', error: '#c62f2f', 'error-fg': '#fff',
+    a1: '#1a66cc', a2: '#f0b02e', 'a2-fg': '#3a2a00', a3: '#9a5f33', a4: '#2a7a46', neutral: '#5b6673',
+    'clock-night': '#2f4fd6', 'clock-morning': '#c4621a', 'clock-noon': '#0e121a',
+    'popup-bg': 'linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))',
+    'popup-base': 'rgba(236,239,243,.97)', 'popup-head': 'rgba(226,230,236,.97)', 'popup-backdrop': 'rgba(30,38,55,.28)',
+    'navi-popup-bg': 'linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))',
+    shadow: `0 1px 2px rgba(${INK},.06),0 6px 18px rgba(${INK},.08)`, edge: 'inset 0 1px 0 rgba(255,255,255,.7)',
+    'shadow-popup': `0 20px 60px rgba(${INK},.2)`, 'shadow-knob': `0 1px 4px rgba(${INK},.3)`,
+    glow: '0%', 'text-shadow': '0%', blur: '12px', sat: '120%', 'sat-2': '120%',
+  }, navi: {border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: '14px', warn: '#8a5a00'}},
+};
+export const THEME_KEYS = Object.keys(THEMES);
 
 // Abweichungen der Nova Navi gegenüber den Karten (etwas kräftigerer Rand, ruhigere Chips, mehr Blur, Warnung in Gelb)
 const NAVI = {border: 'rgba(255,255,255,.16)', chip: 'rgba(255,255,255,.1)', blur: '22px', warn: '#f5b83d'};
 
 const block = (sel, over) => `${sel}{${TOKENS.filter(([k]) => !over || k in over)
   .map(([k, pub, v]) => `--nv-${k}:var(--nova-${pub},${over?.[k] ?? v})`).join(';')}}`;
+// Ein Block je Theme; :host([nova-theme=…]) wiegt schwerer als :host, Blau braucht keinen eigenen Block
+const themed = navi => Object.entries(THEMES).filter(([, t]) => Object.keys(t.vars).length)
+  .map(([k, t]) => block(`:host([nova-theme=${k}])`, navi ? {...t.vars, ...t.navi} : t.vars)).join('');
 
 // Variablen-Block für das Stylesheet einer Karte
-export const NOVA_VARS = block(':host');
-export const NAVI_VARS = block(':host', {...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI});
+export const NOVA_VARS = block(':host') + themed(false);
+export const NAVI_VARS = block(':host', {...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI}) + themed(true);

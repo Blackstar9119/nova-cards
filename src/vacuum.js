@@ -20,7 +20,7 @@ const VCSS = `
 .bat{display:inline-flex;align-items:center;gap:var(--nv-s2);padding:var(--nv-s3) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-5);font-weight:var(--nv-fw-bold);flex:none}
 .bat ha-icon{--mdc-icon-size:17px}
 .bat.low{background:color-mix(in srgb,var(--nv-error) 30%,transparent)}
-.bat.chg ha-icon{color:var(--nv-accent)}
+.bat.chg ha-icon{color:var(--nv-accent-ink)}
 .vc>.main{display:contents}.vc .hd{order:0}.vc .mpnl{order:1}.vc>.main>:not(.hd){order:2}
 .mpnl{display:flex;flex-direction:column;gap:var(--nv-s4);min-width:0}
 .mpnl .bt{margin:0}

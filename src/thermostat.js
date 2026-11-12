@@ -109,7 +109,7 @@ const THERMO_CSS = `
 .stp span{min-width:52px;text-align:center}
 .sb{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .sb:active{transform:scale(.9)}.sb ha-icon{--mdc-icon-size:var(--nv-icon-md)}
-.stp.pend span{color:var(--nv-accent)}
+.stp.pend span{color:var(--nv-accent-ink)}
 .spk{width:100%;height:56px;display:block}
 .pills{display:flex;flex-wrap:wrap;gap:7px}
 .pill{padding:7px var(--nv-s6);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-5);cursor:pointer;display:inline-flex;gap:var(--nv-s3);align-items:center;border:1px solid rgba(var(--nv-tint),.08);white-space:nowrap;-webkit-tap-highlight-color:transparent}

@@ -2,7 +2,7 @@
 <!-- Nova Demo: alle Karten mit Testdaten, ohne Home Assistant. Aufruf über einen lokalen Webserver im Repo-Root:
      demo/index.html            lädt ../nova-cards.js
      demo/index.html?src=…      lädt einen anderen Build (z. B. ../dev/nova-dev-cards.js)
-     demo/index.html?theme=…    setzt das Nova-Theme für alle Karten -->
+     demo/index.html?theme=…    setzt das Nova-Theme für alle Karten (wie die Theme-Variable nova-theme eines HA-Themes) -->
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -14,12 +14,16 @@ body{margin:0;padding:24px;font-family:Roboto,Arial,sans-serif;color:#fff;displa
 figure{margin:0;display:flex;flex-direction:column;gap:6px}
 figcaption{font-size:12px;opacity:.7}
 .slot{display:block}
+html.light{background:linear-gradient(160deg,#f4f6f9 0%,#e3e7ee 60%,#d6dbe4 100%) fixed}html.light body{color:#1b2230}
 </style>
 </head>
 <body>
 <script type="module">
 import {hass, cards} from './mock.js';
 const q = new URLSearchParams(location.search);
+// Theme wie aus einem HA-Theme (nova-theme: hell) – gilt für alle Karten mit Theme „Global“
+if (q.get('theme')) document.documentElement.style.setProperty('--nova-theme', q.get('theme'));
+if (['hell'].includes(q.get('theme'))) document.documentElement.classList.add('light');
 // Platzhalter für Elemente, die sonst Home Assistant mitbringt
 for (const t of ['ha-icon', 'ha-state-icon', 'ha-svg-icon', 'ha-card']) customElements.get(t) || customElements.define(t, class extends HTMLElement {});
 window.loadCardHelpers = async () => ({createCardElement: c => { const el = document.createElement(String(c.type).replace(/^custom:/, '')); try { el.setConfig?.(c); } catch (e) { el.textContent = e.message; } return el; }});
@@ -32,7 +36,6 @@ for (const [type, conf, width] of cards) {
   if (!cls) { fig.querySelector('.slot').textContent = 'fehlt im Build'; continue; }
   try {
     const el = document.createElement(tag);
-    if (q.get('theme')) el.setAttribute('nova-theme', q.get('theme'));
     el.setConfig({type: 'custom:' + tag, ...(conf || await cls.getStubConfig?.(hass) || {})});
     el.hass = hass;
     fig.querySelector('.slot').append(el);
