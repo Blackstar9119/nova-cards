@@ -83,6 +83,7 @@ export const TOKENS = [
 // Gewählt wird ein Theme über das Attribut nova-theme am Kartenelement (setzt theme-apply.js); Blau = kein Attribut.
 // Zeichnungen (hi/lo, PAL in scene.js) bleiben in allen Themes dunkle Geräte.
 const INK = '20,28,45'; // Grundton von Nova Hell: Schiefer
+const MOKKA = '74,48,28'; // Grundton von Nova Velvet: Mokka
 export const THEMES = {
   blau: {name: 'Nova Blau', vars: {}},
   hell: {name: 'Nova Hell', vars: {
@@ -113,6 +114,23 @@ export const THEMES = {
     shadow: '0 0 0 transparent', edge: 'inset 0 1px 0 rgba(255,255,255,.06)', 'shadow-popup': '0 0 0 1px rgba(255,255,255,.08)',
     glow: '30%', ring: '70%', blur: '0px', sat: '100%', 'sat-2': '100%',
   }, navi: {border: 'rgba(255,255,255,.1)', chip: 'rgba(255,255,255,.06)', blur: '0px', warn: '#d6a548'}},
+  velvet: {name: 'Nova Velvet', vars: {
+    // Warm und edel: cremiges Beige, Espresso-Schrift, Gold und Cognac, weiche warme Schatten statt Glow
+    bg: `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))`,
+    border: 'rgba(90,62,40,.14)', fg: '#1a0f09', chip: `rgba(${MOKKA},.08)`, box: `rgba(${MOKKA},.05)`, 'box-border': `rgba(${MOKKA},.1)`,
+    tint: MOKKA, shade: MOKKA, scrim: '239,230,214', knob: '#fbf6ec', cut: 'rgba(239,230,214,.9)',
+    accent: '#b8935a', 'accent-fg': '#1a0f09', 'accent-ink': '#7a5a1e',
+    active: '#7d4f24', 'active-fg': '#fbf6ec', warn: '#7a4f00', error: '#a3322b', 'error-fg': '#fbf6ec',
+    a1: '#2f5d6b', 'a1-fg': '#fbf6ec', a2: '#b8935a', 'a2-fg': '#1a0f09', a3: '#7a2f3a', 'a3-fg': '#fbf6ec',
+    a4: '#4f5f2a', 'a4-fg': '#fbf6ec', neutral: '#62554c', 'neutral-fg': '#fbf6ec',
+    'clock-night': '#2f5d6b', 'clock-morning': '#9a5a1e', 'clock-noon': '#1a0f09',
+    'popup-bg': 'linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))',
+    'popup-base': 'rgba(243,236,223,.97)', 'popup-head': 'rgba(233,223,205,.97)', 'popup-backdrop': 'rgba(40,26,16,.32)',
+    'navi-popup-bg': 'linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))',
+    shadow: `0 1px 2px rgba(${MOKKA},.08),0 8px 22px rgba(${MOKKA},.12)`, edge: 'inset 0 1px 0 rgba(255,255,255,.6)',
+    'shadow-popup': `0 20px 60px rgba(${MOKKA},.22)`, 'shadow-knob': `0 1px 4px rgba(${MOKKA},.35)`,
+    glow: '0%', 'text-shadow': '0%', blur: '12px', sat: '115%', 'sat-2': '115%',
+  }, navi: {border: 'rgba(90,62,40,.16)', chip: `rgba(${MOKKA},.06)`, blur: '14px', warn: '#7a5a1e'}},
 };
 export const THEME_KEYS = Object.keys(THEMES);
 

@@ -3,7 +3,7 @@
 [← Zurück zur Übersicht](../README.md)
 
 Wählt das Nova-Theme für **alle Nova Cards auf allen Geräten** – ein Fingertipp, kein Helfer, kein YAML, keine Theme-Variablen.
-Themes: Nova Blau (Standard), Nova Hell und Nova Midnight.
+Themes: Nova Blau (Standard), Nova Hell, Nova Midnight und Nova Velvet.
 
 ## Anlegen
 

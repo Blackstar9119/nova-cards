@@ -16,6 +16,7 @@ figcaption{font-size:12px;opacity:.7}
 .slot{display:block}
 html.light{background:linear-gradient(160deg,#f4f6f9 0%,#e3e7ee 60%,#d6dbe4 100%) fixed}html.light body{color:#1b2230}
 html.black{background:#000}
+html.velvet{background:linear-gradient(160deg,#f2eadc 0%,#e7dcc8 60%,#dccfb7 100%) fixed}html.velvet body{color:#1a0f09}
 </style>
 </head>
 <body>
@@ -26,6 +27,7 @@ const q = new URLSearchParams(location.search);
 if (q.get('theme')) document.documentElement.style.setProperty('--nova-theme', q.get('theme'));
 if (['hell'].includes(q.get('theme'))) document.documentElement.classList.add('light');
 if (q.get('theme') === 'midnight') document.documentElement.classList.add('black');
+if (q.get('theme') === 'velvet') document.documentElement.classList.add('velvet');
 // Platzhalter für Elemente, die sonst Home Assistant mitbringt
 for (const t of ['ha-icon', 'ha-state-icon', 'ha-svg-icon', 'ha-card']) customElements.get(t) || customElements.define(t, class extends HTMLElement {});
 window.loadCardHelpers = async () => ({createCardElement: c => { const el = document.createElement(String(c.type).replace(/^custom:/, '')); try { el.setConfig?.(c); } catch (e) { el.textContent = e.message; } return el; }});

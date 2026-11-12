@@ -206,6 +206,7 @@ Gerätezeichnungen (`hi`/`lo`, `PAL` in `scene.js`) bleiben in allen Themes dunk
 | Nova Blau | `blau` | Standard: blaues Glas, weiße Schrift, Glow |
 | Nova Hell | `hell` | helles Glas, Schiefer-Schrift, ruhige Schatten statt Glow |
 | Nova Midnight | `midnight` | reines Schwarz ohne Glas (OLED, Nachtbetrieb), gedimmte Schrift, Glow 30 % |
+| Nova Velvet | `velvet` | cremiges Beige, Espresso-Schrift, Gold und Cognac, warme Schatten statt Glow |
 
 ### Welches Theme eine Karte zeigt
 
@@ -270,9 +271,35 @@ Kontraste gerechnet auf der Kartenfläche über einem hellen Dashboard (`#ebeef2
 Kontraste gerechnet auf reinem Schwarz. Gerätezeichnungen bleiben unverändert (`PAL`); sehr dunkle Teile wie der Saugroboter
 heben sich auf Schwarz nur schwach ab.
 
+### Nova Velvet (Abweichungen von Blau)
+
+| Token | Wert | Hinweis |
+| --- | --- | --- |
+| `bg` | `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))` | cremiges Beige |
+| `border` / `chip` / `box` / `box-border` | Mokka `90,62,40` 14 % / Mokka `74,48,28` mit 8 / 5 / 10 % | |
+| `fg` | `#1a0f09` | Espresso: 14,5:1, mit 60 % Deckkraft 4,5:1 |
+| `tint` / `shade` / `scrim` | `74,48,28` / `74,48,28` / `239,230,214` | |
+| `knob` | `#fbf6ec` | Creme |
+| `accent` / `accent-fg` / `accent-ink` | Gold `#b8935a` / `#1a0f09` / `#7a5a1e` | Espresso auf Gold 6,6:1, Gold als Schrift 4,9:1 |
+| `active` / `active-fg` | Cognac `#7d4f24` / Creme `#fbf6ec` | 6,5:1, Cognac als Schrift 5,4:1 |
+| `a1` / `a3` / `a4` / `neutral` | Petrol `#2f5d6b` / Bordeaux `#7a2f3a` / Oliv `#4f5f2a` / Taupe `#62554c` | Creme darauf, alle über 6,9:1 |
+| `a2` | Gold `#b8935a`, Schrift Espresso | |
+| `warn` / `error` | Bernstein `#7a4f00` / `#a3322b` | als Schrift 5,5:1 / 5,3:1 |
+| `clock-night` / `-morning` / `-noon` | `#2f5d6b` / `#9a5a1e` / `#1a0f09` | |
+| Pop-up | Creme 97 %, Kopf `rgba(233,223,205,.97)`, Abdunklung `rgba(40,26,16,.32)` | |
+| `shadow` | `0 1px 2px` 8 % + `0 8px 22px` 12 % Mokka | warm und weich |
+| `edge` | `inset 0 1px 0 rgba(255,255,255,.6)` | |
+| `glow` / `text-shadow` | `0%` | |
+| `blur` / `sat` | `12px` / `115%` | |
+| Navi | Rand 16 %, Chips 6 %, Blur `14px`, Warnung `#7a5a1e` | |
+
+Kontraste gerechnet auf der Kartenfläche über einem Beige-Dashboard. Abweichung vom Konzept: Schrift Espresso `#1a0f09` statt
+Mokka `#3b2a20`, weil Mokka mit 60 % Deckkraft (Untertitel) nur 3,5:1 schafft. Der Cognac-Rand an Gold-Flächen aus dem Konzept fehlt
+noch (bräuchte eigenes CSS in den Karten).
+
 ## Prüfen
 
 - `npm run check` – keine festen Farben im Karten-CSS.
 - `demo/index.html` – alle Karten mit Testdaten, ohne Home Assistant (über einen lokalen Webserver im Repo-Root öffnen,
-  z. B. `npx serve .` und dann `/demo/`). Mit `?src=…` lässt sich ein anderer Build laden, mit `?theme=hell` bzw. `?theme=midnight` ein Theme setzen (wirkt wie die Theme-Variable `nova-theme`).
+  z. B. `npx serve .` und dann `/demo/`). Mit `?src=…` lässt sich ein anderer Build laden, mit `?theme=hell` bzw. `?theme=midnight` oder `?theme=velvet` ein Theme setzen (wirkt wie die Theme-Variable `nova-theme`).
   Bei Umbauten an den Tokens vorher und nachher fotografieren und vergleichen: Nova Blau muss pixelgleich bleiben.
