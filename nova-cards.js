@@ -52,6 +52,12 @@
     ["a4-fg", "accent-4-text", "#fff"],
     ["neutral", "neutral", "#7b8794"],
     ["neutral-fg", "neutral-text", "#fff"],
+    // Farbrolle in Gerätezeichnungen (Leuchten auf dunklem Gehäuse) – Standard = die Rolle selbst, ein Theme kann sie aufhellen
+    ["a1-dev", "accent-1-device", "var(--nv-a1)"],
+    ["a2-dev", "accent-2-device", "var(--nv-a2)"],
+    ["a3-dev", "accent-3-device", "var(--nv-a3)"],
+    ["a4-dev", "accent-4-device", "var(--nv-a4)"],
+    ["neutral-dev", "neutral-device", "var(--nv-neutral)"],
     // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
     ["clock-night", "clock-night", "#4d6bff"],
     ["clock-morning", "clock-morning", "#ffb36b"],
@@ -254,6 +260,8 @@
       "error-fg": "#fbf6ec",
       a1: "#4a3226",
       "a1-fg": "#fbf6ec",
+      "a1-dev": "#b8935a",
+      // Espresso auf der Fläche, Gold auf den Geräten
       a2: "#b8935a",
       "a2-fg": "#1a0f09",
       a3: "#7a2f3a",
@@ -619,7 +627,7 @@
   var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
   var roleVars = (r) => {
     const k = ROLES[r] || ROLES.neutral;
-    return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)` };
+    return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`, dev: `var(--nv-${k}-dev)` };
   };
   var GLASS = `:host{position:relative}
 :host::before{content:'';position:absolute;inset:0;border-radius:var(--nv-radius);background:var(--nv-bg);pointer-events:none;
@@ -9626,6 +9634,7 @@ ${WARN}</svg>`,
   };
   var scene = (t) => `<div class="scene">${SV[t]}</div>`;
   var DCSS2 = `
+.scene{--dc:var(--dg,var(--nv-a1-dev))}
 .g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--nova-filter-color,var(--nv-a2))}
 ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
 .g.dv.glow.t-feeder.st-ready{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 25%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
@@ -10165,7 +10174,7 @@ ${frameGlow(".g.dv.glow.st-run,.g.dv.glow.st-heat")}
       const rv = roleVars(c.color || TYPES2[t].color);
       const anim = c.animation !== false && !cmp;
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${SCENE_CSS}${DCSS2}:host([hidden]){display:none}</style>
-<div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--hc:${roleVars(c.heat_color || "accent-2").c}">
+<div class="g dv t-${t}${c.window === false ? " nowin" : ""}${cmp ? " cmp" : ""}${anim ? " anim" : ""}${c.glow !== false ? " glow" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--dg:${rv.dev};--hc:${roleVars(c.heat_color || "accent-2").c}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ""}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ""}</div>
 ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
 <div class="ctls"></div>${c.start_at === "home_connect" && c.start ? SA : ""}${["select", "input_select"].includes(dom(c.start)) && !c.start_option ? PICK : ""}<div class="acts"></div>`}<div class="als"></div></div>`;
@@ -11297,6 +11306,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
 <g class="b-fn"><circle r="1.6"/><path d="M0 -1.6 C -1 -5 3 -6.5 3.2 -3.6 Z M1.4 .8 C 4.8 1.6 4.2 5.6 1.6 4.6 Z M-1.4 .8 C -4.6 2 -6.4 -1.6 -3.8 -2.8 Z"/></g></g></g>
 </svg>`;
   var PCSS4 = `
+.scene{--dc:var(--dg,var(--nv-a1-dev))}
 .g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
 --sb1:var(--nova-printer-color-light,${PAL.bodyLight});--sb2:var(--nova-printer-color,${PAL.body})}
 .g.pr.glow.on{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
@@ -11563,7 +11573,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       this._built = true;
       const c = this._c, r = this.shadowRoot || this.attachShadow({ mode: "open" }), rv = roleVars(c.color);
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${PCSS4}</style>
-<div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}${c.show_display === false ? " nodisp" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="g pr${c.animation !== false ? " anim" : ""}${c.glow !== false ? " glow" : ""}${c.show_display === false ? " nodisp" : ""}" style="--dc:${rv.c};--dc-fg:${rv.fg};--dg:${rv.dev}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
 <div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
 <div class="tm"><span class="rm"></span><span class="en"></span></div><div class="kvs"></div></div></div>
@@ -12953,6 +12963,7 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset var(--nv-d7
 .g.tm{--dc:var(--tc);--dcfg:var(--tcfg);padding:var(--nv-s7);gap:var(--nv-s5);transition:box-shadow var(--nv-d5)}
 ${frameGlow(".g.tm.glow.st-active")}
 .g.tm.alm{--dc:var(--ac);--dcfg:var(--acfg)}
+.scene{--dc:var(--tg)}.alm .scene{--dc:var(--ag)}
 .g.tm.glow.alm{box-shadow:var(--nv-shadow),0 0 0 2px var(--ac),0 0 24px color-mix(in srgb,color-mix(in srgb,var(--ac) 55%,transparent) var(--nv-glow),transparent),var(--nv-edge)}
 .anim.glow.alm{animation:tm-frame 1.2s ease-in-out infinite}
 .still{animation-play-state:paused!important}.still *{animation-play-state:paused!important}
@@ -13204,7 +13215,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
     }
     _layout() {
       const c = this._c, e = this._e, rv = roleVars(c.color), av = roleVars(c.alarm_color);
-      e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--ac:${av.c};--acfg:${av.fg}`;
+      e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--tg:${rv.dev};--ac:${av.c};--acfg:${av.fg};--ag:${av.dev}`;
       e.g.classList.toggle("cmp", c.layout === "compact");
       e.g.classList.toggle("full", c.layout !== "compact");
       e.g.classList.toggle("glow", c.glow !== false);
@@ -14050,6 +14061,7 @@ ${sec ? digit(secX, dy + H * 0.5, 0.5) + digit(secX + 21, dy + H * 0.5, 0.5) : "
 .ana{width:100%;max-width:${K("var(--nova-clock-size,240px)")};aspect-ratio:1}
 .ana svg{display:block;width:100%;height:100%}
 .scene .hd,.scene .md{fill:url(#k-cr);stroke:rgba(var(--nv-lo),.35);stroke-width:.5}
+.scene{--dc:var(--kg);--kc:var(--kg)}
 .scene .sd{fill:var(--kc);filter:drop-shadow(0 0 2px var(--kc))}
 .scene .cap{fill:url(#k-cr);stroke:rgba(var(--nv-hi),.25);stroke-width:.4}.scene .cap2{fill:var(--kc)}
 .scene .hsh{fill:rgb(var(--nv-lo));opacity:.25}
@@ -14179,6 +14191,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
     _layout() {
       const c = this._c, e = this._e, rv = roleVars(c.color), st = this._st, an = st === "analog";
       e.g.style.setProperty("--kc", rv.c);
+      e.g.style.setProperty("--kg", rv.dev);
       e.g.classList.toggle("still", !!this._quiet);
       e.ana.hidden = !an;
       e.tm.hidden = an && !c.analog_digital || st === "flip" || st === "retro";
