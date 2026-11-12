@@ -282,10 +282,11 @@ heben sich auf Schwarz nur schwach ab.
 | `knob` | `#fbf6ec` | Creme |
 | `accent` / `accent-fg` / `accent-ink` | Gold `#b8935a` / `#1a0f09` / `#7a5a1e` | Espresso auf Gold 6,6:1, Gold als Schrift 4,9:1 |
 | `active` / `active-fg` | Cognac `#7d4f24` / Creme `#fbf6ec` | 6,5:1, Cognac als Schrift 5,4:1 |
-| `a1` / `a3` / `a4` / `neutral` | Petrol `#2f5d6b` / Bordeaux `#7a2f3a` / Oliv `#4f5f2a` / Taupe `#62554c` | Creme darauf, alle über 6,9:1 |
+| `a1` | Espresso `#4a3226`, Schrift Creme | Creme darauf 11,0:1, als Schrift 9,1:1 |
+| `a3` / `a4` / `neutral` | Bordeaux `#7a2f3a` / Oliv `#4f5f2a` / Taupe `#62554c` | Creme darauf, alle über 6,9:1 |
 | `a2` | Gold `#b8935a`, Schrift Espresso | |
 | `warn` / `error` | Bernstein `#7a4f00` / `#a3322b` | als Schrift 5,5:1 / 5,3:1 |
-| `clock-night` / `-morning` / `-noon` | `#2f5d6b` / `#9a5a1e` / `#1a0f09` | |
+| `clock-night` / `-morning` / `-noon` | Rost `#6b3a2a` / `#9a5a1e` / `#1a0f09` | Nacht als Schrift 7,2:1 |
 | Pop-up | Creme 97 %, Kopf `rgba(233,223,205,.97)`, Abdunklung `rgba(40,26,16,.32)` | |
 | `shadow` | `0 1px 2px` 8 % + `0 8px 22px` 12 % Mokka | warm und weich |
 | `edge` | `inset 0 1px 0 rgba(255,255,255,.6)` | |
@@ -296,6 +297,9 @@ heben sich auf Schwarz nur schwach ab.
 Kontraste gerechnet auf der Kartenfläche über einem Beige-Dashboard. Abweichung vom Konzept: Schrift Espresso `#1a0f09` statt
 Mokka `#3b2a20`, weil Mokka mit 60 % Deckkraft (Untertitel) nur 3,5:1 schafft. Der Cognac-Rand an Gold-Flächen aus dem Konzept fehlt
 noch (bräuchte eigenes CSS in den Karten).
+
+Velvet hat keine Blau- oder Petrol-Töne. Blau bleibt nur, wo es Inhalt ist: Farben von Lampen und Filamenten, die Radiowecker-Farbe
+`blue`/`green`, die man selbst wählt (`led-*`), und Wasser in den Zeichnungen (`PAL.water`).
 
 ## Prüfen
 
