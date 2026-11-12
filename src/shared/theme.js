@@ -54,7 +54,11 @@ export const TOKENS = [
   ['shadow-knob', 'shadow-knob', '0 1px 4px rgba(0,0,0,.4)'],
   ['focus', 'focus-ring', '0 0 0 2px var(--nv-active)'],
   ['glow', 'glow', '100%'],            // Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus
-  ['ring', 'ring', '100%'],            // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
+  ['ring', 'ring', '100%'],
+  // Gefüllte Knöpfe (aktiv, primär): Anteil der Farbe an der Fläche (Rest = Chip-Glas), Anteil der Farbschrift (Rest = --nv-fg),
+  // Lichtkante/Rand obendrauf; tint-ink = Anteil der Farbe an farbigen Icons auf Glasknöpfen
+  ['fill', 'button-fill', '100%'], ['fill-ink', 'button-fill-text', '100%'], ['fill-edge', 'button-edge', '0 0 0 transparent'],
+  ['tint-ink', 'button-tint-text', '100%'],            // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
   ['text-shadow', 'text-shadow', '100%'], // Stärke der Schrift-Schatten über Bildern (Raumname, Media-Titel)
   // Blur
   ['blur', 'blur', '20px'], ['blur-xs', 'blur-xs', '8px'], ['blur-sm', 'blur-sm', '10px'], ['blur-lg', 'blur-lg', '16px'],
@@ -106,17 +110,20 @@ export const THEMES = {
     glow: '0%', 'text-shadow': '0%', blur: '12px', sat: '120%', 'sat-2': '120%',
   }, navi: {border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: '14px', warn: '#8a5a00'}},
   midnight: {name: 'Nova Midnight', vars: {
-    // Für OLED und Nachtbetrieb: reines Schwarz ohne Glas, gedimmte Schrift, schwacher Glow
-    bg: '#000', border: 'rgba(255,255,255,.09)', fg: '#d5d9e0', chip: 'rgba(255,255,255,.07)',
-    box: 'rgba(255,255,255,.05)', 'box-border': 'rgba(255,255,255,.08)', knob: '#d5d9e0', cut: 'rgba(0,0,0,.7)',
-    accent: '#c08f30', 'accent-fg': '#1a1200', 'accent-ink': '#d6a548',
-    active: '#3676ca', 'active-fg': '#fff', warn: '#5f9fd4', error: '#c84a4a', 'error-fg': '#fff',
-    a1: '#3676ca', a2: '#c08f30', 'a2-fg': '#1a1200', a3: '#8f6040', a4: '#3a8352', neutral: '#5d6773',
-    'clock-night': '#3a4fb8', 'clock-morning': '#c98a4e', 'clock-noon': '#b9c2d4',
-    'popup-bg': '#000', 'popup-base': '#000', 'popup-head': '#0b0d12', 'popup-backdrop': 'rgba(0,0,0,.72)', 'navi-popup-bg': '#000',
-    shadow: '0 0 0 transparent', edge: 'inset 0 1px 0 rgba(255,255,255,.06)', 'shadow-popup': '0 0 0 1px rgba(255,255,255,.08)',
-    glow: '30%', ring: '70%', blur: '0px', sat: '100%', 'sat-2': '100%',
-  }, navi: {border: 'rgba(255,255,255,.1)', chip: 'rgba(255,255,255,.06)', blur: '0px', warn: '#d6a548'}},
+    // Wie der Dark Mode von Apple: Seite schwarz, Karten #1c1c1e, Kacheln #2c2c2e, feine Linien, kein Glow, kein Blur.
+    // Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante), Schrift darauf hell.
+    bg: '#1c1c1e', border: 'rgba(255,255,255,.06)', fg: '#e5e5ea', chip: '#2c2c2e',
+    box: '#2c2c2e', 'box-border': 'rgba(255,255,255,.06)', knob: '#e5e5ea', cut: 'rgba(28,28,30,.85)',
+    accent: '#b08d57', 'accent-fg': '#121214', 'accent-ink': '#b08d57',
+    active: '#6b8db5', 'active-fg': '#121214', warn: '#7fa6c9', error: '#c86a6a', 'error-fg': '#121214',
+    a1: '#6b8db5', 'a1-fg': '#121214', a2: '#b08d57', 'a2-fg': '#121214', a3: '#ad805c', 'a3-fg': '#121214',
+    a4: '#5f9a72', 'a4-fg': '#121214', neutral: '#8a929c', 'neutral-fg': '#121214',
+    'clock-night': '#5a6fb8', 'clock-morning': '#c98a4e', 'clock-noon': '#c7ccd6',
+    'popup-bg': '#1c1c1e', 'popup-base': '#1c1c1e', 'popup-head': '#2c2c2e', 'popup-backdrop': 'rgba(0,0,0,.72)', 'navi-popup-bg': '#1c1c1e',
+    shadow: '0 0 0 transparent', edge: 'inset 0 1px 0 rgba(255,255,255,.05)', 'shadow-popup': '0 0 0 1px rgba(255,255,255,.08)',
+    glow: '0%', ring: '70%', blur: '0px', sat: '100%', 'sat-2': '100%',
+    fill: '22%', 'fill-ink': '0%', 'tint-ink': '0%', 'fill-edge': 'inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.1)',
+  }, navi: {border: 'rgba(255,255,255,.08)', chip: '#2c2c2e', blur: '0px', warn: '#b08d57'}},
   velvet: {name: 'Nova Velvet', vars: {
     // Warm und edel: cremiges Beige, Espresso-Schrift, Gold und Cognac, weiche warme Schatten statt Glow
     bg: `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))`,

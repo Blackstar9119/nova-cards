@@ -71,7 +71,7 @@ export const CHIP_CSS = `
 .chip{display:inline-flex;align-items:center;gap:var(--nv-s3);padding:7px var(--nv-s6);border-radius:var(--nv-r-pill);background:var(--nv-chip);border:1px solid var(--nv-box-border);font-size:var(--nv-fs-5);white-space:nowrap;cursor:pointer;flex:none;outline:none;transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
 .chip ha-icon{--mdc-icon-size:var(--nv-icon-sm)}.chip img{width:16px;height:16px}.chip:focus-visible{box-shadow:var(--nv-focus)}.chip:active{transform:scale(.95)}
 .chip .cn:empty{display:none}.chip .cn:not(:empty)::after{content:' ·'}
-.chip.al{background:var(--c);color:var(--cf);border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--c) 45%,transparent) var(--nv-glow),transparent)}`;
+.chip.al{background:color-mix(in srgb,var(--c) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--cf) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--c) 45%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}`;
 
 // Info-Chips in bar: Icon, optional Name, Wert; Antippen öffnet die Details, Hervorheben bei Achtung mit Farbrolle.
 // Die Chips werden nur neu angelegt, wenn sich die Einträge ändern.

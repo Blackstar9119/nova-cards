@@ -33,7 +33,7 @@ transition:background-color var(--nv-d3),border-color var(--nv-d3),box-shadow va
 .ck ha-icon{--mdc-icon-size:15px;opacity:0;transform:scale(.4);transition:opacity var(--nv-d2),transform var(--nv-d3)}
 .it .tx{flex:1;min-width:0;font-size:var(--nv-fs-8);overflow-wrap:anywhere;transition:opacity var(--nv-d3)}
 .it .tx small{display:block;font-size:var(--nv-fs-3);opacity:.6;margin-top:var(--nv-s1)}
-.it.done .ck{background:var(--nv-active);border-color:var(--nv-active);color:var(--nv-active-fg);box-shadow:0 0 12px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent)}
+.it.done .ck{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));border-color:var(--nv-active);color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 12px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
 .it.done .ck ha-icon{opacity:1;transform:scale(1)}
 .it.done .tx{text-decoration:line-through;opacity:.5}
 .it.leave{opacity:.35}
