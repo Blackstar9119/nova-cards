@@ -37,11 +37,11 @@ export const parseDur = v => {
 };
 // Sekunden → „H:MM:SS“ für den Dienst timer.start
 const hms = s => `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-// Sekunden → Anzeige „4:59“ bzw. „1:04:59“
+// Sekunden → Anzeige „4:59“ bzw. ab einer Stunde „1:04“ (Std:Min ohne Sekunden, sonst zu breit fürs Zifferblatt)
 export const fmtLeft = s => {
   s = Math.max(0, Math.ceil(s));
   const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = String(s % 60).padStart(2, '0');
-  return h ? `${h}:${String(m).padStart(2, '0')}:${x}` : `${m}:${x}`;
+  return h ? `${h}:${String(m).padStart(2, '0')}` : `${m}:${x}`;
 };
 // Schnellwahl: „1, 5, 10“ oder [1, 5, 10] in Minuten; „30s“ = Sekunden, „1h“ = Stunden
 const presetSecs = v => list(v).map(x => { const m = String(x).match(/^(\d+(?:[.,]\d+)?)\s*(s|sek|min|m|h|std)?$/i); if (!m) return null; const n = +m[1].replace(',', '.'); const u = (m[2] || 'min').toLowerCase(); return Math.round(n * (u[0] === 's' ? 1 : u[0] === 'h' ? 3600 : 60)); }).filter(n => n > 0).slice(0, 8);
@@ -397,17 +397,22 @@ class NovaTimerCard extends HTMLElement {
   }
   _dismiss() { this._dismissed = this._S()?.last_changed; this._key = null; this._render(); }
   _press() { const g = this._e.g; g.classList.remove('prs'); void g.offsetWidth; g.classList.add('prs'); }
-  _svc(svc, data = {}) {
+  _svc(svc, data = {}, quiet = false) {
     if (!this._c.entity) return;
     this._press();
-    return this._h.callService('timer', svc, {entity_id: this._c.entity, ...data});
+    // quiet: Fehler selbst behandeln, keine Fehlermeldung von HA einblenden (5. Argument notifyOnError)
+    return quiet ? this._h.callService('timer', svc, {entity_id: this._c.entity, ...data}, undefined, false)
+      : this._h.callService('timer', svc, {entity_id: this._c.entity, ...data});
   }
   _start(sec) { this._armed = 0; return sec > 0 ? this._svc('start', {duration: hms(Math.round(sec))}) : this._svc('start'); }
-  // +1 Minute: timer.change (ab HA 2024.x); geht nicht über die eingestellte Dauer hinaus → dann neu starten mit Rest + 60 s
+  // +1 Minute: timer.change geht nicht über die eingestellte Dauer hinaus → dann gleich neu starten mit Rest + 60 s
+  // (pausiert bleibt pausiert). Keine Fehlermeldung von HA.
   async _add(sec) {
     const v = this._calc();
-    try { await this._svc('change', {duration: hms(sec)}); }
-    catch (err) { console.warn('[nova-cards] Timer: +1 Min per Neustart', err); if (v) this._start(Math.round(v.left + sec)); }
+    const restart = async () => { if (!v) return; await this._start(Math.round(v.left + sec)); if (v.st === 'paused') await this._svc('pause'); };
+    if (v && v.left + sec > v.total) return restart();
+    try { await this._svc('change', {duration: hms(sec)}, true); }
+    catch (err) { console.warn('[nova-cards] Timer: +1 Min per Neustart', err); restart(); }
   }
   // Stepper: läuft am Ende rundherum (59 → 0); Sekunden in 5er-Schritten, kompakt ohne Stunden bis 180 Minuten
   // Einheiten der eigenen Zeit: auto = groß Std/Min/Sek, kompakt Min/Sek; sonst jede Kombination aus h, m, s (z. B. „hm“, „s“)
@@ -504,7 +509,7 @@ class NovaTimerCard extends HTMLElement {
     this._showSec(); this._click();
   }
   _showSec() {
-    const e = this._e, txt = this._fmt(this._sec);
+    const e = this._e, txt = fmtLeft(this._sec);
     const b = e.rd.querySelector('b');
     if (b) b.textContent = txt;
     e.scl.setAttribute('aria-valuetext', txt);
