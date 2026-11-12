@@ -55,7 +55,7 @@ export const hass = {
 };
 
 // Demo-Karten: [Kartentyp ohne Präfix, Konfiguration (null = Vorschlag der Karte), Breite in px]
-const dev = t => ['washer', 'dishwasher', 'airfryer', 'coffee', 'feeder', 'fountain', 'generic'].map(d => ['geraet-card', {device_type: d, entity: 'sensor.waschmaschine_status', progress: 'sensor.waschmaschine_fortschritt', name: d, ...t}]);
+const dev = t => ['washer', 'dishwasher', 'airfryer', 'coffee', 'feeder', 'fountain', 'generic', 'dryer'].map(d => ['geraet-card', {device_type: d, entity: 'sensor.waschmaschine_status', progress: 'sensor.waschmaschine_fortschritt', name: d, ...t}]);
 export const cards = [
   ['room-card', null], ['room-card', {name: 'Wohnzimmer', icon: 'mdi:sofa', temperature: 'sensor.wohnzimmer_temperatur', humidity: 'sensor.wohnzimmer_luftfeuchte', buttons: [{entity: 'light.wohnzimmer_decke'}, {entity: 'light.wohnzimmer_sofa'}, {entity: 'switch.kaffeemaschine'}]}],
   ['thermostat-card', null], ['thermostat-card', {entity: 'climate.wohnzimmer', compact: false}],

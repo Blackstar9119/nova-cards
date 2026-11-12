@@ -34,6 +34,8 @@ export const TOKENS = [
   // Farbrolle in Gerätezeichnungen (Leuchten auf dunklem Gehäuse) – Standard = die Rolle selbst, ein Theme kann sie aufhellen
   ['a1-dev', 'accent-1-device', 'var(--nv-a1)'], ['a2-dev', 'accent-2-device', 'var(--nv-a2)'], ['a3-dev', 'accent-3-device', 'var(--nv-a3)'],
   ['a4-dev', 'accent-4-device', 'var(--nv-a4)'], ['neutral-dev', 'neutral-device', 'var(--nv-neutral)'],
+  // Standardfarbe der Kaffeemaschine (nur dort, nicht im Editor wählbar): Kupfer aus Akzent 3, Velvet eigenes Braun
+  ['coffee', 'coffee-color', 'var(--nv-a3)'], ['coffee-fg', 'coffee-color-text', 'var(--nv-a3-fg)'], ['coffee-dev', 'coffee-color-device', 'var(--nv-a3-dev)'],
   // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
   ['clock-night', 'clock-night', '#4d6bff'], ['clock-morning', 'clock-morning', '#ffb36b'], ['clock-noon', 'clock-noon', '#f4f7ff'],
   ['led-red', 'led-red', '#ff2414'], ['led-green', 'led-green', '#39ff7a'], ['led-blue', 'led-blue', '#3fa9ff'], ['led-amber', 'led-amber', '#ffb000'],
@@ -133,6 +135,7 @@ export const THEMES = {
     active: '#7d4f24', 'active-fg': '#fbf6ec', warn: '#7a4f00', error: '#a3322b', 'error-fg': '#fbf6ec',
     a1: '#4a3226', 'a1-fg': '#fbf6ec', 'a1-dev': '#b8935a', // Espresso auf der Fläche, Gold auf den Geräten
     a2: '#b8935a', 'a2-fg': '#1a0f09', a3: '#7a2f3a', 'a3-fg': '#fbf6ec',
+    coffee: '#8a5a33', 'coffee-fg': '#fbf6ec', 'coffee-dev': '#b07a48', // Kaffee warmes Braun statt Bordeaux
     a4: '#4f5f2a', 'a4-fg': '#fbf6ec', neutral: '#62554c', 'neutral-fg': '#fbf6ec',
     'clock-night': '#6b3a2a', 'clock-morning': '#9a5a1e', 'clock-noon': '#1a0f09',
     'popup-bg': 'linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))',

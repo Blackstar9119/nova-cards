@@ -68,6 +68,11 @@ Zu jeder Farbrolle gibt es eine Gerätefarbe `--nova-accent-1-device` … `--nov
 Standard = die Rolle selbst). Sie gilt nur in Gerätezeichnungen (`.scene`: Gerät, Drucker, Timer, analoge Uhr), damit ein Theme
 dort eine hellere Variante zeigen kann, wenn die Rolle auf dunklem Gehäuse untergeht (Velvet: Akzent 1 Espresso → Gold).
 
+Ohne Auswahl im Editor nutzt jede Karte die Primärfarbe Akzent 1. Einzige Ausnahme ist die Kaffeemaschine der Gerät Card:
+`--nova-coffee-color` (`--nv-coffee`, Standard = Akzent 3, Kupfer), dazu `--nova-coffee-color-text` und
+`--nova-coffee-color-device`. Velvet setzt ein eigenes warmes Braun `#8a5a33` (Creme darauf 5,4:1, auf dem Gerät `#b07a48`).
+Gegenstandsfarben in Zeichnungen (Wasser, Kaffee, Futter, Wäsche) hängen nicht am Theme.
+
 ### Uhr
 
 | Token | Kurzform | Wert | Wofür |

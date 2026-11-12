@@ -6,6 +6,7 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 ## [0.12.0] – unveröffentlicht
 
 ### Hinzugefügt
+- Nova Gerät Card: neuer Gerätetyp Trockner (`device_type: dryer`) mit eigener Zeichnung (Bullauge mit Wäsche, warme Luft, Kondensbehälter, Flusensieb) und Hinweis-Animationen `condensate` und `lint`.
 - Theme Nova Velvet: cremiges Beige, Espresso-Schrift, Gold, Cognac und Espresso als Akzente (keine Blautöne), weiche warme Schatten statt Glow, Kontraste nach WCAG AA.
 - Theme Nova Midnight im Stil des Apple Dark Mode: Karten `#1c1c1e`, Kacheln `#2c2c2e`, feine Linien, kein Glow und kein Blur (schnell auf dem Echo Show), gedämpfte Akzente. Aktive und primäre Knöpfe aller Karten als getöntes Glas wie der Start-Knopf der Timer Card, Schrift darauf hell. Kontraste nach WCAG AA.
 - Gemeinsamer Knopf-Stil über Tokens (`--nova-button-fill`, `-fill-text`, `-edge`, `-tint-text`); in Nova Blau unverändert. Glows in Gerätezeichnungen folgen jetzt `--nova-glow`.
@@ -49,6 +50,7 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
   Fokus hat, springt die Karte nicht zurück.
 
 ### Geändert
+- Farbrollen: Ohne Auswahl im Editor nutzt jede Karte die Primärfarbe des Themes (Akzent 1). Einzige Ausnahme: die Kaffeemaschine behält ihr Kaffeebraun (Nova Blau Kupfer, Velvet eigenes warmes Braun `#8a5a33`, Token `--nova-coffee-color`).
 - Nova Uhr Card: `mode: analog` gilt als ältere Schreibweise von `style: analog` und funktioniert unverändert weiter.
 
 ## [0.11.1] – 2026-10-30
