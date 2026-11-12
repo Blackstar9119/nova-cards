@@ -69,6 +69,8 @@
     ["led-blue", "led-blue", "#3fa9ff"],
     ["led-amber", "led-amber", "#ffb000"],
     // Pop-up
+    ["area-bg", "area-background", "var(--nv-bg)"],
+    // Rahmen der Bereich Card (Midnight: schwarz, Karten darin grau)
     ["popup-bg", "popup-background", "linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))"],
     ["popup-base", "popup-base-color", "rgba(22,27,42,.88)"],
     ["popup-head", "popup-header-color", "rgba(60,72,100,.85)"],
@@ -236,7 +238,8 @@
       "clock-night": "#5a6fb8",
       "clock-morning": "#c98a4e",
       "clock-noon": "#c7ccd6",
-      "popup-bg": "#1c1c1e",
+      "area-bg": "#000",
+      "popup-bg": "#000",
       "popup-base": "#1c1c1e",
       "popup-head": "#2c2c2e",
       "popup-backdrop": "rgba(0,0,0,.72)",
@@ -8507,7 +8510,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   var DEF2 = { stack_below: 500, chips_layout: "wrap" };
   var ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
-:host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-bg)}
+:host::before{background:var(--nv-area-bg)}
+:host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-area-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:var(--nv-s6);padding:var(--nv-s7)}
 .hd{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s3);border-radius:var(--nv-r-pill);background:var(--nv-chip)}
 .hd.nb{padding-left:var(--nv-s7)}
