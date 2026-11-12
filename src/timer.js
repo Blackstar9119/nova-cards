@@ -54,6 +54,7 @@ const TCSS = `${DIAL_CSS}
 .g.tm{--dc:var(--tc);--dcfg:var(--tcfg);padding:var(--nv-s7);gap:var(--nv-s5);transition:box-shadow var(--nv-d5)}
 ${frameGlow('.g.tm.glow.st-active')}
 .g.tm.alm{--dc:var(--ac);--dcfg:var(--acfg)}
+.scene{--dc:var(--tg)}.alm .scene{--dc:var(--ag)}
 .g.tm.glow.alm{box-shadow:var(--nv-shadow),0 0 0 2px var(--ac),0 0 24px color-mix(in srgb,color-mix(in srgb,var(--ac) 55%,transparent) var(--nv-glow),transparent),var(--nv-edge)}
 .anim.glow.alm{animation:tm-frame 1.2s ease-in-out infinite}
 .still{animation-play-state:paused!important}.still *{animation-play-state:paused!important}
@@ -249,7 +250,7 @@ class NovaTimerCard extends HTMLElement {
   }
   _layout() {
     const c = this._c, e = this._e, rv = roleVars(c.color), av = roleVars(c.alarm_color);
-    e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--ac:${av.c};--acfg:${av.fg}`;
+    e.g.style.cssText = `--tc:${rv.c};--tcfg:${rv.fg};--tg:${rv.dev};--ac:${av.c};--acfg:${av.fg};--ag:${av.dev}`;
     e.g.classList.toggle('cmp', c.layout === 'compact');
     e.g.classList.toggle('full', c.layout !== 'compact');
     e.g.classList.toggle('glow', c.glow !== false);

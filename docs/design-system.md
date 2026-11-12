@@ -64,6 +64,10 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 | `--nova-neutral` | `--nv-neutral` | `#7b8794` | Farbrolle Neutral |
 | `--nova-neutral-text` | `--nv-neutral-fg` | `#fff` | Farbrolle Neutral – Schrift darauf |
 
+Zu jeder Farbrolle gibt es eine Gerätefarbe `--nova-accent-1-device` … `--nova-neutral-device` (Kurzform `--nv-a1-dev` …,
+Standard = die Rolle selbst). Sie gilt nur in Gerätezeichnungen (`.scene`: Gerät, Drucker, Timer, analoge Uhr), damit ein Theme
+dort eine hellere Variante zeigen kann, wenn die Rolle auf dunklem Gehäuse untergeht (Velvet: Akzent 1 Espresso → Gold).
+
 ### Uhr
 
 | Token | Kurzform | Wert | Wofür |
@@ -283,6 +287,7 @@ heben sich auf Schwarz nur schwach ab.
 | `accent` / `accent-fg` / `accent-ink` | Gold `#b8935a` / `#1a0f09` / `#7a5a1e` | Espresso auf Gold 6,6:1, Gold als Schrift 4,9:1 |
 | `active` / `active-fg` | Cognac `#7d4f24` / Creme `#fbf6ec` | 6,5:1, Cognac als Schrift 5,4:1 |
 | `a1` | Espresso `#4a3226`, Schrift Creme | Creme darauf 11,0:1, als Schrift 9,1:1 |
+| `a1-dev` | Gold `#b8935a` | Leuchten von Akzent 1 in Gerätezeichnungen: Espresso hätte auf dunklem Gehäuse nur 1,4:1, Gold rund 6:1 |
 | `a3` / `a4` / `neutral` | Bordeaux `#7a2f3a` / Oliv `#4f5f2a` / Taupe `#62554c` | Creme darauf, alle über 6,9:1 |
 | `a2` | Gold `#b8935a`, Schrift Espresso | |
 | `warn` / `error` | Bernstein `#7a4f00` / `#a3322b` | als Schrift 5,5:1 / 5,3:1 |

@@ -4,8 +4,8 @@ export {NOVA_VARS, NAVI_VARS};
 
 // Farbrollen: Karten wählen nur eine Rolle, die Farbe selbst kommt aus den Variablen oben (Theme-fähig)
 export const ROLES = {neutral: 'neutral', 'accent-1': 'a1', 'accent-2': 'a2', 'accent-3': 'a3', 'accent-4': 'a4'};
-// Rolle → {c, fg} als CSS-Variablen; unbekannt/leer = neutral
-export const roleVars = r => { const k = ROLES[r] || ROLES.neutral; return {c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`}; };
+// Rolle → {c, fg, dev} als CSS-Variablen (dev = Farbe in Gerätezeichnungen); unbekannt/leer = neutral
+export const roleVars = r => { const k = ROLES[r] || ROLES.neutral; return {c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`, dev: `var(--nv-${k}-dev)`}; };
 
 // Glas: Unschärfe und Hintergrund liegen auf einer eigenen, leeren Ebene (:host::before) hinter dem Kartenkasten .g.
 // So muss Safari/WebKit die Unschärfe nicht bei jeder Animation im Inhalt neu rechnen. Der Kasten selbst darf weder

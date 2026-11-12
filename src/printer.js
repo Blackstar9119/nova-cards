@@ -192,6 +192,7 @@ const SCENE = `<svg viewBox="0 0 260 300" aria-hidden="true"><defs>
 </svg>`;
 
 const PCSS = `
+.scene{--dc:var(--dg,var(--nv-a1-dev))}
 .g.pr{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--dc);
 --sb1:var(--nova-printer-color-light,${PAL.bodyLight});--sb2:var(--nova-printer-color,${PAL.body})}
 .g.pr.glow.on{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 45%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
@@ -440,7 +441,7 @@ export class NovaPrinterCard extends HTMLElement {
     this._built = true;
     const c = this._c, r = this.shadowRoot || this.attachShadow({mode: 'open'}), rv = roleVars(c.color);
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${PCSS}</style>
-<div class="g pr${c.animation !== false ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}${c.show_display === false ? ' nodisp' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg}">
+<div class="g pr${c.animation !== false ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}${c.show_display === false ? ' nodisp' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg};--dg:${rv.dev}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div><span class="demo" hidden>Demo</span><div class="hb li" hidden title="Kammerlicht"><ha-icon icon="mdi:lightbulb-outline"></ha-icon></div></div>
 <div class="mid"><div class="scene">${SCENE}</div><div class="inf"><div class="big"><span class="pc"></span><span class="ph"></span></div><div class="bar"><i></i></div>
 <div class="tm"><span class="rm"></span><span class="en"></span></div><div class="kvs"></div></div></div>

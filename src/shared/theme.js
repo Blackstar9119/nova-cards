@@ -31,6 +31,9 @@ export const TOKENS = [
   ['a3', 'accent-3', '#b5794a'], ['a3-fg', 'accent-3-text', '#fff'],
   ['a4', 'accent-4', '#4caf6a'], ['a4-fg', 'accent-4-text', '#fff'],
   ['neutral', 'neutral', '#7b8794'], ['neutral-fg', 'neutral-text', '#fff'],
+  // Farbrolle in Gerätezeichnungen (Leuchten auf dunklem Gehäuse) – Standard = die Rolle selbst, ein Theme kann sie aufhellen
+  ['a1-dev', 'accent-1-device', 'var(--nv-a1)'], ['a2-dev', 'accent-2-device', 'var(--nv-a2)'], ['a3-dev', 'accent-3-device', 'var(--nv-a3)'],
+  ['a4-dev', 'accent-4-device', 'var(--nv-a4)'], ['neutral-dev', 'neutral-device', 'var(--nv-neutral)'],
   // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
   ['clock-night', 'clock-night', '#4d6bff'], ['clock-morning', 'clock-morning', '#ffb36b'], ['clock-noon', 'clock-noon', '#f4f7ff'],
   ['led-red', 'led-red', '#ff2414'], ['led-green', 'led-green', '#39ff7a'], ['led-blue', 'led-blue', '#3fa9ff'], ['led-amber', 'led-amber', '#ffb000'],
@@ -121,7 +124,8 @@ export const THEMES = {
     tint: MOKKA, shade: MOKKA, scrim: '239,230,214', knob: '#fbf6ec', cut: 'rgba(239,230,214,.9)',
     accent: '#b8935a', 'accent-fg': '#1a0f09', 'accent-ink': '#7a5a1e',
     active: '#7d4f24', 'active-fg': '#fbf6ec', warn: '#7a4f00', error: '#a3322b', 'error-fg': '#fbf6ec',
-    a1: '#4a3226', 'a1-fg': '#fbf6ec', a2: '#b8935a', 'a2-fg': '#1a0f09', a3: '#7a2f3a', 'a3-fg': '#fbf6ec',
+    a1: '#4a3226', 'a1-fg': '#fbf6ec', 'a1-dev': '#b8935a', // Espresso auf der Fläche, Gold auf den Geräten
+    a2: '#b8935a', 'a2-fg': '#1a0f09', a3: '#7a2f3a', 'a3-fg': '#fbf6ec',
     a4: '#4f5f2a', 'a4-fg': '#fbf6ec', neutral: '#62554c', 'neutral-fg': '#fbf6ec',
     'clock-night': '#6b3a2a', 'clock-morning': '#9a5a1e', 'clock-noon': '#1a0f09',
     'popup-bg': 'linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))',

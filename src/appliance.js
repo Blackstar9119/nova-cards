@@ -372,6 +372,7 @@ ${WARN}</svg>`,
 const scene = t => `<div class="scene">${SV[t]}</div>`;
 
 const DCSS = `
+.scene{--dc:var(--dg,var(--nv-a1-dev))}
 .g.dv{--dc:var(--nv-a1);--dc-fg:var(--nv-a1-fg);--fc:var(--nova-filter-color,var(--nv-a2))}
 ${frameGlow('.g.dv.glow.st-run,.g.dv.glow.st-heat')}
 .g.dv.glow.t-feeder.st-ready{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--dc) 25%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
@@ -881,7 +882,7 @@ class NovaApplianceCard extends HTMLElement {
     const rv = roleVars(c.color || TYPES[t].color);
     const anim = c.animation !== false && !cmp;
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${SCENE_CSS}${DCSS}:host([hidden]){display:none}</style>
-<div class="g dv t-${t}${c.window === false ? ' nowin' : ''}${cmp ? ' cmp' : ''}${anim ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg};--hc:${roleVars(c.heat_color || 'accent-2').c}">
+<div class="g dv t-${t}${c.window === false ? ' nowin' : ''}${cmp ? ' cmp' : ''}${anim ? ' anim' : ''}${c.glow !== false ? ' glow' : ''}" style="--dc:${rv.c};--dc-fg:${rv.fg};--dg:${rv.dev};--hc:${roleVars(c.heat_color || 'accent-2').c}">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div>${cmp ? '<span class="rmc"></span>' : ''}${c.power ? '<div class="hb pw" title="Ein/Aus"><ha-icon icon="mdi:power"></ha-icon></div>' : ''}</div>
 ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="w-${t}">${scene(t)}</div><div class="inf"><div class="pg"></div><div class="ph" hidden></div><div class="bar" hidden><i></i></div><div class="tm"><span class="rm"></span><span class="en"></span></div></div></div>
 <div class="ctls"></div>${c.start_at === 'home_connect' && c.start ? SA : ''}${['select', 'input_select'].includes(dom(c.start)) && !c.start_option ? PICK : ''}<div class="acts"></div>`}<div class="als"></div></div>`;
