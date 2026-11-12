@@ -8,7 +8,7 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 ### Hinzugefügt
 - Nova Gerät Card: neuer Gerätetyp Trockner (`device_type: dryer`) mit eigener Zeichnung (Bullauge mit Wäsche, warme Luft, Kondensbehälter, Flusensieb) und Hinweis-Animationen `condensate` und `lint`.
 - Theme Nova Velvet: cremiges Beige, Espresso-Schrift, Gold, Cognac und Espresso als Akzente (keine Blautöne), weiche warme Schatten statt Glow, Kontraste nach WCAG AA.
-- Theme Nova Midnight im Stil des Apple Dark Mode: Karten `#1c1c1e`, Kacheln `#2c2c2e`, feine Linien, kein Glow und kein Blur (schnell auf dem Echo Show), gedämpfte Akzente. Aktive und primäre Knöpfe aller Karten als getöntes Glas wie der Start-Knopf der Timer Card, Schrift darauf hell. Kontraste nach WCAG AA.
+- Theme Nova Midnight im Stil des Apple Dark Mode: Karten `#1c1c1e`, Kacheln `#2c2c2e`, feine Linien, kein Glow und kein Blur (schnell auf dem Echo Show), gedämpfte Akzente. Rahmen von Bereich und Pop-up schwarz (`--nova-area-background`), Karten darin grau. Aktive und primäre Knöpfe aller Karten als getöntes Glas wie der Start-Knopf der Timer Card, Schrift darauf hell. Kontraste nach WCAG AA.
 - Gemeinsamer Knopf-Stil über Tokens (`--nova-button-fill`, `-fill-text`, `-edge`, `-tint-text`); in Nova Blau unverändert. Glows in Gerätezeichnungen folgen jetzt `--nova-glow`.
 - Theme Nova Hell: helles Glas, dunkle Schiefer-Schrift, weiche Schatten statt Glow, Kontraste nach WCAG AA. Gerätezeichnungen bleiben dunkel.
 - Nova Themes Schalter (`custom:nova-theme-card`): wählt das Theme für alle Nova Cards auf allen Geräten, als Chip, Button oder Dropdown.

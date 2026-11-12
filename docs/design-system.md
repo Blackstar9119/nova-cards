@@ -89,6 +89,7 @@ Gegenstandsfarben in Zeichnungen (Wasser, Kaffee, Futter, Wäsche) hängen nicht
 
 | Token | Kurzform | Wert | Wofür |
 | --- | --- | --- | --- |
+| `--nova-area-background` | `--nv-area-bg` | `var(--nv-bg)` | Rahmen der Bereich Card |
 | `--nova-popup-background` | `--nv-popup-bg` | `linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))` | Fläche der Pop-up Card |
 | `--nova-popup-base-color` | `--nv-popup-base` | `rgba(22,27,42,.88)` | Grundton hinter Kacheln im Pop-up |
 | `--nova-popup-header-color` | `--nv-popup-head` | `rgba(60,72,100,.85)` | Kopfzeile von Pop-up und Navi-Pop-up |
@@ -271,7 +272,8 @@ kein Blur (schnell auf dem Echo Show). Aktive und primäre Knöpfe sind getönte
 
 | Token | Wert | Hinweis |
 | --- | --- | --- |
-| `bg` / `popup-bg` / `popup-base` / `navi-popup-bg` | `#1c1c1e` | Karten und Pop-ups |
+| `bg` / `popup-base` / `navi-popup-bg` | `#1c1c1e` | Karten |
+| `area-bg` / `popup-bg` | `#000` | Rahmen von Bereich und Pop-up: schwarz wie die Seite, die Karten darin grau |
 | `chip` / `box` / `popup-head` | `#2c2c2e` | Kacheln, Chips, Eingabefelder |
 | `border` / `box-border` | Weiß 6 % | feine Trennlinien |
 | `blur` / `sat` | `0px` / `100%` | kein backdrop-filter |

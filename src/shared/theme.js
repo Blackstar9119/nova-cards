@@ -40,6 +40,7 @@ export const TOKENS = [
   ['clock-night', 'clock-night', '#4d6bff'], ['clock-morning', 'clock-morning', '#ffb36b'], ['clock-noon', 'clock-noon', '#f4f7ff'],
   ['led-red', 'led-red', '#ff2414'], ['led-green', 'led-green', '#39ff7a'], ['led-blue', 'led-blue', '#3fa9ff'], ['led-amber', 'led-amber', '#ffb000'],
   // Pop-up
+  ['area-bg', 'area-background', 'var(--nv-bg)'], // Rahmen der Bereich Card (Midnight: schwarz, Karten darin grau)
   ['popup-bg', 'popup-background', 'linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))'],
   ['popup-base', 'popup-base-color', 'rgba(22,27,42,.88)'],
   ['popup-head', 'popup-header-color', 'rgba(60,72,100,.85)'],
@@ -121,7 +122,7 @@ export const THEMES = {
     a1: '#6b8db5', 'a1-fg': '#121214', a2: '#b08d57', 'a2-fg': '#121214', a3: '#ad805c', 'a3-fg': '#121214',
     a4: '#5f9a72', 'a4-fg': '#121214', neutral: '#8a929c', 'neutral-fg': '#121214',
     'clock-night': '#5a6fb8', 'clock-morning': '#c98a4e', 'clock-noon': '#c7ccd6',
-    'popup-bg': '#1c1c1e', 'popup-base': '#1c1c1e', 'popup-head': '#2c2c2e', 'popup-backdrop': 'rgba(0,0,0,.72)', 'navi-popup-bg': '#1c1c1e',
+    'area-bg': '#000', 'popup-bg': '#000', 'popup-base': '#1c1c1e', 'popup-head': '#2c2c2e', 'popup-backdrop': 'rgba(0,0,0,.72)', 'navi-popup-bg': '#1c1c1e',
     shadow: '0 0 0 transparent', edge: 'inset 0 1px 0 rgba(255,255,255,.05)', 'shadow-popup': '0 0 0 1px rgba(255,255,255,.08)',
     glow: '0%', ring: '70%', blur: '0px', sat: '100%', 'sat-2': '100%',
     fill: '22%', 'fill-ink': '0%', 'tint-ink': '0%', 'fill-edge': 'inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.1)',
