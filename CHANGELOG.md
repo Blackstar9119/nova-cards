@@ -40,6 +40,9 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 - Chips: Nachkommastellen (`decimals`) im Editor, Einheit wie in HA (21,9 °C, 62 %).
 
 ### Behoben
+- Nova Timer Card: ab einer Stunde zeigt das Zifferblatt nur noch Std:Min (z. B. „2:02“) statt „2:02:30“ – die Zeit lief über den Ring.
+- Nova Timer Card: „+1 Min“ über die eingestellte Dauer des Timer-Helfers hinaus startet den Timer direkt mit Rest + 1 Minute neu
+  (pausiert bleibt pausiert) und zeigt keine Fehlermeldung „kann nicht über seine Dauer hinaus geändert werden“ mehr.
 - Einkauf und Notiz Card: In der Nova Swipe Card lässt sich auf der Liste wieder seitlich wischen
   (`overscroll-behavior` nur noch senkrecht, vorher blockierte es auch die Wischgeste zur nächsten Seite).
 - Nova Uhr Card: Inhalt auf breiten Karten (ab 420 px) vertikal zentriert statt oben; Radiowecker ohne PM-Punkt bei 24 Stunden.
