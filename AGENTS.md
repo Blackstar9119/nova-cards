@@ -116,6 +116,11 @@ hacs.json             HACS-Metadaten
   (auch nicht in Branch-Namen; Branches heißen `feature/...`).
 - **Commits immer als Blackstar9119 mit 209100092+Blackstar9119@users.noreply.github.com, nie mit privater Mail.**
 - **Pushen und PRs immer über `git` und `gh`** (`git push`, `gh pr create`), nie über den Browser.
+- **Dashboards bauen oder prüfen:** immer alle Entitäten aller Domains durchgehen (`camera`, `media_player`, `remote`, `button`,
+  `timer`, `climate`, `vacuum`, `sensor`, `binary_sensor`, `switch`, `select`, `todo`, `calendar`, `weather`, `image` usw.) und mit
+  allen Nova-Karten abgleichen – nicht nur das, was der Nutzer aufzählt. Fehlt einem Gerät eine passende Nova-Karte oder zeigt
+  eine Karte auf eine Entität, die es nicht (mehr) gibt, das dem Nutzer ungefragt sagen. Doppelte Entitäten (z. B. dasselbe Gerät
+  über zwei Integrationen) benennen und nachfragen, welche gilt.
 
 ## Stil der Zeichnungen
 
