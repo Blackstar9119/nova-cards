@@ -6,11 +6,287 @@
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
+  // src/shared/theme.js
+  var TOKENS = [
+    // Flächen und Text
+    ["bg", "background", "linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62))"],
+    ["border", "border-color", "rgba(255,255,255,.14)"],
+    ["fg", "text-color", "#fff"],
+    ["chip", "chip-color", "rgba(255,255,255,.13)"],
+    ["box", "box-background", "rgba(255,255,255,.09)"],
+    ["box-border", "box-border-color", "rgba(255,255,255,.1)"],
+    // Farb-Grundtöne als R,G,B – verwendet als rgba(var(--nv-tint),.12): Deckkraft steht an der Stelle, der Ton kommt vom Theme
+    ["tint", "tint", "255,255,255"],
+    // Aufheller der Oberfläche: Linien, Schienen, Flächen (helle Themes: dunkle Tinte)
+    ["shade", "shade", "0,0,0"],
+    // Schattenfarbe der Oberfläche
+    ["scrim", "scrim", "10,14,24"],
+    // Abdunklung über Bildern (Kamera, Media)
+    ["hi", "device-light", "255,255,255"],
+    // Licht in Zeichnungen (Kanten, Glanz) – kippt in keinem Theme
+    ["lo", "device-dark", "0,0,0"],
+    // Schatten in Zeichnungen
+    ["knob", "knob-color", "#fff"],
+    // Griff von Regler und Schalter
+    ["stage", "stage-color", "#000"],
+    // Fläche hinter Vollbild-Video
+    ["cut", "cutout-color", "rgba(20,24,38,.6)"],
+    // Rand um Icons, die auf einer Farbfläche sitzen (Müllkalender)
+    // Akzente und Farbrollen
+    ["accent", "accent-color", "#f5b83d"],
+    ["accent-fg", "accent-text-color", "#3a2a00"],
+    ["accent-ink", "accent-ink-color", "#f5b83d"],
+    // Akzent als Schrift- oder Icon-Farbe direkt auf der Fläche (helle Themes: dunkler)
+    ["active", "active-color", "#3d8bf5"],
+    ["active-fg", "active-text-color", "#fff"],
+    ["warn", "warning-color", "#7cc4ff"],
+    ["error", "error-color", "#ff6b6b"],
+    ["error-fg", "error-text-color", "#fff"],
+    ["a1", "accent-1", "#3d8bf5"],
+    ["a1-fg", "accent-1-text", "#fff"],
+    ["a2", "accent-2", "#f5b83d"],
+    ["a2-fg", "accent-2-text", "#3a2a00"],
+    ["a3", "accent-3", "#b5794a"],
+    ["a3-fg", "accent-3-text", "#fff"],
+    ["a4", "accent-4", "#4caf6a"],
+    ["a4-fg", "accent-4-text", "#fff"],
+    ["neutral", "neutral", "#7b8794"],
+    ["neutral-fg", "neutral-text", "#fff"],
+    // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
+    ["clock-night", "clock-night", "#4d6bff"],
+    ["clock-morning", "clock-morning", "#ffb36b"],
+    ["clock-noon", "clock-noon", "#f4f7ff"],
+    ["led-red", "led-red", "#ff2414"],
+    ["led-green", "led-green", "#39ff7a"],
+    ["led-blue", "led-blue", "#3fa9ff"],
+    ["led-amber", "led-amber", "#ffb000"],
+    // Pop-up
+    ["popup-bg", "popup-background", "linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))"],
+    ["popup-base", "popup-base-color", "rgba(22,27,42,.88)"],
+    ["popup-head", "popup-header-color", "rgba(60,72,100,.85)"],
+    ["popup-backdrop", "popup-backdrop", "rgba(8,12,22,.5)"],
+    ["navi-popup-bg", "navi-popup-background", "linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9))"],
+    // Radien
+    ["radius", "radius", "24px"],
+    ["popup-r", "popup-radius", "28px"],
+    ["r-lg", "radius-lg", "20px"],
+    ["r-md", "radius-md", "16px"],
+    ["r-sm", "radius-sm", "12px"],
+    ["r-xs", "radius-xs", "4px"],
+    ["r-pill", "radius-pill", "999px"],
+    // Schatten, Glow, Ringe
+    ["shadow", "shadow-card", "0 10px 30px rgba(0,0,0,.25)"],
+    ["edge", "edge", "inset 0 1px 0 rgba(255,255,255,.12)"],
+    ["shadow-popup", "shadow-popup", "0 20px 60px rgba(0,0,0,.45)"],
+    ["shadow-knob", "shadow-knob", "0 1px 4px rgba(0,0,0,.4)"],
+    ["focus", "focus-ring", "0 0 0 2px var(--nv-active)"],
+    ["glow", "glow", "100%"],
+    // Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus
+    ["ring", "ring", "100%"],
+    // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
+    ["text-shadow", "text-shadow", "100%"],
+    // Stärke der Schrift-Schatten über Bildern (Raumname, Media-Titel)
+    // Blur
+    ["blur", "blur", "20px"],
+    ["blur-xs", "blur-xs", "8px"],
+    ["blur-sm", "blur-sm", "10px"],
+    ["blur-lg", "blur-lg", "16px"],
+    ["sat", "saturate", "150%"],
+    ["sat-2", "saturate-strong", "160%"],
+    // Schrift
+    ["font", "font", "var(--ha-font-family-body,Roboto,sans-serif)"],
+    ["fs-1", "font-size-1", "10.5px"],
+    ["fs-2", "font-size-2", "11px"],
+    ["fs-3", "font-size-3", "11.5px"],
+    ["fs-4", "font-size-4", "12px"],
+    ["fs-5", "font-size-5", "12.5px"],
+    ["fs-6", "font-size-6", "13px"],
+    ["fs-7", "font-size-7", "13.5px"],
+    ["fs-8", "font-size-8", "14px"],
+    ["fs-9", "font-size-9", "15px"],
+    ["fs-10", "font-size-10", "16px"],
+    ["fd-1", "font-display-1", "24px"],
+    ["fd-2", "font-display-2", "28px"],
+    ["fd-3", "font-display-3", "32px"],
+    ["fd-4", "font-display-4", "40px"],
+    ["fd-5", "font-display-5", "48px"],
+    ["fw-light", "font-weight-light", "300"],
+    ["fw-medium", "font-weight-medium", "500"],
+    ["fw-bold", "font-weight-bold", "600"],
+    ["fw-heavy", "font-weight-heavy", "700"],
+    ["caps", "tracking-caps", ".05em"],
+    ["icon-sm", "icon-sm", "16px"],
+    ["icon-md", "icon-md", "18px"],
+    ["icon-lg", "icon-lg", "20px"],
+    ["icon-xl", "icon-xl", "24px"],
+    // Abstände
+    ["s1", "space-1", "2px"],
+    ["s2", "space-2", "4px"],
+    ["s3", "space-3", "6px"],
+    ["s4", "space-4", "8px"],
+    ["s5", "space-5", "10px"],
+    ["s6", "space-6", "12px"],
+    ["s7", "space-7", "14px"],
+    ["s8", "space-8", "16px"],
+    ["pad", "card-padding", "14px 16px"],
+    // Zeiten (nur Übergänge der Oberfläche – die Choreografie der Zeichnungen bleibt in der jeweiligen Szene)
+    ["d1", "dur-1", ".15s"],
+    ["d2", "dur-2", ".2s"],
+    ["d3", "dur-3", ".25s"],
+    ["d4", "dur-4", ".3s"],
+    ["d5", "dur-5", ".4s"],
+    ["d6", "dur-6", ".6s"],
+    ["d7", "dur-7", "1s"],
+    ["ease", "ease", "cubic-bezier(.2,.8,.2,1)"],
+    ["ease-soft", "ease-soft", "cubic-bezier(.3,.7,.3,1)"],
+    ["press", "press-scale", ".92"],
+    ["sweep", "sweep-dur", ".9s"]
+  ];
+  var INK = "20,28,45";
+  var THEMES = {
+    blau: { name: "Nova Blau", vars: {} },
+    hell: { name: "Nova Hell", vars: {
+      bg: "linear-gradient(160deg,rgba(236,238,242,.94),rgba(225,228,233,.94))",
+      border: `rgba(${INK},.1)`,
+      fg: "#0e121a",
+      chip: `rgba(${INK},.07)`,
+      box: `rgba(${INK},.04)`,
+      "box-border": `rgba(${INK},.08)`,
+      tint: INK,
+      shade: INK,
+      scrim: "236,238,242",
+      knob: "#fff",
+      cut: "rgba(236,238,242,.9)",
+      accent: "#f0b02e",
+      "accent-fg": "#3a2a00",
+      "accent-ink": "#8a5a00",
+      active: "#1a66cc",
+      "active-fg": "#fff",
+      warn: "#0f65b8",
+      error: "#c62f2f",
+      "error-fg": "#fff",
+      a1: "#1a66cc",
+      a2: "#f0b02e",
+      "a2-fg": "#3a2a00",
+      a3: "#9a5f33",
+      a4: "#2a7a46",
+      neutral: "#5b6673",
+      "clock-night": "#2f4fd6",
+      "clock-morning": "#c4621a",
+      "clock-noon": "#0e121a",
+      "popup-bg": "linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))",
+      "popup-base": "rgba(236,239,243,.97)",
+      "popup-head": "rgba(226,230,236,.97)",
+      "popup-backdrop": "rgba(30,38,55,.28)",
+      "navi-popup-bg": "linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))",
+      shadow: `0 1px 2px rgba(${INK},.06),0 6px 18px rgba(${INK},.08)`,
+      edge: "inset 0 1px 0 rgba(255,255,255,.7)",
+      "shadow-popup": `0 20px 60px rgba(${INK},.2)`,
+      "shadow-knob": `0 1px 4px rgba(${INK},.3)`,
+      glow: "0%",
+      "text-shadow": "0%",
+      blur: "12px",
+      sat: "120%",
+      "sat-2": "120%"
+    }, navi: { border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: "14px", warn: "#8a5a00" } }
+  };
+  var THEME_KEYS = Object.keys(THEMES);
+  var NAVI = { border: "rgba(255,255,255,.16)", chip: "rgba(255,255,255,.1)", blur: "22px", warn: "#f5b83d" };
+  var block = (sel2, over) => `${sel2}{${TOKENS.filter(([k]) => !over || k in over).map(([k, pub, v]) => `--nv-${k}:var(--nova-${pub},${over?.[k] ?? v})`).join(";")}}`;
+  var themed = (navi) => Object.entries(THEMES).filter(([, t]) => Object.keys(t.vars).length).map(([k, t]) => block(`:host([nova-theme=${k}])`, navi ? { ...t.vars, ...t.navi } : t.vars)).join("");
+  var NOVA_VARS = block(":host") + themed(false);
+  var NAVI_VARS = block(":host", { ...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI }) + themed(true);
+
+  // src/shared/theme-store.js
+  var STORE_ENTITY = "input_select.nova_theme";
+  var ID = "nova_theme";
+  var NAME = "Nova Theme";
+  var ICON = "mdi:palette-outline";
+  var options = () => THEME_KEYS.map((k) => THEMES[k].name);
+  var keyOf = (v) => THEME_KEYS.find((k) => THEMES[k].name === v || k === v);
+  var storeIds = () => [STORE_ENTITY];
+  var readTheme = (h) => keyOf(h?.states?.[STORE_ENTITY]?.state);
+  var hasStore = (h) => !!h?.states?.[STORE_ENTITY];
+  var canSetup = (h) => !!h?.user?.is_admin;
+  var fail = (code, msg) => Object.assign(new Error(msg), { code });
+  async function setup(h) {
+    if (!canSetup(h)) throw fail("admin", "Das Theme kann erst ein Administrator einrichten.");
+    const items = await h.callWS({ type: "input_select/list" }).catch(() => []);
+    const it = items.find((i) => i.id === ID);
+    if (!it) await h.callWS({ type: "input_select/create", name: NAME, icon: ICON, options: options() });
+    else await h.callWS({
+      type: "input_select/update",
+      input_select_id: ID,
+      name: it.name || NAME,
+      icon: it.icon || ICON,
+      options: [.../* @__PURE__ */ new Set([...it.options || [], ...options()])]
+    });
+  }
+  async function setTheme(h, key) {
+    const name = THEMES[key]?.name;
+    if (!name) throw fail("failed", `Unbekanntes Theme: ${key}`);
+    const st = h.states[STORE_ENTITY];
+    if (!st || !st.attributes.options?.includes(name)) await setup(h);
+    try {
+      await h.callService("input_select", "select_option", { option: name }, { entity_id: STORE_ENTITY });
+    } catch (e) {
+      throw fail("failed", e?.message || "Theme konnte nicht gespeichert werden.");
+    }
+  }
+
+  // src/shared/theme-apply.js
+  var valid = (v) => {
+    const k = String(v || "").trim().toLowerCase();
+    return k && k !== "global" && THEMES[k] ? k : void 0;
+  };
+  function apply(el2) {
+    const own = valid(el2._nvTheme);
+    if (own) el2.style.setProperty("--nova-theme", own);
+    else el2.style.removeProperty("--nova-theme");
+    const t = own || el2._nvInh || readTheme(el2._nvHass) || "blau";
+    if (t === "blau") {
+      if (el2.hasAttribute("nova-theme")) el2.removeAttribute("nova-theme");
+    } else if (el2.getAttribute("nova-theme") !== t) el2.setAttribute("nova-theme", t);
+  }
+  function inherit(el2) {
+    cancelAnimationFrame(el2._nvRaf);
+    el2._nvRaf = requestAnimationFrame(() => {
+      const p = el2.parentElement || el2.getRootNode?.().host;
+      el2._nvInh = p && el2.isConnected ? valid(getComputedStyle(p).getPropertyValue("--nova-theme")) : void 0;
+      apply(el2);
+    });
+  }
+  function themeable(cls) {
+    const p = cls.prototype;
+    if (p._nvThemed) return;
+    p._nvThemed = true;
+    const sc = p.setConfig;
+    if (sc) p.setConfig = function(c) {
+      this._nvTheme = c?.theme;
+      apply(this);
+      return sc.call(this, c);
+    };
+    const hd = Object.getOwnPropertyDescriptor(p, "hass");
+    if (hd?.set) Object.defineProperty(p, "hass", { ...hd, set(h) {
+      const o = this._nvHass;
+      this._nvHass = h;
+      if (o?.states?.[STORE_ENTITY] !== h?.states?.[STORE_ENTITY]) apply(this);
+      if (o && (o.themes !== h?.themes || o.selectedTheme !== h?.selectedTheme)) inherit(this);
+      hd.set.call(this, h);
+    } });
+    const cc = p.connectedCallback;
+    p.connectedCallback = function() {
+      inherit(this);
+      return cc?.call(this);
+    };
+  }
+
   // src/shared/define.js
   var DEV = false;
   var tag = (name) => `${DEV ? "nova-dev-" : "nova-"}${name}`;
   var define = (name, cls, meta) => {
     const t = tag(name);
+    if (meta) themeable(cls);
     if (!customElements.get(t)) customElements.define(t, cls);
     if (meta) {
       window.customCards = window.customCards || [];
@@ -248,143 +524,6 @@
     });
   }
 
-  // src/shared/theme.js
-  var TOKENS = [
-    // Flächen und Text
-    ["bg", "background", "linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62))"],
-    ["border", "border-color", "rgba(255,255,255,.14)"],
-    ["fg", "text-color", "#fff"],
-    ["chip", "chip-color", "rgba(255,255,255,.13)"],
-    ["box", "box-background", "rgba(255,255,255,.09)"],
-    ["box-border", "box-border-color", "rgba(255,255,255,.1)"],
-    // Farb-Grundtöne als R,G,B – verwendet als rgba(var(--nv-tint),.12): Deckkraft steht an der Stelle, der Ton kommt vom Theme
-    ["tint", "tint", "255,255,255"],
-    // Aufheller der Oberfläche: Linien, Schienen, Flächen (helle Themes: dunkle Tinte)
-    ["shade", "shade", "0,0,0"],
-    // Schattenfarbe der Oberfläche
-    ["scrim", "scrim", "10,14,24"],
-    // Abdunklung über Bildern (Kamera, Media)
-    ["hi", "device-light", "255,255,255"],
-    // Licht in Zeichnungen (Kanten, Glanz) – kippt in keinem Theme
-    ["lo", "device-dark", "0,0,0"],
-    // Schatten in Zeichnungen
-    ["knob", "knob-color", "#fff"],
-    // Griff von Regler und Schalter
-    ["stage", "stage-color", "#000"],
-    // Fläche hinter Vollbild-Video
-    ["cut", "cutout-color", "rgba(20,24,38,.6)"],
-    // Rand um Icons, die auf einer Farbfläche sitzen (Müllkalender)
-    // Akzente und Farbrollen
-    ["accent", "accent-color", "#f5b83d"],
-    ["accent-fg", "accent-text-color", "#3a2a00"],
-    ["active", "active-color", "#3d8bf5"],
-    ["active-fg", "active-text-color", "#fff"],
-    ["warn", "warning-color", "#7cc4ff"],
-    ["error", "error-color", "#ff6b6b"],
-    ["error-fg", "error-text-color", "#fff"],
-    ["a1", "accent-1", "#3d8bf5"],
-    ["a1-fg", "accent-1-text", "#fff"],
-    ["a2", "accent-2", "#f5b83d"],
-    ["a2-fg", "accent-2-text", "#3a2a00"],
-    ["a3", "accent-3", "#b5794a"],
-    ["a3-fg", "accent-3-text", "#fff"],
-    ["a4", "accent-4", "#4caf6a"],
-    ["a4-fg", "accent-4-text", "#fff"],
-    ["neutral", "neutral", "#7b8794"],
-    ["neutral-fg", "neutral-text", "#fff"],
-    // Uhr: Leuchtziffern nach Tageszeit, Radiowecker-Farben
-    ["clock-night", "clock-night", "#4d6bff"],
-    ["clock-morning", "clock-morning", "#ffb36b"],
-    ["clock-noon", "clock-noon", "#f4f7ff"],
-    ["led-red", "led-red", "#ff2414"],
-    ["led-green", "led-green", "#39ff7a"],
-    ["led-blue", "led-blue", "#3fa9ff"],
-    ["led-amber", "led-amber", "#ffb000"],
-    // Pop-up
-    ["popup-bg", "popup-background", "linear-gradient(160deg,rgba(92,110,148,.78),rgba(22,27,42,.88))"],
-    ["popup-base", "popup-base-color", "rgba(22,27,42,.88)"],
-    ["popup-head", "popup-header-color", "rgba(60,72,100,.85)"],
-    ["popup-backdrop", "popup-backdrop", "rgba(8,12,22,.5)"],
-    ["navi-popup-bg", "navi-popup-background", "linear-gradient(160deg,rgba(92,110,148,.8),rgba(22,27,42,.9))"],
-    // Radien
-    ["radius", "radius", "24px"],
-    ["popup-r", "popup-radius", "28px"],
-    ["r-lg", "radius-lg", "20px"],
-    ["r-md", "radius-md", "16px"],
-    ["r-sm", "radius-sm", "12px"],
-    ["r-xs", "radius-xs", "4px"],
-    ["r-pill", "radius-pill", "999px"],
-    // Schatten, Glow, Ringe
-    ["shadow", "shadow-card", "0 10px 30px rgba(0,0,0,.25)"],
-    ["edge", "edge", "inset 0 1px 0 rgba(255,255,255,.12)"],
-    ["shadow-popup", "shadow-popup", "0 20px 60px rgba(0,0,0,.45)"],
-    ["shadow-knob", "shadow-knob", "0 1px 4px rgba(0,0,0,.4)"],
-    ["focus", "focus-ring", "0 0 0 2px var(--nv-active)"],
-    ["glow", "glow", "100%"],
-    // Stärke aller Glows: 100 % = wie gezeichnet, 0 % = aus
-    ["ring", "ring", "100%"],
-    // Stärke der Zustandsringe (Warnung, Fehler, aktiv)
-    // Blur
-    ["blur", "blur", "20px"],
-    ["blur-xs", "blur-xs", "8px"],
-    ["blur-sm", "blur-sm", "10px"],
-    ["blur-lg", "blur-lg", "16px"],
-    ["sat", "saturate", "150%"],
-    ["sat-2", "saturate-strong", "160%"],
-    // Schrift
-    ["font", "font", "var(--ha-font-family-body,Roboto,sans-serif)"],
-    ["fs-1", "font-size-1", "10.5px"],
-    ["fs-2", "font-size-2", "11px"],
-    ["fs-3", "font-size-3", "11.5px"],
-    ["fs-4", "font-size-4", "12px"],
-    ["fs-5", "font-size-5", "12.5px"],
-    ["fs-6", "font-size-6", "13px"],
-    ["fs-7", "font-size-7", "13.5px"],
-    ["fs-8", "font-size-8", "14px"],
-    ["fs-9", "font-size-9", "15px"],
-    ["fs-10", "font-size-10", "16px"],
-    ["fd-1", "font-display-1", "24px"],
-    ["fd-2", "font-display-2", "28px"],
-    ["fd-3", "font-display-3", "32px"],
-    ["fd-4", "font-display-4", "40px"],
-    ["fd-5", "font-display-5", "48px"],
-    ["fw-light", "font-weight-light", "300"],
-    ["fw-medium", "font-weight-medium", "500"],
-    ["fw-bold", "font-weight-bold", "600"],
-    ["fw-heavy", "font-weight-heavy", "700"],
-    ["caps", "tracking-caps", ".05em"],
-    ["icon-sm", "icon-sm", "16px"],
-    ["icon-md", "icon-md", "18px"],
-    ["icon-lg", "icon-lg", "20px"],
-    ["icon-xl", "icon-xl", "24px"],
-    // Abstände
-    ["s1", "space-1", "2px"],
-    ["s2", "space-2", "4px"],
-    ["s3", "space-3", "6px"],
-    ["s4", "space-4", "8px"],
-    ["s5", "space-5", "10px"],
-    ["s6", "space-6", "12px"],
-    ["s7", "space-7", "14px"],
-    ["s8", "space-8", "16px"],
-    ["pad", "card-padding", "14px 16px"],
-    // Zeiten (nur Übergänge der Oberfläche – die Choreografie der Zeichnungen bleibt in der jeweiligen Szene)
-    ["d1", "dur-1", ".15s"],
-    ["d2", "dur-2", ".2s"],
-    ["d3", "dur-3", ".25s"],
-    ["d4", "dur-4", ".3s"],
-    ["d5", "dur-5", ".4s"],
-    ["d6", "dur-6", ".6s"],
-    ["d7", "dur-7", "1s"],
-    ["ease", "ease", "cubic-bezier(.2,.8,.2,1)"],
-    ["ease-soft", "ease-soft", "cubic-bezier(.3,.7,.3,1)"],
-    ["press", "press-scale", ".92"],
-    ["sweep", "sweep-dur", ".9s"]
-  ];
-  var NAVI = { border: "rgba(255,255,255,.16)", chip: "rgba(255,255,255,.1)", blur: "22px", warn: "#f5b83d" };
-  var block = (sel2, over) => `${sel2}{${TOKENS.filter(([k]) => !over || k in over).map(([k, pub, v]) => `--nv-${k}:var(--nova-${pub},${over?.[k] ?? v})`).join(";")}}`;
-  var NOVA_VARS = block(":host");
-  var NAVI_VARS = block(":host", { ...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI });
-
   // src/shared/styles.js
   var ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4" };
   var roleVars = (r) => {
@@ -493,10 +632,10 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
 
   // src/shared/lifecycle.js
   var GLOBAL = ["entities", "devices", "areas", "floors", "localize", "locale", "language", "themes", "selectedTheme", "config", "user", "connected"];
-  var ID = /^[a-z_]+\.[a-z0-9_]+$/;
+  var ID2 = /^[a-z_]+\.[a-z0-9_]+$/;
   var entityIds = (o, out = /* @__PURE__ */ new Set()) => {
     if (typeof o === "string") {
-      if (ID.test(o)) out.add(o);
+      if (ID2.test(o)) out.add(o);
     } else if (o && typeof o === "object") Object.values(o).forEach((v) => entityIds(v, out));
     return out;
   };
@@ -542,7 +681,51 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
     };
   };
 
+  // src/shared/editor-schema.js
+  var g2 = (...schema) => ({ type: "grid", name: "", schema });
+  var T = { text: {} };
+  var I = { icon: {} };
+  var A = { ui_action: {} };
+  var ENT = { name: "entity", required: true, selector: { entity: {} } };
+  var TITLE = { name: "title", selector: T };
+  var COLS = { name: "columns", selector: { number: { min: 1, max: 4, mode: "slider" } } };
+  var NUM = (n) => ({ name: n, selector: { number: { mode: "box", step: "any" } } });
+  var sel = (n, opts) => ({ name: n, selector: { select: { mode: "dropdown", options: opts.map(([value, label]) => ({ value, label })) } } });
+  var ROLE = (n) => sel(n, [["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]);
+  var NAMEICON = g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } });
+  var BASE_LABELS = {
+    name: "Name",
+    icon: "Icon",
+    status: "Status-Entität",
+    active: "Aktiv-Entität",
+    progress: "Fortschritt (%)",
+    tap_action: "Aktion beim Antippen",
+    hold_action: "Aktion bei langem Drücken",
+    button_icon: "Touch-Button oben: Icon",
+    button_action: "Touch-Button oben: Aktion",
+    title: "Überschrift (optional)",
+    layout: "Darstellung",
+    columns: "Spalten",
+    entity: "Entität",
+    unit: "Einheit",
+    decimals: "Nachkommastellen",
+    min: "Min",
+    max: "Max",
+    step: "Schritt",
+    format: "Anzeige",
+    confirm: "Sicherheitsabfrage",
+    state: "Warnen bei Zustand",
+    state_not: "Warnen außer bei",
+    above: "Warnen über",
+    below: "Warnen unter",
+    message: "Meldung",
+    level: "Stufe",
+    glow: "Kartenrahmen einfärben"
+  };
+
   // src/shared/editor-base.js
+  var THEME_FIELD = [sel("theme", [["global", "Global (wie alle Nova Cards)"], ...THEME_KEYS.map((k) => [k, THEMES[k].name])])];
+  var COMMON_LABELS = { theme: "Theme dieser Karte" };
   var preload;
   var loadForm = () => customElements.get("ha-form") ? Promise.resolve() : preload ||= (async () => {
     try {
@@ -603,6 +786,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
       this._keep = /* @__PURE__ */ new Map();
       try {
         this._build();
+        this._themeSection();
       } finally {
         this._pool = null;
       }
@@ -632,7 +816,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
       const f3 = this._reuse(`form:${JSON.stringify(schema)}`, () => {
         const f4 = document.createElement("ha-form");
         f4.schema = schema;
-        f4.computeLabel = (s) => this.constructor.labels?.[s.name] ?? s.name;
+        f4.computeLabel = (s) => this.constructor.labels?.[s.name] ?? COMMON_LABELS[s.name] ?? s.name;
         f4.computeHelper = (s) => this.constructor.helpers?.[s.name];
         f4.addEventListener("value-changed", (e) => {
           e.stopPropagation();
@@ -651,6 +835,20 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
       f3._cb = cb;
       this._forms.push(f3);
       return f3;
+    }
+    // Bereich „Theme“ am Ende jedes Karteneditors (abschalten mit static noTheme)
+    _themeSection() {
+      const w = !this.constructor.noTheme && this.shadowRoot.querySelector(".wrap");
+      if (!w) return;
+      w.append(this._section("theme", "mdi:palette-outline", "Theme", (b) => {
+        b.append(this._hint("Global folgt dem Theme, das du mit dem Nova Themes Schalter für alle Geräte wählst. Ein festes Theme gilt nur für diese Karte (und Karten darin)."));
+        b.append(this._form(THEME_FIELD, { theme: this._config.theme || "global" }, (v) => {
+          const c = { ...this._config };
+          if (!v.theme || v.theme === "global") delete c.theme;
+          else c.theme = v.theme;
+          this._emit(c);
+        }));
+      }));
     }
     // Runder Icon-Button (Verschieben, Löschen …)
     _btn(icon2, title, fn, dis) {
@@ -1124,10 +1322,10 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
 .room.click{cursor:pointer}
 .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.45;filter:grayscale(.7);transition:opacity .5s,filter .5s}
 .bgi{position:absolute;right:-14px;top:4px;--mdc-icon-size:130px;opacity:.07;transition:opacity .5s,color .5s}
-.room.lit .bgi{opacity:.18;color:var(--nv-accent)}.room.lit .bg{opacity:.85;filter:none}
+.room.lit .bgi{opacity:.18;color:var(--nv-accent-ink)}.room.lit .bg{opacity:.85;filter:none}
 .room.lit{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-accent) 40%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
 .room.warn{box-shadow:var(--nv-shadow),0 0 0 1px color-mix(in srgb,color-mix(in srgb,var(--nv-warn) 60%,transparent) var(--nv-ring),transparent),var(--nv-edge)}
-.head{display:flex;align-items:center;gap:var(--nv-s1);position:relative;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9);text-shadow:0 1px 4px rgba(var(--nv-shade),.4)}
+.head{display:flex;align-items:center;gap:var(--nv-s1);position:relative;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9);text-shadow:0 1px 4px color-mix(in srgb,rgba(var(--nv-shade),.4) var(--nv-text-shadow),transparent)}
 .head .chev{--mdc-icon-size:var(--nv-icon-md);opacity:.6}
 .t{margin-left:auto;font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-6);opacity:.85;display:flex;gap:var(--nv-s4);align-items:center}
 .w{display:none;--mdc-icon-size:var(--nv-icon-sm);color:var(--nv-warn)}.room.warn .w{display:flex}
@@ -1392,7 +1590,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
 .stp span{min-width:52px;text-align:center}
 .sb{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .sb:active{transform:scale(.9)}.sb ha-icon{--mdc-icon-size:var(--nv-icon-md)}
-.stp.pend span{color:var(--nv-accent)}
+.stp.pend span{color:var(--nv-accent-ink)}
 .spk{width:100%;height:56px;display:block}
 .pills{display:flex;flex-wrap:wrap;gap:7px}
 .pill{padding:7px var(--nv-s6);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-5);cursor:pointer;display:inline-flex;gap:var(--nv-s3);align-items:center;border:1px solid rgba(var(--nv-tint),.08);white-space:nowrap;-webkit-tap-highlight-color:transparent}
@@ -2032,48 +2230,6 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
     }
   };
   define(TAG3, NovaLightCard, { name: "Nova Licht Card", description: "Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.", documentationURL: docUrl("nova-licht-card") });
-
-  // src/shared/editor-schema.js
-  var g2 = (...schema) => ({ type: "grid", name: "", schema });
-  var T = { text: {} };
-  var I = { icon: {} };
-  var A = { ui_action: {} };
-  var ENT = { name: "entity", required: true, selector: { entity: {} } };
-  var TITLE = { name: "title", selector: T };
-  var COLS = { name: "columns", selector: { number: { min: 1, max: 4, mode: "slider" } } };
-  var NUM = (n) => ({ name: n, selector: { number: { mode: "box", step: "any" } } });
-  var sel = (n, opts) => ({ name: n, selector: { select: { mode: "dropdown", options: opts.map(([value, label]) => ({ value, label })) } } });
-  var ROLE = (n) => sel(n, [["neutral", "Neutral"], ["accent-1", "Akzent 1"], ["accent-2", "Akzent 2"], ["accent-3", "Akzent 3"], ["accent-4", "Akzent 4"]]);
-  var NAMEICON = g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } });
-  var BASE_LABELS = {
-    name: "Name",
-    icon: "Icon",
-    status: "Status-Entität",
-    active: "Aktiv-Entität",
-    progress: "Fortschritt (%)",
-    tap_action: "Aktion beim Antippen",
-    hold_action: "Aktion bei langem Drücken",
-    button_icon: "Touch-Button oben: Icon",
-    button_action: "Touch-Button oben: Aktion",
-    title: "Überschrift (optional)",
-    layout: "Darstellung",
-    columns: "Spalten",
-    entity: "Entität",
-    unit: "Einheit",
-    decimals: "Nachkommastellen",
-    min: "Min",
-    max: "Max",
-    step: "Schritt",
-    format: "Anzeige",
-    confirm: "Sicherheitsabfrage",
-    state: "Warnen bei Zustand",
-    state_not: "Warnen außer bei",
-    above: "Warnen über",
-    below: "Warnen unter",
-    message: "Meldung",
-    level: "Stufe",
-    glow: "Kartenrahmen einfärben"
-  };
 
   // src/navi.js
   var countOn = (h, group, ex) => (h.states[group]?.attributes.entity_id || []).filter((id) => !(ex || []).includes(id) && isOn(h.states[id])).length;
@@ -2931,6 +3087,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       const p = document.createElement(tag("navi-popup"));
       p.onclose = () => this._close();
       p.cfg = { title: it.popup_title || it.label || "", icon: it.icon, cards: it.cards };
+      if (this.hasAttribute("nova-theme")) p.setAttribute("nova-theme", this.getAttribute("nova-theme"));
       p.hass = this._h;
       this.shadowRoot.appendChild(p);
       this._opened(i, p);
@@ -4400,7 +4557,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
 .now{display:flex;align-items:center;gap:var(--nv-s6);min-width:0}
 .thumb{width:72px;height:72px;flex:none;border-radius:14px;background:var(--nv-chip) center/cover no-repeat;box-shadow:0 4px 14px rgba(var(--nv-shade),.35);display:none}
 .mp.cover.has-art .thumb{display:block}
-.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(var(--nv-shade),.35)}
+.tt{flex:1;min-width:0}.tt b,.tt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px color-mix(in srgb,rgba(var(--nv-shade),.35) var(--nv-text-shadow),transparent)}
 .tt b{font-size:17px;font-weight:var(--nv-fw-bold)}.tt span{font-size:var(--nv-fs-6);opacity:.75;margin-top:var(--nv-s1)}
 .bar{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-2);opacity:.85;font-variant-numeric:tabular-nums}
 .bar .tr{flex:1;height:6px;border-radius:3px;background:rgba(var(--nv-tint),.14);overflow:hidden}
@@ -4912,7 +5069,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
 .bat{display:inline-flex;align-items:center;gap:var(--nv-s2);padding:var(--nv-s3) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-5);font-weight:var(--nv-fw-bold);flex:none}
 .bat ha-icon{--mdc-icon-size:17px}
 .bat.low{background:color-mix(in srgb,var(--nv-error) 30%,transparent)}
-.bat.chg ha-icon{color:var(--nv-accent)}
+.bat.chg ha-icon{color:var(--nv-accent-ink)}
 .vc>.main{display:contents}.vc .hd{order:0}.vc .mpnl{order:1}.vc>.main>:not(.hd){order:2}
 .mpnl{display:flex;flex-direction:column;gap:var(--nv-s4);min-width:0}
 .mpnl .bt{margin:0}
@@ -12700,7 +12857,7 @@ filter:drop-shadow(0 0 2.5px var(--dc));transition:stroke-dashoffset var(--nv-d7
     return Math.round(n * (u[0] === "s" ? 1 : u[0] === "h" ? 3600 : 60));
   }).filter((n) => n > 0).slice(0, 8);
   var presetLbl = (s) => s % 3600 === 0 ? `${s / 3600} h` : s % 60 === 0 ? `${s / 60}` : s > 60 ? fmtLeft(s) : `${s} s`;
-  var ICON = { play: "mdi:play", pause: "mdi:pause", stop: "mdi:stop", plus: "mdi:plus", tune: "mdi:timer-edit-outline", ok: "mdi:check", again: "mdi:restart" };
+  var ICON2 = { play: "mdi:play", pause: "mdi:pause", stop: "mdi:stop", plus: "mdi:plus", tune: "mdi:timer-edit-outline", ok: "mdi:check", again: "mdi:restart" };
   var TCSS = `${DIAL_CSS}
 .g.tm{--dc:var(--tc);--dcfg:var(--tcfg);padding:var(--nv-s7);gap:var(--nv-s5);transition:box-shadow var(--nv-d5)}
 ${frameGlow(".g.tm.glow.st-active")}
@@ -12712,7 +12869,7 @@ ${frameGlow(".g.tm.glow.st-active")}
 .bd{display:flex;flex-direction:column;gap:var(--nv-s6);align-items:stretch;flex:1;min-height:0}
 .dial{position:relative;align-self:center;width:100%;max-width:var(--nova-timer-size,240px);aspect-ratio:1;flex:none}
 .dial svg{display:block;width:100%;height:100%;overflow:visible}
-.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%}
+.ro{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:60%;color:rgb(var(--nv-hi))}
 .ro .t{display:block;font-size:clamp(22px,calc(var(--dw,240px) * .16),46px);font-weight:var(--nv-fw-bold);letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.05;white-space:nowrap}
 .ro .s{display:block;font-size:clamp(11px,calc(var(--dw,240px) * .05),14px);opacity:.65;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .st-idle .scene{opacity:.55}.st-idle .ro .t{opacity:.7}
@@ -13064,21 +13221,21 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
       const B = (cls, icon2, label, fn) => b.push([cls, icon2, label, fn]);
       if (!this._S()) {
       } else if (al) {
-        B("pri", ICON.ok, "OK", () => this._dismiss());
-        if (v?.total) B("", ICON.again, "Nochmal", () => {
+        B("pri", ICON2.ok, "OK", () => this._dismiss());
+        if (v?.total) B("", ICON2.again, "Nochmal", () => {
           this._dismiss();
           this._start(v.total);
         });
       } else if (st === "active") {
-        B("", ICON.pause, "Pause", () => this._svc("pause"));
-        if (c.show_add !== false) B("", ICON.plus, "+1 Min", () => this._add(60));
-        B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
+        B("", ICON2.pause, "Pause", () => this._svc("pause"));
+        if (c.show_add !== false) B("", ICON2.plus, "+1 Min", () => this._add(60));
+        B("", ICON2.stop, "Abbrechen", () => this._svc("cancel"));
       } else if (st === "paused") {
-        B("pri", ICON.play, "Weiter", () => this._svc("start"));
-        B("", ICON.stop, "Abbrechen", () => this._svc("cancel"));
+        B("pri", ICON2.play, "Weiter", () => this._svc("start"));
+        B("", ICON2.stop, "Abbrechen", () => this._svc("cancel"));
       } else {
-        B("pri", ICON.play, "Start", () => this._start(v?.total || 0));
-        if (c.show_custom !== false) B(this._showCust ? "sel" : "", ICON.tune, "Eigene Zeit", () => {
+        B("pri", ICON2.play, "Start", () => this._start(v?.total || 0));
+        if (c.show_custom !== false) B(this._showCust ? "sel" : "", ICON2.tune, "Eigene Zeit", () => {
           this._showCust = !this._showCust;
           if (this._showCust) this._custFrom(v?.total || 0);
           this._key = null;
@@ -15043,6 +15200,130 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07)}
   __publicField(NovaNoteCardEditor, "helpers", HELPERS9);
   __publicField(NovaNoteCardEditor, "openSections", ["general"]);
   define("note-card-editor", NovaNoteCardEditor);
+
+  // src/theme-switch.js
+  var DEF7 = { display: "button", name: "Theme", icon: "mdi:palette-outline" };
+  var MSG2 = { admin: "Einmal als Admin umschalten", failed: "Hat nicht geklappt" };
+  var CSS2 = `${NOVA_VARS}${PANEL_CSS}${NOVA_CHIPS_CSS}
+:host([data-display=chip]){height:auto}:host([data-display=chip])::before{display:none}
+.g.ts{flex-direction:row;align-items:center;justify-content:center}
+.ts .hd{flex:1;min-width:0}
+.ts .go{flex:none;opacity:.6}
+.ts select{flex:none;max-width:55%;height:36px;box-sizing:border-box;padding:0 var(--nv-s7) 0 var(--nv-s6);border-radius:var(--nv-r-pill);
+border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-fg);font:inherit;font-size:var(--nv-fs-6);cursor:pointer;outline:none}
+.ts select:focus-visible{box-shadow:var(--nv-focus)}
+.ts option{background:var(--nv-popup-base);color:var(--nv-fg)}
+.ts.busy .ic,.nchip.busy{opacity:.6}
+.nchips{display:flex}`;
+  var NovaThemeSwitchCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("theme-card-editor"));
+    }
+    static getStubConfig() {
+      return { display: "button" };
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      if (c.display && !["chip", "button", "dropdown"].includes(c.display)) throw new Error("display: chip, button oder dropdown");
+      this._c = { ...DEF7, ...c };
+      this.dataset.display = this._c.display;
+      this._built = false;
+      if (this._h) this._render();
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (this._c && (!this._built || hassChanged(old, h, storeIds()))) this._render();
+    }
+    getCardSize() {
+      return 1;
+    }
+    getGridOptions() {
+      return this._c?.display === "chip" ? { columns: 3, rows: "auto" } : { columns: 6, rows: 1, min_rows: 1 };
+    }
+    _cur() {
+      return this._want || readTheme(this._h) || "blau";
+    }
+    _next() {
+      const i = THEME_KEYS.indexOf(this._cur());
+      return THEME_KEYS[(i + 1) % THEME_KEYS.length];
+    }
+    async _pick(k) {
+      if (!k || k === this._cur() || this._busy) return;
+      this._want = k;
+      this._busy = true;
+      this._msg = "";
+      this._render();
+      try {
+        await setTheme(this._h, k);
+      } catch (e) {
+        this._msg = MSG2[e.code] || MSG2.failed;
+        console.warn("[nova-cards] Theme", e);
+        clearTimeout(this._mt);
+        this._mt = setTimeout(() => {
+          this._msg = "";
+          this._render();
+        }, 5e3);
+      }
+      this._want = null;
+      this._busy = false;
+      this._render();
+    }
+    disconnectedCallback() {
+      clearTimeout(this._mt);
+    }
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" }), c = this._c;
+      const nm = `<div class="nm"><b>${esc(c.name)}</b><small></small></div>`;
+      r.innerHTML = `<style>${CSS2}</style>${c.display === "chip" ? `<div class="nchips"><div class="nchip"><span class="ci"></span><span class="cn">${esc(c.name)}</span><span class="cv"></span></div></div>` : `<div class="g ts"><div class="hd"><div class="ic"></div>${nm}</div>${c.display === "dropdown" ? `<select aria-label="${esc(c.name)}">${THEME_KEYS.map((k) => `<option value="${k}">${esc(THEMES[k].name)}</option>`).join("")}</select>` : '<ha-icon class="go" icon="mdi:chevron-right"></ha-icon>'}</div>`}`;
+      const hit = r.querySelector(c.display === "chip" ? ".nchip" : ".g");
+      if (c.display === "dropdown") r.querySelector("select").addEventListener("change", (e) => this._pick(e.target.value));
+      else press(hit, { tap: () => this._pick(this._next()) });
+      if (c.display === "chip") hit.setAttribute("aria-label", `${c.name}: weiterschalten`);
+      setIcon(r.querySelector(c.display === "chip" ? ".ci" : ".ic"), c.icon);
+      this._built = true;
+    }
+    _render() {
+      if (!this._built) this._build();
+      const r = this.shadowRoot, k = this._cur(), name = THEMES[k].name;
+      const msg = this._msg || (this._h && !hasStore(this._h) && !canSetup(this._h) ? MSG2.admin : "");
+      const txt = msg || name;
+      const v = r.querySelector(".cv, small");
+      if (v.textContent !== txt) v.textContent = txt;
+      const s = r.querySelector("select");
+      if (s && s.value !== k) s.value = k;
+      r.querySelector(".nchip, .g").classList.toggle("busy", !!this._busy);
+    }
+  };
+  define("theme-card", NovaThemeSwitchCard, { name: "Nova Themes Schalter", description: "Wählt das Nova-Theme (Blau, Hell …) für alle Nova Cards auf allen Geräten – als Chip, Button oder Dropdown. Richtet sich beim ersten Umschalten selbst ein.", documentationURL: docUrl("nova-themes-schalter") });
+  var S_GEN7 = [
+    sel("display", [["button", "Button (Antippen schaltet weiter)"], ["chip", "Chip (wie die Chips Card)"], ["dropdown", "Dropdown (Liste)"]]),
+    g2({ name: "name", selector: T }, { name: "icon", selector: I })
+  ];
+  var LABELS10 = { display: "Darstellung", name: "Beschriftung", icon: "Icon" };
+  var NovaThemeSwitchCardEditor = class extends NovaEditorBase {
+    // der Schalter zeigt immer das globale Theme
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      r.querySelector(".wrap").append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
+          b.append(this._hint("Gilt für alle Nova Cards auf allen Geräten. Beim ersten Umschalten legt die Karte dafür selbst einen Helfer „Nova Theme“ an – das darf in Home Assistant nur ein Administrator, danach können alle umschalten."));
+          b.append(this._form(S_GEN7, { ...DEF7, ...this._config }, (v) => {
+            const c = merge(this._config, names(S_GEN7), v);
+            Object.entries(DEF7).forEach(([k, x]) => {
+              if (c[k] === x) delete c[k];
+            });
+            this._emit(c);
+          }));
+        })
+      );
+    }
+  };
+  __publicField(NovaThemeSwitchCardEditor, "labels", LABELS10);
+  __publicField(NovaThemeSwitchCardEditor, "openSections", ["general"]);
+  __publicField(NovaThemeSwitchCardEditor, "noTheme", true);
+  define("theme-card-editor", NovaThemeSwitchCardEditor);
 
   // src/index.js
   console.info(`%c NOVA-CARDS %c v${"0.12.0"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
