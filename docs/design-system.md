@@ -51,6 +51,8 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 | `--nova-active-color` | `--nv-active` | `#3d8bf5` | aktiv/gewählt (Schalter, Pillen) |
 | `--nova-active-text-color` | `--nv-active-fg` | `#fff` | Schrift auf Aktiv |
 | `--nova-warning-color` | `--nv-warn` | `#7cc4ff` | Warnung (Navi: Gelb) |
+| `--nova-text-accent-color` | `--nv-text-accent` | `var(--nv-accent-ink)` | Textfarbe „Akzent“ im formatierten Text (Notiz, Einkauf) |
+| `--nova-text-warning-color` | `--nv-text-warn` | `var(--nv-error)` | Textfarbe „Wichtig“ im formatierten Text (Notiz, Einkauf) |
 | `--nova-error-color` | `--nv-error` | `#ff6b6b` | Fehler |
 | `--nova-error-text-color` | `--nv-error-fg` | `#fff` | Schrift auf Fehler |
 | `--nova-accent-1` | `--nv-a1` | `#3d8bf5` | Farbrolle Akzent 1 |

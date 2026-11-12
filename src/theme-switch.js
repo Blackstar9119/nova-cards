@@ -7,7 +7,7 @@ import {esc, setIcon} from './shared/utils.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {sel, g2, T, I} from './shared/editor-schema.js';
 import {THEMES, THEME_KEYS} from './shared/theme.js';
-import {readTheme, setTheme, hasStore, canSetup, storeIds} from './shared/theme-store.js';
+import {readTheme, setTheme, hasStore, canSetup, storeIds, THEME_EVENT} from './shared/theme-store.js';
 
 /* ---------- Nova Themes Schalter ----------
    Wählt das Nova-Theme für alle Geräte (Speicher: theme-store.js). Darstellung: Chip (wie die Chips Card),
@@ -58,7 +58,8 @@ class NovaThemeSwitchCard extends HTMLElement {
     }
     this._want = null; this._busy = false; this._render();
   }
-  disconnectedCallback() { clearTimeout(this._mt); }
+  connectedCallback() { window.addEventListener(THEME_EVENT, this._onStore ||= () => this._c && this._h && this._render()); }
+  disconnectedCallback() { clearTimeout(this._mt); window.removeEventListener(THEME_EVENT, this._onStore); }
 
   _build() {
     const r = this.shadowRoot || this.attachShadow({mode: 'open'}), c = this._c;

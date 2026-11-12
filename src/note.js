@@ -1,137 +1,123 @@
 import {define, docUrl, tag} from './shared/define.js';
 import {setIcon} from './shared/utils.js';
+import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, FIELD_CSS, SECTION_EDITOR_CSS} from './shared/styles.js';
 import {hassChanged} from './shared/lifecycle.js';
-import {TodoFeed} from './shared/todo.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
-import {g2, T, I, BASE_LABELS} from './shared/editor-schema.js';
-import {PRINT_CSS, PRINT_DEF, printButton, printPaint, paintBtn, runPrint, runFeedback, stopFeedback, printSchema, PRINT_LABELS, PRINT_HELPERS} from './shared/print-button.js';
+import {g2, T, I, sel, BASE_LABELS} from './shared/editor-schema.js';
+import {PRINT_CSS, PRINT_DEF, printButton, paintBtn, runPrint, stopFeedback, printSchema, PRINT_LABELS, PRINT_HELPERS} from './shared/print-button.js';
+import {watch, notes as api, storeHint} from './shared/nova-store.js';
+import {RICH_CSS, richEditor, toPlain, firstLine, isEmpty} from './shared/rich-text.js';
+import {VIEW_CSS, roundBtn, armButton, setBtnIcon, ago} from './shared/stack-view.js';
 
 /* ---------- Nova Notiz Card ---------- */
-// Mehrzeiliges Notizfeld; der Druck-Knopf gibt den Text an ein Skript weiter (Feld print_field, Standard „text“).
-// Der Entwurf bleibt im Browser gespeichert, bis er gedruckt, gespeichert oder geleert wird.
-// Mit notes_entity (todo-Liste) gibt es „Speichern“ und darunter die gespeicherten Notizen (neueste oben), je mit
-// Drucken und Löschen. Eine Notiz = Eintrag mit Kurzfassung (erste Zeile) als summary und ganzem Text als description.
+// Mehrere Notizen mit Titel und formatiertem Text. Liste (angepinnte oben) ↔ Detail zum Schreiben; gespeichert wird
+// in der Nova-Integration (auf allen Geräten gleich), automatisch kurz nach dem Tippen. Der Druck-Knopf gibt Titel und
+// Text als Klartext an ein Skript (Feld print_field, Standard „text“), z. B. für einen Bondrucker.
 const NCSS = `
 .g.nt{gap:var(--nv-s5)}
-.fld.ta{flex:1 1 0;min-height:var(--th,180px);resize:none;border-radius:18px;padding:var(--nv-pad);line-height:1.5;
-overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:thin;white-space:pre-wrap}
-.ft{display:flex;align-items:center;justify-content:flex-end;gap:var(--nv-s4);flex:none;container-type:inline-size;width:100%}
-.ft[hidden]{display:none}
-.cnt{flex:1;min-width:0;font-size:var(--nv-fs-4);opacity:.55;white-space:nowrap;overflow:hidden}
-.ft .pb.pill{flex:0 1 auto;min-width:44px}
-.ft.wide .cnt{display:none}.ft.wide .pb.pill{flex:1 1 0}
-.cl,.nb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
-border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;outline:none;-webkit-tap-highlight-color:transparent;
-transition:opacity var(--nv-d2),transform var(--nv-d2),background-color var(--nv-d2),border-color var(--nv-d2),color var(--nv-d2)}
-.cl ha-icon{--mdc-icon-size:var(--nv-icon-lg)}
-.cl[disabled]{opacity:.35;cursor:default}
-.cl:active:not([disabled]),.nb:active{transform:scale(var(--nv-press))}
-.cl:focus-visible,.nb:focus-visible{box-shadow:var(--nv-focus)}
-@container (max-width:420px){.cnt{display:none}}
-@container (max-width:330px){.ft .pb.pill .pl{display:none}.ft .pb.pill{padding:0;flex:0 0 44px}}
-.ns{flex:1 1 0;min-height:var(--nh,180px);display:flex;flex-direction:column;gap:var(--nv-s3)}
-.ns[hidden]{display:none}
-.ns .bt{margin:var(--nv-s1) var(--nv-s1) 0}
-.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:var(--nv-s3);scrollbar-width:thin;
-margin:0 -4px;padding:0 var(--nv-s2) var(--nv-s5);-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent)}
-.nr{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s4) var(--nv-s4) var(--nv-s4) var(--nv-s7);border-radius:var(--nv-r-md);flex:none;min-width:0;
-background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07)}
+.hd .rb{margin-left:auto}
+.nl{display:flex;flex-direction:column;gap:var(--nv-s3)}
+.nr{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s5) var(--nv-s6) var(--nv-s5) var(--nv-s7);border-radius:var(--nv-r-md);flex:none;min-width:0;position:relative;
+background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);transition:background-color var(--nv-d3),border-color var(--nv-d3),transform var(--nv-d2) var(--nv-ease)}
+.nr.new{animation:rb-in var(--nv-d5) var(--nv-ease) both;animation-delay:calc(var(--i,0) * 40ms)}
+.nr:active{transform:scale(.985)}
+.nr.pin{border-color:color-mix(in srgb,var(--nv-accent) 38%,transparent);background:color-mix(in srgb,var(--nv-accent) 9%,rgba(var(--nv-tint),.05))}
 .nr .tx{flex:1;min-width:0}
-.nr b{display:block;font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-8);overflow-wrap:anywhere}
-.nr small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:var(--nv-fs-4);opacity:.6;margin-top:var(--nv-s1);white-space:pre-line;overflow-wrap:anywhere}
-.nr .pb,.nr .nb{width:38px;height:38px;min-width:38px}
-.nr .pb ha-icon,.nr .nb ha-icon{--mdc-icon-size:19px}
-.nb.arm{border-color:color-mix(in srgb,var(--nv-error) 70%,transparent);background:color-mix(in srgb,var(--nv-error) 22%,transparent);color:var(--nv-error)}
-.msg{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-6);opacity:.6;padding:var(--nv-s4) var(--nv-s2)}
-.msg ha-icon{--mdc-icon-size:var(--nv-icon-md)}`;
+.nr b{display:block;font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nr .pv{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:var(--nv-fs-4);opacity:.6;margin-top:var(--nv-s1);overflow-wrap:anywhere}
+.nr time{font-size:var(--nv-fs-2);opacity:.5;white-space:nowrap;flex:none}
+.nr .pi{--mdc-icon-size:16px;color:var(--nv-accent-ink);flex:none;transform:rotate(35deg)}
+.nt.compact .nr{padding-top:var(--nv-s4);padding-bottom:var(--nv-s4)}
+.nt.compact .nr .pv{display:none}
+.more{align-self:center;border:0;background:transparent;color:inherit;font:inherit;font-size:var(--nv-fs-5);opacity:.7;padding:var(--nv-s4) var(--nv-s6);cursor:pointer;border-radius:var(--nv-r-pill);
+display:inline-flex;align-items:center;gap:var(--nv-s2);-webkit-tap-highlight-color:transparent}
+.more ha-icon{--mdc-icon-size:18px}
+.more:focus-visible{box-shadow:var(--nv-focus);outline:none}
+.ti{height:44px;border-radius:var(--nv-r-md);padding:0 var(--nv-s7);font-weight:var(--nv-fw-bold);flex:none}
+.ed{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:var(--nv-s4)}
+.ed .rtw{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:var(--nv-s4)}
+.ed .rte{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:thin;border-radius:var(--nv-r-md);padding:var(--nv-s6) var(--nv-s7);
+border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
+.ed .rte:focus{border-color:color-mix(in srgb,var(--nv-active) 75%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 22%,transparent) var(--nv-glow),transparent)}
+.bar .pb{width:44px;padding:0}
+.rb.pinb.on ha-icon{transform:rotate(35deg)}
+@media (prefers-reduced-motion:reduce){.nr.new{animation:none}}`;
 
-const NDEF = {name: 'Notiz', icon: 'mdi:note-edit-outline', placeholder: 'Notiz schreiben …', show_header: true, show_clear: true, clear_after_print: true,
-  clear_after_save: true, height: 180, notes_height: 180, print_field: 'text', ...PRINT_DEF};
-const STORE = 'nova-note:';
-const SHORT = 60, ARM = 3000;
-
-// Kurzfassung: erste nichtleere Zeile, lange Zeilen an einer Wortgrenze gekürzt
-const shortOf = txt => {
-  const line = txt.split('\n').map(s => s.trim()).find(Boolean) || '';
-  if (line.length <= SHORT) return line;
-  const cut = line.slice(0, SHORT), sp = cut.lastIndexOf(' ');
-  return `${(sp > SHORT / 2 ? cut.slice(0, sp) : cut).trimEnd()} …`;
-};
-// Ganzer Text einer gespeicherten Notiz
-const textOf = it => (it.description || it.summary || '').replace(/\s+$/, '');
+const NDEF = {name: 'Notizen', icon: 'mdi:note-multiple-outline', show_header: true, view: 'full', max_notes: 0, height: 320, print_field: 'text', ...PRINT_DEF};
+const SAVE_MS = 800;
 
 class NovaNoteCard extends HTMLElement {
   static getConfigElement() { return document.createElement(tag('note-card-editor')); }
   static getStubConfig(h) {
-    const ids = Object.keys(h.states);
-    const script = ids.find(id => /^script\..*notiz.*druck/.test(id)), notes = ids.find(id => /^todo\..*notiz/.test(id));
-    return {...(script ? {print_script: script} : {}), ...(notes ? {notes_entity: notes} : {})};
+    const script = Object.keys(h.states).find(id => /^script\..*notiz.*druck/.test(id));
+    return script ? {print_script: script} : {};
   }
   setConfig(c) {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
     this._c = {...NDEF, ...c};
-    (this._feed ||= new TodoFeed(this, () => this._render())).setEntity(this._c.notes_entity);
-    this._ids = [this._c.print_script, this._c.notes_entity].filter(Boolean);
+    this._ids = [this._c.print_script].filter(Boolean);
     if (this._e) this._apply();
-    if (this._h) this._feed.update(this._h);
   }
   set hass(h) {
     const old = this._h;
     this._h = h;
     if (!this._c) return;
     if (!this._e) this._build();
-    this._feed.update(h, old);
+    this._watch();
     if (hassChanged(old, h, this._ids)) this._render();
   }
-  getCardSize() { return this._c?.notes_entity ? 8 : 4; }
+  getCardSize() { return 6; }
   getGridOptions() { return {columns: 6, rows: 'auto', min_columns: 3}; }
-  connectedCallback() { if (this._h && this._c) this._feed.update(this._h); }
-  disconnectedCallback() { this._feed?.stop(); stopFeedback(this); clearTimeout(this._st); clearTimeout(this._armT); this._armed = null; this._save(); }
+  connectedCallback() { this._watch(); }
+  disconnectedCallback() { this._flush(); this._off?.(); this._off = null; stopFeedback(this); clearTimeout(this._st); clearTimeout(this._okT); this._del?.reset(); }
 
-  // Entwurf je Karte (Name + Skript), nur in diesem Browser
-  _key() { return `${STORE}${this._c.storage_key || `${this._c.print_script || ''}|${this._c.name || ''}`}`; }
-  _load() { try { return localStorage.getItem(this._key()) || ''; } catch { return ''; } }
-  _save() {
-    if (!this._e) return;
-    const v = this._e.ta.value;
-    try { if (v) localStorage.setItem(this._key(), v); else localStorage.removeItem(this._key()); } catch { /* ohne Speicher */ }
+  _watch() {
+    if (this._off || !this._h || !this.isConnected) return;
+    this._off = watch(this._h, 'notes', this, (d, err) => { this._data = d; this._err = err; this._onData(); });
   }
 
   _build() {
     const r = this.shadowRoot || this.attachShadow({mode: 'open'});
-    r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${NCSS}</style><div class="g nt">
+    r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${VIEW_CSS}${RICH_CSS}${NCSS}</style><div class="g nt">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
-<textarea class="fld ta" spellcheck="true"></textarea>
-<div class="ft"><span class="cnt"></span><button class="cl" type="button" title="Leeren" aria-label="Leeren"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
-<div class="ns"><div class="bt">Gespeichert</div><div class="nl"></div></div></div>`;
+<div class="stage"><div class="view main"><div class="scroll"><div class="nl"></div></div></div>
+<div class="view side"><div class="bar"></div><input class="fld ti" type="text" placeholder="Titel" maxlength="200" enterkeyhint="next" autocomplete="off"><div class="ed"></div></div></div></div>`;
     const q = s => r.querySelector(s);
-    this._e = {g: q('.g'), hd: q('.hd'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), ta: q('textarea'), ft: q('.ft'), cnt: q('.cnt'), cl: q('.cl'),
-      ns: q('.ns'), nt: q('.ns .bt'), nl: q('.nl')};
-    const e = this._e;
-    this._pstate = 'idle'; this._sstate = 'idle'; this._nstate = {};
-    e.ta.value = this._load();
-    e.ta.addEventListener('input', () => { this._render(); clearTimeout(this._st); this._st = setTimeout(() => this._save(), 400); });
-    e.ta.addEventListener('keydown', ev => {
-      ev.stopPropagation();
-      // Strg/Cmd + Enter druckt
-      if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); this._print(); }
-    });
-    e.cl.addEventListener('click', () => { e.ta.value = ''; this._save(); this._render(); e.ta.focus(); });
-    this._sb = printButton(() => this._store());
+    const e = this._e = {g: q('.g'), hd: q('.hd'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), nl: q('.nl'), bar: q('.bar'), ti: q('.ti'), ed: q('.ed')};
+    this._pstate = 'idle'; this._all = false; this._seen = new Set();
+    e.add = roundBtn('mdi:plus', 'Neue Notiz', () => this._open(null), 'plus');
+    e.hd.append(e.add);
+    // Leiste der Detailansicht: Zurück · Stand · Anpinnen · Drucken · Löschen
+    e.back = roundBtn('mdi:arrow-left', 'Zurück zur Liste', () => this._close());
+    e.state = document.createElement('div'); e.state.className = 'state sp';
+    e.pin = roundBtn('mdi:pin-outline', 'Anpinnen', () => this._togglePin(), 'pinb');
     this._pb = printButton(() => this._print());
-    e.ft.append(this._sb, this._pb);
+    this._del = armButton('mdi:delete-outline', 'Löschen', () => this._remove());
+    e.bar.append(e.back, e.state, e.pin, this._pb, this._del);
+    this._rt = richEditor({placeholder: 'Notiz schreiben …', onInput: () => this._dirty()});
+    e.ed.append(this._rt.el);
+    e.ti.addEventListener('input', () => this._dirty());
+    e.ti.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') { ev.preventDefault(); this._rt.focus(); } });
     this._apply();
   }
   _apply() {
     const c = this._c, e = this._e;
     e.hd.hidden = c.show_header === false;
-    e.ta.placeholder = c.placeholder || '';
-    e.g.style.setProperty('--th', `${Math.max(60, +c.height || NDEF.height)}px`);
-    e.g.style.setProperty('--nh', `${Math.max(60, +c.notes_height || NDEF.notes_height)}px`);
-    // Gespeicherter Entwurf zum (evtl. geänderten) Schlüssel
-    if (!e.ta.value) e.ta.value = this._load();
-    this._key2 = null;
+    e.g.classList.toggle('compact', c.view === 'compact');
+    e.g.style.setProperty('--vh', `${Math.max(160, +c.height || NDEF.height)}px`);
+    this._key = null;
+    this._render();
+  }
+
+  _list() {
+    return [...(this._data?.notes || [])].sort((a, b) => (b.pinned - a.pinned) || (b.updated - a.updated));
+  }
+  _onData() {
+    // Offene Notiz wurde auf einem anderen Gerät geändert: übernehmen, solange hier nichts Ungespeichertes steht
+    const cur = this._cur && this._data?.notes.find(n => n.id === this._cur.id);
+    if (this._cur?.id && this._data && !cur) { this._cur = null; this._e?.g.classList.remove('detail'); }
+    else if (cur && !this._pending && !this._saving && cur.updated !== this._cur.updated) { this._cur = {...cur}; this._fill(); }
     this._render();
   }
   _render() {
@@ -139,129 +125,167 @@ class NovaNoteCard extends HTMLElement {
     if (!h || !c || !e) return;
     setIcon(e.ic, c.icon);
     e.name.textContent = c.name || NDEF.name;
-    const txt = e.ta.value, n = txt.trim().length, lines = txt ? txt.split('\n').length : 0;
-    const missing = c.print_script && !h.states[c.print_script];
-    const notes = c.notes_entity && h.states[c.notes_entity];
-    const saved = this._feed.items?.filter(i => i.status !== 'completed') || [];
-    e.sub.textContent = missing ? `Skript nicht gefunden: ${c.print_script}` : n ? 'Bereit' : notes ? `${saved.length} gespeichert` : 'Leer';
-    e.cnt.textContent = n ? `${txt.length} Zeichen · ${lines} ${lines === 1 ? 'Zeile' : 'Zeilen'}` : '';
-    e.cl.hidden = c.show_clear === false;
-    e.cl.disabled = !txt;
-    const pill = c.print_style !== 'round';
-    this._pb.hidden = !c.print_script;
-    this._sb.hidden = !c.notes_entity;
-    e.ft.hidden = !c.print_script && !c.notes_entity && c.show_clear === false;
-    printPaint(this._pb, c, this._pstate, n > 0 && !missing);
-    paintBtn(this._sb, {icon: 'mdi:content-save-outline', label: 'Speichern', pill, busy: 'Speichert …', ok: 'Gespeichert', err: 'Fehler'}, this._sstate, n > 0 && !!notes);
-    e.ft.classList.toggle('wide', pill && c.show_clear === false);
-    this._renderNotes(saved, notes, missing);
-  }
-  // Gespeicherte Notizen, neueste oben (todo.add_item hängt hinten an)
-  _renderNotes(saved, notes, missing) {
-    const c = this._c, e = this._e;
-    e.ns.hidden = !c.notes_entity;
-    if (!c.notes_entity) return;
+    const list = this._list(), n = list.length;
+    e.sub.textContent = this._err ? '' : !this._data ? 'Wird geladen …' : n ? `${n} ${n === 1 ? 'Notiz' : 'Notizen'}` : 'Noch leer';
+    e.add.disabled = !this._data;
+    const max = Math.max(0, +c.max_notes || 0), cut = max && !this._all && n > max ? list.slice(0, max) : list;
     let msg = null;
-    if (!notes) msg = ['mdi:alert-circle-outline', `Liste nicht gefunden: ${c.notes_entity}`];
-    else if (this._feed.err && !this._feed.items) msg = ['mdi:alert-circle-outline', this._feed.err];
-    else if (!this._feed.items) msg = ['mdi:timer-sand', 'Wird geladen …'];
-    else if (!saved.length) msg = ['mdi:note-outline', 'Noch keine Notizen gespeichert'];
-    const rows = [...saved].reverse();
-    e.nt.textContent = rows.length ? `Gespeichert · ${rows.length}` : 'Gespeichert';
-    const key = JSON.stringify([msg, rows.map(r => [r.uid, r.summary, r.description, this._nstate[r.uid], this._armed === r.uid]), !!c.print_script, missing, c.print_icon]);
-    if (key === this._key2) return;
-    this._key2 = key;
-    if (msg) {
-      const m = document.createElement('div');
-      m.className = 'msg';
-      m.innerHTML = '<ha-icon></ha-icon><span></span>';
-      m.firstChild.setAttribute('icon', msg[0]);
-      m.lastChild.textContent = msg[1];
-      e.nl.replaceChildren(m);
-      return;
+    if (this._err) msg = storeHint(this._err, 'notes');
+    else if (!this._data) msg = ['mdi:timer-sand', 'Wird geladen …'];
+    else if (!n) msg = ['mdi:note-plus-outline', 'Noch keine Notizen – mit + legst du die erste an.'];
+    const key = JSON.stringify([msg, cut.map(x => [x.id, x.title, x.body, x.pinned, ago(x.updated)]), n, this._all, c.view]);
+    if (key !== this._key) {
+      this._key = key;
+      if (msg) {
+        const m = document.createElement('div');
+        m.className = 'msg'; m.innerHTML = '<ha-icon></ha-icon><span></span>';
+        m.firstChild.setAttribute('icon', msg[0]); m.lastChild.textContent = msg[1];
+        e.nl.replaceChildren(m);
+      } else {
+        const rows = cut.map((x, i) => this._row(x, i));
+        if (max && n > max) {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'more';
+          b.innerHTML = `<ha-icon icon="${this._all ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon><span></span>`;
+          b.lastChild.textContent = this._all ? 'Weniger anzeigen' : `${n - max} weitere anzeigen`;
+          b.addEventListener('click', () => { this._all = !this._all; this._render(); });
+          rows.push(b);
+        }
+        e.nl.replaceChildren(...rows);
+      }
     }
-    e.nl.replaceChildren(...rows.map(it => this._noteRow(it, missing)));
+    this._paintBar();
   }
-  _noteRow(it, missing) {
-    const c = this._c, el = document.createElement('div');
-    el.className = 'nr';
-    el.innerHTML = '<div class="tx"><b></b><small></small></div>';
-    el.querySelector('b').textContent = it.summary;
-    const sm = el.querySelector('small'), full = textOf(it), rest = full.startsWith(it.summary.replace(/ …$/, '')) ? full.slice(it.summary.replace(/ …$/, '').length).trim() : full;
-    sm.textContent = it.description ? rest : '';
-    sm.hidden = !sm.textContent;
-    if (c.print_script) {
-      const pb = printButton(() => this._printNote(it));
-      paintBtn(pb, {icon: c.print_icon || PRINT_DEF.print_icon, label: 'Drucken', pill: false, busy: 'Druckt …', ok: 'Gedruckt', err: 'Fehler'}, this._nstate[it.uid], !missing);
-      el.append(pb);
-    }
-    const del = document.createElement('button');
-    del.type = 'button';
-    const armed = this._armed === it.uid;
-    del.className = `nb${armed ? ' arm' : ''}`;
-    del.title = armed ? 'Nochmal tippen zum Löschen' : 'Löschen';
-    del.setAttribute('aria-label', del.title);
-    del.innerHTML = `<ha-icon icon="${armed ? 'mdi:delete-alert-outline' : 'mdi:delete-outline'}"></ha-icon>`;
-    del.addEventListener('click', ev => { ev.stopPropagation(); this._delete(it); });
-    el.append(del);
+  _row(x, i) {
+    const el = document.createElement('div');
+    // Einblenden nur für Zeilen, die neu dazukommen – nicht bei jedem Neuzeichnen
+    el.className = `nr${x.pinned ? ' pin' : ''}${this._seen.has(x.id) ? '' : ' new'}`;
+    this._seen.add(x.id);
+    el.style.setProperty('--i', Math.min(i, 8));
+    el.innerHTML = `${x.pinned ? '<ha-icon class="pi" icon="mdi:pin"></ha-icon>' : ''}<div class="tx"><b></b><div class="pv"></div></div><time></time>`;
+    const pv = toPlain(x.body).replace(/\n+/g, ' · ');
+    el.querySelector('b').textContent = x.title || firstLine(x.body) || 'Ohne Titel';
+    el.querySelector('.pv').textContent = x.title ? pv : pv.slice(firstLine(x.body).length).replace(/^[\s·•\[\]x]+/, '');
+    el.querySelector('time').textContent = ago(x.updated);
+    press(el, {tap: () => this._open(x)});
     return el;
   }
-  async _print() {
-    const c = this._c, e = this._e, txt = e.ta.value.replace(/\s+$/, '');
-    if (!txt.trim() || this._pstate === 'busy') return;
-    const ok = await runPrint(this, this._h, c.print_script, {[c.print_field || 'text']: txt}, st => { this._pstate = st; this._render(); });
-    if (ok && c.clear_after_print !== false && e.ta.value.replace(/\s+$/, '') === txt) { e.ta.value = ''; this._save(); this._render(); }
+
+  /* ----- Detail ----- */
+  _open(note) {
+    if (!this._data) return;
+    this._flush();
+    this._cur = note ? {...note} : {id: null, title: '', body: '', pinned: false, updated: 0};
+    this._fill();
+    this._e.g.classList.add('detail');
+    this._del.reset();
+    this._paintBar();
+    // Neue Notiz: gleich losschreiben (nach dem Hineingleiten, sonst springt Safari)
+    if (!note) setTimeout(() => this._e.ti.focus({preventScroll: true}), 320);
   }
-  _printNote(it) {
-    const c = this._c, txt = textOf(it);
-    if (!txt || this._nstate[it.uid] === 'busy') return;
-    runPrint(this, this._h, c.print_script, {[c.print_field || 'text']: txt}, st => {
-      if (st === 'idle') delete this._nstate[it.uid]; else this._nstate[it.uid] = st;
-      this._render();
-    }, it.uid);
+  _fill() {
+    const e = this._e, x = this._cur;
+    if (e.ti.value !== x.title) e.ti.value = x.title || '';
+    this._rt.set(x.body || '');
   }
-  async _store() {
-    const c = this._c, e = this._e, h = this._h, txt = e.ta.value.replace(/\s+$/, '').replace(/^\s*\n/, '');
-    if (!txt.trim() || !c.notes_entity || this._sstate === 'busy') return;
-    const summary = shortOf(txt), data = {item: summary, ...(txt !== summary ? {description: txt} : {})};
-    const ok = await runFeedback(this, 'save', () => this._feed.call(h, 'add_item', data), st => { this._sstate = st; this._render(); });
-    if (ok && c.clear_after_save !== false && e.ta.value.replace(/\s+$/, '').replace(/^\s*\n/, '') === txt) { e.ta.value = ''; this._save(); this._render(); }
-  }
-  // Löschen in zwei Schritten: erstes Antippen färbt den Knopf rot, zweites (innerhalb von 3 s) löscht
-  _delete(it) {
-    clearTimeout(this._armT);
-    if (this._armed !== it.uid) {
-      this._armed = it.uid;
-      this._armT = setTimeout(() => { this._armed = null; this._render(); }, ARM);
-      this._render();
-      return;
-    }
-    this._armed = null;
-    this._feed.call(this._h, 'remove_item', {item: [it.uid]}).catch(err => console.warn('[nova-cards] Notiz: Löschen fehlgeschlagen', err));
+  _close() {
+    this._flush();
+    this._e.g.classList.remove('detail');
+    this._cur = null;
     this._render();
   }
+  _dirty() {
+    this._pending = true;
+    clearTimeout(this._st);
+    this._st = setTimeout(() => this._flush(), SAVE_MS);
+    this._paintBar();
+  }
+  // Ausstehende Änderung jetzt speichern. Leere neue Notizen werden gar nicht erst angelegt.
+  _flush(extra) {
+    clearTimeout(this._st);
+    const x = this._cur, h = this._h;
+    if (!x || !h || (!this._pending && !extra)) return;
+    this._pending = false;
+    const title = this._e.ti.value.trim(), body = this._rt.get();
+    if (!x.id && !title && isEmpty(body)) { this._paintBar(); return; }
+    Object.assign(x, {title, body}, extra);
+    const send = {...(x.id ? {id: x.id} : {}), title, body, pinned: !!x.pinned};
+    this._saving = (this._saving || 0) + 1;
+    // Neue Notiz: weitere Änderungen warten, bis die Kennung da ist (sonst entstehen zwei Notizen)
+    const run = this._chain = (this._chain || Promise.resolve()).then(() => api.save(h, {...send, ...(x.id ? {id: x.id} : {})})).then(n => {
+      x.id = n.id; x.updated = n.updated;
+      this._saved = 'ok';
+      clearTimeout(this._okT); this._okT = setTimeout(() => { this._saved = null; this._paintBar(); }, 2500);
+    }).catch(err => {
+      console.warn('[nova-cards] Notiz: Speichern fehlgeschlagen', err);
+      this._saved = 'err';
+    }).finally(() => { this._saving--; if (this._chain === run) this._chain = null; this._paintBar(); });
+    this._paintBar();
+  }
+  _paintBar() {
+    const e = this._e, x = this._cur, c = this._c, h = this._h;
+    if (!e || !x) return;
+    const st = this._pending || this._saving ? ['mdi:cloud-sync-outline', 'Speichert …', '']
+      : this._saved === 'err' ? ['mdi:alert-circle-outline', 'Nicht gespeichert', 'err']
+        : this._saved === 'ok' ? ['mdi:check-circle-outline', 'Gespeichert', 'ok']
+          : x.updated ? ['mdi:clock-outline', `Geändert ${ago(x.updated)}`, ''] : ['mdi:pencil-outline', 'Neue Notiz', ''];
+    const k = st.join('|');
+    if (e.state._k !== k) {
+      e.state._k = k;
+      e.state.className = `state sp ${st[2]}`;
+      e.state.innerHTML = `<ha-icon icon="${st[0]}"></ha-icon><span></span>`;
+      e.state.lastChild.textContent = st[1];
+    }
+    e.pin.classList.toggle('on', !!x.pinned);
+    setBtnIcon(e.pin, x.pinned ? 'mdi:pin' : 'mdi:pin-outline');
+    e.pin.title = x.pinned ? 'Nicht mehr anpinnen' : 'Anpinnen';
+    const has = !!this._e.ti.value.trim() || !isEmpty(this._rt.get());
+    this._pb.hidden = !c.print_script;
+    paintBtn(this._pb, {icon: c.print_icon || PRINT_DEF.print_icon, label: c.print_label || PRINT_DEF.print_label, pill: false, busy: 'Druckt …', ok: 'Gedruckt', err: 'Fehler'},
+      this._pstate, has && !!h.states[c.print_script]);
+    this._del.hidden = !x.id;
+  }
+  _togglePin() {
+    const x = this._cur;
+    if (!x) return;
+    this._flush({pinned: !x.pinned});
+  }
+  _remove() {
+    const x = this._cur, h = this._h;
+    if (!x?.id) return;
+    clearTimeout(this._st); this._pending = false;
+    this._cur = null;
+    this._e.g.classList.remove('detail');
+    api.remove(h, x.id).catch(err => console.warn('[nova-cards] Notiz: Löschen fehlgeschlagen', err));
+    this._render();
+  }
+  // Titel + Text als Klartext ans Druck-Skript
+  _print() {
+    const c = this._c;
+    if (this._pstate === 'busy') return;
+    const title = this._e.ti.value.trim(), body = toPlain(this._rt.get()), txt = [title, body].filter(Boolean).join('\n\n');
+    if (!txt) return;
+    runPrint(this, this._h, c.print_script, {[c.print_field || 'text']: txt}, st => { this._pstate = st; this._paintBar(); });
+  }
 }
-define('note-card', NovaNoteCard, {name: 'Nova Notiz Card', description: 'Mehrzeiliges Notizfeld mit Druck-Knopf (z. B. für einen Bondrucker); Notizen lassen sich in einer todo-Liste speichern und später wieder drucken oder löschen.', documentationURL: docUrl('nova-notiz-card')});
+define('note-card', NovaNoteCard, {name: 'Nova Notiz Card', description: 'Notizen mit Titel und formatiertem Text (Fett, Listen, Checklisten): Liste und Detailansicht, anpinnen, auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf z. B. für einen Bondrucker.', documentationURL: docUrl('nova-notiz-card')});
 
 /* ---------- Editor Notiz Card ---------- */
-const H = n => ({name: n, selector: {number: {min: 60, max: 1000, step: 10, mode: 'box', unit_of_measurement: 'px'}}});
 const GEN = [
   g2({name: 'name', selector: T}, {name: 'icon', selector: I}),
   {name: 'show_header', selector: {boolean: {}}},
-  {name: 'placeholder', selector: T},
-  g2({name: 'show_clear', selector: {boolean: {}}}, H('height')),
 ];
-const NOTES = [
-  {name: 'notes_entity', selector: {entity: {domain: 'todo'}}},
-  g2(H('notes_height'), {name: 'clear_after_save', selector: {boolean: {}}}),
+const VIEW = [
+  sel('view', [['full', 'Voll (Titel, Vorschau, Datum)'], ['compact', 'Kompakt (nur Titel und Datum)']]),
+  g2({name: 'max_notes', selector: {number: {min: 0, max: 50, step: 1, mode: 'box'}}},
+    {name: 'height', selector: {number: {min: 160, max: 1000, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
 ];
-const PRINT = printSchema([g2({name: 'print_field', selector: T}, {name: 'clear_after_print', selector: {boolean: {}}})]);
-const LABELS = {...BASE_LABELS, ...PRINT_LABELS, name: 'Name', show_header: 'Kopfzeile anzeigen', placeholder: 'Platzhalter im Textfeld',
-  show_clear: 'Knopf „Leeren“', height: 'Mindesthöhe des Textfelds', print_field: 'Feldname im Skript', clear_after_print: 'Nach dem Druck leeren',
-  notes_entity: 'Liste für gespeicherte Notizen (todo)', notes_height: 'Mindesthöhe der Liste', clear_after_save: 'Nach dem Speichern leeren'};
-const HELPERS = {...PRINT_HELPERS, print_field: 'Unter diesem Namen bekommt das Skript den Text (Standard: text).',
-  height: 'Im Raster füllt das Textfeld den Platz aus.',
-  notes_entity: 'Leer = ohne Speichern. Z. B. eine lokale To-do-Liste „Notizen“. Erste Zeile = Titel, ganzer Text in der Beschreibung.'};
+const PRINT = printSchema([{name: 'print_field', selector: T}]).filter(f => f.name !== 'print_style');
+const LABELS = {...BASE_LABELS, ...PRINT_LABELS, name: 'Titel der Karte', show_header: 'Kopfzeile anzeigen', view: 'Ansicht der Liste',
+  max_notes: 'Max. sichtbare Notizen', height: 'Mindesthöhe', print_field: 'Feldname im Skript'};
+const HELPERS = {...PRINT_HELPERS, max_notes: '0 = alle. Weitere Notizen lassen sich in der Karte aufklappen.',
+  height: 'Im Raster füllt die Karte den Platz aus.', print_field: 'Unter diesem Namen bekommt das Skript Titel und Text als Klartext (Standard: text).',
+  print_script: 'Leer = kein Druck-Knopf. Der Knopf sitzt in der geöffneten Notiz.'};
 
 class NovaNoteCardEditor extends NovaEditorBase {
   static labels = LABELS;
@@ -275,7 +299,7 @@ class NovaNoteCardEditor extends NovaEditorBase {
     const form = schema => this._form(schema, data, v => this._emit(strip(merge(this._config, names(schema), v))));
     w.append(
       this._section('general', 'mdi:cog-outline', 'Allgemein', b => b.append(form(GEN))),
-      this._section('notes', 'mdi:note-multiple-outline', 'Gespeicherte Notizen', b => b.append(form(NOTES))),
+      this._section('view', 'mdi:view-list-outline', 'Ansicht', b => b.append(form(VIEW))),
       this._section('print', 'mdi:printer-pos', 'Drucken', b => b.append(form(PRINT))));
   }
 }

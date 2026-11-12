@@ -2,7 +2,11 @@
    oder von einer umgebenden Nova-Karte mit eigenem Theme) → globaler Speicher (theme-store.js) → Nova Blau.
    Das Ergebnis steht als Attribut nova-theme am Element (Blau = kein Attribut); die Werte setzt theme.js per CSS. */
 import {THEMES} from './theme.js';
-import {readTheme, STORE_ENTITY} from './theme-store.js';
+import {readTheme, STORE_ENTITY, THEME_EVENT} from './theme-store.js';
+
+// Eingehängte Karten – wechselt das Theme in der Nova-Integration, bekommen alle das neue
+const cards = new Set();
+window.addEventListener(THEME_EVENT, () => cards.forEach(apply));
 
 const valid = v => { const k = String(v || '').trim().toLowerCase(); return k && k !== 'global' && THEMES[k] ? k : undefined; };
 
@@ -41,5 +45,7 @@ export function themeable(cls) {
     hd.set.call(this, h);
   }});
   const cc = p.connectedCallback;
-  p.connectedCallback = function () { inherit(this); return cc?.call(this); };
+  p.connectedCallback = function () { cards.add(this); inherit(this); return cc?.call(this); };
+  const dc = p.disconnectedCallback;
+  p.disconnectedCallback = function () { cards.delete(this); return dc?.call(this); };
 }

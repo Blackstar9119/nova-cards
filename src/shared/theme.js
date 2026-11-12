@@ -26,6 +26,8 @@ export const TOKENS = [
   ['accent-ink', 'accent-ink-color', '#f5b83d'], // Akzent als Schrift- oder Icon-Farbe direkt auf der Fläche (helle Themes: dunkler)
   ['active', 'active-color', '#3d8bf5'], ['active-fg', 'active-text-color', '#fff'],
   ['warn', 'warning-color', '#7cc4ff'], ['error', 'error-color', '#ff6b6b'], ['error-fg', 'error-text-color', '#fff'],
+  // Textfarben im formatierten Text (Notiz, Einkauf): Akzent und Wichtig – folgen den Theme-Farben
+  ['text-accent', 'text-accent-color', 'var(--nv-accent-ink)'], ['text-warn', 'text-warning-color', 'var(--nv-error)'],
   ['a1', 'accent-1', '#3d8bf5'], ['a1-fg', 'accent-1-text', '#fff'],
   ['a2', 'accent-2', '#f5b83d'], ['a2-fg', 'accent-2-text', '#3a2a00'],
   ['a3', 'accent-3', '#b5794a'], ['a3-fg', 'accent-3-text', '#fff'],
