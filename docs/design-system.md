@@ -205,6 +205,7 @@ Gerätezeichnungen (`hi`/`lo`, `PAL` in `scene.js`) bleiben in allen Themes dunk
 | --- | --- | --- |
 | Nova Blau | `blau` | Standard: blaues Glas, weiße Schrift, Glow |
 | Nova Hell | `hell` | helles Glas, Schiefer-Schrift, ruhige Schatten statt Glow |
+| Nova Midnight | `midnight` | reines Schwarz ohne Glas (OLED, Nachtbetrieb), gedimmte Schrift, Glow 30 % |
 
 ### Welches Theme eine Karte zeigt
 
@@ -248,9 +249,30 @@ eigene Nova-Integration um, wird nur dieses Modul getauscht (`readTheme`, `setTh
 
 Kontraste gerechnet auf der Kartenfläche über einem hellen Dashboard (`#ebeef2`), Ziel WCAG AA (4,5:1 für Schrift).
 
+### Nova Midnight (Abweichungen von Blau)
+
+| Token | Wert | Hinweis |
+| --- | --- | --- |
+| `bg` / `popup-bg` / `popup-base` / `navi-popup-bg` | `#000` | kein Glas, kein Verlauf |
+| `blur` / `sat` | `0px` / `100%` | spart Rechenzeit auf schwachen Geräten (Echo Show) |
+| `border` / `chip` / `box` / `box-border` | Weiß mit 9 / 7 / 5 / 8 % | |
+| `fg` / `knob` | `#d5d9e0` | 14,8:1, mit 60 % Deckkraft 5,5:1 – blendet nachts nicht |
+| `accent` / `accent-fg` / `accent-ink` | `#c08f30` / `#1a1200` / `#d6a548` | Schrift auf Gold 6,4:1, Akzent als Schrift 9,3:1 |
+| `active`, `a1` | `#3676ca` | Weiß darauf 4,6:1, als Schrift 4,6:1 |
+| `warn` / `error` | `#5f9fd4` / `#c84a4a` | als Schrift 7,4:1 / 4,5:1, Weiß auf Fehler 4,6:1 |
+| `a2` / `a3` / `a4` / `neutral` | `#c08f30` / `#8f6040` / `#3a8352` / `#5d6773` | Schrift darauf 6,4 / 5,4 / 4,6 / 5,8:1 |
+| `clock-night` / `-morning` / `-noon` | `#3a4fb8` / `#c98a4e` / `#b9c2d4` | Leuchtziffern gedimmt |
+| `popup-head` / `popup-backdrop` | `#0b0d12` / `rgba(0,0,0,.72)` | |
+| `shadow` / `shadow-popup` / `edge` | keiner / Ring Weiß 8 % / Kante Weiß 6 % | Schatten sieht man auf Schwarz nicht |
+| `glow` / `ring` | `30%` / `70%` | Glows nur angedeutet |
+| Navi | Rand 10 %, Chips 6 %, kein Blur, Warnung `#d6a548` | |
+
+Kontraste gerechnet auf reinem Schwarz. Gerätezeichnungen bleiben unverändert (`PAL`); sehr dunkle Teile wie der Saugroboter
+heben sich auf Schwarz nur schwach ab.
+
 ## Prüfen
 
 - `npm run check` – keine festen Farben im Karten-CSS.
 - `demo/index.html` – alle Karten mit Testdaten, ohne Home Assistant (über einen lokalen Webserver im Repo-Root öffnen,
-  z. B. `npx serve .` und dann `/demo/`). Mit `?src=…` lässt sich ein anderer Build laden, mit `?theme=hell` ein Theme setzen (wirkt wie die Theme-Variable `nova-theme`).
+  z. B. `npx serve .` und dann `/demo/`). Mit `?src=…` lässt sich ein anderer Build laden, mit `?theme=hell` bzw. `?theme=midnight` ein Theme setzen (wirkt wie die Theme-Variable `nova-theme`).
   Bei Umbauten an den Tokens vorher und nachher fotografieren und vergleichen: Nova Blau muss pixelgleich bleiben.

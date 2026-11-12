@@ -101,6 +101,18 @@ export const THEMES = {
     'shadow-popup': `0 20px 60px rgba(${INK},.2)`, 'shadow-knob': `0 1px 4px rgba(${INK},.3)`,
     glow: '0%', 'text-shadow': '0%', blur: '12px', sat: '120%', 'sat-2': '120%',
   }, navi: {border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: '14px', warn: '#8a5a00'}},
+  midnight: {name: 'Nova Midnight', vars: {
+    // Für OLED und Nachtbetrieb: reines Schwarz ohne Glas, gedimmte Schrift, schwacher Glow
+    bg: '#000', border: 'rgba(255,255,255,.09)', fg: '#d5d9e0', chip: 'rgba(255,255,255,.07)',
+    box: 'rgba(255,255,255,.05)', 'box-border': 'rgba(255,255,255,.08)', knob: '#d5d9e0', cut: 'rgba(0,0,0,.7)',
+    accent: '#c08f30', 'accent-fg': '#1a1200', 'accent-ink': '#d6a548',
+    active: '#3676ca', 'active-fg': '#fff', warn: '#5f9fd4', error: '#c84a4a', 'error-fg': '#fff',
+    a1: '#3676ca', a2: '#c08f30', 'a2-fg': '#1a1200', a3: '#8f6040', a4: '#3a8352', neutral: '#5d6773',
+    'clock-night': '#3a4fb8', 'clock-morning': '#c98a4e', 'clock-noon': '#b9c2d4',
+    'popup-bg': '#000', 'popup-base': '#000', 'popup-head': '#0b0d12', 'popup-backdrop': 'rgba(0,0,0,.72)', 'navi-popup-bg': '#000',
+    shadow: '0 0 0 transparent', edge: 'inset 0 1px 0 rgba(255,255,255,.06)', 'shadow-popup': '0 0 0 1px rgba(255,255,255,.08)',
+    glow: '30%', ring: '70%', blur: '0px', sat: '100%', 'sat-2': '100%',
+  }, navi: {border: 'rgba(255,255,255,.1)', chip: 'rgba(255,255,255,.06)', blur: '0px', warn: '#d6a548'}},
 };
 export const THEME_KEYS = Object.keys(THEMES);
 

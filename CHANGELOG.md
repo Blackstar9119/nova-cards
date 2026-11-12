@@ -6,6 +6,7 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 ## [0.12.0] – unveröffentlicht
 
 ### Hinzugefügt
+- Theme Nova Midnight: reines Schwarz ohne Glas für OLED-Displays und Nachtbetrieb (Echo Show), gedimmte Schrift, Glow nur angedeutet, Kontraste nach WCAG AA.
 - Theme Nova Hell: helles Glas, dunkle Schiefer-Schrift, weiche Schatten statt Glow, Kontraste nach WCAG AA. Gerätezeichnungen bleiben dunkel.
 - Nova Themes Schalter (`custom:nova-theme-card`): wählt das Theme für alle Nova Cards auf allen Geräten, als Chip, Button oder Dropdown.
   Legt beim ersten Umschalten selbst den Helfer „Nova Theme“ (`input_select.nova_theme`) an – einmal als Administrator, danach können alle umschalten.

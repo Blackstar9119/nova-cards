@@ -3,7 +3,7 @@
 [← Zurück zur Übersicht](../README.md)
 
 Wählt das Nova-Theme für **alle Nova Cards auf allen Geräten** – ein Fingertipp, kein Helfer, kein YAML, keine Theme-Variablen.
-Themes: Nova Blau (Standard) und Nova Hell.
+Themes: Nova Blau (Standard), Nova Hell und Nova Midnight.
 
 ## Anlegen
 
@@ -23,7 +23,7 @@ Ist noch nichts eingerichtet, zeigt die Karte Nicht-Admins „Einmal als Admin u
 
 - **Je Karte:** In jedem Karteneditor gibt es unten den Bereich „Theme“: „Global“ (Standard) folgt dem Schalter, ein festes Theme gilt
   nur für diese Karte – bei Pop-up, Bereich und Swipe auch für die Karten darin.
-- **Je Gerät:** Im HA-Theme des Geräts die Variable `nova-theme: hell` setzen (z. B. für ein Wandtablet). Das schlägt das globale Theme,
+- **Je Gerät:** Im HA-Theme des Geräts die Variable `nova-theme: hell` bzw. `nova-theme: midnight` setzen (z. B. Midnight für den Echo Show am Bett). Das schlägt das globale Theme,
   aber nicht das Theme einer Karte.
 
 ## Beispiel
