@@ -16,3 +16,17 @@ export function parseIngredient(line, units = []) {
   const unit = rest.length ? units.find(u => u && u.toLowerCase() === first.toLowerCase()) : null;
   return {qty: parseFloat(m[1].replace(',', '.')), unit: unit || '', name: unit ? rest.join(' ') : m[2]};
 }
+
+// Rezept-Import per Link: Kurzname der Quelle („chefkoch.de“) und Meldungen zu den Fehlercodes der Integration
+export const sourceHost = url => {
+  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return '';
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+};
+export const IMPORT_ERR = {
+  invalid_url: 'Das ist kein gültiger Link.',
+  fetch_failed: 'Die Seite ist gerade nicht erreichbar.',
+  blocked: 'Die Seite lässt sich nicht abrufen (gesperrt oder im eigenen Netz).',
+  too_large: 'Die Seite ist zu groß zum Einlesen.',
+  module_disabled: 'Das Rezept-Modul ist in Nova abgeschaltet.',
+};
+export const importError = x => IMPORT_ERR[x?.code] || (x?.code === 'unknown_command' ? 'Dafür braucht es eine neuere Nova-Integration.' : 'Das hat nicht geklappt. Später nochmal versuchen?');

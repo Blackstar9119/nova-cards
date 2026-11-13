@@ -7,7 +7,7 @@ import {g2, T, sel} from './shared/editor-schema.js';
 import {watch, recipes as api, storeHint, imageUrl, uploadImage} from './shared/nova-store.js';
 import {RICH_CSS, richEditor, sanitize} from './shared/rich-text.js';
 import {compressImage} from './shared/media-picker.js';
-import {amount, mins, parseIngredient, ingredientLine} from './shared/recipe-util.js';
+import {amount, mins, parseIngredient, sourceHost, importError} from './shared/recipe-util.js';
 
 /* ---------- Nova Rezeptbuch ----------
    Ein Kochbuch zum Blättern: zugeklappt der Einband, Tippen schlägt es auf, Wischen blättert. Drei Stile (Option style):
@@ -98,6 +98,13 @@ box-shadow:inset 0 0 0 1px rgba(110,80,40,.25),inset 0 0 30px rgba(140,95,40,.22
 .in{position:absolute;inset:0;padding:calc(var(--pw) * .09) calc(var(--pw) * .1) calc(var(--pw) * .11);overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:none;
 font-size:clamp(12px,calc(var(--pw) * .036),19px);line-height:1.45}
 .in::-webkit-scrollbar{display:none}
+.mo{position:absolute;left:0;right:0;bottom:0;height:calc(var(--pw) * .2);z-index:3;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(var(--pw) * .06);
+background:linear-gradient(180deg,transparent,var(--paper) 70%);opacity:0;pointer-events:none;transition:opacity .25s;cursor:pointer;border-radius:inherit}
+.mo::after{content:"";width:calc(var(--pw) * .05);aspect-ratio:1;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);opacity:.55}
+.mu{position:absolute;left:0;right:0;top:0;height:calc(var(--pw) * .16);z-index:3;display:flex;align-items:flex-start;justify-content:center;padding-top:calc(var(--pw) * .04);
+background:linear-gradient(0deg,transparent,var(--paper) 70%);opacity:0;pointer-events:none;transition:opacity .25s;cursor:pointer;border-radius:inherit}
+.mu::after{content:"";width:calc(var(--pw) * .05);aspect-ratio:1;border-left:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg);opacity:.55;margin-top:calc(var(--pw) * .02)}
+.more .mo,.less .mu{opacity:1;pointer-events:auto}.more .no{opacity:0}
 .no{position:absolute;bottom:calc(var(--pw) * .035);left:0;right:0;text-align:center;font-style:italic;font-size:clamp(10px,calc(var(--pw) * .026),14px);opacity:.55;pointer-events:none}
 .leaf{position:absolute;top:0;bottom:0;width:var(--pw);transform-style:preserve-3d;transform-origin:0 50%;z-index:5;pointer-events:none;will-change:transform;transform:translateZ(3px)}
 .leaf .face{left:0}.leaf .face.b{transform:rotateY(180deg)}
@@ -210,6 +217,10 @@ font-family:var(--f-hand);font-size:1.2em;font-weight:700;padding:.15em .8em .2e
 .btn:active{transform:scale(.95)}.btn.warn{border-color:rgba(150,30,20,.7);color:#8a1f12;background:rgba(200,60,40,.12)}
 .btn.ok{border-color:rgba(40,100,40,.6);color:#2e5e22}
 .btn[disabled]{opacity:.45;cursor:default}.btn.ok[disabled],.btn.warn[disabled]{opacity:1}
+.src{display:block;margin-top:1em;font-size:.8em;font-style:italic;opacity:.65;color:inherit;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src:hover{text-decoration:underline}
+.card .msg{margin:.6em 0 0;line-height:1.4}
+.card .msg b{font-weight:700}
 .tools{display:flex;gap:.4em;justify-content:flex-end;margin-top:1.2em}
 .tools .btn{font-size:1em;padding:.1em .6em}
 /* eingeklebtes Foto mit Fotoecken */
@@ -231,7 +242,12 @@ linear-gradient(90deg,transparent 46px,rgba(190,60,60,.3) 46px 47px,transparent 
 .card input[type=text],.card textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;
 padding:.45em .6em;outline:none;-webkit-user-select:text;user-select:text}
 .card textarea{min-height:7.5em;resize:vertical;line-height:1.45}
-.card input:focus,.card textarea:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
+.card .ing{display:grid;grid-template-columns:4.6em 5.4em 1fr auto;gap:6px;align-items:center;margin-bottom:6px}
+.card .ing input,.card .ing select{min-width:0}
+.card .ing select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;padding:.45em .3em;outline:none}
+.card .ing .x{border:0;background:none;color:var(--ink);font-size:1.4em;line-height:1;width:1.6em;height:1.6em;cursor:pointer;opacity:.6}
+.card .ing .x:hover{opacity:1}
+.card input:focus,.card textarea:focus,.card select:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
 .card .pic{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .card .pic img{width:110px;height:82px;object-fit:cover;border:4px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transform:rotate(-2deg)}
 .card .pic input[type=file]{display:none}
@@ -452,7 +468,7 @@ class NovaRecipeBookCard extends HTMLElement {
     const r = this.shadowRoot || this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${NOVA_VARS}${RICH_CSS}${BOOK_CSS}</style><div class="rb"><div class="stage"><div class="book closed">
 <div class="block l"></div><div class="block r"></div>
-<div class="pg l paper"><div class="in"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="no"></div></div>
+<div class="pg l paper"><div class="in"></div><div class="mu" aria-hidden="true"></div><div class="mo" aria-hidden="true"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="mu" aria-hidden="true"></div><div class="mo" aria-hidden="true"></div><div class="no"></div></div>
 <div class="cover"><div class="face f leather"><div class="spine"></div><div class="stitch"></div><div class="emb">${ORN}<h1></h1><p></p>${ORN}</div><div class="wear"></div></div>
 <div class="face b inside"><div class="ded"></div></div><div class="hit" role="button" aria-label="Buch öffnen"></div></div>
 <button class="ribbon" aria-label="Buch schließen" title="Buch schließen"></button>
@@ -469,6 +485,13 @@ class NovaRecipeBookCard extends HTMLElement {
     this._coverText();
     q('.hit').addEventListener('click', () => this._setOpen(true));
     q('.ribbon').addEventListener('click', () => this._setOpen(false));
+    [this._e.L, this._e.R].forEach(pg => {
+      pg.querySelector('.in').addEventListener('scroll', () => this._over(pg), {passive: true});
+      // Antippen der Hinweise scrollt ein Stück weiter bzw. zurück
+      const by = k => ev => { ev.stopPropagation(); const i = pg.querySelector('.in'); i.scrollBy({top: i.clientHeight * .7 * k, behavior: 'smooth'}); };
+      pg.querySelector('.mo').addEventListener('click', by(1));
+      pg.querySelector('.mu').addEventListener('click', by(-1));
+    });
     this._e.prev.addEventListener('click', () => this._go(this._sp - 1));
     this._e.next.addEventListener('click', () => this._go(this._sp + 1));
     this._e.toc.addEventListener('click', () => this._go(0));
@@ -516,6 +539,7 @@ class NovaRecipeBookCard extends HTMLElement {
       this._sp = i >= 0 ? i : Math.min(this._sp, ns.length - 1);
       this._paint();
     }
+    requestAnimationFrame(() => { if (this._e) [this._e.L, this._e.R].forEach(pg => this._over(pg, true)); });
   }
 
   /* ---------- Daten ---------- */
@@ -570,7 +594,26 @@ class NovaRecipeBookCard extends HTMLElement {
     pg.style.setProperty('--st', stains(d.n || 0));
     inn.replaceChildren(this._content(d));
     inn.scrollTop = 0;
+    // Hinweis „geht weiter“ prüfen, sobald die Seite steht und sobald Bilder geladen sind
+    if (pg.classList.contains('pg')) {
+      requestAnimationFrame(() => this._over(pg, true));
+      inn.querySelectorAll('img').forEach(i => i.addEventListener('load', () => this._over(pg, true), {once: true}));
+    }
     no.textContent = d.n && d.k !== 'end' ? `— ${d.n} —` : '';
+  }
+  // Passt der Inhalt nicht auf die Seite, zeigt unten ein Verlauf mit Pfeil, dass es weitergeht (verschwindet am Ende),
+  // und oben einer mit Pfeil nach oben, sobald man weitergescrollt hat
+  // Vorher: Foto so weit verkleinern, dass alles auf die Seite passt (höchstens bis auf ein Viertel der Seitenhöhe)
+  // (nur auf der Doppelseite: dort steht links Titel, Foto und Zutaten; die Einzelseite scrollt ohnehin)
+  _over(pg, fit) {
+    const i = pg.querySelector('.in'), img = fit && this._dbl && i.querySelector('.photo img');
+    if (img && img.complete) {
+      img.style.removeProperty('height');
+      const extra = i.scrollHeight - i.clientHeight, h = img.clientHeight;
+      if (extra > 0 && h) img.style.height = `${Math.max(i.clientHeight * .25, h - extra - 2)}px`;
+    }
+    pg.classList.toggle('more', i.scrollHeight - i.scrollTop - i.clientHeight > 6);
+    pg.classList.toggle('less', i.scrollTop > 6);
   }
   _content(d) {
     const box = document.createElement('div');
@@ -595,19 +638,20 @@ class NovaRecipeBookCard extends HTMLElement {
       if (!this._quiet) {
         const act = document.createElement('div');
         act.className = 'act';
-        act.append(this._btn('mdi:plus', 'Neues Rezept', () => this._edit(null)));
+        act.append(this._btn('mdi:plus', 'Neues Rezept', () => this._edit(null)), this._btn('mdi:link-variant', 'Rezept importieren', () => this._import()));
         box.append(act);
       }
       return box;
     }
     const src = r.image ? imageUrl(this._h, 'recipes', r.image) : '', meta = [r.time ? mins(r.time) : '', ...(r.tags || [])].filter(Boolean).join(' · ');
-    const head = () => `<div class="chap">Kapitel ${roman((this._recipes || []).indexOf(r) + 1)}</div><h2>${esc(r.title)}</h2>${meta ? `<div class="meta">${esc(meta)}</div>` : ''}${src ? `<div class="photo"><img alt="" loading="lazy" src="${esc(src)}"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>` : ''}`;
+    const head = () => `<div class="chap">Kapitel ${roman((this._recipes || []).indexOf(r) + 1)}</div><h2>${esc(r.title)}</h2>${meta ? `<div class="meta">${esc(meta)}</div>` : ''}`;
+    const photo = () => src ? `<div class="photo"><img alt="" loading="lazy" src="${esc(src)}"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>` : '';
     const ing = () => r.ingredients?.length ? `<h3 class="zl"><span>Zutaten</span><span class="sv"><button class="sb" data-d="-1" aria-label="Weniger Portionen">−</button><span class="svn"></span><button class="sb" data-d="1" aria-label="Mehr Portionen">+</button></span></h3>
 <ul class="ing">${r.ingredients.map(() => '<li><span class="q"></span><span class="nm"></span></li>').join('')}</ul>` : '';
     const steps = () => { const h = stepsHtml(r.steps); return h ? `${/^<h3/.test(h) ? '' : '<h3>Zubereitung</h3>'}${h}` : ''; };
-    if (d.k === 'A') box.innerHTML = head() + ing();
+    if (d.k === 'A') box.innerHTML = head() + photo() + ing();
     else if (d.k === 'B') box.innerHTML = steps() || '<div class="msg">Ohne Anleitung – einfach drauflos kochen.</div>';
-    else box.innerHTML = head() + ing() + steps();
+    else box.innerHTML = head() + photo() + ing() + steps();
     box.dataset.rid = r.id;
     box.querySelectorAll('.sb').forEach(b => b.addEventListener('click', ev => { ev.stopPropagation(); this._step(r, +b.dataset.d); }));
     this._paintIng(box, r);
@@ -655,6 +699,13 @@ class NovaRecipeBookCard extends HTMLElement {
       act.className = 'act';
       act.append(this._btn('mdi:cart-plus', 'Zutaten auf die Einkaufsliste', b => this._toList(r, b)));
       w.append(act);
+    }
+    const src = sourceHost(r.source);
+    if (src) {
+      const a = document.createElement('a');
+      a.className = 'src'; a.href = r.source; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = `Quelle: ${src}`;
+      a.addEventListener('click', ev => ev.stopPropagation());
+      w.append(a);
     }
     const t = document.createElement('div');
     t.className = 'tools';
@@ -833,19 +884,24 @@ class NovaRecipeBookCard extends HTMLElement {
     });
   }
   // Karteikarte über dem Buch: Titel, Portionen, Zeit, Schlagwörter, Bild, Zutaten (eine pro Zeile), Zubereitung mit Formatierung
-  _edit(r) {
+  // pre: Entwurf aus dem Import (Vorschau) – füllt das Formular, gespeichert wird erst mit „Ins Buch übernehmen“
+  _edit(r, pre = null) {
     if (this._err || !this._recipes) return;
-    const f = this._e.form, st = {image: r?.image || null, data: null};
-    f.innerHTML = `<form class="card" novalidate><h2>${r ? 'Rezept bearbeiten' : 'Neues Rezept'}</h2>
+    const f = this._e.form, st = {image: pre ? null : r?.image || null, data: pre?.image_data || null}, source = pre ? pre.source || null : r?.source ?? null;
+    const head = pre ? (r ? `Vorschau – ersetzt „${esc(r.title)}“` : 'Vorschau') : r ? 'Rezept bearbeiten' : 'Neues Rezept';
+    if (pre) r = r ? {...r, ...pre} : pre;
+    const id = pre ? pre.replace : r?.id;
+    f.innerHTML = `<form class="card" novalidate><h2>${head}</h2>
 <label for="t">Titel</label><input id="t" type="text" maxlength="200" autocomplete="off" enterkeyhint="next">
 <div class="two"><div><label for="p">Portionen</label><input id="p" type="number" min="1" max="99" inputmode="numeric"></div>
 <div><label for="z">Zeit in Minuten</label><input id="z" type="number" min="0" max="6000" inputmode="numeric" placeholder="–"></div></div>
 <label for="g">Schlagwörter</label><input id="g" type="text" autocomplete="off" placeholder="z. B. schnell, vegetarisch"><small>Mit Komma getrennt</small>
 <label>Bild</label><div class="pic"><img alt="" hidden><button type="button" class="btn" data-a="pick"><ha-icon icon="mdi:camera-outline"></ha-icon><span>Foto wählen</span></button>
 <button type="button" class="btn" data-a="clear" hidden><ha-icon icon="mdi:close"></ha-icon><span>Entfernen</span></button><input type="file" accept="image/*"></div>
-<label for="i">Zutaten</label><textarea id="i" placeholder="250 g Mehl&#10;2 Eier&#10;1 Prise Salz"></textarea><small>Eine Zutat pro Zeile, Menge und Einheit vorn – dann lassen sich die Portionen umrechnen</small>
+<label>Zutaten</label><div class="ings"></div><button type="button" class="btn" data-a="add"><ha-icon icon="mdi:plus"></ha-icon><span>Zutat</span></button>
+<small>Menge und Einheit getrennt – dann lassen sich die Portionen umrechnen. Mehrere Zeilen („250 g Mehl“) lassen sich auch einfügen.</small>
 <label>Zubereitung</label><div class="steps"></div><small>Ein Absatz oder Listenpunkt je Schritt</small>
-<div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>Speichern</span></button></div></form>`;
+<div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>${pre ? 'Ins Buch übernehmen' : 'Speichern'}</span></button></div></form>`;
     const q = s => f.querySelector(s), img = q('.pic img'), file = q('input[type=file]'), clr = q('[data-a=clear]'), err = q('.err');
     const rt = richEditor({placeholder: 'Mehl und Eier verrühren …'});
     rt.set(r?.steps || '');
@@ -854,9 +910,37 @@ class NovaRecipeBookCard extends HTMLElement {
     q('#p').value = r?.servings || 2;
     q('#z').value = r?.time ?? '';
     q('#g').value = (r?.tags || []).join(', ');
-    q('#i').value = (r?.ingredients || []).map(ingredientLine).join('\n');
+    // Zutaten als Zeilen: Menge | Einheit (Liste der Integration) | Zutat | Entfernen
+    const ings = q('.ings'), units = this._units?.length ? this._units : [''];
+    const row = (ing = {qty: null, unit: '', name: ''}, after = null) => {
+      const el = document.createElement('div'); el.className = 'ing';
+      const opts = [...new Set([...units, ing.unit || ''])].map(u => `<option value="${esc(u)}">${esc(u || '–')}</option>`).join('');
+      el.innerHTML = `<input type="text" class="qty" inputmode="decimal" placeholder="Menge" aria-label="Menge" autocomplete="off"><select aria-label="Einheit">${opts}</select>
+<input type="text" class="nm" maxlength="120" placeholder="Zutat" aria-label="Zutat" autocomplete="off" enterkeyhint="next"><button type="button" class="x" aria-label="Zutat entfernen">×</button>`;
+      const [qt, un, nm] = el.querySelectorAll('input,select');
+      qt.value = ing.qty == null ? '' : String(ing.qty).replace('.', ',');
+      un.value = ing.unit || ''; nm.value = ing.name || '';
+      el.querySelector('.x').addEventListener('click', () => { el.remove(); if (!ings.children.length) row(); });
+      // Enter springt in die nächste Zeile bzw. legt eine neue an
+      nm.addEventListener('keydown', ev => { if (ev.key !== 'Enter') return; ev.preventDefault(); (el.nextElementSibling || row()).querySelector('.qty').focus(); });
+      // Mehrere Zeilen einfügen („250 g Mehl“ …) legt je Zeile eine Zutat an
+      nm.addEventListener('paste', ev => {
+        const t = ev.clipboardData?.getData('text') || '';
+        if (!t.includes('\n')) return;
+        ev.preventDefault();
+        let at = el;
+        t.split('\n').map(x => parseIngredient(x, units)).filter(Boolean).forEach((x, k) => {
+          if (k === 0 && !qt.value && !nm.value) { qt.value = x.qty == null ? '' : String(x.qty).replace('.', ','); un.value = x.unit; nm.value = x.name; }
+          else at = row(x, at);
+        });
+      });
+      if (after) after.after(el); else ings.append(el);
+      return el;
+    };
+    (r?.ingredients?.length ? r.ingredients : [undefined]).forEach(x => row(x));
+    q('[data-a=add]').addEventListener('click', () => row().querySelector('.qty').focus());
     const showPic = src => { img.hidden = !src; if (src) img.src = src; else img.removeAttribute('src'); clr.hidden = !src; };
-    showPic(st.image ? imageUrl(this._h, 'recipes', st.image) : null);
+    showPic(st.data || (st.image ? imageUrl(this._h, 'recipes', st.image) : null));
     // Tippen im Formular soll keine Tastenkürzel von HA oder das Blättern auslösen
     f.addEventListener('keydown', ev => ev.stopPropagation());
     f.addEventListener('pointerdown', ev => ev.stopPropagation());
@@ -879,12 +963,15 @@ class NovaRecipeBookCard extends HTMLElement {
         let image = st.image;
         if (st.data) image = (await uploadImage(this._h, 'recipes', st.data)).image;
         const z = q('#z').value.trim();
-        const recipe = {...(r ? {id: r.id} : {}), title, image, servings: Math.max(1, Math.min(99, Math.round(+q('#p').value) || 2)), time: z === '' ? null : Math.max(0, Math.round(+z) || 0),
+        const recipe = {...(id ? {id} : {}), ...(source ? {source} : {}), title, image, servings: Math.max(1, Math.min(99, Math.round(+q('#p').value) || 2)), time: z === '' ? null : Math.max(0, Math.round(+z) || 0),
           tags: q('#g').value.split(',').map(x => x.trim()).filter(Boolean),
-          ingredients: q('#i').value.split('\n').map(x => parseIngredient(x, this._units)).filter(Boolean), steps: rt.get()};
+          ingredients: [...ings.children].map(el => {
+            const [qt, un, nm] = el.querySelectorAll('input,select'), v = parseFloat(qt.value.replace(',', '.'));
+            return nm.value.trim() ? {name: nm.value.trim(), qty: Number.isFinite(v) ? v : null, unit: un.value} : null;
+          }).filter(Boolean), steps: rt.get()};
         const res = await api.save(this._h, recipe);
-        if (!r && res?.id) this._jump = res.id;
-        if (r) this._serv.delete(r.id);
+        if (!id && res?.id) this._jump = res.id;
+        if (id) this._serv.delete(id);
         this._closeForm();
         if (this._jump) this._setRecipes(this._recipes);
       } catch (x) {
@@ -896,6 +983,61 @@ class NovaRecipeBookCard extends HTMLElement {
     f.hidden = false;
     this._poke();
     if (!r) setTimeout(() => q('#t').focus(), 50);
+  }
+  // Rezept per Link: Link eingeben → Integration liest die Seite → Vorschau im Formular (bzw. Nachfrage bei Doppelten)
+  _import() {
+    if (this._err || !this._recipes) return;
+    const f = this._e.form;
+    f.innerHTML = `<form class="card" novalidate><h2>Rezept importieren</h2>
+<label for="u">Link zum Rezept</label><input id="u" type="text" inputmode="url" autocomplete="off" placeholder="https://www.chefkoch.de/rezepte/…" enterkeyhint="go">
+<small>Klappt mit den meisten Rezeptseiten, z. B. Chefkoch. Gespeichert wird erst nach der Vorschau.</small>
+<div class="msg" role="status"></div><div class="err"></div>
+<div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:download"></ha-icon><span>Laden</span></button></div></form>`;
+    const q = s => f.querySelector(s), u = q('#u'), msg = q('.msg'), err = q('.err'), row = q('.row');
+    const go = q('button[type=submit]');
+    f.addEventListener('keydown', ev => ev.stopPropagation());
+    f.addEventListener('pointerdown', ev => ev.stopPropagation());
+    // Knöpfe der Nachfrage statt Abbrechen/Laden
+    const ask = (html, btns) => {
+      msg.innerHTML = html; err.textContent = '';
+      row.replaceChildren(...btns.map(([label, fn, ok]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = ok ? 'btn ok' : 'btn'; b.textContent = label;
+        b.addEventListener('click', fn); return b;
+      }));
+    };
+    q('[data-a=cancel]').addEventListener('click', () => this._closeForm());
+    q('form').addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const url = u.value.trim();
+      if (!/^https?:\/\/\S+$/i.test(url)) { err.textContent = 'Bitte einen Link einfügen, der mit https:// beginnt.'; u.focus(); return; }
+      go.disabled = true; u.disabled = true; err.textContent = ''; msg.textContent = 'Lese das Rezept …';
+      try {
+        const {recipe, duplicates} = await api.importUrl(this._h, url);
+        const dup = duplicates?.[0];
+        if (!dup) { this._edit(null, recipe); return; }
+        const known = this._recipes.find(x => x.id === dup.id);
+        ask(`<b>„${esc(dup.title)}“</b> steht schon im Buch. Was soll passieren?`, [
+          ['Abbrechen', () => this._closeForm()],
+          ['Trotzdem neu', () => this._edit(null, recipe)],
+          ['Ersetzen', () => this._edit(known || null, {...recipe, replace: dup.id}), true],
+        ]);
+      } catch (x) {
+        const code = x?.code;
+        if (code === 'no_recipe') {
+          ask('Auf der Seite steht kein Rezept, das ich lesen kann. Magst du es selbst anlegen?', [
+            ['Abbrechen', () => this._closeForm()],
+            ['Selbst anlegen', () => this._edit(null, {title: x.message || '', source: url, servings: 2, ingredients: [], steps: '', tags: []}), true],
+          ]);
+          return;
+        }
+        msg.textContent = '';
+        err.textContent = importError(x);
+        go.disabled = false; u.disabled = false;
+      }
+    });
+    f.hidden = false;
+    this._poke();
+    setTimeout(() => u.focus(), 50);
   }
   _closeForm() { const f = this._e.form; f.hidden = true; f.replaceChildren(); this._poke(); }
 }

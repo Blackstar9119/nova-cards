@@ -74,15 +74,17 @@ export function mediaPicker({hass, module = 'shopping', value = {}, icons = FOOD
 <input type="file" accept="image/*">`;
   const pv = el.querySelector('.pv'), acts = el.querySelector('.acts'), grid = el.querySelector('.grid'), err = el.querySelector('.err'),
     file = el.querySelector('input'), srch = el.querySelector('.srch');
-  let cur = {icon: value.icon || null, image: value.image || null}, h = hass;
+  // value.data: Bild als data-URL, das noch nicht hochgeladen ist (Vorschau beim Rezept-Import)
+  let cur = {icon: value.icon || null, image: value.image || null, data: value.data || null}, h = hass;
   const paint = pop => {
-    pv.innerHTML = cur.image ? `<img alt="" src="${imageUrl(h, module, cur.image)}">` : `<ha-icon icon="${cur.icon || fallback}"></ha-icon>`;
+    const src = cur.image ? imageUrl(h, module, cur.image) : cur.data && /^data:image\/(jpeg|png|webp);base64,/.test(cur.data) ? cur.data : '';
+    pv.innerHTML = src ? `<img alt="" src="${src}">` : `<ha-icon icon="${cur.icon || fallback}"></ha-icon>`;
     if (pop) { pv.classList.remove('pop'); void pv.offsetWidth; pv.classList.add('pop'); }
     grid.querySelectorAll('button').forEach(b => b.classList.toggle('on', !cur.image && b.dataset.icon === cur.icon));
-    rm.hidden = !cur.icon && !cur.image;
+    rm.hidden = !cur.icon && !cur.image && !cur.data;
     if (form) form.data = {icon: cur.image ? '' : cur.icon || ''};
   };
-  const set = v => { cur = {icon: null, image: null, ...v}; paint(true); onChange?.(cur); };
+  const set = v => { cur = {icon: null, image: null, data: null, ...v}; paint(true); onChange?.(cur); };
   const act = (icon, label, fn) => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'act';

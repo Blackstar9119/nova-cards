@@ -14,7 +14,12 @@ dieselben wie in der [Nova Rezeptliste](rezept-card.md).
 - **Zutaten auf die Einkaufsliste:** setzt alle Zutaten für die gewählten Portionen auf die Nova-Einkaufsliste; was dort
   schon offen steht, wird in der Menge erhöht.
 - **Rezepte einpflegen** direkt im Buch: „Neues Rezept“ im Inhaltsverzeichnis, unter jedem Rezept „Bearbeiten“ und
-  „Löschen“ (fragt einmal nach). Zutaten eine pro Zeile, Menge und Einheit vorn („250 g Mehl“).
+  „Löschen“ (fragt einmal nach). Zutaten als Zeilen mit Menge, Einheit und Name (die Einheiten liefert die Nova-Integration); mehrere Zeilen wie „250 g Mehl“ lassen sich auf einmal einfügen.
+- **Rezept importieren** im Inhaltsverzeichnis: Link einfügen, z. B. von Chefkoch. Die Nova-Integration liest die Seite
+  (schema.org-Rezeptdaten) und öffnet eine Vorschau im Formular – Titel, Portionen, Zeit, Zutaten mit Menge und Einheit,
+  Schritte und Bild, alles änderbar. Gespeichert wird erst mit „Ins Buch übernehmen“. Gibt es das Rezept schon (gleicher
+  Link oder Titel), fragt das Buch: ersetzen, trotzdem neu oder abbrechen. Ohne lesbares Rezept auf der Seite bietet es
+  an, das Rezept selbst anzulegen. Unter importierten Rezepten steht klein die Quelle als Link.
 
 Auf breitem Platz (ab 560 px) zeigt das Buch Doppelseiten: links Titel, Foto und Zutaten, rechts die Zubereitung.
 Schmaler gibt es eine Seite pro Rezept.
