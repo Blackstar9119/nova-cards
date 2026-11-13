@@ -1,8 +1,9 @@
-# Nova Rezept Card
+# Nova Rezeptliste
 
 [← Zurück zur Übersicht](../README.md)
 
-Rezeptbuch, das auf allen Geräten gleich ist. Die Daten liegen in der
+Kompakte Rezeptliste, schnell durchsuchbar und auf allen Geräten gleich. Dieselben Rezepte zeigt das
+[Nova Rezeptbuch](rezeptbuch-card.md) zum Blättern. Die Daten liegen in der
 [Nova-Integration](https://github.com/Blackstar9119/nova-integration) (Modul „Rezeptbuch“) – ohne sie zeigt die Karte nur einen Hinweis.
 
 - **Liste:** Suche (Name, Schlagwort, Zutat), Schlagwörter und Favoriten als Filter-Chips, Favoriten stehen oben.

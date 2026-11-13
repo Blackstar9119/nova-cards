@@ -1,5 +1,5 @@
 /* Nova Cards v0.12.0 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezept – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezeptliste, Rezeptbuch – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
   var __defProp = Object.defineProperty;
@@ -9549,13 +9549,13 @@ ${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" 
   }).join("");
   function kibble(x0, x1, y1, top, rMin, rMax, seed) {
     let q = seed;
-    const rnd = () => (q = q * 16807 % 2147483647) / 2147483647, out = [];
+    const rnd2 = () => (q = q * 16807 % 2147483647) / 2147483647, out = [];
     for (let y = Math.min(...[x0, (x0 + x1) / 2, x1].map(top)) - 2; y < y1 + 3; y += 2.6 + rMax * 0.55) {
-      for (let x = x0 - 1 + rnd() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd() * rMax * 0.6) {
-        const r = rMin + rnd() * (rMax - rMin), cx = x + (rnd() - 0.5) * 1.6, cy = y + (rnd() - 0.5) * 1.8;
-        if (cy < top(cx) + r * 0.2 || rnd() < 0.1) continue;
-        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f3 = (n) => n.toFixed(1);
-        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f3(cx)} ${f3(cy)})"><path d="M${f3(cx - a[0])} ${f3(cy)}Q${f3(cx - a[0])} ${f3(cy - a[1])} ${f3(cx)} ${f3(cy - a[1])}Q${f3(cx + a[2])} ${f3(cy - a[1])} ${f3(cx + a[2])} ${f3(cy)}Q${f3(cx + a[2])} ${f3(cy + a[3])} ${f3(cx)} ${f3(cy + a[3])}Q${f3(cx - a[0])} ${f3(cy + a[3])} ${f3(cx - a[0])} ${f3(cy)}Z"/><ellipse cx="${f3(cx - r * 0.3)}" cy="${f3(cy - r * 0.38)}" rx="${f3(r * 0.38)}" ry="${f3(r * 0.24)}"/></g>`);
+      for (let x = x0 - 1 + rnd2() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd2() * rMax * 0.6) {
+        const r = rMin + rnd2() * (rMax - rMin), cx = x + (rnd2() - 0.5) * 1.6, cy = y + (rnd2() - 0.5) * 1.8;
+        if (cy < top(cx) + r * 0.2 || rnd2() < 0.1) continue;
+        const k = 1 + Math.floor(rnd2() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd2() * 0.36)), f3 = (n) => n.toFixed(1);
+        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd2() * 180)} ${f3(cx)} ${f3(cy)})"><path d="M${f3(cx - a[0])} ${f3(cy)}Q${f3(cx - a[0])} ${f3(cy - a[1])} ${f3(cx)} ${f3(cy - a[1])}Q${f3(cx + a[2])} ${f3(cy - a[1])} ${f3(cx + a[2])} ${f3(cy)}Q${f3(cx + a[2])} ${f3(cy + a[3])} ${f3(cx)} ${f3(cy + a[3])}Q${f3(cx - a[0])} ${f3(cy + a[3])} ${f3(cx - a[0])} ${f3(cy)}Z"/><ellipse cx="${f3(cx - r * 0.3)}" cy="${f3(cy - r * 0.38)}" rx="${f3(r * 0.38)}" ry="${f3(r * 0.24)}"/></g>`);
       }
     }
     return out.join("");
@@ -16796,6 +16796,21 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
   __publicField(NovaNoteCardEditor, "openSections", ["general"]);
   define("note-card-editor", NovaNoteCardEditor);
 
+  // src/shared/recipe-util.js
+  var num3 = (q) => String(Math.round((+q || 0) * 100) / 100).replace(".", ",");
+  var amount = (ing, k = 1) => ing.qty == null ? ing.unit || "" : `${num3(ing.qty * k)}${ing.unit ? ` ${ing.unit}` : ""}`;
+  var mins = (t) => t >= 60 ? `${Math.floor(t / 60)} Std${t % 60 ? ` ${t % 60} Min` : ""}` : `${t} Min`;
+  var ingredientLine = (ing) => [amount(ing), ing.name].filter(Boolean).join(" ");
+  function parseIngredient(line, units = []) {
+    const s = String(line || "").trim();
+    if (!s) return null;
+    const m = /^(\d+(?:[.,]\d+)?)\s*(.*)$/.exec(s);
+    if (!m || !m[2]) return { qty: null, unit: "", name: s };
+    const [first, ...rest] = m[2].split(/\s+/);
+    const unit = rest.length ? units.find((u) => u && u.toLowerCase() === first.toLowerCase()) : null;
+    return { qty: parseFloat(m[1].replace(",", ".")), unit: unit || "", name: unit ? rest.join(" ") : m[2] };
+  }
+
   // src/recipe.js
   var RCSS2 = `
 .g.rc{gap:var(--nv-s5)}
@@ -16883,9 +16898,6 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
 @media (prefers-reduced-motion:reduce){.rr.new,.hero,.ig .q.bump,.rb.favb.on ha-icon{animation:none}}`;
   var RDEF2 = { name: "Rezepte", icon: "mdi:chef-hat", show_header: true, view: "list", show_search: true, height: 420, print_field: "text", ...PRINT_DEF };
   var SAVE_MS3 = 800;
-  var num3 = (q) => String(Math.round((+q || 0) * 100) / 100).replace(".", ",");
-  var amount = (ing, k = 1) => ing.qty == null ? "" : `${num3(ing.qty * k)}${ing.unit ? ` ${ing.unit}` : ""}`;
-  var mins = (t) => t >= 60 ? `${Math.floor(t / 60)} Std${t % 60 ? ` ${t % 60} Min` : ""}` : `${t} Min`;
   var NovaRecipeCard = class extends HTMLElement {
     static getConfigElement() {
       return document.createElement(tag("recipe-card-editor"));
@@ -17450,7 +17462,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       });
     }
   };
-  define("recipe-card", NovaRecipeCard, { name: "Nova Rezept Card", description: "Rezeptbuch mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf.", documentationURL: docUrl("nova-rezept-card") });
+  define("recipe-card", NovaRecipeCard, { name: "Nova Rezeptliste", description: "Kompakte Rezeptliste mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf.", documentationURL: docUrl("nova-rezeptliste") });
   var GEN6 = [
     g2({ name: "name", selector: T }, { name: "icon", selector: I }),
     { name: "show_header", selector: { boolean: {} } }
@@ -17498,8 +17510,984 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
   __publicField(NovaRecipeCardEditor, "openSections", ["general"]);
   define("recipe-card-editor", NovaRecipeCardEditor);
 
+  // src/recipe-book.js
+  var DEF7 = { title: "Rezepte", subtitle: "", style: "old", layout: "auto", cover_color: "brown", start_open: false, close_after: 0 };
+  var COVERS = ["brown", "red", "green", "blue"];
+  var STYLES2 = ["old", "modern", "fantasy"];
+  var OPEN_MS = 1100;
+  var TURN_MS = 800;
+  var PAGE_RATIO = 0.72;
+  var IMG_MAX = 960;
+  var FONT_URL = "/nova/static/fonts";
+  var fontsLoaded = false;
+  var loadFonts = () => {
+    if (fontsLoaded) return;
+    fontsLoaded = true;
+    const st = document.createElement("style");
+    st.dataset.nova = "recipe-fonts";
+    const ff = (fam, file, w, s = "normal") => `@font-face{font-family:'${fam}';src:url(${FONT_URL}/${file}.woff2?v=1) format('woff2');font-weight:${w};font-style:${s};font-display:swap}`;
+    st.textContent = ff("Nova Hand", "nova-hand-400", 400) + ff("Nova Hand", "nova-hand-700", 700) + ff("Nova Serif", "nova-serif-400", 400) + ff("Nova Serif", "nova-serif-400-italic", 400, "italic");
+    document.head.append(st);
+  };
+  var noise = (freq, oct, rgb, op, type = "fractalNoise", size = 220) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'><filter id='n'><feTurbulence type='${type}' baseFrequency='${freq}' numOctaves='${oct}' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 ${rgb[0]} 0 0 0 0 ${rgb[1]} 0 0 0 0 ${rgb[2]} ${op} 0 0 0 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`)}")`;
+  var PAPER_FIBER = noise(0.85, 3, [0.35, 0.24, 0.1], 0.55);
+  var PAPER_CLOUD = noise(0.012, 3, [0.55, 0.38, 0.12], 0.5, "fractalNoise", 400);
+  var LEATHER_GRAIN = noise(1.4, 2, [0, 0, 0], 0.9, "turbulence", 160);
+  var LEATHER_MOTTLE = noise(0.02, 3, [0.95, 0.8, 0.6], 0.45, "fractalNoise", 420);
+  var rnd = (seed) => () => {
+    seed = seed + 1831565813 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t ^= t + Math.imul(t ^ t >>> 7, 61 | t);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+  var stains = (seed) => {
+    const r = rnd(seed * 7919 + 13), out = [];
+    if (r() < 0.55) {
+      const x = 10 + r() * 80, y = 8 + r() * 84, s = 70 + r() * 70;
+      out.push(`radial-gradient(circle ${s}px at ${x}% ${y}%,transparent 82%,rgba(122,74,24,.16) 88%,rgba(122,74,24,.05) 93%,transparent 97%)`);
+    }
+    const n = 2 + Math.floor(r() * 5);
+    for (let i = 0; i < n; i++) {
+      const x = r() * 100, y = r() * 100, s = 3 + r() * 9;
+      out.push(`radial-gradient(circle ${s}px at ${x}% ${y}%,rgba(140,90,40,${(0.12 + r() * 0.14).toFixed(2)}),transparent)`);
+    }
+    if (r() < 0.35) {
+      const x = r() * 100, y = r() * 100;
+      out.push(`radial-gradient(ellipse 60px 34px at ${x}% ${y}%,rgba(160,110,40,.1),transparent 70%)`);
+    }
+    return out.join(",");
+  };
+  var BOOK_CSS = `
+:host{display:block;height:100%;
+--ink:var(--nova-book-ink,#3a2814);--paper:var(--nova-book-paper,#efe0bb);--leather:var(--nova-book-brown,#6b3b1e);--gold:var(--nova-book-gold,#c9a14a);
+--f-hand:'Nova Hand','Segoe Script','Bradley Hand',cursive;--f-serif:'Nova Serif',Georgia,'Times New Roman',serif;--acc:#8a1f12;--acc2:#1f4f7a}
+:host([cover=red]){--leather:var(--nova-book-red,#5e1a1d)}:host([cover=green]){--leather:var(--nova-book-green,#2e4630)}:host([cover=blue]){--leather:var(--nova-book-blue,#1f2c48)}
+*{box-sizing:border-box}
+.rb{position:relative;height:100%;min-height:200px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+font-family:var(--f-serif);color:var(--ink);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.stage{position:relative;perspective:2400px;perspective-origin:50% 40%}
+.book{position:absolute;inset:0;transform-style:preserve-3d;transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1)}
+/* Aufgeschlagen gehören waagrechte Wischgesten dem Buch (Nova Swipe Card blättert dann nicht mit), zugeklappt nicht */
+.book.open{touch-action:pan-y}
+.book.closed{transform:translateX(calc(var(--pw) * -.5))}
+.book.single.closed,.book.single{transform:none}
+/* Seitenblock: Papierkanten unten und rechts (Buchdicke) */
+.block{position:absolute;top:0;bottom:0;right:0;width:var(--pw);border-radius:2px 6px 6px 2px;
+background:repeating-linear-gradient(90deg,#e9dcb8 0 1px,#cdbb8f 1px 2px);box-shadow:3px 4px 0 -1px #bfae84,5px 7px 14px rgba(0,0,0,.45);transform:translate(4px,4px)}
+.double .block.l{right:auto;left:0;transform:translate(-4px,4px);border-radius:6px 2px 2px 6px}
+.single .block.l,.closed .block.l{display:none}
+/* Seiten */
+.pg,.face{position:absolute;top:0;bottom:0;width:var(--pw);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.pg.r,.leaf{left:auto;right:0}.pg.l{left:0}
+/* Seiten minimal vor dem aufgeklappten Einband, das Blatt beim Umblättern vor den Seiten (in 3D zählt die Tiefe, nicht z-index) */
+.open .pg{transform:translateZ(1px)}
+.single .pg.r,.single .leaf{right:auto;left:0}
+.single .pg.l{display:none}
+.paper{background-color:var(--paper);background-image:var(--st),${PAPER_FIBER},${PAPER_CLOUD},
+radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(120,80,30,.22) 100%);background-size:auto,220px 220px,400px 400px,auto;
+box-shadow:inset 0 0 0 1px rgba(110,80,40,.25),inset 0 0 30px rgba(140,95,40,.22)}
+.pg.r.paper,.face.f.paper{border-radius:2px 6px 6px 2px}.pg.l.paper,.face.b.paper{border-radius:6px 2px 2px 6px}
+/* Schatten am Falz */
+.pg.r::before,.leaf .face.f::before{content:"";position:absolute;inset:0 auto 0 0;width:14%;background:linear-gradient(90deg,rgba(60,35,10,.28),rgba(60,35,10,.06) 45%,transparent);pointer-events:none;z-index:2}
+.pg.l::before,.leaf .face.b::before{content:"";position:absolute;inset:0 0 0 auto;width:14%;background:linear-gradient(270deg,rgba(60,35,10,.3),rgba(60,35,10,.06) 45%,transparent);pointer-events:none;z-index:2}
+.single .pg.r::before,.single .leaf .face.f::before{width:5%}
+.in{position:absolute;inset:0;padding:calc(var(--pw) * .09) calc(var(--pw) * .1) calc(var(--pw) * .11);overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:none;
+font-size:clamp(12px,calc(var(--pw) * .036),19px);line-height:1.45}
+.in::-webkit-scrollbar{display:none}
+.no{position:absolute;bottom:calc(var(--pw) * .035);left:0;right:0;text-align:center;font-style:italic;font-size:clamp(10px,calc(var(--pw) * .026),14px);opacity:.55;pointer-events:none}
+.leaf{position:absolute;top:0;bottom:0;width:var(--pw);transform-style:preserve-3d;transform-origin:0 50%;z-index:5;pointer-events:none}
+.leaf .face{left:0}.leaf .face.b{transform:rotateY(180deg)}
+.leaf .sh{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0}
+.leaf.fwd{animation:turn-f ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) forwards}.leaf.bwd{animation:turn-b ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) forwards}
+.leaf .face.f .sh{background:linear-gradient(90deg,rgba(0,0,0,.35),transparent 60%)}.leaf .face.b .sh{background:linear-gradient(270deg,rgba(0,0,0,.35),transparent 60%)}
+.leaf.fwd .face.f .sh,.leaf.bwd .face.b .sh{animation:sh-in ${TURN_MS}ms ease-in forwards}.leaf.fwd .face.b .sh,.leaf.bwd .face.f .sh{animation:sh-out ${TURN_MS}ms ease-out forwards}
+.single .leaf.fwd{animation-name:turn-sf}.single .leaf.bwd{animation-name:turn-sb}
+@keyframes turn-f{from{transform:translateZ(2px) rotateY(0)}50%{transform:translateZ(2px) rotateY(-90deg) skewY(-1.5deg)}to{transform:translateZ(2px) rotateY(-180deg)}}
+@keyframes turn-b{from{transform:translateZ(2px) rotateY(-180deg)}50%{transform:translateZ(2px) rotateY(-90deg) skewY(1.5deg)}to{transform:translateZ(2px) rotateY(0)}}
+@keyframes turn-sf{from{transform:translateZ(2px) rotateY(0);opacity:1}70%{opacity:1}to{transform:translateZ(2px) rotateY(-160deg);opacity:0}}
+@keyframes turn-sb{from{transform:translateZ(2px) rotateY(-160deg);opacity:0}30%{opacity:1}to{transform:translateZ(2px) rotateY(0);opacity:1}}
+@keyframes sh-in{from{opacity:0}to{opacity:1}}@keyframes sh-out{from{opacity:1}to{opacity:0}}
+/* Einband */
+.cover{position:absolute;top:-2%;bottom:-2%;right:-1.5%;width:calc(var(--pw) * 1.03);transform-style:preserve-3d;transform-origin:0 50%;z-index:8;
+transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1)}
+.single .cover{right:auto;left:0}
+.cover .face{width:100%;top:0;bottom:0;left:0}.cover .face.b{transform:rotateY(180deg)}
+.open .cover{transform:rotateY(-180deg)}
+.single.open .cover{transform:rotateY(-160deg);opacity:0;transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1),opacity .3s ${OPEN_MS * 0.7}ms}
+.cover.gone{visibility:hidden}
+.leather{border-radius:3px 10px 10px 3px;background-color:var(--leather);
+background-image:radial-gradient(ellipse at 88% 6%,rgba(255,230,190,.32),transparent 22%),radial-gradient(ellipse at 92% 96%,rgba(255,225,180,.3),transparent 20%),
+radial-gradient(ellipse at 30% 98%,rgba(255,220,170,.16),transparent 25%),radial-gradient(ellipse 40% 30% at 62% 40%,rgba(0,0,0,.18),transparent 70%),
+radial-gradient(ellipse at 20% 15%,rgba(255,220,170,.1),transparent 30%),${LEATHER_MOTTLE},${LEATHER_GRAIN},
+linear-gradient(100deg,rgba(0,0,0,.35),rgba(255,255,255,.06) 18%,rgba(0,0,0,.08) 60%,rgba(0,0,0,.3));
+background-size:auto,auto,auto,auto,auto,420px 420px,160px 160px,auto;background-blend-mode:normal,normal,normal,normal,normal,soft-light,multiply,normal;
+box-shadow:inset 0 0 0 1px rgba(0,0,0,.5),inset 0 0 40px rgba(0,0,0,.5),inset -3px 0 6px rgba(255,220,180,.12),6px 8px 22px rgba(0,0,0,.5)}
+/* Rücken mit Bünden und abgegriffener Kante */
+.spine{position:absolute;inset:0 auto 0 0;width:9%;border-radius:3px 0 0 3px;
+background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,230,190,.12) 40%,rgba(0,0,0,.35)),
+repeating-linear-gradient(180deg,transparent 0 17%,rgba(0,0,0,.35) 17% 18%,rgba(255,220,170,.18) 18% 19%,transparent 19% 21%)}
+.stitch{position:absolute;inset:6% 7% 6% 13%;border:2px dashed rgba(235,205,150,.35);border-radius:6px;box-shadow:0 0 0 1px rgba(0,0,0,.25),inset 0 0 0 1px rgba(0,0,0,.25)}
+.emb{position:absolute;inset:0 0 0 9%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--pw) * .03);text-align:center;padding:0 12%}
+.emb .orn{width:56%;height:auto;opacity:.9}
+.emb h1{margin:0;font-family:var(--f-serif);font-style:italic;font-weight:400;font-size:clamp(22px,calc(var(--pw) * .13),78px);line-height:1.05;
+background:linear-gradient(170deg,#f3dc9a,var(--gold) 45%,#8a6424 70%,#d9b665);-webkit-background-clip:text;background-clip:text;color:transparent;
+filter:drop-shadow(0 1px 0 rgba(0,0,0,.6)) drop-shadow(0 -1px 0 rgba(255,230,180,.15));opacity:.92}
+.emb p{margin:0;font-family:var(--f-hand);font-size:clamp(14px,calc(var(--pw) * .06),34px);color:#e9cf93;opacity:.75;text-shadow:0 1px 0 rgba(0,0,0,.6)}
+.emb .gold{fill:none;stroke:var(--gold);stroke-width:1.2;opacity:.85}
+/* abgewetzte Ecken */
+.wear{position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+background:radial-gradient(circle at 100% 0,rgba(240,210,170,.35),transparent 7%),radial-gradient(circle at 100% 100%,rgba(240,210,170,.32),transparent 7%),
+linear-gradient(180deg,rgba(255,225,180,.12),transparent 3%,transparent 97%,rgba(255,225,180,.12));mix-blend-mode:screen}
+.inside{background-color:#e7d6ae;background-image:var(--st),${PAPER_FIBER},radial-gradient(ellipse at 50% 50%,transparent 50%,rgba(110,70,20,.3)),
+repeating-linear-gradient(45deg,rgba(120,80,30,.05) 0 6px,transparent 6px 12px);border-radius:10px 3px 3px 10px;
+box-shadow:inset 0 0 0 8px var(--leather),inset 0 0 0 9px rgba(0,0,0,.4),inset 0 0 40px rgba(110,70,20,.35)}
+.inside .ded{position:absolute;inset:18% 16%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;
+font-family:var(--f-hand);font-size:clamp(18px,calc(var(--pw) * .085),46px);transform:rotate(-3deg);opacity:.8}
+.inside .ded small{font-size:.55em;opacity:.75}
+.hit{position:absolute;inset:0;cursor:pointer;z-index:9}
+/* Lesebändchen zum Schließen */
+.ribbon{position:absolute;top:calc(100% - 6px);left:calc(var(--bw) / 2 + var(--pw) * .1);width:clamp(14px,calc(var(--pw) * .045),24px);height:clamp(34px,calc(var(--pw) * .1),60px);z-index:7;transform:translateZ(3px);cursor:pointer;border:0;padding:0;
+background:linear-gradient(90deg,#7c1d1d,#b03030 50%,#7c1d1d);clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);box-shadow:0 2px 4px rgba(0,0,0,.4);
+transition:opacity .4s;opacity:0;pointer-events:none}
+.single .ribbon{left:12%}
+.open .ribbon{opacity:1;pointer-events:auto;transition-delay:${OPEN_MS}ms}
+/* Inhalt der Seiten */
+h2{margin:0 0 .35em;font-family:var(--f-hand);font-weight:700;font-size:2.15em;line-height:1;color:var(--ink);transform:rotate(-1deg)}
+h3{margin:1em 0 .3em;font-family:var(--f-hand);font-weight:700;font-size:1.45em;line-height:1;border-bottom:1px solid rgba(70,45,20,.3);padding-bottom:.15em}
+h3:first-child{margin-top:0}
+ul.ing{list-style:none;margin:0;padding:0}ul.ing li{padding:.12em 0 .12em 1.1em;position:relative;border-bottom:1px dotted rgba(70,45,20,.22)}
+ul.ing li::before{content:"–";position:absolute;left:.1em;font-family:var(--f-hand);font-weight:700}
+ol.st{list-style:none;margin:0;padding:0;counter-reset:s}ol.st li{counter-increment:s;position:relative;padding:.25em 0 .35em 2em}
+ol.st li::before{content:counter(s);position:absolute;left:0;top:.05em;width:1.45em;height:1.45em;border:1.5px solid rgba(70,45,20,.55);border-radius:50%;
+display:flex;align-items:center;justify-content:center;font-family:var(--f-hand);font-weight:700;font-size:1.05em;line-height:1;transform:rotate(-4deg)}
+.toc h2{text-align:center;transform:none;margin-bottom:.6em}
+.toc .it{display:flex;align-items:baseline;gap:.4em;width:100%;border:0;background:none;color:inherit;font:inherit;padding:.32em 0;cursor:pointer;text-align:left}
+.toc .it .t{font-family:var(--f-hand);font-size:1.35em;line-height:1.1}
+.toc .it .d{flex:1;border-bottom:2px dotted rgba(70,45,20,.35);transform:translateY(-.25em)}
+.toc .it .n{font-style:italic;opacity:.75}
+.toc .it:active .t{text-decoration:underline}
+.msg{font-family:var(--f-hand);font-size:1.35em;line-height:1.25;text-align:center;margin:1em 0;opacity:.85}
+.msg.hint{text-align:left;font-size:1.25em}.msg.hint ol{margin:.4em 0 0;padding-left:1.2em}.msg.hint code{font-family:inherit;background:rgba(120,80,30,.12);padding:0 .2em;border-radius:3px}
+.act{display:flex;flex-wrap:wrap;gap:.5em;justify-content:center;margin-top:1.2em}
+.btn{display:inline-flex;align-items:center;gap:.35em;border:1.5px solid rgba(70,45,20,.5);border-radius:999px;background:rgba(255,248,225,.35);color:var(--ink);
+font-family:var(--f-hand);font-size:1.2em;font-weight:700;padding:.15em .8em .2em;cursor:pointer;line-height:1.2;transition:background-color .2s,transform .15s}
+.btn ha-icon{--mdc-icon-size:1em}
+.btn:active{transform:scale(.95)}.btn.warn{border-color:rgba(150,30,20,.7);color:#8a1f12;background:rgba(200,60,40,.12)}
+.btn.ok{border-color:rgba(40,100,40,.6);color:#2e5e22}
+.btn[disabled]{opacity:.45;cursor:default}.btn.ok[disabled],.btn.warn[disabled]{opacity:1}
+.tools{display:flex;gap:.4em;justify-content:flex-end;margin-top:1.2em}
+.tools .btn{font-size:1em;padding:.1em .6em}
+/* eingeklebtes Foto mit Fotoecken */
+.photo{position:relative;margin:.4em auto 1em;width:86%;padding:4%;background:#f7f1e3;box-shadow:0 2px 6px rgba(60,35,10,.35),0 0 0 1px rgba(0,0,0,.05);transform:rotate(-1.6deg)}
+.photo img{-webkit-user-drag:none;pointer-events:none;display:block;width:100%;aspect-ratio:4/3;object-fit:cover;filter:sepia(.18) saturate(.9) contrast(.96)}
+.photo i{position:absolute;width:16%;aspect-ratio:1;background:linear-gradient(135deg,#3a2a1c,#1b130c 60%,#3d2c1d);box-shadow:0 1px 1px rgba(0,0,0,.3)}
+.photo i::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18),transparent 40%);clip-path:inherit}
+.photo i.tl{top:-2%;left:-2%;clip-path:polygon(0 0,100% 0,0 100%)}.photo i.tr{top:-2%;right:-2%;clip-path:polygon(0 0,100% 0,100% 100%)}
+.photo i.bl{bottom:-2%;left:-2%;clip-path:polygon(0 0,100% 100%,0 100%)}.photo i.br{bottom:-2%;right:-2%;clip-path:polygon(100% 0,100% 100%,0 100%)}
+/* Formular: Karteikarte über dem Buch */
+.form{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,12,4,.45);padding:12px;animation:fade .25s}
+.form[hidden]{display:none}
+@keyframes fade{from{opacity:0}}
+.card{position:relative;width:min(640px,100%);max-height:100%;overflow-y:auto;overscroll-behavior:contain;border-radius:6px;padding:20px 22px 18px;
+background-color:#f6ecd2;background-image:${PAPER_FIBER},repeating-linear-gradient(180deg,transparent 0 31px,rgba(80,110,160,.18) 31px 32px),
+linear-gradient(90deg,transparent 46px,rgba(190,60,60,.3) 46px 47px,transparent 47px);box-shadow:0 12px 40px rgba(0,0,0,.5);transform:rotate(-.6deg);font-size:16px}
+.card h2{font-size:2em}
+.card label{display:block;font-family:var(--f-hand);font-weight:700;font-size:1.3em;margin:.6em 0 .15em}
+.card input[type=text],.card textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;
+padding:.45em .6em;outline:none;-webkit-user-select:text;user-select:text}
+.card textarea{min-height:7.5em;resize:vertical;line-height:1.45}
+.card input:focus,.card textarea:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
+.card .pic{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card .pic img{width:110px;height:82px;object-fit:cover;border:4px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transform:rotate(-2deg)}
+.card .pic input[type=file]{display:none}
+.card .row{display:flex;gap:10px;justify-content:flex-end;margin-top:1em;flex-wrap:wrap}
+.card .err{color:#8a1f12;font-family:var(--f-hand);font-size:1.2em;min-height:1.2em;margin-top:.4em}
+.card small{display:block;opacity:.65;font-style:italic}
+@media (prefers-reduced-motion:reduce){.book,.cover,.leaf,.leaf .sh{transition:none!important;animation-duration:1ms!important}}
+.still .book,.still .cover{transition:none!important}
+/* ----- Neu gegenüber dem ersten Buch: Angaben, Portionen, formatierte Zubereitung ----- */
+.meta{margin:-.1em 0 .7em;font-style:italic;opacity:.7;font-size:.92em}
+h3.zl{display:flex;align-items:flex-end;gap:.4em}
+h3 .sv{margin-left:auto;display:inline-flex;align-items:center;gap:.35em;font-family:var(--f-serif);font-weight:400;font-style:italic;font-size:.62em;white-space:nowrap;transform:translateY(-.1em)}
+.sb{width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(70,45,20,.5);background:rgba(255,248,225,.35);color:var(--ink);font:inherit;font-style:normal;font-weight:700;font-size:16px;line-height:1;
+cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}
+.sb:active{transform:scale(.88)}
+.sb[disabled]{opacity:.35;cursor:default}
+ul.ing li .q{display:inline-block;margin-right:.35em;font-variant-numeric:tabular-nums}
+ul.ing li .q[hidden]{display:none}
+ul.ing li .q.bump{animation:q-bump .35s ease}
+@keyframes q-bump{40%{transform:scale(1.25)}}
+ol.st li p{margin:0}
+.in .fs-s{font-size:.85em}.in .fs-l{font-size:1.2em}.in .c-accent{color:var(--acc2)}.in .c-warn{color:var(--acc)}.in .c-muted{opacity:.55}
+.in u{text-decoration-thickness:1px;text-underline-offset:.15em}
+/* Formular: Felder nebeneinander, Zubereitung mit Formatierungsleiste (Farben des Papiers statt Nova-Glas) */
+.card{--nv-tint:70,45,20;--nv-fg:var(--ink);--nv-active:#7a4a1c;--nv-active-fg:#fff8e1;--nv-text-accent:var(--acc2);--nv-text-warn:var(--acc);--nv-glow:0%;color:var(--ink)}
+.card .two{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.card input[type=number]{width:100%;font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;padding:.45em .6em;outline:none}
+.card .rte{min-height:7.5em;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;padding:.45em .6em;outline:none;
+-webkit-user-select:text;user-select:text;margin-top:6px}
+.card .rte:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
+/* Beschläge und Siegel gibt es nur im Fantasy Book */
+.fit,.sigil{display:none}
+
+/* ===== Modern Book: schlicht, grau, ohne Gebrauchsspuren ===== */
+:host([book=modern]){--f-hand:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;--f-serif:var(--f-hand);--paper:#f3f3f1;--ink:#24272c;--gold:#d7dadf;--leather:#4a4e55;--acc:#b3261e;--acc2:#2b5c8a}
+:host([book=modern][cover=red]){--leather:#6d4a4f}:host([book=modern][cover=green]){--leather:#4a5a52}:host([book=modern][cover=blue]){--leather:#44506a}
+:host([book=modern]) .paper{background-image:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+:host([book=modern]) .block{background:#e4e4e1;box-shadow:2px 3px 0 -1px #cfcfcb,4px 6px 14px rgba(0,0,0,.3)}
+:host([book=modern]) .pg.r::before,:host([book=modern]) .leaf .face.f::before{background:linear-gradient(90deg,rgba(0,0,0,.14),rgba(0,0,0,.03) 45%,transparent)}
+:host([book=modern]) .pg.l::before,:host([book=modern]) .leaf .face.b::before{background:linear-gradient(270deg,rgba(0,0,0,.14),rgba(0,0,0,.03) 45%,transparent)}
+:host([book=modern]) .leather{border-radius:3px 8px 8px 3px;background-image:linear-gradient(100deg,rgba(0,0,0,.2),rgba(255,255,255,.06) 18%,rgba(0,0,0,.03) 60%,rgba(0,0,0,.16));background-size:auto;background-blend-mode:normal;
+box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),6px 8px 22px rgba(0,0,0,.35)}
+:host([book=modern]) .spine{background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(255,255,255,.07) 60%,rgba(0,0,0,.14))}
+:host([book=modern]) .stitch,:host([book=modern]) .wear,:host([book=modern]) .emb .orn{display:none}
+:host([book=modern]) .emb{align-items:flex-start;justify-content:flex-end;text-align:left;padding:0 10% 14%;gap:calc(var(--pw) * .015)}
+:host([book=modern]) .emb h1{font-style:normal;font-weight:300;letter-spacing:-.01em;background:none;color:#f1f2f4;filter:none;opacity:1;font-size:clamp(20px,calc(var(--pw) * .11),64px)}
+:host([book=modern]) .emb h1::after{content:"";display:block;width:2.2em;height:2px;background:currentColor;opacity:.5;margin-top:.35em}
+:host([book=modern]) .emb p{color:#f1f2f4;opacity:.6;text-shadow:none;font-size:clamp(12px,calc(var(--pw) * .045),24px)}
+:host([book=modern]) .inside{background-color:#e9e9e6;background-image:none;box-shadow:inset 0 0 0 8px var(--leather)}
+:host([book=modern]) .inside .ded{transform:none;font-weight:300;opacity:.6}
+:host([book=modern]) h2{transform:none;font-weight:600;font-size:1.7em;letter-spacing:-.01em;line-height:1.1;margin-bottom:.5em}
+:host([book=modern]) h3{font-weight:600;font-size:.82em;text-transform:uppercase;letter-spacing:.08em;border-bottom-color:rgba(0,0,0,.12);padding-bottom:.45em;color:rgba(36,39,44,.6)}
+:host([book=modern]) h3 .sv{font-style:normal;font-size:1.05em;text-transform:none;letter-spacing:0;color:var(--ink)}
+:host([book=modern]) .sb{border:1px solid rgba(0,0,0,.18);background:rgba(0,0,0,.04);font-weight:400}
+:host([book=modern]) ul.ing li{border-bottom:1px solid rgba(0,0,0,.07);padding-left:0}
+:host([book=modern]) ul.ing li::before{content:none}
+:host([book=modern]) ul.ing li .q{font-weight:600}
+:host([book=modern]) ol.st li::before{transform:none;border:0;background:rgba(0,0,0,.08);font-weight:600;font-size:.8em;width:1.8em;height:1.8em}
+:host([book=modern]) .toc h2{text-align:left}
+:host([book=modern]) .toc .it .t{font-size:1.05em}
+:host([book=modern]) .toc .it .d{border-bottom:1px solid rgba(0,0,0,.12)}
+:host([book=modern]) .toc .it .n,:host([book=modern]) .no,:host([book=modern]) .meta{font-style:normal}
+:host([book=modern]) .msg{font-size:1em;opacity:.65}
+:host([book=modern]) .btn{font-size:.9em;font-weight:600;border:1px solid rgba(0,0,0,.2);background:rgba(0,0,0,.04);padding:.45em 1em}
+:host([book=modern]) .tools .btn{font-size:.85em;padding:.4em .9em}
+:host([book=modern]) .photo{transform:none;padding:0;background:none;box-shadow:none;width:100%}
+:host([book=modern]) .photo img{filter:none;border-radius:8px}
+:host([book=modern]) .photo i{display:none}
+:host([book=modern]) .ribbon{background:#8b9099}
+:host([book=modern]) .card{transform:none;background-color:#f6f6f4;background-image:none;border-radius:12px;--nv-tint:0,0,0;--nv-active:#4a4e55;--nv-active-fg:#fff}
+:host([book=modern]) .card label{font-size:.85em;font-weight:600;opacity:.75}
+:host([book=modern]) .card h2{font-size:1.4em}
+:host([book=modern]) .card .pic img{transform:none;border:0;border-radius:6px}
+:host([book=modern]) .card .err{font-size:.9em}
+
+/* ===== Fantasy Book: Zauberbuch mit Beschlägen, Siegel und Pergament ===== */
+:host([book=fantasy]){--f-hand:'Nova Serif',Georgia,'Times New Roman',serif;--paper:#e4d0a0;--ink:#2b1a0e;--gold:#e0b354;--leather:#3a2413;--acc:#8c1c13;--acc2:#3b2a7a}
+:host([book=fantasy][cover=red]){--leather:#4a0f1c}:host([book=fantasy][cover=green]){--leather:#12352a}:host([book=fantasy][cover=blue]){--leather:#171c4a}
+:host([book=fantasy]) .paper{box-shadow:inset 0 0 0 1px rgba(90,50,15,.35),inset 0 0 60px rgba(90,45,10,.45),inset 0 0 14px rgba(60,25,5,.35)}
+:host([book=fantasy]) .leather{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6),inset 0 0 60px rgba(0,0,0,.65),inset 0 0 0 5px rgba(224,179,84,.14),6px 8px 26px rgba(0,0,0,.6)}
+:host([book=fantasy]) .stitch{inset:7% 8% 7% 14%;border:3px double rgba(224,179,84,.6);border-radius:3px;box-shadow:0 0 10px rgba(224,179,84,.18),inset 0 0 10px rgba(224,179,84,.1)}
+:host([book=fantasy]) .fit{display:block;position:absolute;width:17%;aspect-ratio:1;z-index:1;background:linear-gradient(135deg,#f6e2a6,var(--gold) 38%,#7a5a1e 72%,#c9a14a);filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+:host([book=fantasy]) .fit::after{content:"";position:absolute;width:14%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c8,#6b4d16 70%)}
+:host([book=fantasy]) .fit.tr{top:0;right:0;clip-path:polygon(0 0,100% 0,100% 100%,72% 72%,62% 28%,28% 38%);border-radius:0 10px 0 0}
+:host([book=fantasy]) .fit.br{bottom:0;right:0;clip-path:polygon(100% 0,100% 100%,0 100%,28% 62%,62% 72%,72% 28%);border-radius:0 0 10px 0}
+:host([book=fantasy]) .fit.tl{top:0;left:9%;clip-path:polygon(0 0,100% 0,72% 38%,38% 28%,28% 72%,0 100%)}
+:host([book=fantasy]) .fit.bl{bottom:0;left:9%;clip-path:polygon(0 0,28% 28%,38% 72%,72% 62%,100% 100%,0 100%)}
+:host([book=fantasy]) .fit.tr::after{top:14%;right:14%}:host([book=fantasy]) .fit.br::after{bottom:14%;right:14%}
+:host([book=fantasy]) .fit.tl::after{top:14%;left:14%}:host([book=fantasy]) .fit.bl::after{bottom:14%;left:14%}
+:host([book=fantasy]) .sigil{display:block;width:34%;height:auto;overflow:visible;filter:drop-shadow(0 0 5px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,.7))}
+:host([book=fantasy]) .sigil .gold{stroke-width:1.6}
+:host([book=fantasy]) .sigil .gem{fill:var(--acc);stroke:var(--gold);stroke-width:1.2}
+:host([book=fantasy]) .live .sigil{animation:sigil 4.5s ease-in-out infinite alternate}
+@keyframes sigil{from{filter:drop-shadow(0 0 3px rgba(224,179,84,.3)) drop-shadow(0 1px 0 rgba(0,0,0,.7))}to{filter:drop-shadow(0 0 11px rgba(224,179,84,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.7))}}
+:host([book=fantasy]) .emb .orn:first-of-type{display:none}
+:host([book=fantasy]) .emb h1{font-style:normal;font-variant:small-caps;letter-spacing:.06em;font-size:clamp(20px,calc(var(--pw) * .115),70px);
+filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,.7));opacity:1}
+:host([book=fantasy]) .emb p{font-style:italic;font-size:clamp(13px,calc(var(--pw) * .05),28px);color:#e9cf93}
+:host([book=fantasy]) .inside{background-color:#d8c38f}
+:host([book=fantasy]) .inside .ded{transform:none;font-variant:small-caps;letter-spacing:.06em;font-size:clamp(16px,calc(var(--pw) * .07),40px)}
+:host([book=fantasy]) .inside .ded small{font-variant:normal;font-style:italic;letter-spacing:0}
+:host([book=fantasy]) h2{font-variant:small-caps;font-weight:400;letter-spacing:.04em;transform:none;font-size:1.8em;text-align:center;line-height:1.05}
+:host([book=fantasy]) h2::first-letter{font-size:1.45em;color:var(--acc)}
+:host([book=fantasy]) h2::after{content:"❦";display:block;font-size:.5em;opacity:.55;margin-top:.25em;letter-spacing:0}
+:host([book=fantasy]) .toc h2::after{content:"✦  ❦  ✦"}
+:host([book=fantasy]) h3{font-variant:small-caps;font-weight:400;letter-spacing:.08em;font-size:1.2em;border-bottom:3px double rgba(70,35,10,.4);padding-bottom:.25em}
+:host([book=fantasy]) h3 .sv{font-variant:normal;letter-spacing:0;font-size:.75em}
+:host([book=fantasy]) .meta{text-align:center}
+:host([book=fantasy]) ul.ing li::before{content:"✦";font-size:.7em;top:.5em;color:var(--acc);font-weight:400}
+:host([book=fantasy]) ol.st{counter-reset:s}
+:host([book=fantasy]) ol.st li::before{content:counter(s,upper-roman);font-size:.8em;width:1.9em;height:1.9em;transform:none;border:1.5px solid rgba(110,70,15,.7);background:radial-gradient(circle at 40% 35%,rgba(224,179,84,.45),rgba(224,179,84,.1))}
+:host([book=fantasy]) .toc .it .t{font-variant:small-caps;letter-spacing:.03em;font-size:1.12em}
+:host([book=fantasy]) .msg{font-style:italic;font-size:1.1em}
+:host([book=fantasy]) .btn{font-variant:small-caps;font-weight:400;letter-spacing:.05em;border-radius:4px;font-size:1em;border-color:rgba(110,70,15,.7);background:rgba(224,179,84,.18);padding:.3em .9em}
+:host([book=fantasy]) .tools .btn{font-size:.9em}
+:host([book=fantasy]) .sb{border-color:rgba(110,70,15,.7);background:rgba(224,179,84,.18)}
+:host([book=fantasy]) .photo{background:#2a1a10;padding:2.5%;box-shadow:0 0 0 2px var(--gold),0 3px 8px rgba(0,0,0,.4);transform:rotate(.8deg)}
+:host([book=fantasy]) .photo i{display:none}
+:host([book=fantasy]) .photo img{filter:sepia(.35) saturate(.85)}
+:host([book=fantasy]) .ribbon{background:linear-gradient(90deg,#3b1a5c,#6a35a0 50%,#3b1a5c)}
+:host([book=fantasy]) .card{transform:none;background-color:#e4d0a0;background-image:${PAPER_FIBER};border-radius:3px;box-shadow:0 0 0 2px var(--gold),0 12px 40px rgba(0,0,0,.6);--nv-active:#6b4d16}
+:host([book=fantasy]) .card label{font-variant:small-caps;font-weight:400;letter-spacing:.05em;font-size:1.05em}
+:host([book=fantasy]) .card .err{font-style:italic;font-size:1em}
+@media (prefers-reduced-motion:reduce){.live .sigil{animation:none!important}ul.ing li .q.bump{animation:none}}
+`;
+  var ORN = `<svg class="orn" viewBox="0 0 200 24" aria-hidden="true"><path class="gold" d="M4 12H78M122 12H196M84 12c4-8 12-8 16 0s12 8 16 0M84 12c4 8 12 8 16 0s12-8 16 0"/><circle cx="100" cy="12" r="2.2" fill="currentColor" class="gold"/></svg>`;
+  var SIGIL = `<svg class="sigil" viewBox="0 0 100 100" aria-hidden="true"><circle class="gold" cx="50" cy="50" r="46"/><circle class="gold" cx="50" cy="50" r="39" stroke-dasharray="2 4"/>
+<path class="gold" d="M50 8 59 41 92 50 59 59 50 92 41 59 8 50 41 41Z"/><path class="gold" d="M50 22 56 44 78 50 56 56 50 78 44 56 22 50 44 44Z" transform="rotate(45 50 50)"/><circle class="gem" cx="50" cy="50" r="7"/></svg>`;
+  var FITS = '<i class="fit tl"></i><i class="fit tr"></i><i class="fit bl"></i><i class="fit br"></i>';
+  function stepsHtml(html) {
+    const t = document.createElement("template");
+    t.innerHTML = sanitize(html || "");
+    const out = [];
+    let open = false;
+    const li = (h) => {
+      if (!h.replace(/<br\s*\/?>|&nbsp;|\s/g, "")) return;
+      if (!open) {
+        out.push('<ol class="st">');
+        open = true;
+      }
+      out.push(`<li>${h}</li>`);
+    };
+    const close = () => {
+      if (open) {
+        out.push("</ol>");
+        open = false;
+      }
+    };
+    [...t.content.childNodes].forEach((n) => {
+      if (n.nodeType === 3) {
+        if (n.textContent.trim()) li(esc(n.textContent));
+        return;
+      }
+      if (n.nodeType !== 1) return;
+      if (n.localName === "h3") {
+        close();
+        out.push(`<h3>${n.innerHTML}</h3>`);
+      } else if (n.localName === "ul") [...n.children].forEach((c) => li(c.innerHTML));
+      else li(n.localName === "p" ? n.innerHTML : n.outerHTML);
+    });
+    close();
+    return out.join("");
+  }
+  var NovaRecipeBookCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("recipe-book-card-editor"));
+    }
+    static getStubConfig() {
+      return {};
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      const was = this._c;
+      this._c = { ...DEF7, ...c };
+      this.setAttribute("cover", COVERS.includes(this._c.cover_color) ? this._c.cover_color : "brown");
+      this.setAttribute("book", STYLES2.includes(this._c.style) ? this._c.style : "old");
+      if (this._e) {
+        if (!was || was.title !== this._c.title || was.subtitle !== this._c.subtitle) this._coverText();
+        if (this._vis && this._c.style !== "modern") loadFonts();
+        this._resize(true);
+      }
+    }
+    set hass(h) {
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) this._build();
+      this._watch();
+    }
+    getCardSize() {
+      return 8;
+    }
+    getGridOptions() {
+      return { columns: 12, rows: 8, min_columns: 6, min_rows: 5 };
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      this._stopVis?.();
+      this._stopVis = watchVisible(this, (v) => {
+        this._vis = v;
+        if (v && this._c?.style !== "modern") loadFonts();
+        this._e?.rb.classList.toggle("live", v && !this._quiet);
+      });
+      if (!this._e && this._c && this._h) this._build();
+      if (this._e) {
+        this._ro?.observe(this);
+        this._watch();
+      }
+    }
+    disconnectedCallback() {
+      this._ro?.disconnect();
+      this._stopVis?.();
+      this._stopVis = null;
+      this._off?.();
+      this._off = null;
+      clearTimeout(this._idle);
+      clearTimeout(this._tt);
+      clearTimeout(this._delT);
+      clearTimeout(this._ct);
+    }
+    /* ---------- Aufbau ---------- */
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${RICH_CSS}${BOOK_CSS}</style><div class="rb"><div class="stage"><div class="book closed">
+<div class="block l"></div><div class="block r"></div>
+<div class="pg l paper"><div class="in"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="no"></div></div>
+<div class="cover"><div class="face f leather"><div class="spine"></div><div class="stitch"></div>${FITS}<div class="emb">${SIGIL}${ORN}<h1></h1><p></p>${ORN}</div><div class="wear"></div></div>
+<div class="face b inside"><div class="ded"></div></div><div class="hit" role="button" aria-label="Buch öffnen"></div></div>
+<button class="ribbon" aria-label="Buch schließen" title="Buch schließen"></button>
+</div></div><div class="form" hidden></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = { rb: q(".rb"), stage: q(".stage"), book: q(".book"), L: q(".pg.l"), R: q(".pg.r"), cover: q(".cover"), ded: q(".ded"), h1: q(".emb h1"), sub: q(".emb p"), form: q(".form") };
+      this._e.cover.style.setProperty("--st", stains(99));
+      this._e.cover.querySelector(".inside").style.setProperty("--st", stains(98));
+      this._e.rb.classList.toggle("live", !!this._vis && !this._quiet);
+      this._sp = 0;
+      this._open = false;
+      this._serv = /* @__PURE__ */ new Map();
+      this._coverText();
+      q(".hit").addEventListener("click", () => this._setOpen(true));
+      q(".ribbon").addEventListener("click", () => this._setOpen(false));
+      this._gestures();
+      this._ro = new ResizeObserver(() => this._resize());
+      if (this.isConnected) this._ro.observe(this);
+      if (this._c.start_open && !this._quiet) this._setOpen(true, false);
+    }
+    _coverText() {
+      const c = this._c, e = this._e;
+      e.h1.textContent = c.title || DEF7.title;
+      e.sub.textContent = c.subtitle || "";
+      e.sub.hidden = !c.subtitle;
+      e.ded.innerHTML = `<span>${esc(c.title || DEF7.title)}</span>${c.subtitle ? `<small>${esc(c.subtitle)}</small>` : ""}`;
+    }
+    // Größe: Seite im Verhältnis 0,72, so groß wie der Platz erlaubt. Ohne feste Höhe (Masonry) ergibt sich die Höhe aus der Breite.
+    _resize(force) {
+      const e = this._e, c = this._c;
+      if (!e) return;
+      const W2 = this.clientWidth || 0, Hh = this.clientHeight || 0;
+      if (!W2) return;
+      const auto = Hh < 150;
+      const dbl = c.layout === "double" || c.layout !== "single" && W2 >= 560 && (auto || W2 / Math.max(Hh, 1) > 1.05);
+      const pad = Math.max(10, W2 * 0.025);
+      let pw = dbl ? (W2 - 2 * pad) / 2 : W2 - 2 * pad;
+      if (!auto) pw = Math.min(pw, (Hh - 2 * pad) * PAGE_RATIO);
+      pw = Math.max(120, Math.floor(pw));
+      const ph = Math.floor(pw / PAGE_RATIO), bw = dbl ? 2 * pw : pw;
+      if (auto) e.rb.style.height = `${ph + 2 * pad}px`;
+      else e.rb.style.removeProperty("height");
+      e.stage.style.width = `${bw}px`;
+      e.stage.style.height = `${ph}px`;
+      e.rb.style.setProperty("--pw", `${pw}px`);
+      e.rb.style.setProperty("--bw", `${bw}px`);
+      if (force || dbl !== this._dbl) {
+        const spreads = this._spreads(this._dbl), cur2 = spreads[this._sp];
+        this._dbl = dbl;
+        e.book.classList.toggle("double", dbl);
+        e.book.classList.toggle("single", !dbl);
+        const ns = this._spreads(dbl), key = cur2 && (cur2.rid ?? cur2.key);
+        const i = ns.findIndex((s) => (s.rid ?? s.key) === key);
+        this._sp = i >= 0 ? i : Math.min(this._sp, ns.length - 1);
+        this._paint();
+      }
+    }
+    /* ---------- Daten ---------- */
+    // Rezepte aus der Nova-Integration (ein Abo für alle Rezept-Karten); in der Kartenauswahl zwei Beispielrezepte
+    _watch() {
+      if (!this._h || !this.isConnected || !this._e) return;
+      if (this._quiet) {
+        if (!this._recipes) {
+          this._recipes = DEMO;
+          this._paint();
+        }
+        return;
+      }
+      if (this._off) return;
+      this._off = watch(this._h, "recipes", this, (d, err) => {
+        this._units = d?.units || this._units;
+        this._setRecipes(d?.recipes, err);
+      });
+    }
+    _setRecipes(list2, err) {
+      const spreads = this._spreads(this._dbl), cur2 = spreads[this._sp], key = cur2 && (cur2.rid ?? cur2.key);
+      this._err = list2 ? null : err || null;
+      this._recipes = list2 ? [...list2].sort((a, b) => String(a.title).localeCompare(String(b.title), "de")) : err ? [] : null;
+      const ns = this._spreads(this._dbl);
+      if (this._jump) {
+        const i = ns.findIndex((s) => s.rid === this._jump);
+        if (i >= 0) {
+          this._jump = null;
+          this._sp = i;
+        }
+      } else {
+        const i = ns.findIndex((s) => (s.rid ?? s.key) === key);
+        this._sp = i >= 0 ? i : Math.max(0, Math.min(this._sp, ns.length - 1));
+      }
+      this._paint();
+    }
+    _servings(r) {
+      return this._serv.get(r.id) || r.servings || 1;
+    }
+    /* ---------- Seiten ---------- */
+    // Doppelseiten: [Vorsatz | Inhalt], dann je Rezept [Titel, Foto, Zutaten | Zubereitung]. Einzelseiten: Inhalt, dann je Rezept eine Seite.
+    _spreads(dbl = this._dbl) {
+      const rs = this._recipes || [];
+      return dbl ? [{ key: "toc", L: { k: "end" }, R: { k: "toc", n: 1 } }, ...rs.map((r, i) => ({ rid: r.id, L: { k: "A", r, n: 2 * i + 2 }, R: { k: "B", r, n: 2 * i + 3 } }))] : [{ key: "toc", P: { k: "toc", n: 1 } }, ...rs.map((r, i) => ({ rid: r.id, P: { k: "R", r, n: i + 2 } }))];
+    }
+    _pageNo(i) {
+      return this._dbl ? 2 * i + 2 : i + 2;
+    }
+    _paint() {
+      const e = this._e;
+      if (!e || this._dbl == null || this._turning) return;
+      const s = this._spreads()[this._sp] || this._spreads()[0];
+      if (this._dbl) {
+        this._fill(e.L, s.L);
+        this._fill(e.R, s.R);
+        e.L.style.visibility = s.L.k === "end" ? "hidden" : "";
+      } else this._fill(e.R, s.P);
+    }
+    // Seite füllen: Inhalt + Seitenzahl + eigene Flecken
+    _fill(pg, d) {
+      const inn = pg.querySelector(".in"), no = pg.querySelector(".no");
+      const sig = JSON.stringify([d.k, d.r?.id, d.r?.updated, d.n, d.k === "toc" ? [this._recipes?.length, this._err, (this._recipes || []).map((r) => r.title)] : 0, this._dbl]);
+      if (pg._sig === sig) return;
+      pg._sig = sig;
+      pg.style.setProperty("--st", stains(d.n || 0));
+      inn.replaceChildren(this._content(d));
+      inn.scrollTop = 0;
+      no.textContent = d.n && d.k !== "end" ? `— ${d.n} —` : "";
+    }
+    _content(d) {
+      const box = document.createElement("div");
+      const r = d.r;
+      if (d.k === "end") {
+        box.className = "inside";
+        return box;
+      }
+      if (d.k === "toc") {
+        box.className = "toc";
+        box.innerHTML = "<h2>Inhalt</h2>";
+        const msg = (t) => {
+          const m = document.createElement("div");
+          m.className = "msg";
+          m.textContent = t;
+          box.append(m);
+        };
+        if (this._err) {
+          msg(storeHint(this._err, "recipes")[1]);
+          return box;
+        }
+        if (!this._recipes) {
+          msg("Einen Moment, die Seiten werden geblättert …");
+          return box;
+        }
+        if (!this._recipes.length) box.insertAdjacentHTML("beforeend", '<div class="msg">Noch keine Rezepte.<br>Trag das erste ein!</div>');
+        this._recipes.forEach((x, i) => {
+          const b = document.createElement("button");
+          b.className = "it";
+          b.innerHTML = '<span class="t"></span><span class="d"></span><span class="n"></span>';
+          b.firstChild.textContent = x.title;
+          b.lastChild.textContent = this._pageNo(i);
+          b.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            this._go(i + 1);
+          });
+          box.append(b);
+        });
+        if (!this._quiet) {
+          const act = document.createElement("div");
+          act.className = "act";
+          act.append(this._btn("mdi:plus", "Neues Rezept", () => this._edit(null)));
+          box.append(act);
+        }
+        return box;
+      }
+      const src = r.image ? imageUrl(this._h, "recipes", r.image) : "", meta = [r.time ? mins(r.time) : "", ...r.tags || []].filter(Boolean).join(" · ");
+      const head = () => `<h2>${esc(r.title)}</h2>${meta ? `<div class="meta">${esc(meta)}</div>` : ""}${src ? `<div class="photo"><img alt="" loading="lazy" src="${esc(src)}"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>` : ""}`;
+      const ing = () => r.ingredients?.length ? `<h3 class="zl"><span>Zutaten</span><span class="sv"><button class="sb" data-d="-1" aria-label="Weniger Portionen">−</button><span class="svn"></span><button class="sb" data-d="1" aria-label="Mehr Portionen">+</button></span></h3>
+<ul class="ing">${r.ingredients.map(() => '<li><span class="q"></span><span class="nm"></span></li>').join("")}</ul>` : "";
+      const steps = () => {
+        const h = stepsHtml(r.steps);
+        return h ? `${/^<h3/.test(h) ? "" : "<h3>Zubereitung</h3>"}${h}` : "";
+      };
+      if (d.k === "A") box.innerHTML = head() + ing();
+      else if (d.k === "B") box.innerHTML = steps() || '<div class="msg">Ohne Anleitung – einfach drauflos kochen.</div>';
+      else box.innerHTML = head() + ing() + steps();
+      box.dataset.rid = r.id;
+      box.querySelectorAll(".sb").forEach((b) => b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        this._step(r, +b.dataset.d);
+      }));
+      this._paintIng(box, r);
+      if (d.k !== "A") box.append(this._tools(r));
+      return box;
+    }
+    // Mengen einer Rezeptseite für die gewählten Portionen eintragen
+    _paintIng(box, r, bump) {
+      const n = this._servings(r), k = n / (r.servings || 1), lis = box.querySelectorAll("ul.ing li");
+      (r.ingredients || []).forEach((x, i) => {
+        const li = lis[i];
+        if (!li) return;
+        const q = li.firstChild;
+        q.textContent = amount(x, k);
+        q.hidden = x.qty == null && !x.unit;
+        li.lastChild.textContent = x.name;
+        if (bump && x.qty != null) {
+          q.classList.remove("bump");
+          void q.offsetWidth;
+          q.classList.add("bump");
+        }
+      });
+      const sv = box.querySelector(".svn");
+      if (sv) sv.textContent = `${n} ${n === 1 ? "Portion" : "Portionen"}`;
+      const [minus, plus] = box.querySelectorAll(".sb");
+      if (minus) {
+        minus.disabled = n <= 1;
+        plus.disabled = n >= 99;
+      }
+    }
+    // Portionen umrechnen – gilt, bis das Buch zugeklappt wird, und ändert das Rezept nicht
+    _step(r, dir) {
+      const n = Math.max(1, Math.min(99, this._servings(r) + dir));
+      if (n === this._servings(r)) return;
+      this._serv.set(r.id, n);
+      this._poke();
+      this.shadowRoot.querySelectorAll(".in > div").forEach((box) => {
+        if (box.dataset.rid === r.id) this._paintIng(box, r, true);
+      });
+    }
+    _btn(icon2, label, fn, cls = "") {
+      const b = document.createElement("button");
+      b.className = `btn ${cls}`;
+      b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon><span></span>`;
+      b.lastChild.textContent = label;
+      b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        fn(b);
+      });
+      return b;
+    }
+    // Knöpfe unter einem Rezept: Zutaten auf die Einkaufsliste, Bearbeiten, Löschen (mit Rückfrage)
+    _tools(r) {
+      const w = document.createElement("div");
+      if (this._quiet) return w;
+      if (r.ingredients?.length) {
+        const act = document.createElement("div");
+        act.className = "act";
+        act.append(this._btn("mdi:cart-plus", "Zutaten auf die Einkaufsliste", (b) => this._toList(r, b)));
+        w.append(act);
+      }
+      const t = document.createElement("div");
+      t.className = "tools";
+      t.append(this._btn("mdi:pencil", "Bearbeiten", () => this._edit(r)), this._btn("mdi:delete-outline", "Löschen", (b) => this._del(r, b)));
+      w.append(t);
+      return w;
+    }
+    /* ---------- Öffnen, Blättern, Gesten ---------- */
+    _setOpen(open, anim = true) {
+      const e = this._e;
+      if (!e || open === this._open || this._quiet && open) return;
+      this._open = open;
+      this._resize(true);
+      e.book.classList.toggle("still", !anim);
+      e.cover.classList.remove("gone");
+      e.book.classList.toggle("open", open);
+      e.book.classList.toggle("closed", !open);
+      clearTimeout(this._ct);
+      if (open && !this._dbl) this._ct = setTimeout(() => e.cover.classList.add("gone"), anim ? OPEN_MS : 0);
+      if (!open) {
+        this._sp = 0;
+        this._serv.clear();
+        this._ct = setTimeout(() => {
+          [e.L, e.R].forEach((p) => {
+            p._sig = null;
+          });
+          this._paint();
+        }, anim ? OPEN_MS : 0);
+      }
+      this._poke();
+    }
+    // Nach close_after Sekunden ohne Bedienung wieder zuklappen
+    _poke() {
+      clearTimeout(this._idle);
+      const s = +this._c.close_after;
+      if (this._open && s > 0) this._idle = setTimeout(() => {
+        if (this._e.form.hidden) this._setOpen(false);
+        else this._poke();
+      }, s * 1e3);
+    }
+    _go(i) {
+      const n = this._spreads().length;
+      i = Math.max(0, Math.min(n - 1, i));
+      if (i === this._sp || this._turning || !this._open) return;
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const dir = i > this._sp ? 1 : -1, from = this._spreads()[this._sp], to = this._spreads()[i];
+      this._poke();
+      if (reduce) {
+        this._sp = i;
+        this._paint();
+        return;
+      }
+      const e = this._e, leaf = document.createElement("div");
+      leaf.className = "leaf";
+      leaf.innerHTML = '<div class="face f paper"><div class="in"></div><div class="no"></div><div class="sh"></div></div><div class="face b paper"><div class="in"></div><div class="no"></div><div class="sh"></div></div>';
+      const [ff, fb] = leaf.querySelectorAll(".face");
+      if (this._dbl) {
+        if (dir > 0) {
+          this._fill(ff, from.R);
+          this._fill(fb, to.L);
+          this._fill(e.R, to.R);
+        } else {
+          this._fill(ff, to.R);
+          this._fill(fb, from.L);
+          this._fill(e.L, to.L);
+          e.L.style.visibility = to.L.k === "end" ? "hidden" : "";
+        }
+      } else {
+        if (dir > 0) {
+          this._fill(ff, from.P);
+          this._fill(e.R, to.P);
+        } else {
+          this._fill(ff, to.P);
+          this._fill(e.R, from.P);
+        }
+        fb.replaceChildren();
+      }
+      this._turning = true;
+      leaf.classList.add(dir > 0 ? "fwd" : "bwd");
+      e.book.append(leaf);
+      this._tt = setTimeout(() => {
+        leaf.remove();
+        this._turning = false;
+        this._sp = i;
+        this._paint();
+      }, TURN_MS + 30);
+    }
+    _gestures() {
+      const b = this._e.book;
+      let x0 = null, y0 = 0, t0 = 0;
+      b.addEventListener("pointerdown", (ev) => {
+        if (!this._open || ev.button > 0) return;
+        x0 = ev.clientX;
+        y0 = ev.clientY;
+        t0 = Date.now();
+        this._poke();
+      });
+      const end = (ev) => {
+        if (x0 == null) return;
+        const dx = ev.clientX - x0, dy = ev.clientY - y0, dt = Date.now() - t0;
+        x0 = null;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3 && dt < 900) this._go(this._sp + (dx < 0 ? 1 : -1));
+      };
+      b.addEventListener("pointerup", end);
+      b.addEventListener("pointercancel", () => {
+        x0 = null;
+      });
+      b.addEventListener("dragstart", (ev) => ev.preventDefault());
+      this.tabIndex = this.tabIndex >= 0 ? this.tabIndex : 0;
+      this.addEventListener("keydown", (ev) => {
+        if (!this._open || !this._e.form.hidden) return;
+        if (ev.key === "ArrowRight") this._go(this._sp + 1);
+        else if (ev.key === "ArrowLeft") this._go(this._sp - 1);
+      });
+    }
+    /* ---------- Einkaufsliste ---------- */
+    // Alle Zutaten für die gewählten Portionen auf die Nova-Einkaufsliste; was dort schon offen steht, wird in der Menge erhöht
+    async _toList(r, b) {
+      const h = this._h, label = b.lastChild;
+      if (!h || b.disabled) return;
+      b.disabled = true;
+      label.textContent = "Wird eingetragen …";
+      try {
+        const n = await recipes.toShopping(h, r.id, this._servings(r));
+        label.textContent = n ? `${n} ${n === 1 ? "Zutat" : "Zutaten"} eingetragen` : "Steht schon alles drauf";
+        b.classList.add("ok");
+      } catch (err) {
+        console.warn("[nova-cards] Rezeptbuch: Einkaufsliste", err);
+        label.textContent = err?.code === "module_disabled" ? "Einkauf ist abgeschaltet" : "Hat nicht geklappt";
+        b.classList.add("warn");
+      }
+      setTimeout(() => {
+        b.disabled = false;
+        b.classList.remove("ok", "warn");
+        label.textContent = "Zutaten auf die Einkaufsliste";
+      }, 3500);
+    }
+    /* ---------- Bearbeiten, Löschen ---------- */
+    _del(r, b) {
+      const label = b.lastChild;
+      if (!b.classList.contains("warn")) {
+        b.classList.add("warn");
+        label.textContent = "Wirklich löschen?";
+        clearTimeout(this._delT);
+        this._delT = setTimeout(() => {
+          b.classList.remove("warn");
+          label.textContent = "Löschen";
+        }, 4e3);
+        return;
+      }
+      clearTimeout(this._delT);
+      b.disabled = true;
+      recipes.remove(this._h, r.id).catch((err) => {
+        console.warn("[nova-cards] Rezeptbuch: Löschen fehlgeschlagen", err);
+        b.disabled = false;
+        label.textContent = "Fehler – nochmal?";
+      });
+    }
+    // Karteikarte über dem Buch: Titel, Portionen, Zeit, Schlagwörter, Bild, Zutaten (eine pro Zeile), Zubereitung mit Formatierung
+    _edit(r) {
+      if (this._err || !this._recipes) return;
+      const f3 = this._e.form, st = { image: r?.image || null, data: null };
+      f3.innerHTML = `<form class="card" novalidate><h2>${r ? "Rezept bearbeiten" : "Neues Rezept"}</h2>
+<label for="t">Titel</label><input id="t" type="text" maxlength="200" autocomplete="off" enterkeyhint="next">
+<div class="two"><div><label for="p">Portionen</label><input id="p" type="number" min="1" max="99" inputmode="numeric"></div>
+<div><label for="z">Zeit in Minuten</label><input id="z" type="number" min="0" max="6000" inputmode="numeric" placeholder="–"></div></div>
+<label for="g">Schlagwörter</label><input id="g" type="text" autocomplete="off" placeholder="z. B. schnell, vegetarisch"><small>Mit Komma getrennt</small>
+<label>Bild</label><div class="pic"><img alt="" hidden><button type="button" class="btn" data-a="pick"><ha-icon icon="mdi:camera-outline"></ha-icon><span>Foto wählen</span></button>
+<button type="button" class="btn" data-a="clear" hidden><ha-icon icon="mdi:close"></ha-icon><span>Entfernen</span></button><input type="file" accept="image/*"></div>
+<label for="i">Zutaten</label><textarea id="i" placeholder="250 g Mehl&#10;2 Eier&#10;1 Prise Salz"></textarea><small>Eine Zutat pro Zeile, Menge und Einheit vorn – dann lassen sich die Portionen umrechnen</small>
+<label>Zubereitung</label><div class="steps"></div><small>Ein Absatz oder Listenpunkt je Schritt</small>
+<div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>Speichern</span></button></div></form>`;
+      const q = (s) => f3.querySelector(s), img = q(".pic img"), file = q("input[type=file]"), clr = q("[data-a=clear]"), err = q(".err");
+      const rt = richEditor({ placeholder: "Mehl und Eier verrühren …" });
+      rt.set(r?.steps || "");
+      q(".steps").append(rt.el);
+      q("#t").value = r?.title || "";
+      q("#p").value = r?.servings || 2;
+      q("#z").value = r?.time ?? "";
+      q("#g").value = (r?.tags || []).join(", ");
+      q("#i").value = (r?.ingredients || []).map(ingredientLine).join("\n");
+      const showPic = (src) => {
+        img.hidden = !src;
+        if (src) img.src = src;
+        else img.removeAttribute("src");
+        clr.hidden = !src;
+      };
+      showPic(st.image ? imageUrl(this._h, "recipes", st.image) : null);
+      f3.addEventListener("keydown", (ev) => ev.stopPropagation());
+      f3.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+      q("[data-a=pick]").addEventListener("click", () => file.click());
+      clr.addEventListener("click", () => {
+        st.image = null;
+        st.data = null;
+        showPic(null);
+      });
+      file.addEventListener("change", async () => {
+        const fl = file.files?.[0];
+        if (!fl) return;
+        err.textContent = "";
+        try {
+          st.data = await compressImage(fl, IMG_MAX);
+          st.image = null;
+          showPic(st.data);
+        } catch (x) {
+          err.textContent = "Das Bild ließ sich nicht lesen.";
+          console.warn(x);
+        }
+      });
+      q("[data-a=cancel]").addEventListener("click", () => this._closeForm());
+      q("form").addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const title = q("#t").value.trim(), save = q("button[type=submit]");
+        if (!title) {
+          err.textContent = "Ein Titel fehlt noch.";
+          q("#t").focus();
+          return;
+        }
+        save.disabled = true;
+        err.textContent = "";
+        try {
+          let image = st.image;
+          if (st.data) image = (await uploadImage(this._h, "recipes", st.data)).image;
+          const z = q("#z").value.trim();
+          const recipe = {
+            ...r ? { id: r.id } : {},
+            title,
+            image,
+            servings: Math.max(1, Math.min(99, Math.round(+q("#p").value) || 2)),
+            time: z === "" ? null : Math.max(0, Math.round(+z) || 0),
+            tags: q("#g").value.split(",").map((x) => x.trim()).filter(Boolean),
+            ingredients: q("#i").value.split("\n").map((x) => parseIngredient(x, this._units)).filter(Boolean),
+            steps: rt.get()
+          };
+          const res = await recipes.save(this._h, recipe);
+          if (!r && res?.id) this._jump = res.id;
+          if (r) this._serv.delete(r.id);
+          this._closeForm();
+          if (this._jump) this._setRecipes(this._recipes);
+        } catch (x) {
+          console.warn("[nova-cards] Rezeptbuch: Speichern fehlgeschlagen", x);
+          err.textContent = `Speichern hat nicht geklappt${x?.message ? `: ${x.message}` : ""}`;
+          save.disabled = false;
+        }
+      });
+      f3.hidden = false;
+      this._poke();
+      if (!r) setTimeout(() => q("#t").focus(), 50);
+    }
+    _closeForm() {
+      const f3 = this._e.form;
+      f3.hidden = true;
+      f3.replaceChildren();
+      this._poke();
+    }
+  };
+  var DEMO = [
+    {
+      id: "demo1",
+      title: "Apfelkuchen",
+      image: null,
+      servings: 12,
+      time: 75,
+      tags: ["Backen"],
+      ingredients: [{ qty: 200, unit: "g", name: "Mehl" }, { qty: 125, unit: "g", name: "Butter" }, { qty: 100, unit: "g", name: "Zucker" }, { qty: 1, unit: "", name: "Ei" }, { qty: 4, unit: "", name: "Äpfel" }],
+      steps: "<p>Teig kneten</p><p>Äpfel schälen und schneiden</p><p>45 Minuten bei 180 °C backen</p>"
+    },
+    {
+      id: "demo2",
+      title: "Kartoffelsuppe",
+      image: null,
+      servings: 4,
+      time: 40,
+      tags: [],
+      ingredients: [{ qty: 1, unit: "kg", name: "Kartoffeln" }, { qty: 1, unit: "", name: "Zwiebel" }, { qty: 1, unit: "l", name: "Brühe" }],
+      steps: "<p>Kartoffeln würfeln</p><p>Alles 20 Minuten kochen</p><p>Pürieren</p>"
+    }
+  ];
+  define("recipe-book-card", NovaRecipeBookCard, { name: "Nova Rezeptbuch", description: "Rezeptbuch zum Blättern in drei Stilen (altes Kochbuch, modern, Fantasy): Inhaltsverzeichnis, Rezepte mit Foto, Zutaten und Zubereitung, Portionen umrechnen, Zutaten auf die Einkaufsliste. Dieselben Rezepte wie in der Nova Rezeptliste (Nova-Integration).", documentationURL: docUrl("nova-rezeptbuch") });
+  var S_BOOK = [
+    g2({ name: "title", selector: T }, { name: "subtitle", selector: T }),
+    g2(
+      sel("style", [["old", "Old Book (altes Kochbuch)"], ["modern", "Modern Book (schlicht, grau)"], ["fantasy", "Fantasy Book (Zauberbuch)"]]),
+      sel("cover_color", [["brown", "Braun"], ["red", "Rot"], ["green", "Grün"], ["blue", "Blau"]])
+    )
+  ];
+  var S_USE = [
+    sel("layout", [["auto", "Automatisch"], ["double", "Doppelseite"], ["single", "Einzelseite"]]),
+    g2({ name: "start_open", selector: { boolean: {} } }, { name: "close_after", selector: { number: { min: 0, max: 3600, step: 10, mode: "box", unit_of_measurement: "s" } } })
+  ];
+  var LABELS11 = { title: "Titel auf dem Einband", subtitle: "Untertitel (optional)", style: "Stil", cover_color: "Einband", layout: "Seiten", start_open: "Aufgeschlagen starten", close_after: "Zuklappen nach" };
+  var HELPERS11 = {
+    layout: "Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.",
+    close_after: "0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.",
+    subtitle: "Steht unter dem Titel, z. B. „von Oma Erna“.",
+    cover_color: "Der Farbton passt sich dem Stil an (Leder, Leinen grau getönt, dunkles Zauberbuch).",
+    style: "Alle Stile zeigen dieselben Rezepte – auch die Nova Rezeptliste."
+  };
+  var NovaRecipeBookCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const data = () => ({ ...DEF7, ...this._config });
+      const form = (s) => this._form(s, data(), (v) => {
+        const c = merge(this._config, names(s), v);
+        Object.keys(DEF7).forEach((k) => {
+          if (c[k] === DEF7[k]) delete c[k];
+        });
+        this._emit(c);
+      });
+      r.querySelector(".wrap").append(
+        this._section("book", "mdi:book-open-page-variant-outline", "Buch", (b) => b.append(form(S_BOOK))),
+        this._section("use", "mdi:gesture-swipe-horizontal", "Seiten und Verhalten", (b) => b.append(form(S_USE)))
+      );
+    }
+  };
+  __publicField(NovaRecipeBookCardEditor, "labels", LABELS11);
+  __publicField(NovaRecipeBookCardEditor, "helpers", HELPERS11);
+  __publicField(NovaRecipeBookCardEditor, "openSections", ["book"]);
+  define("recipe-book-card-editor", NovaRecipeBookCardEditor);
+
   // src/theme-switch.js
-  var DEF7 = { display: "button", name: "Theme", icon: "mdi:palette-outline" };
+  var DEF8 = { display: "button", name: "Theme", icon: "mdi:palette-outline" };
   var MSG2 = { admin: "Einmal als Admin umschalten", failed: "Hat nicht geklappt" };
   var CSS2 = `${NOVA_VARS}${PANEL_CSS}${NOVA_CHIPS_CSS}
 :host([data-display=chip]){height:auto}:host([data-display=chip])::before{display:none}
@@ -17522,7 +18510,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       if (c.display && !["chip", "button", "dropdown"].includes(c.display)) throw new Error("display: chip, button oder dropdown");
-      this._c = { ...DEF7, ...c };
+      this._c = { ...DEF8, ...c };
       this.dataset.display = this._c.display;
       this._built = false;
       if (this._h) this._render();
@@ -17601,7 +18589,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
     sel("display", [["button", "Button (Antippen schaltet weiter)"], ["chip", "Chip (wie die Chips Card)"], ["dropdown", "Dropdown (Liste)"]]),
     g2({ name: "name", selector: T }, { name: "icon", selector: I })
   ];
-  var LABELS11 = { display: "Darstellung", name: "Beschriftung", icon: "Icon" };
+  var LABELS12 = { display: "Darstellung", name: "Beschriftung", icon: "Icon" };
   var NovaThemeSwitchCardEditor = class extends NovaEditorBase {
     // der Schalter zeigt immer das globale Theme
     _build() {
@@ -17610,9 +18598,9 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
       r.querySelector(".wrap").append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
           b.append(this._hint("Gilt für alle Nova Cards auf allen Geräten. Beim ersten Umschalten legt die Karte dafür selbst einen Helfer „Nova Theme“ an – das darf in Home Assistant nur ein Administrator, danach können alle umschalten."));
-          b.append(this._form(S_GEN7, { ...DEF7, ...this._config }, (v) => {
+          b.append(this._form(S_GEN7, { ...DEF8, ...this._config }, (v) => {
             const c = merge(this._config, names(S_GEN7), v);
-            Object.entries(DEF7).forEach(([k, x]) => {
+            Object.entries(DEF8).forEach(([k, x]) => {
               if (c[k] === x) delete c[k];
             });
             this._emit(c);
@@ -17621,7 +18609,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
       );
     }
   };
-  __publicField(NovaThemeSwitchCardEditor, "labels", LABELS11);
+  __publicField(NovaThemeSwitchCardEditor, "labels", LABELS12);
   __publicField(NovaThemeSwitchCardEditor, "openSections", ["general"]);
   __publicField(NovaThemeSwitchCardEditor, "noTheme", true);
   define("theme-card-editor", NovaThemeSwitchCardEditor);

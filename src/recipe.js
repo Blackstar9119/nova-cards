@@ -8,6 +8,7 @@ import {g2, T, I, sel, BASE_LABELS} from './shared/editor-schema.js';
 import {PRINT_CSS, PRINT_DEF, printButton, paintBtn, runPrint, runFeedback, stopFeedback, printSchema, PRINT_LABELS, PRINT_HELPERS} from './shared/print-button.js';
 import {watch, recipes as api, storeHint, imageUrl} from './shared/nova-store.js';
 import {RICH_CSS, richEditor, richView, toPlain} from './shared/rich-text.js';
+import {amount, mins} from './shared/recipe-util.js';
 import {VIEW_CSS, roundBtn, armButton, setBtnIcon} from './shared/stack-view.js';
 import {PICK_MEDIA_CSS, mediaPicker} from './shared/media-picker.js';
 
@@ -102,9 +103,6 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
 
 const RDEF = {name: 'Rezepte', icon: 'mdi:chef-hat', show_header: true, view: 'list', show_search: true, height: 420, print_field: 'text', ...PRINT_DEF};
 const SAVE_MS = 800;
-const num = q => String(Math.round((+q || 0) * 100) / 100).replace('.', ',');
-const amount = (ing, k = 1) => ing.qty == null ? '' : `${num(ing.qty * k)}${ing.unit ? ` ${ing.unit}` : ''}`;
-const mins = t => t >= 60 ? `${Math.floor(t / 60)} Std${t % 60 ? ` ${t % 60} Min` : ''}` : `${t} Min`;
 
 class NovaRecipeCard extends HTMLElement {
   static getConfigElement() { return document.createElement(tag('recipe-card-editor')); }
@@ -460,7 +458,7 @@ class NovaRecipeCard extends HTMLElement {
     runPrint(this, this._h, c.print_script, {[c.print_field || 'text']: out.join('\n')}, st => { this._pstate = st; this._paintBar(); });
   }
 }
-define('recipe-card', NovaRecipeCard, {name: 'Nova Rezept Card', description: 'Rezeptbuch mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf.', documentationURL: docUrl('nova-rezept-card')});
+define('recipe-card', NovaRecipeCard, {name: 'Nova Rezeptliste', description: 'Kompakte Rezeptliste mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf.', documentationURL: docUrl('nova-rezeptliste')});
 
 /* ---------- Editor Rezept Card ---------- */
 const GEN = [

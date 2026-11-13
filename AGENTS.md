@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Navi,
-Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezept und Themes Schalter – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezeptliste, Rezeptbuch und Themes Schalter – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -36,7 +36,9 @@ src/
   clock-styles.js     Stile der Uhr: Klappzahlen, Leuchtziffern (Farbe nach Sonnenstand), Radiowecker (Sieben-Segment-SVG)
   shopping.js         Nova Einkauf Card + Editor (Nova-Integration: Artikel mit Menge, Geschäft, Icon/Bild, Notiz; Schnellauswahl, Druck-Knopf)
   note.js             Nova Notiz Card + Editor (Nova-Integration: mehrere Notizen mit formatiertem Text, Liste ↔ Detail, Druck-Knopf)
-  recipe.js           Nova Rezept Card + Editor (Nova-Integration: Rezeptbuch, Portionen umrechnen, Zutaten auf die Einkaufsliste)
+  recipe.js           Nova Rezeptliste + Editor (Nova-Integration: kompakte Liste, Portionen umrechnen, Zutaten auf die Einkaufsliste)
+  recipe-book.js      Nova Rezeptbuch + Editor (Buch zum Blättern, Stile old/modern/fantasy, dieselben Rezepte wie die Rezeptliste;
+                      Papier/Leder/Gold sind Materialfarben, Schriften von der Integration unter /nova/static/fonts)
   theme-switch.js     Nova Themes Schalter + Editor (globales Theme wählen: Chip, Button oder Dropdown)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
@@ -57,6 +59,7 @@ src/
     rich-text.js      Formatierter Text: Leiste + Eingabefeld (richEditor), Anzeige (richView), Bereinigung (sanitize – dieselbe
                       Liste wie sanitize.py der Integration, beide zusammen ändern), Klartext für den Bondrucker (toPlain)
     media-picker.js   Icon oder eigenes Bild wählen: Lebensmittel-Icons, MDI-Suche, Upload mit Verkleinern
+    recipe-util.js    Gemeinsames der Rezept-Karten: Mengen, Zeiten, Zutat ↔ Textzeile
     stack-view.js     Zwei Ansichten in einer Karte (Liste ↔ Detail, gleiten seitlich), runde Knöpfe, Löschen in zwei Schritten
     styles.js         Gemeinsame CSS-Bausteine (Glas-Hintergrund, Karten- und Panel-CSS, Farbrollen, Editor-Styles)
     scene.js          Zeichenstil der Gerätezeichnungen: Farbpalette, Verläufe (Gehäuse, Glas, Chrom), Glas-Spiegelung,
