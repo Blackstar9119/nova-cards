@@ -17820,6 +17820,7 @@ box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),6px 8px 22px rgba(0,0,0,.35)}
 /* ===== Fantasy Book: hochwertige Hardcover-Ausgabe – matter Einband, Goldfolie, Farbschnitt, sauberes Papier, Kapitel-Optik.
    Bewusst ohne Filter, Texturen und Dauer-Animationen (läuft auch auf dem Echo Show). ===== */
 
+
 :host([book=fantasy]){--f-hand:'Nova Serif',Georgia,'Times New Roman',serif;--f-serif:'Nova Serif',Georgia,'Times New Roman',serif;--paper:#f6efdd;--ink:#2a2420}
 :host([book=fantasy]) .paper,:host([book=fantasy]) .pg,:host([book=fantasy]) .face.paper{--st:none;background-image:none;background-color:var(--paper);box-shadow:inset 0 0 0 1px rgba(60,40,20,.07)}
 :host([book=fantasy]) .pg.r::before,:host([book=fantasy]) .leaf .face.f::before{width:9%;background:linear-gradient(90deg,rgba(40,28,15,.16),rgba(40,28,15,.03) 45%,transparent)}
@@ -17862,13 +17863,15 @@ box-shadow:0 0 0 1px var(--gold),0 0 0 4px var(--paper),0 0 0 5px var(--gold);op
 border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
 
 :host([book=fantasy]){--leather:#1b2338;--gold:#d6b76e;--acc:#7a5a1f;--rib:linear-gradient(90deg,#9c7a2e,#f1d68e 42%,#c9a24e 58%,#8a6a25);
---edge:radial-gradient(circle,#d6b76e 0 .8px,transparent 1.3px) 0 0/5px 5px,radial-gradient(circle,rgba(214,183,110,.5) 0 .6px,transparent 1px) 2.5px 2.5px/5px 5px,#1b2338;
---endpaper:radial-gradient(circle,rgba(214,183,110,.55) 0 1px,transparent 1.6px) 0 0/14px 14px,radial-gradient(circle,rgba(214,183,110,.3) 0 .7px,transparent 1.2px) 7px 7px/14px 14px}
-:host([book=fantasy]) .stitch{display:block;inset:5.5% 6.5% 5.5% 12%;border:1px solid var(--gold);border-radius:0;box-shadow:inset 0 0 0 4px var(--leather),inset 0 0 0 5px rgba(214,183,110,.6)}
-:host([book=fantasy]) .emb::before{content:"";width:30%;aspect-ratio:1;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23d6b76e%22%20stroke-width%3D%221.4%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2230%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2226%22%20stroke-width%3D%22.6%22%2F%3E%3C%2Fg%3E%3Cpath%20fill%3D%22%23d6b76e%22%20d%3D%22M50%208l5%2034%2034%208-34%208-5%2034-5-34-34-8%2034-8z%22%2F%3E%3Cpath%20fill%3D%22%23d6b76e%22%20opacity%3D%22.7%22%20d%3D%22M50%2030l3%2017%2017%203-17%203-3%2017-3-17-17-3%2017-3z%22%20transform%3D%22rotate(45%2050%2050)%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat;margin-bottom:calc(var(--pw) * .02)}
-:host([book=fantasy]) .emb .orn:first-of-type{display:none}
-:host([book=fantasy]) .emb h1{font-variant:small-caps;letter-spacing:.08em;font-size:clamp(20px,calc(var(--pw) * .115),66px)}
-:host([book=fantasy]) h2::first-letter{font-size:1.25em}
+--edge:radial-gradient(circle,#d6b76e 0 .8px,transparent 1.3px) 0 0/5px 5px,radial-gradient(circle,rgba(214,183,110,.5) 0 .6px,transparent 1px) 2.5px 2.5px/5px 5px,var(--leather);
+--endpaper:repeating-linear-gradient(90deg,transparent 0 13px,rgba(214,183,110,.28) 13px 14px),repeating-linear-gradient(0deg,transparent 0 13px,rgba(214,183,110,.14) 13px 14px)}
+:host([book=fantasy]) .stitch{display:block;inset:0 0 0 7%;border:0;border-radius:0;box-shadow:none;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20140%22%20preserveAspectRatio%3D%22none%22%3E%3Cg%20fill%3D%22none%22%20stroke-width%3D%221.6%22%3E%3Cpath%20stroke%3D%22rgba(0%2C0%2C0%2C.45)%22%20d%3D%22M10%2011h80v120H10z%20M18%2019h64v104H18z%22%2F%3E%3Cpath%20stroke%3D%22rgba(255%2C255%2C255%2C.09)%22%20d%3D%22M10%2012h80v120H10z%20M18%2020h64v104H18z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") center/100% 100% no-repeat}
+:host([book=fantasy]) .emb .orn{display:none}
+:host([book=fantasy]) .emb::before,:host([book=fantasy]) .emb::after{content:"";position:absolute;left:21%;right:21%;height:17%;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20200%2060%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23d6b76e%22%20stroke-width%3D%221%22%3E%3Cpath%20d%3D%22M100%2058V2%22%2F%3E%3Cpath%20d%3D%22M100%2058L35.1%2037.0%22%2F%3E%3Cpath%20d%3D%22M100%2058L45.6%2022.8%22%2F%3E%3Cpath%20d%3D%22M100%2058L60.9%2011.6%22%2F%3E%3Cpath%20d%3D%22M100%2058L79.5%204.4%22%2F%3E%3Cpath%20d%3D%22M100%2058L100.0%202.0%22%2F%3E%3Cpath%20d%3D%22M100%2058L120.5%204.4%22%2F%3E%3Cpath%20d%3D%22M100%2058L139.1%2011.6%22%2F%3E%3Cpath%20d%3D%22M100%2058L154.4%2022.8%22%2F%3E%3Cpath%20d%3D%22M100%2058L164.9%2037.0%22%2F%3E%3Cpath%20d%3D%22M30%2058a70%2056%200%200%201%20140%200%22%2F%3E%3Cpath%20d%3D%22M52%2058a48%2038%200%200%201%2096%200%22%2F%3E%3Cpath%20d%3D%22M2%2058H198%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") center bottom/100% auto no-repeat}
+:host([book=fantasy]) .emb::before{top:9%}:host([book=fantasy]) .emb::after{bottom:9%;transform:scaleY(-1)}
+:host([book=fantasy]) .emb h1{text-transform:uppercase;letter-spacing:.2em;font-size:clamp(16px,calc(var(--pw) * .085),48px);padding:.45em 0;border-top:1px solid var(--gold);border-bottom:1px solid var(--gold)}
+:host([book=fantasy]) .emb p{letter-spacing:.06em}
+:host([book=fantasy]) h2::first-letter{font-size:1.3em}
 
 :host([book=fantasy][cover=brown]){--leather:#1b2338}:host([book=fantasy][cover=red]){--leather:#4b1622}:host([book=fantasy][cover=green]){--leather:#173229}:host([book=fantasy][cover=blue]){--leather:#1b2338}
 :host([book=fantasy]) .chap{display:block;text-align:center;font-family:var(--f-serif);font-size:.62em;letter-spacing:.35em;text-transform:uppercase;color:var(--acc);margin:0 0 .9em}
