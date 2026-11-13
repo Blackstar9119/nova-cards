@@ -20,7 +20,7 @@ const db = {
       {id: 'i6', name: 'Brot', qty: 1, unit: 'Stk', store: 's1', icon: 'mdi:bread-slice', image: null, note: '', done: true}],
     history: [['Kaffeebohnen', 'mdi:coffee'], ['Butter', 'mdi:cheese'], ['Eier', 'mdi:egg-outline'], ['Nudeln', 'mdi:pasta'], ['Bananen', 'mdi:nutrition']]
       .map(([name, icon], i) => ({key: name.toLowerCase(), name, icon, image: null, unit: 'Stk', store: 's1', count: 5 - i, last: T0 - i}))},
-  recipes: {units: ['Stk', 'g', 'kg', 'ml', 'l', 'Packung', 'TL', 'EL', 'Prise', 'Bund', 'Dose', 'Zehe', 'Scheibe', ''], recipes: [
+  recipes: {units: ['Stk', 'g', 'kg', 'ml', 'l', 'Packung', 'TL', 'EL', 'Prise', 'Msp.', 'Tasse', 'Cup', 'Becher', 'cl', 'Bund', 'Dose', 'Glas', 'Zehe', 'Scheibe', 'Blatt', 'Handvoll', ''], recipes: [
     {id: 'r1', title: 'Pfannkuchen', image: null, servings: 2, time: 20, tags: ['süß', 'schnell'], favorite: true, updated: T0,
       ingredients: [{name: 'Mehl', qty: 250, unit: 'g'}, {name: 'Milch', qty: 500, unit: 'ml'}, {name: 'Eier', qty: 3, unit: 'Stk'}, {name: 'Salz', qty: 1, unit: 'Prise'}, {name: 'Butter zum Braten', qty: null, unit: ''}],
       steps: '<ul class="check"><li>Mehl, Milch, Eier und Salz <b>glatt rühren</b></li><li>20 Minuten ruhen lassen</li><li>In Butter goldbraun backen</li></ul>'},

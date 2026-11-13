@@ -7,7 +7,7 @@ import {g2, T, sel} from './shared/editor-schema.js';
 import {watch, recipes as api, storeHint, imageUrl, uploadImage} from './shared/nova-store.js';
 import {RICH_CSS, richEditor, sanitize} from './shared/rich-text.js';
 import {compressImage} from './shared/media-picker.js';
-import {amount, mins, parseIngredient, ingredientLine} from './shared/recipe-util.js';
+import {amount, mins, parseIngredient} from './shared/recipe-util.js';
 
 /* ---------- Nova Rezeptbuch ----------
    Ein Kochbuch zum Blättern: zugeklappt der Einband, Tippen schlägt es auf, Wischen blättert. Drei Stile (Option style):
@@ -101,7 +101,10 @@ font-size:clamp(12px,calc(var(--pw) * .036),19px);line-height:1.45}
 .mo{position:absolute;left:0;right:0;bottom:0;height:calc(var(--pw) * .2);z-index:3;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(var(--pw) * .06);
 background:linear-gradient(180deg,transparent,var(--paper) 70%);opacity:0;pointer-events:none;transition:opacity .25s;cursor:pointer;border-radius:inherit}
 .mo::after{content:"";width:calc(var(--pw) * .05);aspect-ratio:1;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);opacity:.55}
-.more .mo{opacity:1;pointer-events:auto}.more .no{opacity:0}
+.mu{position:absolute;left:0;right:0;top:0;height:calc(var(--pw) * .16);z-index:3;display:flex;align-items:flex-start;justify-content:center;padding-top:calc(var(--pw) * .04);
+background:linear-gradient(0deg,transparent,var(--paper) 70%);opacity:0;pointer-events:none;transition:opacity .25s;cursor:pointer;border-radius:inherit}
+.mu::after{content:"";width:calc(var(--pw) * .05);aspect-ratio:1;border-left:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg);opacity:.55;margin-top:calc(var(--pw) * .02)}
+.more .mo,.less .mu{opacity:1;pointer-events:auto}.more .no{opacity:0}
 .no{position:absolute;bottom:calc(var(--pw) * .035);left:0;right:0;text-align:center;font-style:italic;font-size:clamp(10px,calc(var(--pw) * .026),14px);opacity:.55;pointer-events:none}
 .leaf{position:absolute;top:0;bottom:0;width:var(--pw);transform-style:preserve-3d;transform-origin:0 50%;z-index:5;pointer-events:none;will-change:transform;transform:translateZ(3px)}
 .leaf .face{left:0}.leaf .face.b{transform:rotateY(180deg)}
@@ -235,7 +238,12 @@ linear-gradient(90deg,transparent 46px,rgba(190,60,60,.3) 46px 47px,transparent 
 .card input[type=text],.card textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;
 padding:.45em .6em;outline:none;-webkit-user-select:text;user-select:text}
 .card textarea{min-height:7.5em;resize:vertical;line-height:1.45}
-.card input:focus,.card textarea:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
+.card .ing{display:grid;grid-template-columns:4.6em 5.4em 1fr auto;gap:6px;align-items:center;margin-bottom:6px}
+.card .ing input,.card .ing select{min-width:0}
+.card .ing select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;padding:.45em .3em;outline:none}
+.card .ing .x{border:0;background:none;color:var(--ink);font-size:1.4em;line-height:1;width:1.6em;height:1.6em;cursor:pointer;opacity:.6}
+.card .ing .x:hover{opacity:1}
+.card input:focus,.card textarea:focus,.card select:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
 .card .pic{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .card .pic img{width:110px;height:82px;object-fit:cover;border:4px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transform:rotate(-2deg)}
 .card .pic input[type=file]{display:none}
@@ -456,7 +464,7 @@ class NovaRecipeBookCard extends HTMLElement {
     const r = this.shadowRoot || this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${NOVA_VARS}${RICH_CSS}${BOOK_CSS}</style><div class="rb"><div class="stage"><div class="book closed">
 <div class="block l"></div><div class="block r"></div>
-<div class="pg l paper"><div class="in"></div><div class="mo" aria-hidden="true"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="mo" aria-hidden="true"></div><div class="no"></div></div>
+<div class="pg l paper"><div class="in"></div><div class="mu" aria-hidden="true"></div><div class="mo" aria-hidden="true"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="mu" aria-hidden="true"></div><div class="mo" aria-hidden="true"></div><div class="no"></div></div>
 <div class="cover"><div class="face f leather"><div class="spine"></div><div class="stitch"></div><div class="emb">${ORN}<h1></h1><p></p>${ORN}</div><div class="wear"></div></div>
 <div class="face b inside"><div class="ded"></div></div><div class="hit" role="button" aria-label="Buch öffnen"></div></div>
 <button class="ribbon" aria-label="Buch schließen" title="Buch schließen"></button>
@@ -475,8 +483,10 @@ class NovaRecipeBookCard extends HTMLElement {
     q('.ribbon').addEventListener('click', () => this._setOpen(false));
     [this._e.L, this._e.R].forEach(pg => {
       pg.querySelector('.in').addEventListener('scroll', () => this._over(pg), {passive: true});
-      // Antippen des Hinweises scrollt ein Stück weiter
-      pg.querySelector('.mo').addEventListener('click', ev => { ev.stopPropagation(); const i = pg.querySelector('.in'); i.scrollBy({top: i.clientHeight * .7, behavior: 'smooth'}); });
+      // Antippen der Hinweise scrollt ein Stück weiter bzw. zurück
+      const by = k => ev => { ev.stopPropagation(); const i = pg.querySelector('.in'); i.scrollBy({top: i.clientHeight * .7 * k, behavior: 'smooth'}); };
+      pg.querySelector('.mo').addEventListener('click', by(1));
+      pg.querySelector('.mu').addEventListener('click', by(-1));
     });
     this._e.prev.addEventListener('click', () => this._go(this._sp - 1));
     this._e.next.addEventListener('click', () => this._go(this._sp + 1));
@@ -587,7 +597,8 @@ class NovaRecipeBookCard extends HTMLElement {
     }
     no.textContent = d.n && d.k !== 'end' ? `— ${d.n} —` : '';
   }
-  // Passt der Inhalt nicht auf die Seite, zeigt unten ein Verlauf mit Pfeil, dass es weitergeht (verschwindet am Ende)
+  // Passt der Inhalt nicht auf die Seite, zeigt unten ein Verlauf mit Pfeil, dass es weitergeht (verschwindet am Ende),
+  // und oben einer mit Pfeil nach oben, sobald man weitergescrollt hat
   // Vorher: Foto so weit verkleinern, dass alles auf die Seite passt (höchstens bis auf ein Viertel der Seitenhöhe)
   // (nur auf der Doppelseite: dort steht links Titel, Foto und Zutaten; die Einzelseite scrollt ohnehin)
   _over(pg, fit) {
@@ -598,6 +609,7 @@ class NovaRecipeBookCard extends HTMLElement {
       if (extra > 0 && h) img.style.height = `${Math.max(i.clientHeight * .25, h - extra - 2)}px`;
     }
     pg.classList.toggle('more', i.scrollHeight - i.scrollTop - i.clientHeight > 6);
+    pg.classList.toggle('less', i.scrollTop > 6);
   }
   _content(d) {
     const box = document.createElement('div');
@@ -871,7 +883,8 @@ class NovaRecipeBookCard extends HTMLElement {
 <label for="g">Schlagwörter</label><input id="g" type="text" autocomplete="off" placeholder="z. B. schnell, vegetarisch"><small>Mit Komma getrennt</small>
 <label>Bild</label><div class="pic"><img alt="" hidden><button type="button" class="btn" data-a="pick"><ha-icon icon="mdi:camera-outline"></ha-icon><span>Foto wählen</span></button>
 <button type="button" class="btn" data-a="clear" hidden><ha-icon icon="mdi:close"></ha-icon><span>Entfernen</span></button><input type="file" accept="image/*"></div>
-<label for="i">Zutaten</label><textarea id="i" placeholder="250 g Mehl&#10;2 Eier&#10;1 Prise Salz"></textarea><small>Eine Zutat pro Zeile, Menge und Einheit vorn – dann lassen sich die Portionen umrechnen</small>
+<label>Zutaten</label><div class="ings"></div><button type="button" class="btn" data-a="add"><ha-icon icon="mdi:plus"></ha-icon><span>Zutat</span></button>
+<small>Menge und Einheit getrennt – dann lassen sich die Portionen umrechnen. Mehrere Zeilen („250 g Mehl“) lassen sich auch einfügen.</small>
 <label>Zubereitung</label><div class="steps"></div><small>Ein Absatz oder Listenpunkt je Schritt</small>
 <div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>Speichern</span></button></div></form>`;
     const q = s => f.querySelector(s), img = q('.pic img'), file = q('input[type=file]'), clr = q('[data-a=clear]'), err = q('.err');
@@ -882,7 +895,35 @@ class NovaRecipeBookCard extends HTMLElement {
     q('#p').value = r?.servings || 2;
     q('#z').value = r?.time ?? '';
     q('#g').value = (r?.tags || []).join(', ');
-    q('#i').value = (r?.ingredients || []).map(ingredientLine).join('\n');
+    // Zutaten als Zeilen: Menge | Einheit (Liste der Integration) | Zutat | Entfernen
+    const ings = q('.ings'), units = this._units?.length ? this._units : [''];
+    const row = (ing = {qty: null, unit: '', name: ''}, after = null) => {
+      const el = document.createElement('div'); el.className = 'ing';
+      const opts = [...new Set([...units, ing.unit || ''])].map(u => `<option value="${esc(u)}">${esc(u || '–')}</option>`).join('');
+      el.innerHTML = `<input type="text" class="qty" inputmode="decimal" placeholder="Menge" aria-label="Menge" autocomplete="off"><select aria-label="Einheit">${opts}</select>
+<input type="text" class="nm" maxlength="120" placeholder="Zutat" aria-label="Zutat" autocomplete="off" enterkeyhint="next"><button type="button" class="x" aria-label="Zutat entfernen">×</button>`;
+      const [qt, un, nm] = el.querySelectorAll('input,select');
+      qt.value = ing.qty == null ? '' : String(ing.qty).replace('.', ',');
+      un.value = ing.unit || ''; nm.value = ing.name || '';
+      el.querySelector('.x').addEventListener('click', () => { el.remove(); if (!ings.children.length) row(); });
+      // Enter springt in die nächste Zeile bzw. legt eine neue an
+      nm.addEventListener('keydown', ev => { if (ev.key !== 'Enter') return; ev.preventDefault(); (el.nextElementSibling || row()).querySelector('.qty').focus(); });
+      // Mehrere Zeilen einfügen („250 g Mehl“ …) legt je Zeile eine Zutat an
+      nm.addEventListener('paste', ev => {
+        const t = ev.clipboardData?.getData('text') || '';
+        if (!t.includes('\n')) return;
+        ev.preventDefault();
+        let at = el;
+        t.split('\n').map(x => parseIngredient(x, units)).filter(Boolean).forEach((x, k) => {
+          if (k === 0 && !qt.value && !nm.value) { qt.value = x.qty == null ? '' : String(x.qty).replace('.', ','); un.value = x.unit; nm.value = x.name; }
+          else at = row(x, at);
+        });
+      });
+      if (after) after.after(el); else ings.append(el);
+      return el;
+    };
+    (r?.ingredients?.length ? r.ingredients : [undefined]).forEach(x => row(x));
+    q('[data-a=add]').addEventListener('click', () => row().querySelector('.qty').focus());
     const showPic = src => { img.hidden = !src; if (src) img.src = src; else img.removeAttribute('src'); clr.hidden = !src; };
     showPic(st.image ? imageUrl(this._h, 'recipes', st.image) : null);
     // Tippen im Formular soll keine Tastenkürzel von HA oder das Blättern auslösen
@@ -909,7 +950,10 @@ class NovaRecipeBookCard extends HTMLElement {
         const z = q('#z').value.trim();
         const recipe = {...(r ? {id: r.id} : {}), title, image, servings: Math.max(1, Math.min(99, Math.round(+q('#p').value) || 2)), time: z === '' ? null : Math.max(0, Math.round(+z) || 0),
           tags: q('#g').value.split(',').map(x => x.trim()).filter(Boolean),
-          ingredients: q('#i').value.split('\n').map(x => parseIngredient(x, this._units)).filter(Boolean), steps: rt.get()};
+          ingredients: [...ings.children].map(el => {
+            const [qt, un, nm] = el.querySelectorAll('input,select'), v = parseFloat(qt.value.replace(',', '.'));
+            return nm.value.trim() ? {name: nm.value.trim(), qty: Number.isFinite(v) ? v : null, unit: un.value} : null;
+          }).filter(Boolean), steps: rt.get()};
         const res = await api.save(this._h, recipe);
         if (!r && res?.id) this._jump = res.id;
         if (r) this._serv.delete(r.id);
