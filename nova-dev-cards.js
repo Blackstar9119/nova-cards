@@ -14,7 +14,7 @@
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
   // src/shared/theme.js
-  var TOKENS, INK, sheen, SHEEN_LIGHT, SHEEN_WARM, SHEEN_DARK, MOKKA, THEMES, THEME_KEYS, BACKGROUNDS, NAVI, block, themed, SIZE_FACTOR, sized, MOTION, SURFACE, toneLayer, HA_VARS, HA, NOVA_VARS, NAVI_VARS;
+  var TOKENS, INK, sheen, SHEEN_LIGHT, SHEEN_WARM, SHEEN_DARK, MOKKA, THEMES, THEME_KEYS, BACKGROUNDS, NAVI, block, themed, SIZE_FACTOR, sized, MOTION, SURFACE, tintLayer, HA_VARS, HA, NOVA_VARS, NAVI_VARS;
   var init_theme = __esm({
     "src/shared/theme.js"() {
       TOKENS = [
@@ -47,10 +47,8 @@
         // Glanz über jeder Kartenfläche (oberste Ebene, Bild oder none): weiches Licht von oben links und ein schräger Spiegelstreifen.
         // Nova Blau hat ihn schon im Glas selbst, darum none.
         ["sheen", "sheen", "none"],
-        // Farbton der Fläche als Bild-Ebene: setzen Bereich und Pop-up mit Farbton für alles darin (Nova-Karten und fremde Karten,
-        // siehe TONE_SCOPE in styles.js), sonst none. tone-mix = Anteil des Farbtons oben links, er läuft nach unten rechts aus
-        ["tone-layer", "tone-layer", "none"],
-        ["tone-mix", "tone-mix", "22%"],
+        // Farbton (tint) von Bereich und Pop-up: nur ein Hauch über der Theme-Fläche, Unterkarten bleiben in der Theme-Farbe
+        ["tint-mix", "tint-mix", "7%"],
         // Fremde Karten (Home-Assistant-Karten in Bereich, Pop-up, Swipe): einfarbige Kartenfarbe, wo HA keine Verläufe nimmt
         ["card-solid", "card-color", "#1e2638"],
         // Akzente und Farbrollen
@@ -76,8 +74,8 @@
         ["a4-fg", "accent-4-text", "#fff"],
         ["neutral", "neutral", "#7b8794"],
         ["neutral-fg", "neutral-text", "#fff"],
-        // Farbtöne der Flächen (Farbton von Bereich und Pop-up, Unterkarten darin) – die zentrale Palette für Hintergründe.
-        // Standard = die Rolle selbst, ein Theme kann sie für Flächen weicher oder wärmer stimmen
+        // Farbtöne für den Hauch von Bereich und Pop-up (tint) – zentrale Palette. Standard = die Rolle selbst, ein Theme kann sie
+        // für Flächen klarer oder wärmer stimmen
         ["a1-tone", "accent-1-tone", "var(--nv-a1)"],
         ["a2-tone", "accent-2-tone", "var(--nv-a2)"],
         ["a3-tone", "accent-3-tone", "var(--nv-a3)"],
@@ -257,7 +255,6 @@
           bg: "linear-gradient(160deg,#252528,#19191b)",
           sheen: SHEEN_DARK,
           "card-solid": "#1c1c1e",
-          "tone-mix": "26%",
           border: "rgba(255,255,255,.06)",
           fg: "#e5e5ea",
           chip: "#2c2c2e",
@@ -385,8 +382,8 @@
       MOTION = `:host([nova-motion]) *,:host([nova-motion]) *::before,:host([nova-motion]) *::after{animation:none!important}
 :host([nova-motion=off]) *,:host([nova-motion=off]) *::before,:host([nova-motion=off]) *::after{transition:none!important}
 :host([nova-motion=off]){${TOKENS.filter(([n]) => /^d\d$|^sweep$/.test(n)).map(([n]) => `--nv-${n}:0s`).join(";")}}`;
-      SURFACE = "var(--nv-sheen),var(--nv-tone-layer),var(--nv-bg)";
-      toneLayer = (c) => `linear-gradient(160deg,color-mix(in srgb,${c} var(--nv-tone-mix),transparent),transparent 85%)`;
+      SURFACE = "var(--nv-sheen),var(--nv-bg)";
+      tintLayer = (c) => `linear-gradient(160deg,color-mix(in srgb,${c} var(--nv-tint-mix),transparent),color-mix(in srgb,${c} calc(var(--nv-tint-mix) / 2),transparent))`;
       HA_VARS = `--ha-card-background:${SURFACE};--card-background-color:var(--nv-card-solid);--ha-card-border-radius:var(--nv-radius);
 --ha-card-border-color:var(--nv-border);--ha-card-border-width:1px;--ha-card-box-shadow:var(--nv-shadow),var(--nv-edge);
 --primary-text-color:var(--nv-fg);--secondary-text-color:color-mix(in srgb,var(--nv-fg) 62%,transparent);
@@ -981,7 +978,7 @@
   });
 
   // src/shared/styles.js
-  var ROLES, roleVars, GLASS, TONE_SCOPE, CARD_CSS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, MAPROW_CSS, EDITOR_LIST_CSS, SECTION_EDITOR_CSS, FIELD_CSS;
+  var ROLES, roleVars, GLASS, CARD_CSS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, MAPROW_CSS, EDITOR_LIST_CSS, SECTION_EDITOR_CSS, FIELD_CSS;
   var init_styles = __esm({
     "src/shared/styles.js"() {
       init_theme();
@@ -996,7 +993,6 @@
 backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat));-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat))}
 :host(.nv-flat)::before{display:none}
 :host(.nv-na)::before{opacity:.4}`;
-      TONE_SCOPE = `--nova-tone-layer:${toneLayer("var(--tt)")};--nv-tone-layer:${toneLayer("var(--tt)")};--ha-card-background:${SURFACE}`;
       CARD_CSS = `${NOVA_VARS}
 :host{display:block;height:100%}
 ${GLASS}
@@ -2874,8 +2870,10 @@ ha-icon{--mdc-icon-size:var(--nv-icon-lg);display:flex}
       };
       define("navi-popup", NovaNaviPopup);
       DCSS = `
-:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px));transition:height var(--nv-d4) ease}
-:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
+/* Platzhalter im Dashboard, damit die schwebende Leiste nichts verdeckt: gemessene Höhe der Leiste (inkl. Mini-Player)
+   + Abstand unten + Luft. --nova-navi-space übersteuert wie bisher (dann + 62px für den Mini-Player). */
+:host{display:block;--nv-navi-auto:calc(var(--nv-navi-h,38px) + 26px + env(safe-area-inset-bottom,0px));height:var(--nova-navi-space,var(--nova-dock-space,var(--nv-navi-auto)));transition:height var(--nv-d4) ease}
+:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,calc(var(--nv-navi-auto) - 62px))) + 62px)}
 :host([side]){height:0}
 ha-icon{--mdc-icon-size:22px;display:flex}
 .wrap{position:fixed;left:50%;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:stretch;gap:var(--nv-s4);max-width:calc(100vw - 24px)}
@@ -3087,6 +3085,8 @@ ha-icon{--mdc-icon-size:22px;display:flex}
             this._hp.remove();
             this._hp = null;
           }
+          this._spro?.disconnect();
+          this._spw = null;
         }
         getCardSize() {
           return 1;
@@ -3230,7 +3230,25 @@ ha-icon{--mdc-icon-size:22px;display:flex}
             }
           });
         }
+        // Höhe der Leiste messen (Platzhalter-Höhe im CSS); nur schwebend, inline steht sie ohnehin im Fluss
+        _space() {
+          const w = this.shadowRoot?.querySelector(".wrap");
+          if (!w || typeof ResizeObserver === "undefined") return;
+          if (this._spw !== w) {
+            this._spro ||= new ResizeObserver(() => this._spaceSet());
+            this._spro.disconnect();
+            this._spro.observe(w);
+            this._spw = w;
+          }
+          this._spaceSet();
+        }
+        _spaceSet() {
+          const w = this._spw;
+          if (!w || this._inline || !w.offsetHeight) this.style.removeProperty("--nv-navi-h");
+          else this.style.setProperty("--nv-navi-h", `${Math.ceil(w.offsetHeight)}px`);
+        }
         _update() {
+          this._space();
           if (!this._btns || !this._h) return;
           const h = this._h, here = normPath(location.pathname);
           const isHere = (it) => {
@@ -8531,7 +8549,7 @@ ha-icon{--mdc-icon-size:var(--nv-icon-lg);display:flex}
 .sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96%);max-height:88vh;
 background:var(--nv-sheen),var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
 box-shadow:var(--nv-shadow-popup);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s var(--nv-ease),opacity var(--nv-d2)}
-.sh.tint{background:var(--nv-sheen),linear-gradient(160deg,color-mix(in srgb,var(--tt) 55%,var(--nv-popup-base)),var(--nv-popup-base));${TONE_SCOPE}}
+.sh.tint{background:var(--nv-sheen),${tintLayer("var(--tt)")},var(--nv-popup-bg)}
 .pop.in .ov{opacity:1}.pop.in .sh{opacity:1;transform:none}
 .grip{display:none;justify-content:center;padding:var(--nv-s4) 0 0;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.35}
 .hd{display:flex;align-items:center;gap:var(--nv-s5);margin:var(--nv-s7) var(--nv-s7) var(--nv-s5);padding:var(--nv-s3) var(--nv-s3) var(--nv-s3) var(--nv-s7);border-radius:var(--nv-r-pill);flex:none;touch-action:pan-x;
@@ -9123,9 +9141,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
 :host::before{background:var(--nv-sheen),var(--nv-area-bg)}
-:host(.tint)::before{background:var(--nv-sheen),linear-gradient(160deg,color-mix(in srgb,var(--tt) 45%,transparent),transparent 75%),var(--nv-area-bg)}
-/* Unterkarten im selben Farbton, nur schwächer */
-:host(.tint) .body{${TONE_SCOPE}}
+:host(.tint)::before{background:var(--nv-sheen),${tintLayer("var(--tt)")},var(--nv-area-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:var(--nv-s6);padding:var(--nv-s7)}
 .g{overflow:visible}
 /* Kopfzeile: feste Höhe, alles einzeilig. Höchstens 3 Chips, der Rest steckt hinter „+X“ (Klappliste unter der Leiste).
@@ -9326,7 +9342,7 @@ backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat));-webkit-backdrop-fi
         name: "Name",
         icon: "Icon",
         back_action: "Zurück-Knopf: Aktion",
-        tint: "Farbton (leer = Nova-Glas)",
+        tint: "Farbton (Hauch, leer = keiner)",
         stack_below: "Untereinander unter Breite"
       };
       HELPERS3 = {
