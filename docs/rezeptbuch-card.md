@@ -3,7 +3,7 @@
 [← Zurück zur Übersicht](../README.md)
 
 Ein Kochbuch zum Blättern. Zugeklappt sieht man den Einband, Antippen schlägt das Buch auf, gewischt wird wie in einem echten
-Buch – nach links blättert vor, nach rechts zurück (oder Pfeiltasten). Das Lesebändchen unten klappt es wieder zu.
+Buch – nach links blättert vor, nach rechts zurück (oder Pfeiltasten). Unter dem Buch liegen große Knöpfe **Zurück**, **Inhalt** und **Weiter** im Stil des Buchs (gut zum Antippen am Wandpanel). Das Lesebändchen unten klappt es wieder zu.
 Die Rezepte kommen aus der [Nova-Integration](https://github.com/Blackstar9119/nova-integration) (Modul „Rezeptbuch“) –
 dieselben wie in der [Nova Rezeptliste](rezept-card.md).
 
@@ -47,6 +47,7 @@ subtitle: Tränke & Speisen
 | `layout` | `auto` | `auto`, `double` (immer Doppelseite) oder `single` (immer Einzelseite) |
 | `start_open` | `false` | Buch beim Laden gleich aufschlagen |
 | `close_after` | `0` | Nach so vielen Sekunden ohne Bedienung zuklappen (0 = bleibt offen) |
+| `turn` | `auto` | Blättern: `auto` (3D; auf schwachen Geräten wie dem Echo Show oder wenn es ruckelt automatisch flach mit Schatten), `3d`, `simple` (immer flach) |
 
 Wer am Wandpanel hängt (z. B. Echo Show): als eigene Seite in der [Nova Swipe Card](swipe-card.md) mit „Bis zum unteren
 Bildschirmrand“ und `close_after: 300`.
