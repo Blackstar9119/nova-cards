@@ -3,11 +3,9 @@
 Alle nennenswerten Änderungen an Nova Cards. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 
-## [0.1.0b6] – unveröffentlicht
+## [0.1.0b7] – 2026-11-14
 
-Ab hier tragen Nova Cards die Versionsnummer der Nova-Integration, mit der sie ausgeliefert werden.
-
-### Geändert (Design vereinheitlicht)
+### Geändert
 - Nova Bereich Card: Kopfzeile mit fester Höhe, Chips immer einzeilig in der Leiste. Höchstens drei Chips sichtbar (weniger, wenn der Platz nicht reicht), der Rest hinter einem „+X“-Chip, der sie beim Antippen aufklappt. Kein halb abgeschnittener Chip mehr; der Name nimmt den übrigen Platz und läuft nur dort durch. `chips_layout` entfällt.
 - Fremde HA-Karten in Nova-Karten (Bereich, Pop-up, Swipe …) bekommen in allen Themes die Nova-Fläche, Radien, Rahmen und Schriftfarben – keine weißen Karten mehr in dunklen Themes. Fehlerkarten sind dezent im Farbton des Themes statt Rosa.
 - Hintergründe: alle Kartenflächen in Hell, Midnight und Velvet als weicher Verlauf mit Glanz und Spiegelstreifen (`--nova-sheen`), auch Rahmen von Bereich und Pop-up, Navi und Seiten-Hintergrund in Midnight. Verlauf und Glanz kommen nur aus der Grundfarbe des Themes. Der Farbton (`tint`) von Bereich und Pop-up ist in allen Themes nur noch ein Hauch (`--nova-tint-mix`, 7 %) aus einer zentralen Palette (`--nova-accent-1-tone` …), Unterkarten bleiben in der Theme-Farbe.
@@ -15,6 +13,10 @@ Ab hier tragen Nova Cards die Versionsnummer der Nova-Integration, mit der sie a
 - Lichtnamen trennen keine Silben mehr („De-cke“), sondern brechen an Wortgrenzen um (höchstens zwei Zeilen).
 - Licht Card verteilt die Lampen gleichmäßig auf die Reihen (4 Lampen = 2 × 2 statt 3 + 1 mit Loch).
 - Zahlen im Format des HA-Profils mit Einheit: Thermostat (Ist- und Solltemperatur, `21,0 °C`), Raum Card (Temperatur), Regler der Modular Card.
+
+## [0.1.0b6] – 2026-11-13
+
+Ab hier tragen Nova Cards die Versionsnummer der Nova-Integration, mit der sie ausgeliefert werden.
 
 ### Hinzugefügt
 - Nova Cards kommen mit der Nova-Integration: Sie liefert die Karten selbst aus und meldet sie im Frontend an, ein eigener Marketplace-Eintrag und ein Eintrag unter Ressourcen sind nicht mehr nötig. Karten und Integration haben eine gemeinsame Version; nach einem Update lädt der Browser die neue Datei von selbst. Ist die alte Ressource `nova-cards.js` noch eingetragen, laufen die Karten trotzdem nur einmal, und die Integration zeigt unter Reparaturen, wie man den alten Eintrag entfernt.
