@@ -7,12 +7,14 @@ Einkaufsliste, die auf allen Geräten gleich ist. Die Daten liegen in der
 
 - **Artikel** haben Name, Menge und Einheit (Stk, g, kg, ml, l, Packung), ein Geschäft, ein Icon **oder** ein eigenes Bild und
   eine Notiz mit Formatierung.
-- **Hinzufügen:** Das Feld oder das Plus öffnet das Hinzufügen-Fenster mit allem auf einmal: Name, Menge mit + / – und Einheit,
-  Geschäft (wählen oder neu anlegen), Icon oder eigenes Bild, Notiz mit Formatierung. Erst „Hinzufügen“ speichert, der Pfeil
-  bricht ab. Tippst du einen bekannten Artikel, erscheint er als Vorschlag; passt der Name genau, kommen Icon/Bild, Geschäft
-  und Einheit von selbst. Steht der Artikel schon offen auf der Liste (gleiche Einheit), wird die Menge dazugezählt.
-- **Schnellauswahl:** Unter dem Feld stehen zuletzt gekaufte Artikel als Chips – antippen setzt sie direkt auf die Liste, mit
-  gespeichertem Icon, Bild, Geschäft und Einheit. Lange drücken entfernt einen Vorschlag.
+- **Schnell hinzufügen:** Namen ins Textfeld tippen, Enter – der Artikel steht auf der Liste. Steht er dort schon offen,
+  wird die Menge erhöht.
+- **Mit Details hinzufügen:** Das Plus öffnet das Hinzufügen-Fenster mit allem auf einmal: Name (was im Textfeld steht, wird
+  übernommen), Menge mit + / – und Einheit, Geschäft (wählen oder neu anlegen), Icon oder eigenes Bild, Notiz mit Formatierung.
+  Erst „Hinzufügen“ speichert, der Pfeil bricht ab. Tippst du einen bekannten Artikel, erscheint er als Vorschlag; passt der
+  Name genau, kommen Icon/Bild, Geschäft und Einheit von selbst.
+- **Schnellauswahl:** Unter dem Textfeld stehen zuletzt gekaufte Artikel als Chips; beim Tippen wird gefiltert. Antippen setzt
+  sie direkt auf die Liste, mit gespeichertem Icon, Bild, Geschäft und Einheit. Lange drücken entfernt einen Vorschlag.
 - **Liste:** nach Geschäft gruppiert, Menge direkt mit + / – (Schritt je Einheit: 1, bei g/ml 50, bei kg/l 0,5). Der Kreis
   hakt ab – der Name wird durchgestrichen und die Zeile wandert zu „Erledigt“ ganz unten. Die Gruppe „Erledigt“ lässt sich
   auf- und zuklappen und mit „Erledigte löschen“ leeren (zweimal tippen).
@@ -32,11 +34,11 @@ print_script: script.einkaufsliste_drucken
 |---|---|---|
 | `name`, `icon` | `Einkaufsliste`, `mdi:cart-outline` | Kopfzeile |
 | `show_header` | `true` | Kopfzeile mit „N offen · N erledigt“ |
-| `placeholder` | `Artikel hinzufügen …` | Text im Feld, das das Hinzufügen-Fenster öffnet |
+| `placeholder` | `Artikel hinzufügen …` | Platzhalter im Textfeld |
 | `group` | `true` | Nach Geschäft gruppieren (aus = eine Liste, Geschäft steht klein unter dem Namen) |
 | `show_images` | `true` | Eigene Bilder anzeigen (aus = nur Icons) |
 | `show_completed` | `false` | Gruppe „Erledigt“ anfangs aufgeklappt |
-| `show_suggestions` | `true` | Schnellauswahl unter dem Feld |
+| `show_suggestions` | `true` | Schnellauswahl unter dem Textfeld |
 | `default_store` | – | Geschäft für neue Artikel, die noch nie gekauft wurden (Auswahl im Editor) |
 | `height` | `420` | Mindesthöhe in px; im Raster füllt die Karte den Platz aus |
 | `entity` | – | `todo.*`-Liste zum Abgleichen, siehe unten |

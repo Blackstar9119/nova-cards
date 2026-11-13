@@ -19,11 +19,7 @@ import {PICK_MEDIA_CSS, mediaPicker, STORE_ICONS} from './shared/media-picker.js
 const SCSS = `
 .g.sh{gap:var(--nv-s5)}
 .add{display:flex;gap:var(--nv-s4);align-items:center;flex:none}
-.add .fld{height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8);flex:1;min-width:0;display:flex;align-items:center;gap:var(--nv-s4);font:inherit;color:inherit;text-align:left;cursor:pointer;
--webkit-tap-highlight-color:transparent;transition:transform var(--nv-d2) var(--nv-ease),border-color var(--nv-d2)}
-.add .fld:active:not([disabled]){transform:scale(var(--nv-press))}
-.add .fld[disabled]{opacity:.4;cursor:default}
-.add .fld span{opacity:.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.add .fld{height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8)}
 .form .sug{margin-top:calc(var(--nv-s3) * -1)}
 .cta{height:48px;border-radius:var(--nv-r-pill);flex:none;width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:var(--nv-s4);font:inherit;font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);
 cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;color:inherit;border:1px solid color-mix(in srgb,var(--nv-active) 60%,transparent);background:color-mix(in srgb,var(--nv-active) 24%,var(--nv-chip));
@@ -164,18 +160,22 @@ class NovaShoppingCard extends HTMLElement {
     r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${VIEW_CSS}${RICH_CSS}${PICK_MEDIA_CSS}${SCSS}</style><div class="g sh">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
 <div class="stage"><div class="view main">
-<div class="add"><button class="fld" type="button"><span></span></button></div>
+<form class="add"><input class="fld" type="text" enterkeyhint="done" autocomplete="off" maxlength="120"></form>
 <div class="sug"></div><div class="scroll"><div class="items"></div></div><div class="ft"></div></div>
 <div class="view side"><div class="bar"></div><div class="scroll"><div class="form"></div></div>
 <button class="cta" type="button" hidden><ha-icon icon="mdi:plus"></ha-icon><span>Hinzufügen</span></button></div></div></div>`;
     const q = s => r.querySelector(s);
-    const e = this._e = {g: q('.g'), hd: q('.hd'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), form: q('.add'), inp: q('.add .fld'), sug: q('.sug'), cta: q('.cta'),
+    const e = this._e = {g: q('.g'), hd: q('.hd'), ic: q('.hd .ic'), name: q('.hd b'), sub: q('.hd small'), form: q('form.add'), inp: q('.add input'), sug: q('.sug'), cta: q('.cta'),
       items: q('.items'), ft: q('.ft'), bar: q('.bar'), dform: q('.form')};
     this._hold = new Map(); this._seen = new Set(); this._qty = new Map(); this._pstate = 'idle';
-    // Feld und Plus öffnen das Hinzufügen-Fenster; gespeichert wird erst dort mit „Hinzufügen“
-    e.ab = roundBtn('mdi:plus', 'Artikel hinzufügen', () => this._openNew(), 'plus');
+    // Textfeld = schnelle Eingabe (Enter setzt den Artikel direkt auf die Liste). Das Plus öffnet das Hinzufügen-Fenster
+    // mit allen Feldern – was schon im Textfeld steht, wird als Name übernommen; gespeichert wird dort erst mit „Hinzufügen“
+    e.ab = roundBtn('mdi:plus', 'Artikel mit Details hinzufügen', () => this._openNew(), 'plus');
     e.form.append(e.ab);
-    e.inp.addEventListener('click', () => this._openNew());
+    e.form.addEventListener('submit', ev => { ev.preventDefault(); this._add(); });
+    e.inp.addEventListener('input', () => this._renderSug());
+    // Tippen in der Karte soll keine Tastenkürzel von HA auslösen (z. B. „e“ für Suche)
+    e.inp.addEventListener('keydown', ev => ev.stopPropagation());
     e.cta.addEventListener('click', () => this._addNew());
     this._pb = printButton(() => this._print());
     e.ft.append(this._pb);
@@ -189,8 +189,7 @@ class NovaShoppingCard extends HTMLElement {
   _apply() {
     const c = this._c, e = this._e;
     e.hd.hidden = c.show_header === false;
-    e.inp.firstChild.textContent = c.placeholder || SDEF.placeholder;
-    e.inp.setAttribute('aria-label', c.placeholder || SDEF.placeholder);
+    e.inp.placeholder = c.placeholder || '';
     e.g.style.setProperty('--vh', `${Math.max(200, +c.height || SDEF.height)}px`);
     this._key = this._skey = null;
     this._render();
@@ -367,22 +366,31 @@ class NovaShoppingCard extends HTMLElement {
   }
 
   /* ----- Hinzufügen + Schnellauswahl ----- */
-  // Schnellauswahl: bekannter Artikel direkt auf die Liste (Icon, Bild, Geschäft, Einheit kennt die Integration)
+  // Schnelle Eingabe (Textfeld + Enter) und Schnellauswahl: direkt auf die Liste. Icon, Bild, Geschäft und Einheit
+  // eines bekannten Artikels kennt die Integration
   _add(name) {
-    const h = this._h, v = String(name || '').trim();
+    const h = this._h, e = this._e, typed = name == null, v = String(typed ? e.inp.value : name).trim();
     if (!h || !v || !this._data) return;
+    if (typed) e.inp.value = '';
     // Steht der Artikel schon offen auf der Liste, wird die Menge erhöht statt doppelt eingetragen
     const twin = this._items().find(i => !i.done && hkey(i.name) === hkey(v));
-    const item = twin ? {id: twin.id, qty: Math.round(((+twin.qty || 0) + (STEP[twin.unit] || 1)) * 1000) / 1000} : {name: v};
+    const known = this._data.history.some(x => x.key === hkey(v));
+    const def = this._c.default_store && this._store(this._c.default_store) ? this._c.default_store : null;
+    const item = twin ? {id: twin.id, qty: Math.round(((+twin.qty || 0) + (STEP[twin.unit] || 1)) * 1000) / 1000} : {name: v, ...(!known && def ? {store: def} : {})};
     if (twin) this._bump = twin.id;
-    api.save(h, item).catch(err => console.warn('[nova-cards] Einkauf: Hinzufügen fehlgeschlagen', err));
-    this._renderSug();
+    api.save(h, item).catch(err => {
+      console.warn('[nova-cards] Einkauf: Hinzufügen fehlgeschlagen', err);
+      if (typed && !e.inp.value) e.inp.value = v;
+    });
+    if (typed) e.inp.focus();
+    this._skey = null; this._renderSug();
   }
   _renderSug() {
     const c = this._c, e = this._e, d = this._data;
     if (!e) return;
-    const onList = new Set(this._items().filter(i => !i.done).map(i => hkey(i.name)));
-    const list = !d || c.show_suggestions === false ? [] : d.history.filter(x => !onList.has(x.key)).slice(0, 12);
+    const q = hkey(e.inp.value), onList = new Set(this._items().filter(i => !i.done).map(i => hkey(i.name)));
+    const list = !d || c.show_suggestions === false ? [] : d.history.filter(x => !onList.has(x.key) && (!q || x.key.includes(q)))
+      .sort((a, b) => q ? (b.key.startsWith(q) - a.key.startsWith(q)) || (b.count - a.count) : 0).slice(0, 12);
     const key = JSON.stringify([list.map(x => [x.key, x.icon, x.image]), c.show_images]);
     if (key === this._skey) return;
     this._skey = key;
@@ -391,7 +399,7 @@ class NovaShoppingCard extends HTMLElement {
       b.type = 'button'; b.className = 'chip'; b.style.setProperty('--i', i);
       b.title = `${x.name} auf die Liste (lange drücken: aus den Vorschlägen entfernen)`;
       b.append(this._thumb(x), document.createTextNode(x.name));
-      press(b, {tap: () => { b.classList.add('go'); this._add(x.name); },
+      press(b, {tap: () => { b.classList.add('go'); e.inp.value = ''; this._add(x.name); },
         hold: () => { b.classList.add('go'); api.forget(this._h, x.key).catch(() => {}); }});
       return b;
     }));
@@ -410,7 +418,10 @@ class NovaShoppingCard extends HTMLElement {
     this._flush();
     this._cur = {id: null, name: '', qty: 1, unit: 'Stk', store: c.default_store && this._store(c.default_store) ? c.default_store : null, icon: null, image: null, note: ''};
     this._new = true; this._touched = new Set(); this._busy = false; this._saved = null;
+    const typed = e.inp.value.trim();
+    this._cur.name = typed; e.inp.value = ''; this._skey = null;
     this._show();
+    if (typed) this._suggest();
     // erst nach dem Hineingleiten, sonst schiebt der Browser die Bühne
     clearTimeout(this._ft); this._ft = setTimeout(() => this._new && this._ti?.focus({preventScroll: true}), 320);
   }
