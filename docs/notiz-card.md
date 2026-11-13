@@ -2,74 +2,62 @@
 
 [← Zurück zur Übersicht](../README.md)
 
-Ein großes, mehrzeiliges Notizfeld mit Druck-Knopf. Der Knopf gibt den Text an ein Skript weiter (z. B. für einen
-Bondrucker), zeigt kurz grün mit Häkchen bzw. rot bei einem Fehler und leert das Feld nach erfolgreichem Druck.
-Strg/Cmd + Enter druckt ebenfalls. Der Entwurf bleibt im Browser gespeichert, bis er gedruckt oder geleert wird – ein
-Neuladen der Seite verliert also nichts.
+Notizen, die auf allen Geräten gleich sind. Die Daten liegen in der
+[Nova-Integration](https://github.com/Blackstar9119/nova-integration) (Modul „Notizen“) – ohne sie zeigt die Karte nur einen Hinweis.
 
-Mit `notes_entity` (eine todo-Liste, z. B. eine lokale To-do-Liste „Notizen“) kommt ein Knopf **Speichern** dazu. Darunter
-stehen die gespeicherten Notizen, die neueste oben, jede mit **Drucken** und **Löschen** (zweimal tippen: das erste Antippen
-färbt den Knopf rot, das zweite löscht). Gespeichert wird die erste Zeile als Titel (`summary`, lange Zeilen gekürzt) und der
-ganze Text als Beschreibung (`description`). Gedruckt wird immer der ganze Text.
+- **Liste:** angepinnte Notizen oben, darunter die zuletzt geänderten; je Notiz Titel, Vorschau und „zuletzt geändert“.
+- **Notiz öffnen:** antippen. Titel und Text lassen sich direkt bearbeiten, gespeichert wird automatisch kurz nach dem Tippen.
+  Oben: Zurück, Stand („Gespeichert“, „Geändert vor 5 Min.“), Anpinnen, Drucken, Löschen (zweimal tippen).
+- **Formatierung** über die Leiste (seitlich wischbar): Fett, Kursiv, Unterstrichen, Durchgestrichen, Schriftgröße (klein,
+  normal, groß, Überschrift), Aufzählung, Checkliste (Kästchen antippen = abhaken) und drei Textfarben aus dem Theme
+  (Akzent, Wichtig, Gedämpft). Ohne Markierung gilt Größe und Farbe für das Wort unter dem Cursor.
+- **Neue Notiz:** Plus oben rechts. Leere Notizen werden nicht angelegt.
 
-Die Karte ist in allen Zuständen gleich hoch; in einem Raster füllen Textfeld und Liste den verfügbaren Platz aus.
+Die Karte ist in allen Zuständen gleich hoch; Liste und Notiz scrollen in sich.
 
 ```yaml
 type: custom:nova-note-card
+view: full                    # full | compact
+max_notes: 5
 print_script: script.notiz_drucken
-print_field: text            # unter diesem Namen bekommt das Skript den Text
-notes_entity: todo.notizen   # optional: Notizen speichern
 ```
 
 | Option | Standard | Bedeutung |
 |---|---|---|
-| `name`, `icon` | `Notiz`, `mdi:note-edit-outline` | Kopfzeile |
-| `show_header` | `true` | Kopfzeile anzeigen |
-| `placeholder` | `Notiz schreiben …` | Platzhalter im Textfeld |
-| `height` | `180` | Mindesthöhe des Textfelds in px |
-| `show_clear` | `true` | Knopf „Leeren“ (Radiergummi) |
-| `notes_entity` | – | todo-Liste für gespeicherte Notizen (leer = ohne Speichern) |
-| `notes_height` | `180` | Mindesthöhe der Notizliste in px |
-| `clear_after_save` | `true` | Feld nach dem Speichern leeren |
-| `print_script` | – | Skript für den Druck-Knopf (leer = kein Knopf) |
-| `print_field` | `text` | Feldname, unter dem das Skript den Text bekommt |
-| `clear_after_print` | `true` | Feld nach erfolgreichem Druck leeren |
-| `print_label`, `print_icon` | `Drucken`, `mdi:printer-pos` | Beschriftung und Icon des Knopfs |
-| `print_style` | `pill` | `pill` = länglich mit Text, `round` = klein und rund |
-| `storage_key` | Skript + Name | Eigener Schlüssel für den gespeicherten Entwurf, falls mehrere Notizkarten dasselbe Skript nutzen |
+| `name`, `icon` | `Notizen`, `mdi:note-multiple-outline` | Kopfzeile |
+| `show_header` | `true` | Kopfzeile mit Anzahl und Plus-Knopf |
+| `view` | `full` | `full` = Titel, Vorschau, Datum · `compact` = nur Titel und Datum |
+| `max_notes` | `0` | Höchstens so viele Notizen zeigen, der Rest lässt sich aufklappen (0 = alle) |
+| `height` | `380` | Mindesthöhe in px; im Raster füllt die Karte den Platz aus |
+| `print_script` | – | Skript für den Druck-Knopf in der geöffneten Notiz (leer = kein Knopf) |
+| `print_field` | `text` | Feldname, unter dem das Skript Titel und Text bekommt |
+| `print_label`, `print_icon` | `Drucken`, `mdi:printer-pos` | Titel und Icon des Knopfs |
 
-## Druck-Skript
+## Drucken
 
-Beispiel für einen ESC/POS-Bondrucker (80 mm) mit der Integration „ESC/POS Thermal Printer“: Überschrift „NOTIZ“ groß und
-fett, Strichlinie mit 32 Zeichen, der Text linksbündig, unten Datum und Uhrzeit, dann Teilschnitt.
+Bondrucker können kein HTML – die Karte gibt deshalb Klartext weiter: Titel, Leerzeile, Text. Überschriften stehen in
+GROSSBUCHSTABEN, Aufzählungen mit `•`, Checklisten mit `[ ]` und `[x]`. Farben und Schriftgrößen fallen weg.
 
 ```yaml
 alias: Notiz drucken
 mode: queued
 fields:
   text:
-    name: Text
-    required: true
     selector: {text: {multiline: true}}
 sequence:
-  - if:
-      - condition: template
-        value_template: "{{ (text | default('') | string | trim) == '' }}"
-    then:
-      - stop: Notiz ist leer
   - action: escpos_printer.print_text_utf8
     target: {entity_id: notify.mein_bondrucker}
-    data: {text: "NOTIZ\n", align: center, bold: true, width: double, height: double, cut: none}
-  - action: escpos_printer.print_text_utf8
-    target: {entity_id: notify.mein_bondrucker}
-    data: {text: "--------------------------------\n", align: center, cut: none}
-  - action: escpos_printer.print_text_utf8
-    target: {entity_id: notify.mein_bondrucker}
-    data: {text: "{{ text | string | trim }}", align: left, cut: none, feed: 2}
-  - action: escpos_printer.print_text_utf8
-    target: {entity_id: notify.mein_bondrucker}
-    data: {text: "{{ now().strftime('%d.%m.%Y %H:%M') }}", align: center, feed: 2, cut: partial}
+    data: {text: "{{ text }}", align: left, feed: 3, cut: partial}
 ```
 
-Jeder Druckaufruf braucht ein `\n` am Ende; bei Template-Text schneidet HA das ab, dort deshalb `feed` nutzen. Nur der
-letzte Aufruf schneidet (`cut: partial`).
+## Sicherheit
+
+Gespeichert wird bereinigtes HTML aus einer festen Liste von Elementen (`b`, `i`, `u`, `s`, `p`, `br`, `h3`, `ul`, `li`,
+`span` mit festen Klassen). Alles andere – Skripte, Links, Bilder, Attribute – wird in der Karte **und** in der Integration
+entfernt. Eingefügter Text kommt immer als reiner Text an.
+
+## Umstieg von der alten Karte
+
+Bis 0.11 war die Karte ein einzelnes Textfeld, gespeicherte Notizen lagen in einer todo-Liste (`notes_entity`). Diese
+Optionen gibt es nicht mehr: `placeholder`, `show_clear`, `clear_after_print`, `clear_after_save`, `notes_entity`,
+`notes_height`, `storage_key`, `print_style`. Notizen aus der todo-Liste werden nicht automatisch übernommen.

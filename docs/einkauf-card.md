@@ -2,69 +2,100 @@
 
 [← Zurück zur Übersicht](../README.md)
 
-Einkaufsliste aus einer `todo.*`-Entität (z. B. die Einkaufsliste von Home Assistant). Neue Sachen tippt man direkt in
-die Karte – Enter oder der Plus-Knopf fügt sie hinzu. Darunter stehen die offenen Punkte; Antippen hakt sie ab (kurz
-durchgestrichen, dann verschwinden sie). Unten sitzt ein Druck-Knopf, der ein Skript aufruft, z. B. um die Liste auf einem
-Bondrucker auszugeben. Der Knopf zeigt, ob der Druck geklappt hat: kurz grün mit Häkchen, bei einem Fehler rot.
+Einkaufsliste, die auf allen Geräten gleich ist. Die Daten liegen in der
+[Nova-Integration](https://github.com/Blackstar9119/nova-integration) (Modul „Einkauf“) – ohne sie zeigt die Karte nur einen Hinweis.
 
-Die Karte ist in allen Zuständen gleich hoch: Die Liste hat eine feste Mindesthöhe und scrollt bei vielen Einträgen. In
-einem Raster (Bereich, Pop-up, Abschnitte) füllt sie den verfügbaren Platz aus.
+- **Artikel** haben Name, Menge und Einheit (Stk, g, kg, ml, l, Packung), ein Geschäft, ein Icon **oder** ein eigenes Bild und
+  eine Notiz mit Formatierung.
+- **Schnell hinzufügen:** Namen ins Textfeld tippen, Enter – der Artikel steht auf der Liste. Steht er dort schon offen,
+  wird die Menge erhöht.
+- **Mit Details hinzufügen:** Das Plus öffnet das Hinzufügen-Fenster mit allem auf einmal: Name (was im Textfeld steht, wird
+  übernommen), Menge mit + / – und Einheit, Geschäft (wählen oder neu anlegen), Icon oder eigenes Bild, Notiz mit Formatierung.
+  Erst „Hinzufügen“ speichert, der Pfeil bricht ab. Tippst du einen bekannten Artikel, erscheint er als Vorschlag; passt der
+  Name genau, kommen Icon/Bild, Geschäft und Einheit von selbst.
+- **Schnellauswahl:** Unter dem Textfeld stehen zuletzt gekaufte Artikel als Chips; beim Tippen wird gefiltert. Antippen setzt
+  sie direkt auf die Liste, mit gespeichertem Icon, Bild, Geschäft und Einheit. Lange drücken entfernt einen Vorschlag.
+- **Liste:** nach Geschäft gruppiert, Menge direkt mit + / – (Schritt je Einheit: 1, bei g/ml 50, bei kg/l 0,5). Der Kreis
+  hakt ab – der Name wird durchgestrichen und die Zeile wandert zu „Erledigt“ ganz unten. Die Gruppe „Erledigt“ lässt sich
+  auf- und zuklappen und mit „Erledigte löschen“ leeren (zweimal tippen).
+- **Artikel bearbeiten:** auf den Namen tippen. Dort gibt es Einheit, Geschäft (frei anlegbar, je mit Icon; lange drücken =
+  bearbeiten/löschen), Icon (Lebensmittel-Auswahl oder Suche über alle MDI-Icons), eigenes Bild (wird vor dem Speichern
+  verkleinert) und die Notiz. Gespeichert wird automatisch.
+
+Die Karte ist in allen Zuständen gleich hoch; Liste und Detailansicht scrollen in sich.
 
 ```yaml
 type: custom:nova-shopping-card
-entity: todo.einkaufsliste
+entity: todo.einkaufsliste          # optional: Abgleich für Assist
 print_script: script.einkaufsliste_drucken
-print_style: pill            # pill (länglich mit Text) | round (klein und rund)
 ```
 
 | Option | Standard | Bedeutung |
 |---|---|---|
-| `entity` | – | Die Liste (`todo.*`, Pflicht) |
-| `name`, `icon` | Name der Liste, `mdi:cart-outline` | Kopfzeile; Antippen des Icons öffnet die Details der Liste |
-| `show_header` | `true` | Kopfzeile mit „N offen“ |
-| `placeholder` | `Neuer Eintrag …` | Platzhalter im Eingabefeld |
-| `show_completed` | `false` | Erledigte Einträge durchgestrichen unten zeigen; Antippen holt sie zurück |
-| `height` | `200` | Mindesthöhe der Liste in px |
-| `print_script` | – | Skript für den Druck-Knopf (leer = kein Knopf). Der Knopf ist aus, solange die Liste leer ist |
-| `print_label`, `print_icon` | `Drucken`, `mdi:printer-pos` | Beschriftung und Icon des Knopfs |
-| `print_style` | `pill` | `pill` = länglich mit Text, `round` = klein und rund |
+| `name`, `icon` | `Einkaufsliste`, `mdi:cart-outline` | Kopfzeile |
+| `show_header` | `true` | Kopfzeile mit „N offen · N erledigt“ |
+| `placeholder` | `Artikel hinzufügen …` | Platzhalter im Textfeld |
+| `group` | `true` | Nach Geschäft gruppieren (aus = eine Liste, Geschäft steht klein unter dem Namen) |
+| `show_images` | `true` | Eigene Bilder anzeigen (aus = nur Icons) |
+| `show_completed` | `false` | Gruppe „Erledigt“ anfangs aufgeklappt |
+| `show_suggestions` | `true` | Schnellauswahl unter dem Textfeld |
+| `default_store` | – | Geschäft für neue Artikel, die noch nie gekauft wurden (Auswahl im Editor) |
+| `height` | `420` | Mindesthöhe in px; im Raster füllt die Karte den Platz aus |
+| `entity` | – | `todo.*`-Liste zum Abgleichen, siehe unten |
+| `print_script` | – | Skript für den Druck-Knopf (leer = kein Knopf) |
+| `print_field` | `text` | Feldname, unter dem das Skript die Liste als Klartext bekommt |
+| `print_label`, `print_icon`, `print_style` | `Drucken`, `mdi:printer-pos`, `pill` | Aussehen des Knopfs (`pill` = länglich mit Text, `round` = rund) |
 
-Die Erfolgsfarbe kommt aus dem Theme: `--nova-success-color`, sonst `--nova-accent-4`.
+## Abgleich mit einer todo-Liste (Assist)
 
-## Druck-Skript
+Mit `entity` hält die Nova-Integration die Einkaufsliste und eine `todo.*`-Liste gleich – in beide Richtungen: hinzufügen,
+abhaken, umbenennen, löschen. So funktioniert „Setz Milch auf die Einkaufsliste“ weiter. In der todo-Liste steht ein Artikel
+als `Milch` bzw. mit Menge als `Milch (2 l)`; neue Einträge von dort werden genauso gelesen (auch `2 l Milch`).
 
-Die Karte ruft das Skript als Dienst `script.<name>` auf und wartet, bis es fertig ist – ein Fehler im Skript (Drucker aus,
-Papier leer) wird deshalb als roter Knopf angezeigt. Beispiel für einen ESC/POS-Bondrucker mit der Integration
-„ESC/POS Thermal Printer“:
+Die Einstellung gilt für die Integration, also für alle Einkauf-Karten gemeinsam.
+
+## Drucken
+
+Der Knopf ruft das Skript als Dienst `script.<name>` auf und wartet, bis es fertig ist (grün = gedruckt, rot = Fehler).
+Das Skript bekommt:
+
+- `text` – die offenen Artikel als Klartext, nach Geschäft gruppiert, Notizen eingerückt:
+
+  ```
+  LIDL
+  [ ] 2 l Hafermilch
+      ungesüßt
+  [ ] 6 Äpfel
+
+  DM
+  [ ] Zahnpasta
+  ```
+
+- `items` – dieselben Artikel als Liste (`name`, `qty`, `unit`, `store`, `note`) für eigene Vorlagen.
+
+Beispiel für einen ESC/POS-Bondrucker:
 
 ```yaml
 alias: Einkaufsliste drucken
 mode: single
+fields:
+  text:
+    selector: {text: {multiline: true}}
 sequence:
-  - if:
-      - condition: numeric_state
-        entity_id: todo.einkaufsliste
-        below: 1
-    then:
-      - stop: Einkaufsliste ist leer
-  - action: todo.get_items
-    target: {entity_id: todo.einkaufsliste}
-    data: {status: needs_action}
-    response_variable: liste
   - action: escpos_printer.print_text_utf8
     target: {entity_id: notify.mein_bondrucker}
     data: {text: "EINKAUFSLISTE\n", align: center, bold: true, width: double, height: double, cut: none}
   - action: escpos_printer.print_text_utf8
     target: {entity_id: notify.mein_bondrucker}
-    data: {text: "--------------------------------\n", align: center, cut: none}
-  - action: escpos_printer.print_text_utf8
-    target: {entity_id: notify.mein_bondrucker}
-    data:
-      text: "{% for i in liste['todo.einkaufsliste']['items'] %}[ ] {{ i.summary }}\n{% endfor %}"
-      align: left
-      cut: none
-      feed: 2                # Templates schneiden das \n am Ende ab
+    data: {text: "{{ text }}", align: left, cut: none, feed: 2}
   - action: escpos_printer.print_text_utf8
     target: {entity_id: notify.mein_bondrucker}
     data: {text: "{{ now().strftime('%d.%m.%Y %H:%M') }}", align: center, feed: 2, cut: partial}
 ```
+
+Ein älteres Skript, das die Einträge selbst aus der todo-Liste holt, funktioniert mit eingeschaltetem Abgleich unverändert weiter.
+
+## Umstieg von der alten Karte
+
+Bis 0.11 zeigte die Karte direkt eine todo-Liste. Die Option `entity` bleibt gültig und wird jetzt als Liste für den Abgleich
+verwendet: Beim ersten Laden übernimmt die Integration alle offenen Einträge.

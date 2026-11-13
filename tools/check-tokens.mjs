@@ -7,8 +7,9 @@ const EDITOR = /^(?:export )?const (?:\w*EDITOR\w*|COLOR_INPUT_CSS|GRID_ED_CSS|P
 const SCENE = ['fill', 'stroke', 'stop-color', 'flood-color'];
 const files = [...readdirSync('src').filter(f => f.endsWith('.js') && f !== 'index.js').map(f => `src/${f}`),
   ...readdirSync('src/shared').filter(f => f.endsWith('.js') && f !== 'theme.js').map(f => `src/shared/${f}`)];
-// Editor-Stylesheets in Kartendateien, die nicht am Namen zu erkennen sind
-const SKIP = {'src/swipe.js': ['PCSS']};
+// Editor-Stylesheets in Kartendateien, die nicht am Namen zu erkennen sind, und Zeichnungen, die ganz aus Materialfarben
+// bestehen (Rezeptbuch: Papier, Leder, Gold)
+const SKIP = {'src/swipe.js': ['PCSS'], 'src/recipe-book.js': ['BOOK_CSS']};
 
 let bad = 0;
 for (const f of files) {

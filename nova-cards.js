@@ -1,5 +1,5 @@
 /* Nova Cards v0.12.0 | MIT | https://github.com/Blackstar9119/nova-cards
-   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz – alle als custom:nova-*.
+   Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezeptliste, Rezeptbuch – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
   var __defProp = Object.defineProperty;
@@ -42,6 +42,9 @@
     ["warn", "warning-color", "#7cc4ff"],
     ["error", "error-color", "#ff6b6b"],
     ["error-fg", "error-text-color", "#fff"],
+    // Textfarben im formatierten Text (Notiz, Einkauf): Akzent und Wichtig – folgen den Theme-Farben
+    ["text-accent", "text-accent-color", "var(--nv-accent-ink)"],
+    ["text-warn", "text-warning-color", "var(--nv-error)"],
     ["a1", "accent-1", "#3d8bf5"],
     ["a1-fg", "accent-1-text", "#fff"],
     ["a2", "accent-2", "#f5b83d"],
@@ -322,7 +325,96 @@
   var NOVA_VARS = block(":host") + themed(false);
   var NAVI_VARS = block(":host", { ...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI }) + themed(true);
 
+  // src/shared/nova-store.js
+  var subs = /* @__PURE__ */ new WeakMap();
+  var STOP_DELAY = 5e3;
+  var reason = (err) => err?.code === "unknown_command" || err?.code === "not_ready" ? "missing" : err?.code === "module_disabled" ? "disabled" : "failed";
+  var MODULE_NAMES = { notes: "Notizen", shopping: "Einkauf", recipes: "Rezeptbuch", theme: "Theme" };
+  var storeHint = (err, kind) => err === "missing" ? ["mdi:puzzle-plus-outline", "Die Nova-Integration fehlt. Im Marketplace „Nova“ installieren und unter Einstellungen → Geräte & Dienste hinzufügen."] : err === "disabled" ? ["mdi:toggle-switch-off-outline", `Das Modul „${MODULE_NAMES[kind] || kind}“ ist in den Optionen der Nova-Integration abgeschaltet.`] : ["mdi:alert-circle-outline", "Die Daten konnten nicht geladen werden."];
+  function watch(hass, kind, card, onChange) {
+    const conn = hass?.connection;
+    if (!conn) return () => {
+    };
+    const all = subs.get(conn) || subs.set(conn, {}).get(conn);
+    const s = all[kind] ||= { data: null, err: null, cards: /* @__PURE__ */ new Map(), unsub: null };
+    clearTimeout(s.timer);
+    s.cards.set(card, onChange);
+    if (s.data || s.err) queueMicrotask(() => s.cards.get(card)?.(s.data, s.err));
+    if (!s.unsub) {
+      s.unsub = conn.subscribeMessage((d) => {
+        s.data = d;
+        s.err = null;
+        s.cards.forEach((fn) => fn(d, null));
+      }, { type: `nova/${kind}/subscribe` }).catch((err) => {
+        s.err = reason(err);
+        s.unsub = null;
+        if (s.err !== "missing") console.warn(`[nova-cards] Nova-Integration: Abo ${kind} fehlgeschlagen`, err);
+        s.cards.forEach((fn) => fn(s.data, s.err));
+        return null;
+      });
+    }
+    return () => {
+      s.cards.delete(card);
+      if (s.cards.size) return;
+      clearTimeout(s.timer);
+      s.timer = setTimeout(() => {
+        if (s.cards.size) return;
+        const u = s.unsub;
+        s.unsub = null;
+        s.data = null;
+        s.err = null;
+        u?.then((f3) => typeof f3 === "function" && f3()).catch(() => {
+        });
+      }, STOP_DELAY);
+    };
+  }
+  var ws = (hass, type, data = {}) => hass.callWS({ type, ...data });
+  var notes = {
+    save: (hass, note) => ws(hass, "nova/notes/save", { note }).then((r) => r.note),
+    remove: (hass, id) => ws(hass, "nova/notes/delete", { note_id: id })
+  };
+  var shop = {
+    save: (hass, item) => ws(hass, "nova/shopping/item_save", { item }).then((r) => r.item),
+    remove: (hass, id) => ws(hass, "nova/shopping/item_delete", { item_id: id }),
+    clearDone: (hass) => ws(hass, "nova/shopping/clear_done"),
+    reorder: (hass, ids) => ws(hass, "nova/shopping/reorder", { ids }),
+    forget: (hass, key) => ws(hass, "nova/shopping/history_delete", { key }),
+    saveStore: (hass, store) => ws(hass, "nova/shopping/store_save", { store }).then((r) => r.store),
+    removeStore: (hass, id) => ws(hass, "nova/shopping/store_delete", { store_id: id }),
+    setSync: (hass, entityId) => ws(hass, "nova/shopping/set_sync", { entity_id: entityId || null })
+  };
+  var recipes = {
+    save: (hass, recipe) => ws(hass, "nova/recipes/save", { recipe }).then((r) => r.recipe),
+    remove: (hass, id) => ws(hass, "nova/recipes/delete", { recipe_id: id }),
+    // Zutaten auf die Einkaufsliste; servings rechnet um, only = Positionen der Zutaten
+    toShopping: (hass, id, servings, only) => ws(hass, "nova/recipes/to_shopping", { recipe_id: id, ...servings ? { servings } : {}, ...only ? { only } : {} }).then((r) => r.added)
+  };
+  var theme = { set: (hass, key) => ws(hass, "nova/theme/set", { theme: key }) };
+  var uploadImage = (hass, module, data) => ws(hass, "nova/image/upload", { module, data });
+  var imageUrl = (hass, module, name) => {
+    if (!name || !/^[a-f0-9]{32}\.(webp|jpg|png)$/.test(name)) return "";
+    const path = `/local/nova/${module}/${name}`;
+    return hass?.hassUrl ? hass.hassUrl(path) : path;
+  };
+
   // src/shared/theme-store.js
+  var live = /* @__PURE__ */ new WeakMap();
+  var THEME_EVENT = "nova-theme-store";
+  function integration(h) {
+    const conn = h?.connection;
+    if (!conn?.subscribeMessage) return null;
+    let s = live.get(conn);
+    if (!s) {
+      live.set(conn, s = { key: void 0, ok: false });
+      conn.subscribeMessage((m) => {
+        s.ok = true;
+        s.key = THEMES[m?.theme] ? m.theme : void 0;
+        window.dispatchEvent(new CustomEvent(THEME_EVENT));
+      }, { type: "nova/theme/subscribe" }).catch(() => {
+      });
+    }
+    return s;
+  }
   var STORE_ENTITY = "input_select.nova_theme";
   var ID = "nova_theme";
   var NAME = "Nova Theme";
@@ -330,9 +422,12 @@
   var options = () => THEME_KEYS.map((k) => THEMES[k].name);
   var keyOf = (v) => THEME_KEYS.find((k) => THEMES[k].name === v || k === v);
   var storeIds = () => [STORE_ENTITY];
-  var readTheme = (h) => keyOf(h?.states?.[STORE_ENTITY]?.state);
-  var hasStore = (h) => !!h?.states?.[STORE_ENTITY];
-  var canSetup = (h) => !!h?.user?.is_admin;
+  var readTheme = (h) => {
+    const s = integration(h);
+    return s?.ok && s.key || keyOf(h?.states?.[STORE_ENTITY]?.state);
+  };
+  var hasStore = (h) => !!integration(h)?.ok || !!h?.states?.[STORE_ENTITY];
+  var canSetup = (h) => !!integration(h)?.ok || !!h?.user?.is_admin;
   var fail = (code, msg) => Object.assign(new Error(msg), { code });
   async function setup(h) {
     if (!canSetup(h)) throw fail("admin", "Das Theme kann erst ein Administrator einrichten.");
@@ -350,6 +445,14 @@
   async function setTheme(h, key) {
     const name = THEMES[key]?.name;
     if (!name) throw fail("failed", `Unbekanntes Theme: ${key}`);
+    if (integration(h)?.ok) {
+      try {
+        await theme.set(h, key);
+        return;
+      } catch (e) {
+        throw fail("failed", e?.message || "Theme konnte nicht gespeichert werden.");
+      }
+    }
     const st = h.states[STORE_ENTITY];
     if (!st || !st.attributes.options?.includes(name)) await setup(h);
     try {
@@ -360,6 +463,8 @@
   }
 
   // src/shared/theme-apply.js
+  var cards = /* @__PURE__ */ new Set();
+  window.addEventListener(THEME_EVENT, () => cards.forEach(apply));
   var valid = (v) => {
     const k = String(v || "").trim().toLowerCase();
     return k && k !== "global" && THEMES[k] ? k : void 0;
@@ -401,8 +506,14 @@
     } });
     const cc = p.connectedCallback;
     p.connectedCallback = function() {
+      cards.add(this);
       inherit(this);
       return cc?.call(this);
+    };
+    const dc = p.disconnectedCallback;
+    p.disconnectedCallback = function() {
+      cards.delete(this);
+      return dc?.call(this);
     };
   }
 
@@ -420,7 +531,7 @@
     }
   };
   var REPO = "https://github.com/Blackstar9119/nova-cards";
-  var docUrl = (anchor) => `${REPO}#${anchor}`;
+  var docUrl = (anchor2) => `${REPO}#${anchor2}`;
 
   // src/shared/utils.js
   var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -804,6 +915,12 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
         cb(false);
       }
     };
+  };
+  var weakDevice = () => {
+    const n = globalThis.navigator || {}, mem = n.deviceMemory, cpu = n.hardwareConcurrency;
+    if (mem && mem <= 2) return true;
+    if (cpu && cpu <= 2) return true;
+    return /Android/.test(n.userAgent || "") && /; wv\)/.test(n.userAgent || "") && (!cpu || cpu <= 4);
   };
 
   // src/shared/editor-schema.js
@@ -3016,16 +3133,16 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       const mb = this._mb;
       if (!mb || !this._h) return;
       const ps = this._players, h = this._h, key = ps.map((p) => p.entity).join("|");
-      const live = ps.map((p) => ({ ...p, s: h.states[p.entity] })).map((p) => ({ ...p, l: this._live(p.s) })).filter((p) => p.l);
+      const live2 = ps.map((p) => ({ ...p, s: h.states[p.entity] })).map((p) => ({ ...p, l: this._live(p.s) })).filter((p) => p.l);
       const t = (p) => Date.parse(p.s.last_changed) || 0;
-      const playing = live.filter((p) => p.l === true).sort((x, y) => t(y) - t(x));
+      const playing = live2.filter((p) => p.l === true).sort((x, y) => t(y) - t(x));
       const pick = SEL.get(key);
-      const manual = pick && ps.find((p) => p.entity === pick.id) && !playing.some((p) => p.entity !== pick.id && t(p) > pick.at) && (live.some((p) => p.entity === pick.id) || Date.now() - pick.at < this._pauseMs);
-      let cur2 = manual ? ps.find((p) => p.entity === pick.id) : playing[0] || live.sort((x, y) => t(y) - t(x))[0] || null;
-      const show = !!live.length || !!this._opt("media_always") && !!ps.length;
+      const manual = pick && ps.find((p) => p.entity === pick.id) && !playing.some((p) => p.entity !== pick.id && t(p) > pick.at) && (live2.some((p) => p.entity === pick.id) || Date.now() - pick.at < this._pauseMs);
+      let cur2 = manual ? ps.find((p) => p.entity === pick.id) : playing[0] || live2.sort((x, y) => t(y) - t(x))[0] || null;
+      const show = !!live2.length || !!this._opt("media_always") && !!ps.length;
       if (!cur2 && show) cur2 = ps[0];
       clearTimeout(this._mpt);
-      const next = Math.min(...live.filter((p) => p.l !== true).map((p) => p.l));
+      const next = Math.min(...live2.filter((p) => p.l !== true).map((p) => p.l));
       if (Number.isFinite(next)) this._mpt = setTimeout(() => this._media(), next - Date.now() + 50);
       this._mbw.classList.toggle("on", show);
       if (!show) this._mbw.classList.remove("open");
@@ -3198,11 +3315,11 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     }
     // Menü neben dem Button: über der Leiste unten, darunter oben, daneben als Seitenleiste
     _place(m, b) {
-      const r = b.getBoundingClientRect(), W2 = innerWidth, H3 = innerHeight, g = 10, side = this._side;
+      const r = b.getBoundingClientRect(), W2 = innerWidth, H2 = innerHeight, g = 10, side = this._side;
       const w = m.offsetWidth, ht = m.offsetHeight, clamp2 = (v, max) => Math.max(8, Math.min(v, max - 8));
       if (side) {
         m.style.left = `${side === "right" ? r.left - g - w : r.right + g}px`;
-        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H3 - ht)}px`;
+        m.style.top = `${clamp2(r.top + r.height / 2 - ht / 2, H2 - ht)}px`;
       } else {
         m.style.left = `${clamp2(r.left + r.width / 2 - w / 2, W2 - w)}px`;
         m.style.top = `${this._cfg.position === "top" ? r.bottom + g : r.top - g - ht}px`;
@@ -3483,17 +3600,17 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     }
     // Einträge des Untermenüs: Antippen des Buttons öffnet dann das Menü statt der Aktion
     _menuList(i) {
-      const subs = this._config.items[i].menu || [], out = [];
+      const subs2 = this._config.items[i].menu || [], out = [];
       const setSubs = (arr) => {
         const it = { ...this._config.items[i] };
         if (arr.length) it.menu = arr;
         else delete it.menu;
         this._setItem(i, it);
       };
-      if (!subs.length) out.push(this._hint("Mit Einträgen öffnet der Button beim Antippen ein kleines Menü."));
-      subs.forEach((sub, j) => {
+      if (!subs2.length) out.push(this._hint("Mit Einträgen öffnet der Button beim Antippen ein kleines Menü."));
+      subs2.forEach((sub, j) => {
         const key = `m${i}.${j}`, lbl = (x) => `${j + 1}. ${x.label || pathOf(x) || x.popup_hash || "Neuer Eintrag"}`;
-        const [d] = this._details(key, sub.icon || "mdi:circle-outline", lbl(sub), this._itemBtns(j, subs.length, (dir) => {
+        const [d] = this._details(key, sub.icon || "mdi:circle-outline", lbl(sub), this._itemBtns(j, subs2.length, (dir) => {
           const arr = [...this._config.items[i].menu], t = j + dir;
           [arr[j], arr[t]] = [arr[t], arr[j]];
           this._open = /* @__PURE__ */ new Set([i, `m${i}.${t}`]);
@@ -4400,9 +4517,9 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
     _sync() {
       if (!this._e || !this._h) return;
       const show = this._vis && !document.hidden && this.isConnected;
-      const live = show && !this._quiet && dom(this._c.entity) === "camera" && this._c.stream !== "snapshot";
-      if (live && !this._mode && !this._starting) this._startLive();
-      if (!live) this._stopLive();
+      const live2 = show && !this._quiet && dom(this._c.entity) === "camera" && this._c.stream !== "snapshot";
+      if (live2 && !this._mode && !this._starting) this._startLive();
+      if (!live2) this._stopLive();
       clearInterval(this._tm);
       this._tm = null;
       if (show && dom(this._c.entity) === "camera" && !this._mode) {
@@ -7157,9 +7274,9 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);tr
   var HANDOFF = /* @__PURE__ */ new Map();
   var handoffT;
   var handOff = (kind, pool) => {
-    pool.forEach((ws, k) => {
+    pool.forEach((ws2, k) => {
       const key = `${kind}|${k}`;
-      (HANDOFF.get(key) || HANDOFF.set(key, []).get(key)).push(...ws);
+      (HANDOFF.get(key) || HANDOFF.set(key, []).get(key)).push(...ws2);
     });
     clearTimeout(handoffT);
     handoffT = setTimeout(() => HANDOFF.clear(), 3e3);
@@ -9089,9 +9206,9 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
         e.innerHTML = '<span class="drag"><ha-icon icon="mdi:drag"></ha-icon></span><span class="num"></span><span class="pi"></span><span class="bl"><b></b><small></small></span>';
         e.querySelector(".num").textContent = k + 1;
         if (p.icon) e.querySelector(".pi").innerHTML = `<ha-icon icon="${p.icon.replace(/"/g, "")}"></ha-icon>`;
-        const cards = normRows(p).flatMap((r) => r.cells).filter((x) => x.card);
+        const cards2 = normRows(p).flatMap((r) => r.cells).filter((x) => x.card);
         e.querySelector("b").textContent = p.name || `Seite ${k + 1}`;
-        e.querySelector("small").textContent = cards.length ? `${cards.length} ${cards.length === 1 ? "Karte" : "Karten"}` : "Noch leer";
+        e.querySelector("small").textContent = cards2.length ? `${cards2.length} ${cards2.length === 1 ? "Karte" : "Karten"}` : "Noch leer";
         const mv = (d) => {
           const ps = this._list();
           ps.splice(k + d, 0, ...ps.splice(k, 1));
@@ -9438,13 +9555,13 @@ ${qJets(161, [70, 80, 90, 110, 120, 130])}${qArm(162, 34)}<ellipse class="qsmp" 
   }).join("");
   function kibble(x0, x1, y1, top, rMin, rMax, seed) {
     let q = seed;
-    const rnd = () => (q = q * 16807 % 2147483647) / 2147483647, out = [];
+    const rnd2 = () => (q = q * 16807 % 2147483647) / 2147483647, out = [];
     for (let y = Math.min(...[x0, (x0 + x1) / 2, x1].map(top)) - 2; y < y1 + 3; y += 2.6 + rMax * 0.55) {
-      for (let x = x0 - 1 + rnd() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd() * rMax * 0.6) {
-        const r = rMin + rnd() * (rMax - rMin), cx = x + (rnd() - 0.5) * 1.6, cy = y + (rnd() - 0.5) * 1.8;
-        if (cy < top(cx) + r * 0.2 || rnd() < 0.1) continue;
-        const k = 1 + Math.floor(rnd() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd() * 0.36)), f3 = (n) => n.toFixed(1);
-        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd() * 180)} ${f3(cx)} ${f3(cy)})"><path d="M${f3(cx - a[0])} ${f3(cy)}Q${f3(cx - a[0])} ${f3(cy - a[1])} ${f3(cx)} ${f3(cy - a[1])}Q${f3(cx + a[2])} ${f3(cy - a[1])} ${f3(cx + a[2])} ${f3(cy)}Q${f3(cx + a[2])} ${f3(cy + a[3])} ${f3(cx)} ${f3(cy + a[3])}Q${f3(cx - a[0])} ${f3(cy + a[3])} ${f3(cx - a[0])} ${f3(cy)}Z"/><ellipse cx="${f3(cx - r * 0.3)}" cy="${f3(cy - r * 0.38)}" rx="${f3(r * 0.38)}" ry="${f3(r * 0.24)}"/></g>`);
+      for (let x = x0 - 1 + rnd2() * 2.5; x < x1 + 2; x += rMax * 1.25 + rnd2() * rMax * 0.6) {
+        const r = rMin + rnd2() * (rMax - rMin), cx = x + (rnd2() - 0.5) * 1.6, cy = y + (rnd2() - 0.5) * 1.8;
+        if (cy < top(cx) + r * 0.2 || rnd2() < 0.1) continue;
+        const k = 1 + Math.floor(rnd2() * 5), a = Array.from({ length: 4 }, () => r * (0.82 + rnd2() * 0.36)), f3 = (n) => n.toFixed(1);
+        out.push(`<g class="kbl k${k}" transform="rotate(${Math.round(rnd2() * 180)} ${f3(cx)} ${f3(cy)})"><path d="M${f3(cx - a[0])} ${f3(cy)}Q${f3(cx - a[0])} ${f3(cy - a[1])} ${f3(cx)} ${f3(cy - a[1])}Q${f3(cx + a[2])} ${f3(cy - a[1])} ${f3(cx + a[2])} ${f3(cy)}Q${f3(cx + a[2])} ${f3(cy + a[3])} ${f3(cx)} ${f3(cy + a[3])}Q${f3(cx - a[0])} ${f3(cy + a[3])} ${f3(cx - a[0])} ${f3(cy)}Z"/><ellipse cx="${f3(cx - r * 0.3)}" cy="${f3(cy - r * 0.38)}" rx="${f3(r * 0.38)}" ry="${f3(r * 0.24)}"/></g>`);
       }
     }
     return out.join("");
@@ -10394,8 +10511,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _atCalc() {
       const c = this._c;
       if (!this._at || c.start_at !== "home_connect") return null;
-      const [H3, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
-      start.setHours(H3, M, 0, 0);
+      const [H2, M] = this._at.split(":").map(Number), now = /* @__PURE__ */ new Date(), start = new Date(now);
+      start.setHours(H2, M, 0, 0);
       if (start <= now) start.setDate(start.getDate() + 1);
       const ds = this._S(c.duration), dur = secsOf(ds);
       if (!dur) return { start, err: "Programmdauer unbekannt (Editor → Programm und Zeit → Gesamtdauer)" };
@@ -10695,14 +10812,14 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
       c.hints.forEach((a) => {
         const s = this._S(a.entity);
         if (!alertHit(a, s)) return;
-        const an = can.includes(a.anim) ? a.anim : null, H3 = HANIM[an];
+        const an = can.includes(a.anim) ? a.anim : null, H2 = HANIM[an];
         if (an) on.add(an);
         const fd = an === "filter" ? this._S(c.filter_days) : null, fdn = ok(fd) && NUMRE.test(fd.state) ? Math.round(+fd.state) : null;
         const fx = fdn != null ? `noch ${fdn} ${fdn === 1 ? "Tag" : "Tage"}` : "";
         add(
           ["error", "info"].includes(a.level) ? a.level : "warning",
-          a.icon || (H3 && an !== "warning" ? H3[2] : s?.attributes.icon) || "mdi:information-outline",
-          [a.message || H3 && H3[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
+          a.icon || (H2 && an !== "warning" ? H2[2] : s?.attributes.icon) || "mdi:information-outline",
+          [a.message || H2 && H2[1] || `${a.name ?? s.attributes.friendly_name ?? a.entity}: ${fmtState(h, s)}`, fx].filter(Boolean).join(" · "),
           a.entity,
           !!an,
           a.reset && { id: a.reset, name: a.reset_name || "Zurücksetzen" }
@@ -11207,8 +11324,8 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     };
     if (c.ams_trays?.length) c.ams_trays.forEach(add);
     else if (dev && h.devices && h.entities) {
-      const subs = new Set(Object.values(h.devices).filter((d) => d.via_device_id === dev).map((d) => d.id));
-      Object.values(h.entities).filter((e) => subs.has(e.device_id) && dom(e.entity_id) === "sensor").map((e) => e.entity_id).sort().forEach(add);
+      const subs2 = new Set(Object.values(h.devices).filter((d) => d.via_device_id === dev).map((d) => d.id));
+      Object.values(h.entities).filter((e) => subs2.has(e.device_id) && dom(e.entity_id) === "sensor").map((e) => e.entity_id).sort().forEach(add);
     }
     const nm = (d) => {
       const x = h.devices?.[d];
@@ -11873,20 +11990,20 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _cam(cls) {
       const c = this._c, e = this._e, s = this._S(c.camera), pic = s?.attributes.entity_picture;
       const want = !!c.camera && !c.demo && ok2(s) && !!pic && (c.camera_mode !== "printing" || ["print", "prep", "heat", "pause"].includes(cls));
-      const live = want && dom(c.camera) === "camera";
+      const live2 = want && dom(c.camera) === "camera";
       if (!want) {
         e.cam.hidden = true;
         e.img.removeAttribute("src");
         this._camSrc = null;
       } else {
-        const src = `${pic}${pic.includes("?") ? "&" : "?"}_=${live ? this._camT || 0 : encodeURIComponent(s.state)}`;
+        const src = `${pic}${pic.includes("?") ? "&" : "?"}_=${live2 ? this._camT || 0 : encodeURIComponent(s.state)}`;
         if (src !== this._camSrc) {
           this._camSrc = src;
           e.img.src = src;
         }
         if (this._camErr === src) e.cam.hidden = true;
       }
-      this._camLive = live;
+      this._camLive = live2;
     }
     _amsList(m, ams) {
       const c = this._c, us = [...ams ? m.units : [], ...m.ext ? [{ name: "Extern", slots: [m.ext], x: true }] : []];
@@ -13487,14 +13604,14 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
         this._sec = sec > 0 ? Math.min(sec, this._vals.at(-1)) : 300;
         return;
       }
-      const t = Math.max(0, Math.round(sec)), u = this._units(), H3 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
+      const t = Math.max(0, Math.round(sec)), u = this._units(), H2 = u.includes("h"), M = u.includes("m"), S = u.includes("s");
       const c = { h: 0, m: 0, s: 0 };
-      if (H3) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
-      if (M) c.m = Math.min(this._max("m"), Math.floor((H3 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
-      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H3 ? t % 3600 : t) / 5) * 5);
+      if (H2) c.h = Math.min(this._max("h"), M || S ? Math.floor(t / 3600) : Math.round(t / 3600));
+      if (M) c.m = Math.min(this._max("m"), Math.floor((H2 ? t % 3600 : t) / 60) + (S ? 0 : Math.round(t % 60 / 60)));
+      if (S) c.s = Math.min(this._max("s"), Math.round((M ? t % 60 : H2 ? t % 3600 : t) / 5) * 5);
       if (!c.h && !c.m && !c.s) {
         if (M) c.m = 5;
-        else if (H3) c.h = 1;
+        else if (H2) c.h = 1;
         else c.s = 30;
       }
       this._cust = c;
@@ -14298,19 +14415,19 @@ ${dialGlass("k", C, C, R2)}</svg>`;
       if (!e || !this.isConnected) return;
       const g = e.g, cs = getComputedStyle(g), can = this._st !== "analog", lay = c.layout;
       g.classList.add("probe");
-      const H3 = g.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const H2 = g.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
       const W2 = g.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
       g.classList.remove("probe");
       g.style.setProperty("--ks", 1);
       g.classList.toggle("wide", can && lay === "row");
       if (!(W2 > 0)) return;
       g.style.removeProperty("--kfix");
-      if (!(H3 > 24)) {
+      if (!(H2 > 24)) {
         g.style.setProperty("--kh", `${Math.round(Math.min(160, W2 / 6))}px`);
         return;
       }
-      g.style.setProperty("--kh", `${Math.round(H3)}px`);
-      g.style.setProperty("--kfix", `${Math.round(H3)}px`);
+      g.style.setProperty("--kh", `${Math.round(H2)}px`);
+      g.style.setProperty("--kfix", `${Math.round(H2)}px`);
       const need = () => {
         let t = Infinity, b = -Infinity, w2 = 0, rw2 = 1;
         for (const k of g.children) {
@@ -14330,13 +14447,13 @@ ${dialGlass("k", C, C, R2)}</svg>`;
         return [w2, b > t ? b - t : 0, rw2];
       };
       let [w, h, rw] = need();
-      if (can && lay !== "row" && lay !== "stacked" && h > H3 + 1 && W2 / H3 >= 2.2 && !(e.dt.hidden && e.inf.hidden && e.nm.hidden)) {
+      if (can && lay !== "row" && lay !== "stacked" && h > H2 + 1 && W2 / H2 >= 2.2 && !(e.dt.hidden && e.inf.hidden && e.nm.hidden)) {
         g.classList.add("wide");
         [w, h, rw] = need();
       }
       let s = 1;
       for (let i = 0; i < 4 && h; i++) {
-        const r = Math.min(H3 / h, W2 / (w || W2), rw);
+        const r = Math.min(H2 / h, W2 / (w || W2), rw);
         if (r >= 0.995) break;
         s = Math.max(0.15, s * r * 0.98);
         g.style.setProperty("--ks", +s.toFixed(3));
@@ -14582,77 +14699,6 @@ ${dialGlass("k", C, C, R2)}</svg>`;
   __publicField(NovaClockCardEditor, "openSections", ["general", "show"]);
   define("clock-card-editor", NovaClockCardEditor);
 
-  // src/shared/todo.js
-  var TodoFeed = class {
-    // onChange() wird nach jeder Änderung von items/err aufgerufen
-    constructor(card, onChange) {
-      this.card = card;
-      this.onChange = onChange;
-      this.id = null;
-      this.items = null;
-      this.err = null;
-    }
-    // Liste wechseln (null = keine)
-    setEntity(id) {
-      if (id === this.id) return;
-      this.stop();
-      this.id = id || null;
-      this.items = null;
-      this.err = null;
-    }
-    // Bei jedem hass-Update aufrufen: startet das Abo bzw. holt im Ersatzweg neu, wenn sich die Liste geändert hat
-    update(h, old) {
-      const id = this.id;
-      if (!id || !h?.states[id]) return;
-      if (this.fallback) {
-        if (old?.states[id] !== h.states[id] || !this.items) this.fetch(h);
-        return;
-      }
-      if (this.sub || !this.card.isConnected) return;
-      if (inPicker(this.card)) {
-        this.fallback = true;
-        this.fetch(h);
-        return;
-      }
-      this.sub = h.connection.subscribeMessage((m) => {
-        if (this.id !== id) return;
-        this.items = Array.isArray(m?.items) ? m.items : [];
-        this.err = null;
-        this.onChange();
-      }, { type: "todo/item/subscribe", entity_id: id }).catch((err) => {
-        console.warn("[nova-cards] todo: Abo nicht möglich, hole Einträge über todo.get_items", id, err);
-        this.sub = null;
-        this.fallback = true;
-        this.fetch(h);
-        return null;
-      });
-    }
-    stop() {
-      const s = this.sub;
-      this.sub = null;
-      this.fallback = false;
-      s?.then((u) => typeof u === "function" && u()).catch(() => {
-      });
-    }
-    async fetch(h) {
-      const id = this.id;
-      if (!h || !id || !h.states[id]) return;
-      const n = this._n = (this._n || 0) + 1;
-      try {
-        const res = await h.callService("todo", "get_items", {}, { entity_id: id }, false, true);
-        if (n !== this._n || id !== this.id) return;
-        this.items = res?.response?.[id]?.items || [];
-        this.err = null;
-      } catch (err) {
-        this.err = err?.message || "Liste konnte nicht geladen werden";
-      }
-      this.onChange();
-    }
-    call(h, service, data) {
-      return h.callService("todo", service, data, { entity_id: this.id });
-    }
-  };
-
   // src/shared/print-button.js
   var PRINT_CSS = `
 .pb{--ok:var(--nova-success-color,var(--nv-a4));display:inline-flex;align-items:center;justify-content:center;gap:var(--nv-s4);flex:none;box-sizing:border-box;
@@ -14738,242 +14784,1646 @@ box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--ok) 45%,transparen
   var PRINT_LABELS = { print_script: "Druck-Skript", print_label: "Beschriftung", print_icon: "Icon", print_style: "Form des Knopfs" };
   var PRINT_HELPERS = { print_script: "Leer = kein Druck-Knopf. Das Skript wird aufgerufen und die Karte wartet, bis es fertig ist." };
 
+  // src/shared/rich-text.js
+  var TAGS = {
+    B: "b",
+    STRONG: "b",
+    I: "i",
+    EM: "i",
+    U: "u",
+    S: "s",
+    STRIKE: "s",
+    DEL: "s",
+    BR: "br",
+    P: "p",
+    DIV: "p",
+    H3: "h3",
+    UL: "ul",
+    OL: "ul",
+    LI: "li",
+    SPAN: "span"
+  };
+  var ALLOW = { span: ["fs-s", "fs-l", "c-accent", "c-warn", "c-muted"], ul: ["check"], li: ["done"] };
+  var DROP = /* @__PURE__ */ new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "TEMPLATE", "SVG", "MATH", "NOSCRIPT", "TEXTAREA", "SELECT", "HEAD", "TITLE"]);
+  function sanitize(html) {
+    if (!html) return "";
+    const t = document.createElement("template");
+    t.innerHTML = String(html);
+    const walk = (node) => [...node.childNodes].map((n) => {
+      if (n.nodeType === 3) return esc(n.data).replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+      if (n.nodeType !== 1 || DROP.has(n.nodeName)) return "";
+      const name = TAGS[n.nodeName], inner = walk(n.content || n);
+      if (name === "br") return "<br>";
+      if (!name) return inner;
+      const cls = [...new Set((n.getAttribute("class") || "").split(/\s+/).filter((c) => ALLOW[name]?.includes(c)))];
+      if (name === "span" && !cls.length) return inner;
+      return `<${name}${cls.length ? ` class="${cls.join(" ")}"` : ""}>${inner}</${name}>`;
+    }).join("");
+    return walk(t.content).replace(/<p>(<ul[^>]*>)/g, "$1").replace(/<\/ul><\/p>/g, "</ul>").replace(/<p><\/p>/g, "").replace(/^(<br>)+|(<br>)+$/g, "");
+  }
+  var isEmpty = (html) => !String(html || "").replace(/<[^>]*>/g, "").replace(/&nbsp;| |​/g, "").trim();
+  function toPlain(html) {
+    const t = document.createElement("template");
+    t.innerHTML = sanitize(html);
+    const out = [];
+    let line = "";
+    const flush = () => {
+      out.push(line.replace(/\s+$/, ""));
+      line = "";
+    };
+    const walk = (node, pre = "") => node.childNodes.forEach((n) => {
+      if (n.nodeType === 3) {
+        line += n.data.replace(/ /g, " ");
+        return;
+      }
+      const tag2 = n.nodeName;
+      if (tag2 === "BR") {
+        flush();
+        line = pre ? " ".repeat(pre.length) : "";
+        return;
+      }
+      if (tag2 === "LI") {
+        if (line.trim()) flush();
+        const chk = n.parentNode?.classList?.contains("check");
+        line = chk ? n.classList.contains("done") ? "[x] " : "[ ] " : "• ";
+        walk(n, line);
+        flush();
+        return;
+      }
+      if (tag2 === "H3") {
+        if (line.trim()) flush();
+        line = "";
+        const s = out.length;
+        walk(n);
+        flush();
+        out[s] = (out[s] || "").toUpperCase();
+        return;
+      }
+      if (tag2 === "P" || tag2 === "UL") {
+        if (line.trim()) flush();
+        walk(n, pre);
+        if (line.trim() || tag2 === "P") flush();
+        return;
+      }
+      walk(n, pre);
+    });
+    walk(t.content);
+    if (line) flush();
+    return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
+  var firstLine = (html) => toPlain(html).split("\n").map((s) => s.replace(/^(\[.?\]|•)\s*/, "").trim()).find(Boolean) || "";
+  var RICH_CSS = `
+.rt{line-height:1.5;overflow-wrap:anywhere;font-size:var(--nv-fs-9)}
+.rt p,.rt h3,.rt ul{margin:0}
+.rt h3{font-size:var(--nv-fs-10);font-weight:var(--nv-fw-heavy);letter-spacing:.01em;margin:var(--nv-s2) 0}
+.rt .fs-s{font-size:var(--nv-fs-4)}.rt .fs-l{font-size:var(--nv-fd-1);line-height:1.25}
+.rt .c-accent{color:var(--nv-text-accent)}.rt .c-warn{color:var(--nv-text-warn)}.rt .c-muted{opacity:.55}
+.rt ul{padding-left:1.3em}
+.rt ul.check{list-style:none;padding-left:0}
+.rt ul.check li{position:relative;padding-left:30px;min-height:24px;transition:opacity var(--nv-d3)}
+.rt ul.check li::before{content:'';position:absolute;left:0;top:.15em;width:18px;height:18px;border-radius:6px;box-sizing:border-box;
+border:2px solid rgba(var(--nv-tint),.45);transition:background-color var(--nv-d3),border-color var(--nv-d3),box-shadow var(--nv-d3);cursor:pointer}
+.rt ul.check li::after{content:'';position:absolute;left:6px;top:calc(.15em + 3px);width:5px;height:9px;border:solid var(--nv-active-fg);border-width:0 2.5px 2.5px 0;
+transform:rotate(45deg) scale(0);transition:transform var(--nv-d3) var(--nv-ease);pointer-events:none}
+.rt ul.check li.done::before{background:var(--nv-active);border-color:var(--nv-active);box-shadow:0 0 10px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent)}
+.rt ul.check li.done::after{transform:rotate(45deg) scale(1)}
+.rt ul.check li.done{text-decoration:line-through;opacity:.55}
+.rte{outline:none;min-height:3em;cursor:text;-webkit-user-select:text;user-select:text}
+.rte:empty::before{content:attr(data-ph);opacity:.45;pointer-events:none}
+.tb{display:flex;gap:var(--nv-s1);align-items:center;padding:var(--nv-s2);border-radius:var(--nv-r-md);background:rgba(var(--nv-tint),.06);border:1px solid rgba(var(--nv-tint),.08);flex:none;
+overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+.tb::-webkit-scrollbar{display:none}
+.tb.fade{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+.tb .sep{width:1px;flex:none;align-self:stretch;margin:var(--nv-s2) var(--nv-s1);background:rgba(var(--nv-tint),.14)}
+.tb button{width:44px;height:44px;flex:none;border-radius:var(--nv-r-sm);border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;
+cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:background-color var(--nv-d2),color var(--nv-d2),transform var(--nv-d2)}
+.tb button ha-icon{--mdc-icon-size:22px}
+.tb button:active{transform:scale(var(--nv-press))}
+.tb button.on{background:color-mix(in srgb,var(--nv-active) 28%,transparent);color:var(--nv-fg)}
+.tb button:focus-visible{box-shadow:var(--nv-focus);outline:none}
+.tb .dot{width:20px;height:20px;border-radius:50%;border:2px solid rgba(var(--nv-tint),.35);box-sizing:border-box}
+.tb .dot.c-accent{background:var(--nv-text-accent)}.tb .dot.c-warn{background:var(--nv-text-warn)}.tb .dot.c-muted{background:rgba(var(--nv-tint),.35)}
+.tb .dot.c-none{background:var(--nv-fg)}
+@media (prefers-reduced-motion:reduce){.rt ul.check li,.rt ul.check li::before,.rt ul.check li::after{transition:none}}`;
+  var SIZES2 = [["fs-s", "mdi:format-font-size-decrease", "Klein"], ["", "mdi:format-text", "Normal"], ["fs-l", "mdi:format-font-size-increase", "Groß"], ["h3", "mdi:format-header-1", "Überschrift"]];
+  var COLORS2 = [["c-accent", "Akzent"], ["c-warn", "Wichtig"], ["c-muted", "Gedämpft"], ["", "Normal"]];
+  function getRange(root) {
+    try {
+      if (root.getSelection) {
+        const x = root.getSelection();
+        return x?.rangeCount ? x.getRangeAt(0) : null;
+      }
+      const s = document.getSelection();
+      if (s?.getComposedRanges) {
+        let st;
+        try {
+          st = s.getComposedRanges({ shadowRoots: [root] })[0];
+        } catch {
+          st = s.getComposedRanges(root)[0];
+        }
+        if (!st) return null;
+        const r = document.createRange();
+        r.setStart(st.startContainer, st.startOffset);
+        r.setEnd(st.endContainer, st.endOffset);
+        return r;
+      }
+      return s?.rangeCount ? s.getRangeAt(0) : null;
+    } catch {
+      return null;
+    }
+  }
+  var anchor = (root) => getRange(root)?.startContainer;
+  var within = (rte, n) => n && (n === rte || rte.contains(n));
+  var closest = (n, s, stop) => {
+    for (let x = n?.nodeType === 1 ? n : n?.parentElement; x && x !== stop; x = x.parentElement) if (x.matches(s)) return x;
+    return null;
+  };
+  function wrap(rte, root, group, cls) {
+    const r = getRange(root);
+    if (!r || !within(rte, r.commonAncestorContainer)) return;
+    if (r.collapsed) {
+      const n = r.startContainer;
+      if (n.nodeType !== 3) return;
+      const t = n.data, i = r.startOffset;
+      let a = i, b = i;
+      while (a > 0 && /\S/.test(t[a - 1])) a--;
+      while (b < t.length && /\S/.test(t[b])) b++;
+      if (a === b) return;
+      r.setStart(n, a);
+      r.setEnd(n, b);
+    }
+    const host = closest(r.commonAncestorContainer, "span", rte);
+    if (host && host.textContent === r.toString()) {
+      group.forEach((c) => c && host.classList.remove(c));
+      if (cls) host.classList.add(cls);
+      if (!host.classList.length) host.replaceWith(...host.childNodes);
+      return;
+    }
+    const frag = r.extractContents();
+    frag.querySelectorAll("span").forEach((sp) => {
+      group.forEach((c) => c && sp.classList.remove(c));
+      if (!sp.classList.length) sp.replaceWith(...sp.childNodes);
+    });
+    let node = frag;
+    if (cls) {
+      node = document.createElement("span");
+      node.className = cls;
+      node.append(frag);
+    }
+    const first = node === frag ? frag.firstChild : node, last = node === frag ? frag.lastChild : node;
+    r.insertNode(node);
+    if (first && last) {
+      const nr = document.createRange();
+      nr.setStartBefore(first);
+      nr.setEndAfter(last);
+      try {
+        document.getSelection().setBaseAndExtent(nr.startContainer, nr.startOffset, nr.endContainer, nr.endOffset);
+      } catch {
+      }
+    }
+  }
+  function richEditor({ placeholder = "", colors = true, onInput } = {}) {
+    const el2 = document.createElement("div");
+    el2.className = "rtw";
+    el2.innerHTML = '<div class="tb" role="toolbar" aria-label="Formatierung"></div><div class="rt rte" contenteditable="true" spellcheck="true"></div>';
+    const tb = el2.firstChild, rte = el2.lastChild;
+    rte.dataset.ph = placeholder;
+    const root = () => el2.getRootNode();
+    const btns = {};
+    const btn = (key, icon2, title, fn, inner) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.title = title;
+      b.setAttribute("aria-label", title);
+      b.innerHTML = inner || `<ha-icon icon="${icon2}"></ha-icon>`;
+      b.addEventListener("pointerdown", (e) => e.preventDefault());
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!within(rte, anchor(root()))) rte.focus();
+        fn();
+        changed();
+      });
+      btns[key] = b;
+      tb.append(b);
+      return b;
+    };
+    const sep = () => {
+      const s = document.createElement("span");
+      s.className = "sep";
+      tb.append(s);
+    };
+    const exec = (c, v) => document.execCommand(c, false, v);
+    btn("bold", "mdi:format-bold", "Fett", () => exec("bold"));
+    btn("italic", "mdi:format-italic", "Kursiv", () => exec("italic"));
+    btn("underline", "mdi:format-underline", "Unterstrichen", () => exec("underline"));
+    btn("strikeThrough", "mdi:format-strikethrough-variant", "Durchgestrichen", () => exec("strikeThrough"));
+    sep();
+    SIZES2.forEach(([k, icon2, title]) => btn(`size:${k}`, icon2, title, () => {
+      const blk = closest(anchor(root()), "h3,p,li", rte);
+      if (k === "h3") {
+        exec("formatBlock", blk?.nodeName === "H3" ? "p" : "h3");
+        return;
+      }
+      if (blk?.nodeName === "H3") exec("formatBlock", "p");
+      wrap(rte, root(), ["fs-s", "fs-l"], k);
+    }));
+    sep();
+    btn("list", "mdi:format-list-bulleted", "Aufzählung", () => {
+      const ul = closest(anchor(root()), "ul", rte);
+      if (ul?.classList.contains("check")) {
+        ul.classList.remove("check");
+        return;
+      }
+      exec("insertUnorderedList");
+    });
+    btn("check", "mdi:format-list-checks", "Checkliste", () => {
+      let ul = closest(anchor(root()), "ul", rte);
+      if (ul?.classList.contains("check")) {
+        exec("insertUnorderedList");
+        return;
+      }
+      if (!ul) {
+        exec("insertUnorderedList");
+        ul = closest(anchor(root()), "ul", rte);
+      }
+      ul?.classList.add("check");
+    });
+    if (colors) {
+      sep();
+      COLORS2.forEach(([k, title]) => btn(`color:${k}`, "", `Farbe: ${title}`, () => wrap(rte, root(), COLORS2.map((c) => c[0]), k), `<span class="dot ${k || "c-none"}"></span>`));
+    }
+    const paint = () => {
+      const n = anchor(root());
+      if (!within(rte, n)) return;
+      ["bold", "italic", "underline", "strikeThrough"].forEach((k) => btns[k].classList.toggle("on", document.queryCommandState(k)));
+      const h3 = !!closest(n, "h3", rte), sz = closest(n, "span.fs-s,span.fs-l", rte), ul = closest(n, "ul", rte), col = closest(n, "span.c-accent,span.c-warn,span.c-muted", rte);
+      SIZES2.forEach(([k]) => btns[`size:${k}`].classList.toggle("on", k === "h3" ? h3 : !h3 && (sz ? sz.classList.contains(k) : k === "")));
+      btns.list.classList.toggle("on", !!ul && !ul.classList.contains("check"));
+      btns.check.classList.toggle("on", !!ul?.classList.contains("check"));
+      if (colors) COLORS2.forEach(([k]) => btns[`color:${k}`].classList.toggle("on", col ? col.classList.contains(k) : k === ""));
+    };
+    const changed = () => {
+      rte.querySelectorAll("ul.check li.done").forEach((li) => {
+        if (!li.textContent.trim()) li.classList.remove("done");
+      });
+      paint();
+      onInput?.(get());
+    };
+    const fade = () => tb.classList.toggle("fade", tb.scrollWidth - tb.clientWidth - tb.scrollLeft > 4);
+    tb.addEventListener("scroll", fade, { passive: true });
+    requestAnimationFrame(fade);
+    const onSel = () => paint();
+    rte.addEventListener("input", changed);
+    rte.addEventListener("keyup", paint);
+    rte.addEventListener("pointerup", paint);
+    rte.addEventListener("focus", () => document.addEventListener("selectionchange", onSel));
+    rte.addEventListener("blur", () => document.removeEventListener("selectionchange", onSel));
+    rte.addEventListener("keydown", (e) => e.stopPropagation());
+    rte.addEventListener("paste", (e) => {
+      e.preventDefault();
+      exec("insertText", e.clipboardData?.getData("text/plain") || "");
+    });
+    rte.addEventListener("drop", (e) => e.preventDefault());
+    rte.addEventListener("click", (e) => {
+      const li = closest(e.target, "ul.check > li", rte);
+      if (li && e.clientX - li.getBoundingClientRect().left < 28) {
+        li.classList.toggle("done");
+        changed();
+      }
+    });
+    const get = () => sanitize(rte.innerHTML);
+    const set = (html) => {
+      rte.innerHTML = sanitize(html);
+      paint();
+    };
+    try {
+      document.execCommand("defaultParagraphSeparator", false, "p");
+    } catch {
+    }
+    return { el: el2, rte, tb, get, set, focus: () => rte.focus() };
+  }
+  function richView(el2, html, onToggle) {
+    const clean = sanitize(html);
+    if (el2._html !== clean) {
+      el2._html = clean;
+      el2.innerHTML = clean;
+    }
+    el2.classList.add("rt");
+    if (onToggle && !el2._tog) {
+      el2._tog = true;
+      el2.addEventListener("click", (e) => {
+        const li = closest(e.target, "ul.check > li", el2);
+        if (!li) return;
+        e.stopPropagation();
+        li.classList.toggle("done");
+        el2._html = sanitize(el2.innerHTML);
+        el2._onToggle?.(el2._html);
+      });
+    }
+    el2._onToggle = onToggle;
+  }
+
+  // src/shared/stack-view.js
+  var VIEW_CSS = `
+.stage{position:relative;flex:1 1 0;min-height:var(--vh,240px);overflow:hidden;overflow:clip;margin:0 calc(var(--nv-s2) * -1)}
+.view{position:absolute;inset:0;display:flex;flex-direction:column;gap:var(--nv-s5);padding:0 var(--nv-s2);box-sizing:border-box;
+transition:transform var(--nv-d5) var(--nv-ease),opacity var(--nv-d5) var(--nv-ease),visibility 0s linear var(--nv-d5)}
+.view.main{transform:none}
+.view.side{transform:translateX(104%);opacity:0;visibility:hidden}
+.g.detail .view.main{transform:translateX(-28%);opacity:0;visibility:hidden}
+.g.detail .view.side{transform:none;opacity:1;visibility:visible;transition-delay:0s}
+.g:not(.detail) .view.main{visibility:visible;transition-delay:0s}
+.scroll{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:thin;
+-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent);padding-bottom:var(--nv-s6)}
+.rb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;box-sizing:border-box;
+border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;outline:none;-webkit-tap-highlight-color:transparent;
+transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),transform var(--nv-d2) var(--nv-ease),opacity var(--nv-d2),box-shadow var(--nv-d3)}
+.rb ha-icon{--mdc-icon-size:22px;transition:transform var(--nv-d4) var(--nv-ease)}
+.rb:active:not([disabled]){transform:scale(var(--nv-press))}
+.rb:focus-visible{box-shadow:var(--nv-focus)}
+.rb[disabled]{opacity:.35;cursor:default}
+.rb.sm{width:38px;height:38px}.rb.sm ha-icon{--mdc-icon-size:19px}
+.rb.on{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));border-color:transparent;color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));
+box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.rb.arm{border-color:color-mix(in srgb,var(--nv-error) 70%,transparent);background:color-mix(in srgb,var(--nv-error) 22%,transparent);color:var(--nv-error);animation:rb-shake var(--nv-d5) var(--nv-ease)}
+.rb.plus ha-icon{transition:transform var(--nv-d5) var(--nv-ease)}
+.rb.plus:active ha-icon{transform:rotate(90deg)}
+.bar{display:flex;align-items:center;gap:var(--nv-s4);flex:none;min-width:0}
+.bar .sp{flex:1;min-width:0}
+.msg{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-6);opacity:.6;padding:var(--nv-s5) var(--nv-s2)}
+.msg ha-icon{--mdc-icon-size:var(--nv-icon-md);flex:none}
+.state{font-size:var(--nv-fs-3);opacity:.6;display:flex;align-items:center;gap:var(--nv-s2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.state ha-icon{--mdc-icon-size:14px}
+.state.ok ha-icon{color:var(--nova-success-color,var(--nv-a4));animation:rb-pop var(--nv-d5) var(--nv-ease)}
+@keyframes rb-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes rb-pop{0%{transform:scale(.3)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes rb-shake{0%,100%{transform:none}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+@media (prefers-reduced-motion:reduce){.view,.rb,.rb ha-icon{transition:none}.rb.arm,.state.ok ha-icon{animation:none}}`;
+  function roundBtn(icon2, title, onTap, cls = "") {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `rb ${cls}`.trim();
+    b.title = title;
+    b.setAttribute("aria-label", title);
+    b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon>`;
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onTap(e);
+    });
+    return b;
+  }
+  var setBtnIcon = (b, icon2) => {
+    const i = b.firstChild;
+    if (i.getAttribute("icon") !== icon2) i.setAttribute("icon", icon2);
+  };
+  var ARM = 3e3;
+  function armButton(icon2, title, onConfirm, cls = "") {
+    let t;
+    const b = roundBtn(icon2, title, () => {
+      if (!b.classList.contains("arm")) {
+        b.classList.add("arm");
+        b.title = "Nochmal tippen zum Bestätigen";
+        setBtnIcon(b, "mdi:delete-alert-outline");
+        t = setTimeout(reset, ARM);
+        return;
+      }
+      reset();
+      onConfirm();
+    }, cls);
+    const reset = () => {
+      clearTimeout(t);
+      b.classList.remove("arm");
+      b.title = title;
+      setBtnIcon(b, icon2);
+    };
+    b.reset = reset;
+    return b;
+  }
+  function ago(ts, now = Date.now()) {
+    if (!ts) return "";
+    const d = new Date(ts * 1e3), s = (now - d) / 1e3;
+    if (s < 45) return "gerade eben";
+    if (s < 3600) return `vor ${Math.max(1, Math.round(s / 60))} Min.`;
+    const day = (x) => new Date(x).setHours(0, 0, 0, 0), dd = (day(now) - day(d)) / 864e5;
+    const hm = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    if (dd === 0) return `heute ${hm}`;
+    if (dd === 1) return `gestern ${hm}`;
+    return d.toLocaleDateString("de-DE", { day: "numeric", month: "short", ...d.getFullYear() !== new Date(now).getFullYear() ? { year: "numeric" } : {} });
+  }
+
+  // src/shared/media-picker.js
+  var FOOD_ICONS = [
+    "mdi:food-apple",
+    "mdi:fruit-pear",
+    "mdi:fruit-citrus",
+    "mdi:fruit-cherries",
+    "mdi:fruit-grapes",
+    "mdi:fruit-pineapple",
+    "mdi:fruit-watermelon",
+    "mdi:carrot",
+    "mdi:corn",
+    "mdi:chili-hot",
+    "mdi:mushroom-outline",
+    "mdi:leaf",
+    "mdi:sprout",
+    "mdi:nutrition",
+    "mdi:bread-slice",
+    "mdi:baguette",
+    "mdi:food-croissant",
+    "mdi:muffin",
+    "mdi:cupcake",
+    "mdi:cake-variant",
+    "mdi:cookie",
+    "mdi:egg-outline",
+    "mdi:cheese",
+    "mdi:cup-water",
+    "mdi:baby-bottle-outline",
+    "mdi:ice-cream",
+    "mdi:ice-pop",
+    "mdi:candy",
+    "mdi:fish",
+    "mdi:food-drumstick",
+    "mdi:food-steak",
+    "mdi:sausage",
+    "mdi:food-turkey",
+    "mdi:food-hot-dog",
+    "mdi:hamburger",
+    "mdi:pizza",
+    "mdi:pasta",
+    "mdi:noodles",
+    "mdi:rice",
+    "mdi:barley",
+    "mdi:peanut",
+    "mdi:popcorn",
+    "mdi:french-fries",
+    "mdi:shaker-outline",
+    "mdi:spoon-sugar",
+    "mdi:soy-sauce",
+    "mdi:pot-steam-outline",
+    "mdi:bowl-mix-outline",
+    "mdi:taco",
+    "mdi:food-variant",
+    "mdi:coffee",
+    "mdi:tea",
+    "mdi:water",
+    "mdi:bottle-soda-classic-outline",
+    "mdi:bottle-wine",
+    "mdi:beer",
+    "mdi:glass-cocktail",
+    "mdi:paper-roll",
+    "mdi:toothbrush-paste",
+    "mdi:hand-wash-outline",
+    "mdi:lotion-outline",
+    "mdi:spray-bottle",
+    "mdi:broom",
+    "mdi:pill",
+    "mdi:bandage",
+    "mdi:lightbulb-outline",
+    "mdi:battery-outline",
+    "mdi:dog",
+    "mdi:cat",
+    "mdi:flower-tulip-outline",
+    "mdi:package-variant-closed"
+  ];
+  var STORE_ICONS = [
+    "mdi:store-outline",
+    "mdi:storefront-outline",
+    "mdi:cart-outline",
+    "mdi:basket-outline",
+    "mdi:shopping-outline",
+    "mdi:food-apple-outline",
+    "mdi:bread-slice-outline",
+    "mdi:fish",
+    "mdi:pill",
+    "mdi:lipstick",
+    "mdi:hammer-wrench",
+    "mdi:flower-tulip-outline",
+    "mdi:paw",
+    "mdi:bottle-wine-outline",
+    "mdi:sprout",
+    "mdi:tshirt-crew-outline",
+    "mdi:laptop",
+    "mdi:gas-station-outline"
+  ];
+  var MAX = 384;
+  var QUALITY = 0.8;
+  async function compressImage(file, max = MAX) {
+    let src;
+    try {
+      src = await createImageBitmap(file, { imageOrientation: "from-image" });
+    } catch {
+      src = await new Promise((ok3, fail2) => {
+        const i = new Image();
+        i.onload = () => ok3(i);
+        i.onerror = fail2;
+        i.src = URL.createObjectURL(file);
+      });
+    }
+    const w = src.width || src.naturalWidth, h = src.height || src.naturalHeight, k = Math.min(1, max / Math.max(w, h));
+    const cv = document.createElement("canvas");
+    cv.width = Math.max(1, Math.round(w * k));
+    cv.height = Math.max(1, Math.round(h * k));
+    cv.getContext("2d").drawImage(src, 0, 0, cv.width, cv.height);
+    src.close?.();
+    let url = cv.toDataURL("image/webp", QUALITY);
+    if (!url.startsWith("data:image/webp")) url = cv.toDataURL("image/jpeg", QUALITY);
+    return url;
+  }
+  var PICK_MEDIA_CSS = `
+.mp{display:flex;flex-direction:column;gap:var(--nv-s5)}
+.mp .row1{display:flex;gap:var(--nv-s4);align-items:center}
+.mp .pv{width:64px;height:64px;border-radius:var(--nv-r-md);flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);overflow:hidden;
+border:1px solid var(--nv-box-border);transition:transform var(--nv-d3) var(--nv-ease)}
+.mp .pv.pop{animation:mp-pop var(--nv-d5) var(--nv-ease)}
+.mp .pv ha-icon{--mdc-icon-size:34px}.mp .pv img{width:100%;height:100%;object-fit:cover}
+.mp .acts{display:flex;gap:var(--nv-s3);flex-wrap:wrap;flex:1;min-width:0}
+.mp .act{height:44px;padding:0 var(--nv-s6);border-radius:var(--nv-r-pill);border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;font:inherit;
+font-size:var(--nv-fs-6);display:inline-flex;align-items:center;gap:var(--nv-s3);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform var(--nv-d2)}
+.mp .act:active{transform:scale(var(--nv-press))}
+.mp .act ha-icon{--mdc-icon-size:20px}
+.mp .act.busy ha-icon{animation:mp-spin 1s linear infinite}
+.mp .srch{min-height:56px}
+.mp .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:var(--nv-s2)}
+.mp .grid button{height:48px;border-radius:var(--nv-r-sm);border:1px solid transparent;background:rgba(var(--nv-tint),.05);color:inherit;display:flex;align-items:center;
+justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:background-color var(--nv-d2),border-color var(--nv-d2),transform var(--nv-d2)}
+.mp .grid button:active{transform:scale(var(--nv-press))}
+.mp .grid button.on{background:color-mix(in srgb,var(--nv-active) 28%,transparent);border-color:var(--nv-active)}
+.mp .grid ha-icon{--mdc-icon-size:24px}
+.mp .err{font-size:var(--nv-fs-4);color:var(--nv-error)}
+.mp input[type=file]{display:none}
+@keyframes mp-pop{0%{transform:scale(.6)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes mp-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.mp .pv.pop{animation:none}}`;
+  function mediaPicker({ hass, module = "shopping", value = {}, icons = FOOD_ICONS, upload = true, search = true, fallback = "mdi:help", onChange }) {
+    const el2 = document.createElement("div");
+    el2.className = "mp";
+    el2.innerHTML = `<div class="row1"><div class="pv"></div><div class="acts"></div></div><div class="srch"></div><div class="err" hidden></div><div class="grid"></div>
+<input type="file" accept="image/*">`;
+    const pv = el2.querySelector(".pv"), acts = el2.querySelector(".acts"), grid2 = el2.querySelector(".grid"), err = el2.querySelector(".err"), file = el2.querySelector("input"), srch = el2.querySelector(".srch");
+    let cur2 = { icon: value.icon || null, image: value.image || null }, h = hass;
+    const paint = (pop) => {
+      pv.innerHTML = cur2.image ? `<img alt="" src="${imageUrl(h, module, cur2.image)}">` : `<ha-icon icon="${cur2.icon || fallback}"></ha-icon>`;
+      if (pop) {
+        pv.classList.remove("pop");
+        void pv.offsetWidth;
+        pv.classList.add("pop");
+      }
+      grid2.querySelectorAll("button").forEach((b) => b.classList.toggle("on", !cur2.image && b.dataset.icon === cur2.icon));
+      rm.hidden = !cur2.icon && !cur2.image;
+      if (form) form.data = { icon: cur2.image ? "" : cur2.icon || "" };
+    };
+    const set = (v) => {
+      cur2 = { icon: null, image: null, ...v };
+      paint(true);
+      onChange?.(cur2);
+    };
+    const act = (icon2, label, fn) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "act";
+      b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon><span></span>`;
+      b.lastChild.textContent = label;
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        fn(b);
+      });
+      acts.append(b);
+      return b;
+    };
+    if (upload) act("mdi:camera-plus-outline", "Eigenes Bild", () => file.click());
+    const rm = act("mdi:close", "Entfernen", () => set({}));
+    file.addEventListener("change", async () => {
+      const f3 = file.files?.[0];
+      file.value = "";
+      if (!f3) return;
+      const b = acts.firstChild;
+      b.classList.add("busy");
+      b.firstChild.setAttribute("icon", "mdi:loading");
+      err.hidden = true;
+      try {
+        const { image } = await uploadImage(h, module, await compressImage(f3, module === "recipes" ? 960 : MAX));
+        set({ image });
+      } catch (e) {
+        err.textContent = `Bild konnte nicht gespeichert werden: ${e?.message || e}`;
+        err.hidden = false;
+      } finally {
+        b.classList.remove("busy");
+        b.firstChild.setAttribute("icon", "mdi:camera-plus-outline");
+      }
+    });
+    icons.forEach((ic) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.icon = ic;
+      b.title = ic.slice(4);
+      b.innerHTML = `<ha-icon icon="${ic}"></ha-icon>`;
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        set({ icon: ic });
+      });
+      grid2.append(b);
+    });
+    let form = null;
+    if (search) loadForm().then(() => {
+      if (customElements.get("ha-form")) {
+        form = document.createElement("ha-form");
+        form.schema = [{ name: "icon", selector: { icon: {} } }];
+        form.computeLabel = () => "Icon suchen";
+        form.hass = h;
+        form.addEventListener("value-changed", (e) => {
+          e.stopPropagation();
+          const ic = e.detail.value?.icon;
+          if (ic && ic !== cur2.icon) set({ icon: ic });
+        });
+      } else {
+        form = document.createElement("input");
+        form.className = "fld";
+        form.placeholder = "mdi:…";
+        form.style.cssText = "height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8)";
+        form.addEventListener("change", () => {
+          const v = form.value.trim();
+          if (/^[a-z0-9-]+:[a-z0-9-]+$/.test(v)) set({ icon: v });
+        });
+        Object.defineProperty(form, "data", { set: (d) => {
+          form.value = d.icon || "";
+        } });
+      }
+      srch.append(form);
+      paint();
+    });
+    paint();
+    el2.set = (v) => {
+      cur2 = { icon: v?.icon || null, image: v?.image || null };
+      paint(true);
+    };
+    el2.setHass = (x) => {
+      h = x;
+      if (form && "hass" in form) form.hass = x;
+    };
+    return el2;
+  }
+
   // src/shopping.js
   var SCSS2 = `
 .g.sh{gap:var(--nv-s5)}
 .add{display:flex;gap:var(--nv-s4);align-items:center;flex:none}
 .add .fld{height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8)}
-.ab{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
-border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;outline:none;-webkit-tap-highlight-color:transparent;
-transition:background-color var(--nv-d2),color var(--nv-d2),border-color var(--nv-d2),transform var(--nv-d2),opacity var(--nv-d2)}
-.ab ha-icon{--mdc-icon-size:22px}
-.ab:not([disabled]){color:var(--nv-active);border-color:color-mix(in srgb,var(--nv-active) 45%,transparent)}
-.ab[disabled]{opacity:.4;cursor:default}
-.ab:active:not([disabled]){transform:scale(var(--nv-press))}
-.ab:focus-visible{box-shadow:var(--nv-focus)}
-.items{flex:1 1 0;min-height:var(--lh,200px);overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:var(--nv-s3);
-scrollbar-width:thin;margin:0 -4px;padding:0 var(--nv-s2);-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent);padding-bottom:var(--nv-s5)}
-.it{display:flex;align-items:center;gap:var(--nv-s6);padding:var(--nv-s5) var(--nv-s6);border-radius:var(--nv-r-md);min-width:0;flex:none;
-background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);transition:background-color var(--nv-d3),border-color var(--nv-d3),opacity var(--nv-d5)}
-.it:active{transform:scale(.985)}
-.ck{width:22px;height:22px;border-radius:50%;flex:none;box-sizing:border-box;border:2px solid rgba(var(--nv-tint),.45);display:flex;align-items:center;justify-content:center;
-transition:background-color var(--nv-d3),border-color var(--nv-d3),box-shadow var(--nv-d3)}
-.ck ha-icon{--mdc-icon-size:15px;opacity:0;transform:scale(.4);transition:opacity var(--nv-d2),transform var(--nv-d3)}
-.it .tx{flex:1;min-width:0;font-size:var(--nv-fs-8);overflow-wrap:anywhere;transition:opacity var(--nv-d3)}
-.it .tx small{display:block;font-size:var(--nv-fs-3);opacity:.6;margin-top:var(--nv-s1)}
-.it.done .ck{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));border-color:var(--nv-active);color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));box-shadow:0 0 12px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
-.it.done .ck ha-icon{opacity:1;transform:scale(1)}
-.it.done .tx{text-decoration:line-through;opacity:.5}
-.it.leave{opacity:.35}
-.msg{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-6);opacity:.6;padding:var(--nv-s5) var(--nv-s2)}
-.msg ha-icon{--mdc-icon-size:var(--nv-icon-md)}
+.form .sug{margin-top:calc(var(--nv-s3) * -1)}
+.cta{height:48px;border-radius:var(--nv-r-pill);flex:none;width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:var(--nv-s4);font:inherit;font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);
+cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;color:inherit;border:1px solid color-mix(in srgb,var(--nv-active) 60%,transparent);background:color-mix(in srgb,var(--nv-active) 24%,var(--nv-chip));
+box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 35%,transparent) var(--nv-glow),transparent);transition:transform var(--nv-d2) var(--nv-ease),opacity var(--nv-d3)}
+.cta:active:not([disabled]){transform:scale(var(--nv-press))}
+.cta:focus-visible{box-shadow:var(--nv-focus)}
+.cta[disabled]{opacity:.4;cursor:default}
+.cta ha-icon{--mdc-icon-size:22px}
+.cta[hidden]{display:none}
+.sug{display:flex;gap:var(--nv-s3);overflow-x:auto;flex:none;scrollbar-width:none;margin:0 calc(var(--nv-s2) * -1);padding:var(--nv-s1) var(--nv-s2);
+-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
+.sug::-webkit-scrollbar{display:none}
+.sug:empty{display:none}
+.chip{display:inline-flex;align-items:center;gap:var(--nv-s3);height:38px;padding:0 var(--nv-s6) 0 var(--nv-s2);border-radius:var(--nv-r-pill);flex:none;cursor:pointer;
+border:1px solid rgba(var(--nv-tint),.1);background:var(--nv-chip);color:inherit;font:inherit;font-size:var(--nv-fs-6);white-space:nowrap;-webkit-tap-highlight-color:transparent;
+transition:transform var(--nv-d2) var(--nv-ease),background-color var(--nv-d2),border-color var(--nv-d2),opacity var(--nv-d3);animation:rb-in var(--nv-d4) var(--nv-ease) both;animation-delay:calc(var(--i,0) * 30ms)}
+.chip:active{transform:scale(var(--nv-press))}
+.chip.go{transform:translateY(14px) scale(.8);opacity:0}
+.chip .th{width:30px;height:30px}
+.chip.plain{padding:0 var(--nv-s6)}
+.chip.on{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));border-color:transparent;color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));
+box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.chip ha-icon{--mdc-icon-size:18px}
+.th{width:40px;height:40px;border-radius:var(--nv-r-sm);flex:none;display:flex;align-items:center;justify-content:center;background:rgba(var(--nv-tint),.08);overflow:hidden}
+.th img{width:100%;height:100%;object-fit:cover}
+.th ha-icon{--mdc-icon-size:22px}
+.th.none ha-icon{opacity:.4}
+.items{display:flex;flex-direction:column;gap:var(--nv-s3)}
+.gh{display:flex;align-items:center;gap:var(--nv-s3);font-size:var(--nv-fs-3);font-weight:var(--nv-fw-bold);text-transform:uppercase;letter-spacing:var(--nv-caps);opacity:.7;
+padding:var(--nv-s4) var(--nv-s2) 0;flex:none;min-height:24px}
+.gh:first-child{padding-top:0}
+.gh ha-icon{--mdc-icon-size:16px}
+.gh .n{opacity:.7;font-weight:var(--nv-fw-medium)}
+.gh.tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gh .sp{flex:1}
+.gh .chev{transition:transform var(--nv-d3) var(--nv-ease)}
+.gh.open .chev{transform:rotate(180deg)}
+.gh .rb{text-transform:none}
+.it{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s3) var(--nv-s3) var(--nv-s3) var(--nv-s5);border-radius:var(--nv-r-md);min-width:0;flex:none;min-height:52px;box-sizing:border-box;
+background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);transition:background-color var(--nv-d3),border-color var(--nv-d3),opacity var(--nv-d5),transform var(--nv-d5) var(--nv-ease)}
+.it.new{animation:rb-in var(--nv-d5) var(--nv-ease) both}
+.ckb{width:44px;height:44px;margin:-4px -8px -4px -10px;flex:none;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:inherit;padding:0;cursor:pointer;
+border-radius:50%;-webkit-tap-highlight-color:transparent;outline:none}
+.ckb:focus-visible .ck{box-shadow:var(--nv-focus)}
+.ck{width:24px;height:24px;border-radius:50%;box-sizing:border-box;border:2px solid rgba(var(--nv-tint),.45);display:flex;align-items:center;justify-content:center;position:relative;
+transition:background-color var(--nv-d3),border-color var(--nv-d3),box-shadow var(--nv-d3),transform var(--nv-d2) var(--nv-ease)}
+.ckb:active .ck{transform:scale(.85)}
+.ck ha-icon{--mdc-icon-size:16px;opacity:0;transform:scale(.3) rotate(-30deg);transition:opacity var(--nv-d2),transform var(--nv-d4) var(--nv-ease)}
+.ck::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--nv-active);opacity:0;pointer-events:none}
+.it.done .ck{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));border-color:var(--nv-active);color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));
+box-shadow:0 0 12px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.it.done .ck ha-icon{opacity:1;transform:none}
+.it.tick .ck::after{animation:sh-ring var(--nv-d6) var(--nv-ease)}
+.it.tick .ck{animation:rb-pop var(--nv-d5) var(--nv-ease)}
+.it .tx{flex:1;min-width:0;cursor:pointer;align-self:stretch;display:flex;flex-direction:column;justify-content:center;-webkit-tap-highlight-color:transparent;outline:none;border-radius:var(--nv-r-xs)}
+.it .tx:focus-visible{box-shadow:var(--nv-focus)}
+.it .tx b{font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;align-self:flex-start;max-width:100%}
+.it .tx b::after{content:'';position:absolute;left:0;top:52%;height:1.5px;width:100%;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform var(--nv-d5) var(--nv-ease)}
+.it.done .tx b::after{transform:scaleX(1)}
+.it .tx small{font-size:var(--nv-fs-3);opacity:.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it.done .tx,.it.done .th{opacity:.5;transition:opacity var(--nv-d5)}
+.it.leave{opacity:0;transform:translateY(8px) scale(.97)}
+.qt{display:flex;align-items:center;flex:none;border-radius:var(--nv-r-pill);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08)}
+.qt button{width:36px;height:40px;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;border-radius:var(--nv-r-pill);
+-webkit-tap-highlight-color:transparent;outline:none;transition:transform var(--nv-d2) var(--nv-ease),background-color var(--nv-d2)}
+.qt button:active{transform:scale(.8);background:rgba(var(--nv-tint),.12)}
+.qt button:focus-visible{box-shadow:var(--nv-focus)}
+.qt button ha-icon{--mdc-icon-size:18px}
+.qt span{min-width:34px;text-align:center;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold);white-space:nowrap;font-variant-numeric:tabular-nums}
+.qt span.bump{animation:sh-bump var(--nv-d4) var(--nv-ease)}
+.qt.lg button{width:48px;height:48px}.qt.lg span{min-width:64px;font-size:var(--nv-fs-10)}
+.qv{flex:none;font-size:var(--nv-fs-5);opacity:.6;white-space:nowrap;padding-right:var(--nv-s4)}
 .ft{display:flex;justify-content:flex-end;gap:var(--nv-s4);flex:none}
-.ft[hidden]{display:none}
-@media (prefers-reduced-motion:reduce){.it,.ck,.ck ha-icon,.it .tx{transition:none}}`;
-  var SDEF = { icon: "mdi:cart-outline", placeholder: "Neuer Eintrag …", show_header: true, show_completed: false, height: 200, ...PRINT_DEF };
-  var LEAVE = 900;
+.form{display:flex;flex-direction:column;gap:var(--nv-s6);padding-bottom:var(--nv-s6)}
+.form .ti{height:44px;border-radius:var(--nv-r-md);padding:0 var(--nv-s7);font-weight:var(--nv-fw-bold)}
+.form .lb{font-size:var(--nv-fs-3);font-weight:var(--nv-fw-bold);opacity:.6;text-transform:uppercase;letter-spacing:var(--nv-caps);margin-bottom:calc(var(--nv-s3) * -1)}
+.form .rowq{display:flex;align-items:center;gap:var(--nv-s4);flex-wrap:wrap}
+.chips{display:flex;gap:var(--nv-s3);flex-wrap:wrap}
+.chips .chip{animation:none;height:44px}
+.sf{display:flex;flex-direction:column;gap:var(--nv-s4);padding:var(--nv-s5);border-radius:var(--nv-r-md);background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.08);animation:rb-in var(--nv-d4) var(--nv-ease)}
+.sf .fld{height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8)}
+.sf .bar{justify-content:flex-end}
+.form .rte{min-height:72px;border-radius:var(--nv-r-md);padding:var(--nv-s5) var(--nv-s7);border:1px solid var(--nv-box-border);background:var(--nv-box);margin-top:var(--nv-s3);
+transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
+.form .rte:focus{border-color:color-mix(in srgb,var(--nv-active) 75%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 22%,transparent) var(--nv-glow),transparent)}
+@keyframes sh-ring{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(2.1)}}
+@keyframes sh-bump{0%{transform:scale(1)}40%{transform:scale(1.3)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.chip,.it.new,.sf,.it.tick .ck,.it.tick .ck::after,.qt span.bump{animation:none}.it,.ck,.ck ha-icon,.it .tx b::after{transition:none}}`;
+  var SDEF = {
+    name: "Einkaufsliste",
+    icon: "mdi:cart-outline",
+    placeholder: "Artikel hinzufügen …",
+    show_header: true,
+    group: true,
+    show_images: true,
+    show_completed: false,
+    show_suggestions: true,
+    height: 420,
+    print_field: "text",
+    ...PRINT_DEF
+  };
+  var HOLD = 750;
+  var SAVE_MS = 700;
+  var QTY_MS = 350;
+  var STEP = { g: 50, ml: 50, kg: 0.5, l: 0.5 };
+  var hkey = (s) => String(s || "").toLowerCase().split(/\s+/).filter(Boolean).join(" ");
+  var num2 = (q) => String(Math.round((+q || 0) * 1e3) / 1e3).replace(".", ",");
+  var qtyText = (it) => `${num2(it.qty ?? 1)}${it.unit && it.unit !== "Stk" ? ` ${it.unit}` : ""}`;
   var NovaShoppingCard = class extends HTMLElement {
     static getConfigElement() {
       return document.createElement(tag("shopping-card-editor"));
     }
     static getStubConfig(h) {
-      const ids = Object.keys(h.states);
-      const todo = ids.find((id) => /^todo\..*einkauf/.test(id)) || ids.find((id) => id === "todo.shopping_list") || ids.find((id) => id.startsWith("todo."));
-      const script = ids.find((id) => /^script\..*einkauf.*druck/.test(id));
-      return { ...todo ? { entity: todo } : {}, ...script ? { print_script: script } : {} };
+      const script = Object.keys(h.states).find((id) => /^script\..*einkauf.*druck/.test(id));
+      return script ? { print_script: script } : {};
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       this._c = { ...SDEF, ...c };
-      (this._feed ||= new TodoFeed(this, () => this._render())).setEntity(this._c.entity);
-      this._ids = [this._c.entity, this._c.print_script].filter(Boolean);
+      this._ids = [this._c.print_script].filter(Boolean);
+      this._doneOpen = !!this._c.show_completed;
       if (this._e) this._apply();
-      if (this._h) this._feed.update(this._h);
     }
     set hass(h) {
       const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._e) this._build();
-      this._feed.update(h, old);
+      this._watch();
+      this._picker?.setHass(h);
+      this._spicker?.setHass(h);
       if (hassChanged(old, h, this._ids)) this._render();
     }
     getCardSize() {
-      return 5;
+      return 7;
     }
     getGridOptions() {
       return { columns: 6, rows: "auto", min_columns: 3 };
     }
     connectedCallback() {
-      if (this._h && this._c) this._feed.update(this._h);
+      this._watch();
     }
     disconnectedCallback() {
-      this._feed?.stop();
+      this._flush();
+      this._flushQty();
+      this._off?.();
+      this._off = null;
       stopFeedback(this);
-      this._leaving?.forEach((x) => clearTimeout(x.t));
-      this._leaving = /* @__PURE__ */ new Map();
+      clearTimeout(this._st);
+      clearTimeout(this._okT);
+      clearTimeout(this._ft);
+      this._hold?.forEach((t) => clearTimeout(t));
+      this._hold = /* @__PURE__ */ new Map();
+      this._del?.reset();
+    }
+    _watch() {
+      if (this._off || !this._h || !this.isConnected) return;
+      this._off = watch(this._h, "shopping", this, (d, err) => {
+        this._data = d;
+        this._err = err;
+        this._onData();
+      });
     }
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${SCSS2}</style><div class="g sh">
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${VIEW_CSS}${RICH_CSS}${PICK_MEDIA_CSS}${SCSS2}</style><div class="g sh">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
-<form class="add"><input class="fld" type="text" enterkeyhint="done" autocomplete="off"><button class="ab" type="submit" title="Hinzufügen" aria-label="Hinzufügen"><ha-icon icon="mdi:plus"></ha-icon></button></form>
-<div class="items"></div><div class="ft"></div></div>`;
+<div class="stage"><div class="view main">
+<form class="add"><input class="fld" type="text" enterkeyhint="done" autocomplete="off" maxlength="120"></form>
+<div class="sug"></div><div class="scroll"><div class="items"></div></div><div class="ft"></div></div>
+<div class="view side"><div class="bar"></div><div class="scroll"><div class="form"></div></div>
+<button class="cta" type="button" hidden><ha-icon icon="mdi:plus"></ha-icon><span>Hinzufügen</span></button></div></div></div>`;
       const q = (s) => r.querySelector(s);
-      this._e = { g: q(".g"), hd: q(".hd"), ic: q(".hd .ic"), name: q(".hd b"), sub: q(".hd small"), form: q("form"), inp: q("input"), ab: q(".ab"), items: q(".items"), ft: q(".ft") };
-      this._leaving = /* @__PURE__ */ new Map();
+      const e = this._e = {
+        g: q(".g"),
+        hd: q(".hd"),
+        ic: q(".hd .ic"),
+        name: q(".hd b"),
+        sub: q(".hd small"),
+        form: q("form.add"),
+        inp: q(".add input"),
+        sug: q(".sug"),
+        cta: q(".cta"),
+        items: q(".items"),
+        ft: q(".ft"),
+        bar: q(".bar"),
+        dform: q(".form")
+      };
+      this._hold = /* @__PURE__ */ new Map();
+      this._seen = /* @__PURE__ */ new Set();
+      this._qty = /* @__PURE__ */ new Map();
       this._pstate = "idle";
-      const e = this._e;
+      e.ab = roundBtn("mdi:plus", "Artikel mit Details hinzufügen", () => this._openNew(), "plus");
+      e.form.append(e.ab);
       e.form.addEventListener("submit", (ev) => {
         ev.preventDefault();
         this._add();
       });
-      e.inp.addEventListener("input", () => {
-        e.ab.disabled = !e.inp.value.trim();
-      });
+      e.inp.addEventListener("input", () => this._renderSug());
       e.inp.addEventListener("keydown", (ev) => ev.stopPropagation());
-      press(e.ic, { tap: () => this._c.entity && moreInfo(this, this._c.entity) });
+      e.cta.addEventListener("click", () => this._addNew());
       this._pb = printButton(() => this._print());
       e.ft.append(this._pb);
+      e.back = roundBtn("mdi:arrow-left", "Zurück zur Liste", () => this._close());
+      e.state = document.createElement("div");
+      e.state.className = "state sp";
+      this._del = armButton("mdi:delete-outline", "Artikel löschen", () => this._remove());
+      e.bar.append(e.back, e.state, this._del);
       this._apply();
     }
     _apply() {
       const c = this._c, e = this._e;
       e.hd.hidden = c.show_header === false;
       e.inp.placeholder = c.placeholder || "";
-      e.ab.disabled = !e.inp.value.trim();
-      e.g.style.setProperty("--lh", `${Math.max(60, +c.height || SDEF.height)}px`);
+      e.g.style.setProperty("--vh", `${Math.max(200, +c.height || SDEF.height)}px`);
+      this._key = this._skey = null;
       this._render();
     }
-    _open() {
-      return (this._feed.items || []).filter((i) => i.status === "needs_action");
+    /* ----- Daten ----- */
+    _items() {
+      return (this._data?.items || []).map((i) => this._qty.has(i.id) ? { ...i, qty: this._qty.get(i.id).qty } : i);
     }
+    _store(id) {
+      return this._data?.stores.find((s) => s.id === id);
+    }
+    _onData() {
+      const d = this._data;
+      if (d && this._c.entity && !d.sync_entity && !this._syncSet && this._h.states[this._c.entity]) {
+        this._syncSet = true;
+        shop.setSync(this._h, this._c.entity).catch((err) => console.warn("[nova-cards] Einkauf: todo-Abgleich nicht eingestellt", err));
+      }
+      if (this._cur?.id && d && !d.items.some((i) => i.id === this._cur.id)) {
+        this._cur = null;
+        this._e?.g.classList.remove("detail");
+      }
+      if (this._new && this._nsug && this._ti?.value) {
+        this._nkey = null;
+        this._suggest();
+      }
+      if (this._cur && this._e) this._paintStores();
+      this._render();
+    }
+    _thumb(x, cls = "th") {
+      const c = this._c, el2 = document.createElement("span");
+      const img = c.show_images !== false && x.image ? imageUrl(this._h, "shopping", x.image) : "";
+      el2.className = `${cls}${!img && !x.icon ? " none" : ""}`;
+      if (img) {
+        const i = document.createElement("img");
+        i.alt = "";
+        i.loading = "lazy";
+        i.src = img;
+        el2.append(i);
+      } else {
+        const i = document.createElement("ha-icon");
+        i.setAttribute("icon", x.icon || "mdi:shopping-outline");
+        el2.append(i);
+      }
+      return el2;
+    }
+    /* ----- Liste ----- */
     _render() {
       const h = this._h, c = this._c, e = this._e;
       if (!h || !c || !e) return;
-      const s = c.entity && h.states[c.entity];
       setIcon(e.ic, c.icon);
-      e.name.textContent = c.name || s?.attributes.friendly_name || "Einkaufsliste";
-      const open = this._open(), n = open.filter((i) => !this._leaving.has(i.uid)).length;
-      e.sub.textContent = !s ? "" : this._feed.items ? n ? `${n} offen` : "Alles erledigt" : "Wird geladen …";
-      e.inp.disabled = !s;
+      e.name.textContent = c.name || SDEF.name;
+      const all = this._items(), open = all.filter((i) => !i.done || this._hold.has(i.id)), done = all.filter((i) => i.done && !this._hold.has(i.id));
+      const nOpen = all.filter((i) => !i.done).length;
+      e.sub.textContent = this._err ? "" : !this._data ? "Wird geladen …" : nOpen ? `${nOpen} offen${done.length ? ` · ${done.length} erledigt` : ""}` : all.length ? "Alles erledigt" : "Liste ist leer";
+      e.inp.disabled = e.ab.disabled = !this._data;
       let msg = null;
-      if (!c.entity) msg = ["mdi:format-list-checks", "Keine Liste gewählt – im Editor eine todo-Entität auswählen."];
-      else if (!s) msg = ["mdi:alert-circle-outline", `Liste nicht gefunden: ${c.entity}`];
-      else if (this._feed.err && !this._feed.items) msg = ["mdi:alert-circle-outline", this._feed.err];
-      else if (!this._feed.items) msg = ["mdi:timer-sand", "Wird geladen …"];
-      const rows = [...open.map((i) => ({ ...i, done: this._leaving.has(i.uid) }))];
-      this._leaving.forEach((x, uid) => {
-        if (!rows.some((r) => r.uid === uid)) rows.push({ ...x.item, done: true, leave: true });
-      });
-      if (c.show_completed) rows.push(...(this._feed.items || []).filter((i) => i.status === "completed" && !this._leaving.has(i.uid)).map((i) => ({ ...i, done: true })));
-      if (!msg && !rows.length) msg = ["mdi:cart-check", "Nichts auf der Liste"];
-      const key = JSON.stringify([msg, rows.map((r) => [r.uid, r.summary, r.description, r.done, r.leave])]);
+      if (this._err) msg = storeHint(this._err, "shopping");
+      else if (!this._data) msg = ["mdi:timer-sand", "Wird geladen …"];
+      else if (!all.length) msg = ["mdi:cart-check", "Nichts auf der Liste"];
+      const groups = [];
+      if (c.group !== false && this._data?.stores.length) {
+        [...this._data.stores, null].forEach((s) => {
+          const rows = open.filter((i) => s ? i.store === s.id : !this._store(i.store));
+          if (rows.length) groups.push({ store: s, rows });
+        });
+      } else if (open.length) groups.push({ store: void 0, rows: open });
+      const key = JSON.stringify([
+        msg,
+        groups.map((g) => [g.store?.id, g.store?.name, g.store?.icon, g.rows.map((r) => this._rk(r))]),
+        done.map((r) => this._rk(r)),
+        this._doneOpen,
+        c.show_images,
+        c.group,
+        this._data?.stores.map((s) => [s.id, s.name])
+      ]);
       if (key !== this._key) {
         this._key = key;
+        const out = [];
         if (msg) {
           const m = document.createElement("div");
           m.className = "msg";
-          m.innerHTML = `<ha-icon></ha-icon><span></span>`;
+          m.innerHTML = "<ha-icon></ha-icon><span></span>";
           m.firstChild.setAttribute("icon", msg[0]);
           m.lastChild.textContent = msg[1];
-          e.items.replaceChildren(m);
-        } else e.items.replaceChildren(...rows.map((r) => this._row(r)));
+          out.push(m);
+        }
+        groups.forEach((g) => {
+          if (g.store !== void 0) out.push(this._head(g.store?.icon || "mdi:help-circle-outline", g.store?.name || "Ohne Geschäft", g.rows.filter((r) => !r.done).length));
+          g.rows.forEach((r) => out.push(this._row(r, g.store === void 0)));
+        });
+        if (done.length) {
+          const hd = this._head("mdi:check-all", "Erledigt", done.length);
+          hd.classList.add("tap");
+          hd.classList.toggle("open", this._doneOpen);
+          hd.tabIndex = 0;
+          hd.setAttribute("role", "button");
+          hd.setAttribute("aria-expanded", this._doneOpen);
+          const sp = document.createElement("span");
+          sp.className = "sp";
+          const chev = document.createElement("ha-icon");
+          chev.className = "chev";
+          chev.setAttribute("icon", "mdi:chevron-down");
+          hd.append(sp);
+          if (this._doneOpen) hd.append(armButton("mdi:delete-sweep-outline", "Erledigte löschen", () => shop.clearDone(this._h).catch((err) => console.warn("[nova-cards] Einkauf: Erledigte löschen fehlgeschlagen", err)), "sm"));
+          hd.append(chev);
+          const tog = () => {
+            this._doneOpen = !this._doneOpen;
+            this._render();
+          };
+          hd.addEventListener("click", tog);
+          hd.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter" || ev.key === " ") {
+              ev.preventDefault();
+              tog();
+            }
+          });
+          out.push(hd);
+          if (this._doneOpen) done.forEach((r) => out.push(this._row(r, true)));
+        }
+        e.items.replaceChildren(...out);
+        this._bump = null;
       }
       e.ft.hidden = !c.print_script;
-      printPaint(this._pb, c, this._pstate, !!s && n > 0 && !!h.states[c.print_script]);
+      printPaint(this._pb, c, this._pstate, nOpen > 0 && !!h.states[c.print_script]);
+      this._renderSug();
+      this._paintBar();
     }
-    _row(it) {
+    _rk(r) {
+      return [r.id, r.name, r.qty, r.unit, r.store, r.icon, r.image, r.note, r.done, this._hold.has(r.id)];
+    }
+    _head(icon2, label, n) {
       const el2 = document.createElement("div");
-      el2.className = `it${it.done ? " done" : ""}${it.leave ? " leave" : ""}`;
-      el2.innerHTML = '<span class="ck"><ha-icon icon="mdi:check-bold"></ha-icon></span><span class="tx"></span>';
-      const tx = el2.lastChild;
-      tx.textContent = it.summary;
-      if (it.description) {
-        const sm = document.createElement("small");
-        sm.textContent = it.description;
-        tx.append(sm);
-      }
-      el2.setAttribute("aria-checked", it.done ? "true" : "false");
-      press(el2, { tap: () => this._toggle(it, el2) });
-      el2.setAttribute("role", "checkbox");
+      el2.className = "gh";
+      el2.innerHTML = '<ha-icon></ha-icon><span></span><span class="n"></span>';
+      el2.firstChild.setAttribute("icon", icon2);
+      el2.children[1].textContent = label;
+      el2.children[2].textContent = n;
       return el2;
     }
-    _toggle(it, el2) {
-      const h = this._h, id = this._c.entity;
-      if (!h || !id || it.leave) return;
-      if (it.status === "needs_action" && !this._leaving.has(it.uid)) {
-        el2.classList.add("done");
-        const t = setTimeout(() => {
-          this._leaving.delete(it.uid);
-          this._render();
-        }, LEAVE);
-        this._leaving.set(it.uid, { item: it, t });
-        h.callService("todo", "update_item", { item: it.uid, status: "completed" }, { entity_id: id }).catch((err) => {
-          console.warn("[nova-cards] Einkauf: Abhaken fehlgeschlagen", err);
-          clearTimeout(t);
-          this._leaving.delete(it.uid);
-          this._render();
-        });
-        this._render();
-      } else if (it.status === "completed") {
-        h.callService("todo", "update_item", { item: it.uid, status: "needs_action" }, { entity_id: id });
+    _row(it, showStore) {
+      const el2 = document.createElement("div"), held = this._hold.has(it.id);
+      el2.className = `it${it.done ? " done" : ""}${held ? " tick" : ""}${this._seen.has(it.id) ? "" : " new"}`;
+      this._seen.add(it.id);
+      const ck = document.createElement("button");
+      ck.type = "button";
+      ck.className = "ckb";
+      ck.setAttribute("role", "checkbox");
+      ck.setAttribute("aria-checked", !!it.done);
+      ck.setAttribute("aria-label", `${it.name} ${it.done ? "zurück auf die Liste" : "abhaken"}`);
+      ck.innerHTML = '<span class="ck"><ha-icon icon="mdi:check-bold"></ha-icon></span>';
+      ck.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        this._toggle(it, el2);
+      });
+      const tx = document.createElement("div");
+      tx.className = "tx";
+      const b = document.createElement("b");
+      b.textContent = it.name;
+      tx.append(b);
+      const sub = [showStore && this._store(it.store)?.name, firstLine(it.note)].filter(Boolean).join(" · ");
+      if (sub) {
+        const sm = document.createElement("small");
+        sm.textContent = sub;
+        tx.append(sm);
       }
+      press(tx, { tap: () => this._open(it) });
+      tx.setAttribute("aria-label", `${it.name} bearbeiten`);
+      el2.append(ck, this._thumb(it), tx);
+      if (it.done) {
+        const q = document.createElement("span");
+        q.className = "qv";
+        q.textContent = qtyText(it);
+        el2.append(q);
+      } else el2.append(this._stepper(it));
+      return el2;
     }
-    _add() {
-      const h = this._h, id = this._c.entity, e = this._e, v = e.inp.value.trim();
-      if (!h || !id || !v) return;
-      e.inp.value = "";
-      e.ab.disabled = true;
-      h.callService("todo", "add_item", { item: v }, { entity_id: id }).catch((err) => {
+    // Menge mit +/–; Schrittweite je Einheit
+    _stepper(it, lg) {
+      const el2 = document.createElement("div");
+      el2.className = `qt${lg ? " lg" : ""}`;
+      el2.innerHTML = '<button type="button" aria-label="Weniger"><ha-icon icon="mdi:minus"></ha-icon></button><span></span><button type="button" aria-label="Mehr"><ha-icon icon="mdi:plus"></ha-icon></button>';
+      const sp = el2.children[1];
+      sp.textContent = qtyText(it);
+      if (this._bump === it.id) sp.classList.add("bump");
+      [-1, 0, 1].forEach((dir, i) => dir && el2.children[i].addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        this._step(it.id, dir, sp);
+      }));
+      return el2;
+    }
+    _step(id, dir, sp) {
+      const detail = this._cur?.id === id, cur2 = detail ? this._cur : this._items().find((i) => i.id === id);
+      if (!cur2) return;
+      const st = STEP[cur2.unit] || 1, q = Math.max(st, Math.round(((+cur2.qty || 0) + dir * st) * 1e3) / 1e3);
+      if (q === cur2.qty) return;
+      if (detail) {
+        cur2.qty = q;
+        this._touched?.add("qty");
+        this._dirty();
+        this._paintQty();
+        return;
+      }
+      clearTimeout(this._qty.get(id)?.t);
+      this._qty.set(id, { qty: q, t: setTimeout(() => this._flushQty(id), QTY_MS) });
+      this._bump = id;
+      this._key = null;
+      sp.textContent = qtyText({ ...cur2, qty: q });
+      sp.classList.remove("bump");
+      void sp.offsetWidth;
+      sp.classList.add("bump");
+    }
+    _flushQty(id) {
+      (id ? [id] : [...this._qty?.keys() || []]).forEach((k) => {
+        const x = this._qty.get(k);
+        if (!x) return;
+        clearTimeout(x.t);
+        shop.save(this._h, { id: k, qty: x.qty }).catch((err) => console.warn("[nova-cards] Einkauf: Menge nicht gespeichert", err)).finally(() => {
+          if (this._qty.get(k) === x) {
+            this._qty.delete(k);
+            this._render();
+          }
+        });
+      });
+    }
+    // Abhaken: Häkchen springt auf, Name wird durchgestrichen, kurz danach wandert die Zeile zu „Erledigt“
+    _toggle(it, el2) {
+      const h = this._h;
+      if (!h || this._hold.has(it.id)) return;
+      const done = !it.done;
+      if (done) {
+        el2.classList.add("done", "tick");
+        this._hold.set(it.id, setTimeout(() => {
+          el2.classList.add("leave");
+          setTimeout(() => {
+            this._hold.delete(it.id);
+            this._render();
+          }, 280);
+        }, HOLD));
+      }
+      shop.save(h, { id: it.id, done }).catch((err) => {
+        console.warn("[nova-cards] Einkauf: Abhaken fehlgeschlagen", err);
+        clearTimeout(this._hold.get(it.id));
+        this._hold.delete(it.id);
+        this._key = null;
+        this._render();
+      });
+    }
+    /* ----- Hinzufügen + Schnellauswahl ----- */
+    // Schnelle Eingabe (Textfeld + Enter) und Schnellauswahl: direkt auf die Liste. Icon, Bild, Geschäft und Einheit
+    // eines bekannten Artikels kennt die Integration
+    _add(name) {
+      const h = this._h, e = this._e, typed = name == null, v = String(typed ? e.inp.value : name).trim();
+      if (!h || !v || !this._data) return;
+      if (typed) e.inp.value = "";
+      const twin = this._items().find((i) => !i.done && hkey(i.name) === hkey(v));
+      const known = this._data.history.some((x) => x.key === hkey(v));
+      const def = this._c.default_store && this._store(this._c.default_store) ? this._c.default_store : null;
+      const item = twin ? { id: twin.id, qty: Math.round(((+twin.qty || 0) + (STEP[twin.unit] || 1)) * 1e3) / 1e3 } : { name: v, ...!known && def ? { store: def } : {} };
+      if (twin) this._bump = twin.id;
+      shop.save(h, item).catch((err) => {
         console.warn("[nova-cards] Einkauf: Hinzufügen fehlgeschlagen", err);
-        if (!e.inp.value) {
-          e.inp.value = v;
-          e.ab.disabled = false;
+        if (typed && !e.inp.value) e.inp.value = v;
+      });
+      if (typed) e.inp.focus();
+      this._skey = null;
+      this._renderSug();
+    }
+    _renderSug() {
+      const c = this._c, e = this._e, d = this._data;
+      if (!e) return;
+      const q = hkey(e.inp.value), onList = new Set(this._items().filter((i) => !i.done).map((i) => hkey(i.name)));
+      const list2 = !d || c.show_suggestions === false ? [] : d.history.filter((x) => !onList.has(x.key) && (!q || x.key.includes(q))).sort((a, b) => q ? b.key.startsWith(q) - a.key.startsWith(q) || b.count - a.count : 0).slice(0, 12);
+      const key = JSON.stringify([list2.map((x) => [x.key, x.icon, x.image]), c.show_images]);
+      if (key === this._skey) return;
+      this._skey = key;
+      e.sug.replaceChildren(...list2.map((x, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.style.setProperty("--i", i);
+        b.title = `${x.name} auf die Liste (lange drücken: aus den Vorschlägen entfernen)`;
+        b.append(this._thumb(x), document.createTextNode(x.name));
+        press(b, {
+          tap: () => {
+            b.classList.add("go");
+            e.inp.value = "";
+            this._add(x.name);
+          },
+          hold: () => {
+            b.classList.add("go");
+            shop.forget(this._h, x.key).catch(() => {
+            });
+          }
+        });
+        return b;
+      }));
+    }
+    /* ----- Detail ----- */
+    _open(it) {
+      this._flush();
+      this._cur = { ...it };
+      this._new = false;
+      this._touched = null;
+      this._show();
+    }
+    // Neuer Artikel: dasselbe Formular, aber nichts wird gespeichert, bis „Hinzufügen“ getippt ist
+    _openNew() {
+      const c = this._c, e = this._e;
+      if (!this._data) return;
+      this._flush();
+      this._cur = { id: null, name: "", qty: 1, unit: "Stk", store: c.default_store && this._store(c.default_store) ? c.default_store : null, icon: null, image: null, note: "" };
+      this._new = true;
+      this._touched = /* @__PURE__ */ new Set();
+      this._busy = false;
+      this._saved = null;
+      const typed = e.inp.value.trim();
+      this._cur.name = typed;
+      e.inp.value = "";
+      this._skey = null;
+      this._show();
+      if (typed) this._suggest();
+      clearTimeout(this._ft);
+      this._ft = setTimeout(() => this._new && this._ti?.focus({ preventScroll: true }), 320);
+    }
+    _show() {
+      const e = this._e;
+      this._buildForm();
+      e.g.classList.add("detail");
+      this._del.reset();
+      this._del.hidden = this._new;
+      e.cta.hidden = !this._new;
+      e.back.title = this._new ? "Abbrechen" : "Zurück zur Liste";
+      e.back.setAttribute("aria-label", e.back.title);
+      this._paintBar();
+      this._paintNew();
+    }
+    _close() {
+      this._flush();
+      this._flushQty();
+      clearTimeout(this._ft);
+      this._e.g.classList.remove("detail");
+      this._cur = null;
+      this._new = false;
+      this._key = null;
+      this._render();
+    }
+    _paintNew() {
+      const e = this._e;
+      if (this._new) e.cta.disabled = this._busy || !this._ti?.value.trim();
+    }
+    // Bekannte Artikel beim Tippen: Chips zum Übernehmen; passt der Name genau, kommen Icon/Bild, Geschäft und Einheit von selbst
+    _suggest() {
+      const d = this._data, q = hkey(this._ti.value);
+      const list2 = !q || !d ? [] : d.history.filter((h) => h.key.includes(q)).sort((a, b) => b.key.startsWith(q) - a.key.startsWith(q) || (b.count || 0) - (a.count || 0)).slice(0, 6);
+      const exact = list2.find((h) => h.key === q);
+      if (exact) this._take(exact, false);
+      const rest = list2.filter((h) => h !== exact), key = JSON.stringify(rest.map((h) => [h.key, h.icon, h.image]));
+      if (key === this._nkey) return;
+      this._nkey = key;
+      this._nsug.replaceChildren(...rest.map((h, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.style.setProperty("--i", i);
+        b.title = `${h.name} übernehmen`;
+        b.append(this._thumb(h), document.createTextNode(h.name));
+        b.addEventListener("click", () => {
+          this._ti.value = h.name;
+          this._take(h, true);
+          this._suggest();
+          this._paintNew();
+        });
+        return b;
+      }));
+    }
+    // Vorschlag ins Formular; was schon von Hand gewählt wurde, bleibt (außer der Vorschlag wurde angetippt)
+    _take(h, force) {
+      const x = this._cur, t = this._touched;
+      if ((force || !t.has("media")) && (h.icon || h.image)) {
+        x.icon = h.icon || null;
+        x.image = h.image || null;
+        this._picker.set(x);
+      }
+      if ((force || !t.has("store")) && h.store && this._store(h.store)) x.store = h.store;
+      if ((force || !t.has("unit")) && h.unit && h.unit !== x.unit) {
+        if (!t.has("qty")) x.qty = (STEP[h.unit] || 1) === 50 ? 500 : 1;
+        x.unit = h.unit;
+      }
+      this._paintQty();
+      this._paintStores();
+    }
+    _addNew() {
+      const x = this._cur, h = this._h, name = this._ti?.value.trim();
+      if (!this._new || !x || !h || this._busy) return;
+      if (!name) {
+        this._ti.focus();
+        return;
+      }
+      const note = this._rt.get();
+      const twin = this._items().find((i) => !i.done && hkey(i.name) === hkey(name) && (i.unit || "Stk") === x.unit);
+      const item = twin ? { id: twin.id, qty: Math.round(((+twin.qty || 0) + (+x.qty || 0)) * 1e3) / 1e3, ...note && !twin.note ? { note } : {} } : { name, qty: x.qty, unit: x.unit, store: x.store || null, icon: x.icon || null, image: x.image || null, note };
+      this._busy = true;
+      this._saved = null;
+      this._paintNew();
+      this._paintBar();
+      shop.save(h, item).then(() => {
+        this._busy = false;
+        if (twin) this._bump = twin.id;
+        if (this._new) this._close();
+      }).catch((err) => {
+        console.warn("[nova-cards] Einkauf: Hinzufügen fehlgeschlagen", err);
+        this._busy = false;
+        this._saved = "err";
+        this._paintNew();
+        this._paintBar();
+      });
+    }
+    _buildForm() {
+      const e = this._e, x = this._cur, f3 = e.dform;
+      const lb = (t) => {
+        const l = document.createElement("div");
+        l.className = "lb";
+        l.textContent = t;
+        return l;
+      };
+      const ti = this._ti = document.createElement("input");
+      ti.className = "fld ti";
+      ti.type = "text";
+      ti.maxLength = 120;
+      ti.placeholder = "Name";
+      ti.value = x.name || "";
+      ti.autocomplete = "off";
+      ti.addEventListener("input", () => {
+        if (this._new) this._suggest();
+        this._dirty();
+      });
+      ti.addEventListener("keydown", (ev) => {
+        ev.stopPropagation();
+        if (ev.key === "Enter") ti.blur();
+      });
+      const rowq = document.createElement("div");
+      rowq.className = "rowq";
+      this._qbox = document.createElement("div");
+      this._units = document.createElement("div");
+      this._units.className = "chips";
+      rowq.append(this._qbox, this._units);
+      this._stores = document.createElement("div");
+      this._stores.className = "chips";
+      this._sform = document.createElement("div");
+      this._picker = mediaPicker({
+        hass: this._h,
+        module: "shopping",
+        value: { icon: x.icon, image: x.image },
+        fallback: "mdi:shopping-outline",
+        onChange: (v) => {
+          x.icon = v.icon;
+          x.image = v.image;
+          this._touched?.add("media");
+          this._dirty();
         }
       });
-      e.inp.focus();
+      this._rt = richEditor({ placeholder: "Notiz zum Artikel …", onInput: () => this._dirty() });
+      this._rt.set(x.note || "");
+      this._nsug = document.createElement("div");
+      this._nsug.className = "sug";
+      this._nkey = null;
+      f3.replaceChildren(ti, ...this._new ? [this._nsug] : [], lb("Menge"), rowq, lb("Geschäft"), this._stores, this._sform, lb("Icon oder Bild"), this._picker, lb("Notiz"), this._rt.el);
+      this._paintQty();
+      this._paintStores();
+      f3.parentElement.scrollTop = 0;
+    }
+    _paintQty() {
+      const x = this._cur;
+      if (!x || !this._qbox) return;
+      this._qbox.replaceChildren(this._stepper(x, true));
+      this._units.replaceChildren(...(this._data?.units || ["Stk"]).map((u) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = `chip plain${x.unit === u ? " on" : ""}`;
+        b.textContent = u;
+        b.addEventListener("click", () => {
+          if (x.unit === u) return;
+          const was = STEP[x.unit] || 1, now = STEP[u] || 1;
+          if (x.qty === was || x.qty === 1) x.qty = now === 50 ? 500 : 1;
+          x.unit = u;
+          this._touched?.add("unit");
+          this._dirty();
+          this._paintQty();
+        });
+        return b;
+      }));
+    }
+    _paintStores() {
+      const x = this._cur;
+      if (!x || !this._stores) return;
+      const chip = (s, label, icon2) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = `chip${icon2 ? "" : " plain"}${(s ? x.store === s.id : !this._store(x.store)) && s !== "new" ? " on" : ""}`;
+        if (icon2) {
+          const i = document.createElement("ha-icon");
+          i.setAttribute("icon", icon2);
+          i.style.marginLeft = "var(--nv-s4)";
+          b.append(i);
+        }
+        b.append(document.createTextNode(label));
+        return b;
+      };
+      const none = chip(null, "Keins");
+      none.addEventListener("click", () => {
+        x.store = null;
+        this._touched?.add("store");
+        this._dirty();
+        this._paintStores();
+      });
+      const add = chip("new", "Neu", "mdi:plus");
+      add.addEventListener("click", () => this._storeForm(null));
+      this._stores.replaceChildren(none, ...(this._data?.stores || []).map((s) => {
+        const b = chip(s, s.name, s.icon);
+        b.title = `${s.name} (lange drücken: bearbeiten)`;
+        press(b, { tap: () => {
+          x.store = s.id;
+          this._touched?.add("store");
+          this._dirty();
+          this._paintStores();
+        }, hold: () => this._storeForm(s) });
+        return b;
+      }), add);
+    }
+    // Geschäft anlegen oder bearbeiten (Name + Icon), Löschen in zwei Schritten
+    _storeForm(s) {
+      const box = document.createElement("div");
+      box.className = "sf";
+      const inp = document.createElement("input");
+      inp.className = "fld";
+      inp.type = "text";
+      inp.maxLength = 60;
+      inp.placeholder = "Name des Geschäfts, z. B. Lidl";
+      inp.value = s?.name || "";
+      inp.addEventListener("keydown", (ev) => {
+        ev.stopPropagation();
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          save();
+        }
+      });
+      let icon2 = s?.icon || "mdi:store-outline";
+      this._spicker = mediaPicker({ hass: this._h, value: { icon: icon2 }, icons: STORE_ICONS, upload: false, fallback: "mdi:store-outline", onChange: (v) => {
+        icon2 = v.icon || "mdi:store-outline";
+      } });
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      const close = () => {
+        this._sform.replaceChildren();
+        this._spicker = null;
+      };
+      const save = () => {
+        const name = inp.value.trim();
+        if (!name) {
+          inp.focus();
+          return;
+        }
+        shop.saveStore(this._h, { ...s ? { id: s.id } : {}, name, icon: icon2 }).then((st) => {
+          if (!s && this._cur) {
+            this._cur.store = st.id;
+            this._touched?.add("store");
+            this._dirty();
+          }
+          this._paintStores();
+        }).catch((err) => console.warn("[nova-cards] Einkauf: Geschäft nicht gespeichert", err));
+        close();
+      };
+      if (s) bar.append(armButton("mdi:delete-outline", "Geschäft löschen", () => {
+        shop.removeStore(this._h, s.id).catch(() => {
+        });
+        close();
+      }));
+      const sp = document.createElement("span");
+      sp.className = "sp";
+      bar.append(sp, roundBtn("mdi:close", "Abbrechen", close), roundBtn("mdi:check", "Speichern", save, "on"));
+      box.append(inp, this._spicker, bar);
+      this._sform.replaceChildren(box);
+      inp.focus({ preventScroll: true });
+      box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    _dirty() {
+      if (this._new) {
+        this._paintNew();
+        return;
+      }
+      this._pending = true;
+      clearTimeout(this._st);
+      this._st = setTimeout(() => this._flush(), SAVE_MS);
+      this._paintBar();
+    }
+    _flush() {
+      clearTimeout(this._st);
+      const x = this._cur, h = this._h;
+      if (!x || !h || !this._pending || this._new) return;
+      this._pending = false;
+      const name = this._ti.value.trim() || x.name;
+      x.name = name;
+      x.note = this._rt.get();
+      clearTimeout(this._qty.get(x.id)?.t);
+      this._qty.delete(x.id);
+      this._saving = (this._saving || 0) + 1;
+      shop.save(h, { id: x.id, name, qty: x.qty, unit: x.unit, store: x.store || null, icon: x.icon || null, image: x.image || null, note: x.note }).then(() => {
+        this._saved = "ok";
+        clearTimeout(this._okT);
+        this._okT = setTimeout(() => {
+          this._saved = null;
+          this._paintBar();
+        }, 2500);
+      }).catch((err) => {
+        console.warn("[nova-cards] Einkauf: Speichern fehlgeschlagen", err);
+        this._saved = "err";
+      }).finally(() => {
+        this._saving--;
+        this._paintBar();
+      });
+      this._paintBar();
+    }
+    _paintBar() {
+      const e = this._e;
+      if (!e || !this._cur) return;
+      const st = this._new ? this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : ["mdi:cart-plus", "Neuer Artikel", ""] : this._pending || this._saving ? ["mdi:cloud-sync-outline", "Speichert …", ""] : this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : this._saved === "ok" ? ["mdi:check-circle-outline", "Gespeichert", "ok"] : ["mdi:pencil-outline", "Artikel bearbeiten", ""];
+      const k = st.join("|");
+      if (e.state._k === k) return;
+      e.state._k = k;
+      e.state.className = `state sp ${st[2]}`;
+      e.state.innerHTML = `<ha-icon icon="${st[0]}"></ha-icon><span></span>`;
+      e.state.lastChild.textContent = st[1];
+    }
+    _remove() {
+      const x = this._cur;
+      if (!x) return;
+      clearTimeout(this._st);
+      this._pending = false;
+      this._cur = null;
+      this._e.g.classList.remove("detail");
+      shop.remove(this._h, x.id).catch((err) => console.warn("[nova-cards] Einkauf: Löschen fehlgeschlagen", err));
+      this._render();
+    }
+    /* ----- Drucken ----- */
+    // Offene Artikel als Klartext, nach Geschäft gruppiert: „[ ] 2 l Milch“, Notiz eingerückt darunter
+    _text() {
+      const open = this._items().filter((i) => !i.done), stores = this._data?.stores || [], out = [];
+      const line = (i) => {
+        out.push(`[ ] ${i.qty === 1 && (!i.unit || i.unit === "Stk") ? "" : `${qtyText(i)} `}${i.name}`);
+        toPlain(i.note).split("\n").filter(Boolean).forEach((l) => out.push(`    ${l}`));
+      };
+      if (this._c.group !== false && stores.length) {
+        [...stores, null].forEach((s) => {
+          const rows = open.filter((i) => s ? i.store === s.id : !this._store(i.store));
+          if (!rows.length) return;
+          if (out.length) out.push("");
+          out.push((s?.name || "Sonstiges").toUpperCase());
+          rows.forEach(line);
+        });
+      } else open.forEach(line);
+      return out.join("\n");
     }
     _print() {
-      runPrint(this, this._h, this._c.print_script, {}, (st) => {
-        this._pstate = st;
-        this._render();
-      });
+      const c = this._c;
+      if (this._pstate === "busy") return;
+      const open = this._items().filter((i) => !i.done);
+      runPrint(
+        this,
+        this._h,
+        c.print_script,
+        {
+          [c.print_field || "text"]: this._text(),
+          items: open.map((i) => ({ name: i.name, qty: i.qty, unit: i.unit, store: this._store(i.store)?.name || "", note: toPlain(i.note) }))
+        },
+        (st) => {
+          this._pstate = st;
+          this._render();
+        }
+      );
     }
   };
-  define("shopping-card", NovaShoppingCard, { name: "Nova Einkauf Card", description: "Einkaufsliste aus einer todo-Liste: Einträge direkt in der Karte hinzufügen, offene Punkte abhaken und die Liste per Skript drucken (z. B. auf einem Bondrucker).", documentationURL: docUrl("nova-einkauf-card") });
+  define("shopping-card", NovaShoppingCard, { name: "Nova Einkauf Card", description: "Einkaufsliste mit Menge, Einheit, Geschäft, Icon oder eigenem Bild und Notiz: nach Geschäft gruppiert, abhaken, zuletzt Gekauftes als Schnellauswahl, auf allen Geräten gleich (Nova-Integration), optional mit todo-Liste für Assist und Druck-Knopf.", documentationURL: docUrl("nova-einkauf-card") });
   var GEN4 = [
-    { name: "entity", required: true, selector: { entity: { domain: "todo" } } },
     g2({ name: "name", selector: T }, { name: "icon", selector: I }),
-    { name: "show_header", selector: { boolean: {} } }
+    { name: "show_header", selector: { boolean: {} } },
+    { name: "placeholder", selector: T }
   ];
-  var LIST = [
-    { name: "placeholder", selector: T },
-    { name: "show_completed", selector: { boolean: {} } },
-    { name: "height", selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } }
+  var LIST = (stores) => [
+    g2({ name: "group", selector: { boolean: {} } }, { name: "show_images", selector: { boolean: {} } }),
+    g2({ name: "show_completed", selector: { boolean: {} } }, { name: "show_suggestions", selector: { boolean: {} } }),
+    ...stores.length ? [sel("default_store", [["", "Keins"], ...stores.map((s) => [s.id, s.name])])] : [],
+    { name: "height", selector: { number: { min: 200, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } }
   ];
-  var PRINT = printSchema();
+  var SYNC = [{ name: "entity", selector: { entity: { domain: "todo" } } }];
+  var PRINT = printSchema([{ name: "print_field", selector: T }]);
   var LABELS8 = {
     ...BASE_LABELS,
     ...PRINT_LABELS,
-    entity: "Einkaufsliste (todo)",
-    name: "Name",
+    name: "Titel der Karte",
     show_header: "Kopfzeile anzeigen",
     placeholder: "Platzhalter im Eingabefeld",
-    show_completed: "Erledigte Einträge anzeigen",
-    height: "Mindesthöhe der Liste"
+    group: "Nach Geschäft gruppieren",
+    show_images: "Bilder anzeigen",
+    show_completed: "Erledigte aufgeklappt",
+    show_suggestions: "Schnellauswahl anzeigen",
+    default_store: "Standard-Geschäft",
+    height: "Mindesthöhe",
+    entity: "todo-Liste zum Abgleichen",
+    print_field: "Feldname im Skript"
   };
   var HELPERS8 = {
     ...PRINT_HELPERS,
-    name: "Leer = Name der Liste",
-    show_completed: "Erledigte stehen durchgestrichen unten, Antippen holt sie zurück.",
-    height: "So hoch ist die Liste mindestens; mehr Einträge lassen sich scrollen. Im Raster füllt die Liste den Platz aus."
+    show_images: "Aus = statt eigener Bilder nur Icons.",
+    show_completed: "Erledigte stehen unten und lassen sich in der Karte auf- und zuklappen.",
+    show_suggestions: "Zuletzt gekaufte Artikel als Chips unter dem Eingabefeld.",
+    default_store: "Für neue Artikel, die noch nie gekauft wurden.",
+    height: "Im Raster füllt die Karte den Platz aus.",
+    entity: "Optional, z. B. todo.shopping_list. Die Nova-Integration hält beide Listen gleich – so funktioniert „Setz Milch auf die Einkaufsliste“ weiter. Gilt für alle Einkauf-Karten.",
+    print_field: "Unter diesem Namen bekommt das Skript die offene Liste als Klartext (Standard: text), zusätzlich „items“ als Liste."
   };
   var NovaShoppingCardEditor = class extends NovaEditorBase {
+    set hass(h) {
+      super.hass = h;
+      if (!this._off && h && this.isConnected) this._off = watch(h, "shopping", this, (d) => {
+        const k = JSON.stringify([d?.stores, d?.sync_entity]);
+        if (k === this._sk) return;
+        this._sk = k;
+        this._shop = d;
+        if (this._config) this._rebuild();
+      });
+    }
+    disconnectedCallback() {
+      super.disconnectedCallback();
+      this._off?.();
+      this._off = null;
+    }
     _build() {
-      const r = this.shadowRoot, c0 = this._config;
+      const r = this.shadowRoot, c0 = this._config, d = this._shop;
       r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
-      const w = r.querySelector(".wrap"), data = { ...SDEF, ...c0 };
+      const w = r.querySelector(".wrap"), data = { ...SDEF, default_store: "", ...c0, ...d?.sync_entity ? { entity: d.sync_entity } : {} };
       const strip3 = (c) => {
         Object.entries(SDEF).forEach(([k, x]) => c[k] === x && delete c[k]);
         return c;
@@ -14981,7 +16431,15 @@ transition:background-color var(--nv-d3),border-color var(--nv-d3),box-shadow va
       const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
       w.append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN4))),
-        this._section("list", "mdi:format-list-checks", "Liste", (b) => b.append(form(LIST))),
+        this._section("list", "mdi:format-list-checks", "Liste", (b) => {
+          if (d && !d.stores.length) b.append(this._hint("Geschäfte legst du in der Karte an: Artikel antippen → Geschäft → „Neu“. Danach lässt sich hier ein Standard-Geschäft wählen."));
+          b.append(form(LIST(d?.stores || [])));
+        }),
+        this._section("sync", "mdi:sync", "Abgleich mit todo-Liste (Assist)", (b) => b.append(this._form(SYNC, data, (v) => {
+          const id = v.entity || null;
+          if (this._hass && (d?.sync_entity || null) !== id) shop.setSync(this._hass, id).catch((err) => console.warn("[nova-cards] Einkauf: todo-Abgleich nicht eingestellt", err));
+          this._emit(strip3(merge(this._config, ["entity"], v)));
+        }))),
         this._section("print", "mdi:printer-pos", "Drucken", (b) => b.append(form(PRINT)))
       );
     }
@@ -14994,180 +16452,135 @@ transition:background-color var(--nv-d3),border-color var(--nv-d3),box-shadow va
   // src/note.js
   var NCSS = `
 .g.nt{gap:var(--nv-s5)}
-.fld.ta{flex:1 1 0;min-height:var(--th,180px);resize:none;border-radius:18px;padding:var(--nv-pad);line-height:1.5;
-overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:thin;white-space:pre-wrap}
-.ft{display:flex;align-items:center;justify-content:flex-end;gap:var(--nv-s4);flex:none;container-type:inline-size;width:100%}
-.ft[hidden]{display:none}
-.cnt{flex:1;min-width:0;font-size:var(--nv-fs-4);opacity:.55;white-space:nowrap;overflow:hidden}
-.ft .pb.pill{flex:0 1 auto;min-width:44px}
-.ft.wide .cnt{display:none}.ft.wide .pb.pill{flex:1 1 0}
-.cl,.nb{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
-border:1px solid var(--nv-box-border);background:var(--nv-chip);color:inherit;outline:none;-webkit-tap-highlight-color:transparent;
-transition:opacity var(--nv-d2),transform var(--nv-d2),background-color var(--nv-d2),border-color var(--nv-d2),color var(--nv-d2)}
-.cl ha-icon{--mdc-icon-size:var(--nv-icon-lg)}
-.cl[disabled]{opacity:.35;cursor:default}
-.cl:active:not([disabled]),.nb:active{transform:scale(var(--nv-press))}
-.cl:focus-visible,.nb:focus-visible{box-shadow:var(--nv-focus)}
-@container (max-width:420px){.cnt{display:none}}
-@container (max-width:330px){.ft .pb.pill .pl{display:none}.ft .pb.pill{padding:0;flex:0 0 44px}}
-.ns{flex:1 1 0;min-height:var(--nh,180px);display:flex;flex-direction:column;gap:var(--nv-s3)}
-.ns[hidden]{display:none}
-.ns .bt{margin:var(--nv-s1) var(--nv-s1) 0}
-.nl{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;display:flex;flex-direction:column;gap:var(--nv-s3);scrollbar-width:thin;
-margin:0 -4px;padding:0 var(--nv-s2) var(--nv-s5);-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent)}
-.nr{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s4) var(--nv-s4) var(--nv-s4) var(--nv-s7);border-radius:var(--nv-r-md);flex:none;min-width:0;
-background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07)}
+.hd .rb{margin-left:auto}
+.nl{display:flex;flex-direction:column;gap:var(--nv-s3)}
+.nr{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s5) var(--nv-s6) var(--nv-s5) var(--nv-s7);border-radius:var(--nv-r-md);flex:none;min-width:0;position:relative;
+background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);transition:background-color var(--nv-d3),border-color var(--nv-d3),transform var(--nv-d2) var(--nv-ease)}
+.nr.new{animation:rb-in var(--nv-d5) var(--nv-ease) both;animation-delay:calc(var(--i,0) * 40ms)}
+.nr:active{transform:scale(.985)}
+.nr.pin{border-color:color-mix(in srgb,var(--nv-accent) 38%,transparent);background:color-mix(in srgb,var(--nv-accent) 9%,rgba(var(--nv-tint),.05))}
 .nr .tx{flex:1;min-width:0}
-.nr b{display:block;font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-8);overflow-wrap:anywhere}
-.nr small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:var(--nv-fs-4);opacity:.6;margin-top:var(--nv-s1);white-space:pre-line;overflow-wrap:anywhere}
-.nr .pb,.nr .nb{width:38px;height:38px;min-width:38px}
-.nr .pb ha-icon,.nr .nb ha-icon{--mdc-icon-size:19px}
-.nb.arm{border-color:color-mix(in srgb,var(--nv-error) 70%,transparent);background:color-mix(in srgb,var(--nv-error) 22%,transparent);color:var(--nv-error)}
-.msg{display:flex;align-items:center;gap:var(--nv-s4);font-size:var(--nv-fs-6);opacity:.6;padding:var(--nv-s4) var(--nv-s2)}
-.msg ha-icon{--mdc-icon-size:var(--nv-icon-md)}`;
-  var NDEF = {
-    name: "Notiz",
-    icon: "mdi:note-edit-outline",
-    placeholder: "Notiz schreiben …",
-    show_header: true,
-    show_clear: true,
-    clear_after_print: true,
-    clear_after_save: true,
-    height: 180,
-    notes_height: 180,
-    print_field: "text",
-    ...PRINT_DEF
-  };
-  var STORE = "nova-note:";
-  var SHORT = 60;
-  var ARM = 3e3;
-  var shortOf = (txt) => {
-    const line = txt.split("\n").map((s) => s.trim()).find(Boolean) || "";
-    if (line.length <= SHORT) return line;
-    const cut = line.slice(0, SHORT), sp = cut.lastIndexOf(" ");
-    return `${(sp > SHORT / 2 ? cut.slice(0, sp) : cut).trimEnd()} …`;
-  };
-  var textOf = (it) => (it.description || it.summary || "").replace(/\s+$/, "");
+.nr b{display:block;font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nr .pv{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:var(--nv-fs-4);opacity:.6;margin-top:var(--nv-s1);overflow-wrap:anywhere}
+.nr time{font-size:var(--nv-fs-2);opacity:.5;white-space:nowrap;flex:none}
+.nr .pi{--mdc-icon-size:16px;color:var(--nv-accent-ink);flex:none;transform:rotate(35deg)}
+.nt.compact .nr{padding-top:var(--nv-s4);padding-bottom:var(--nv-s4)}
+.nt.compact .nr .pv{display:none}
+.more{align-self:center;border:0;background:transparent;color:inherit;font:inherit;font-size:var(--nv-fs-5);opacity:.7;padding:var(--nv-s4) var(--nv-s6);cursor:pointer;border-radius:var(--nv-r-pill);
+display:inline-flex;align-items:center;gap:var(--nv-s2);-webkit-tap-highlight-color:transparent}
+.more ha-icon{--mdc-icon-size:18px}
+.more:focus-visible{box-shadow:var(--nv-focus);outline:none}
+.ti{height:44px;border-radius:var(--nv-r-md);padding:0 var(--nv-s7);font-weight:var(--nv-fw-bold);flex:none}
+.ed{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:var(--nv-s4)}
+.ed .rtw{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:var(--nv-s4)}
+.ed .rte{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:thin;border-radius:var(--nv-r-md);padding:var(--nv-s6) var(--nv-s7);
+border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
+.ed .rte:focus{border-color:color-mix(in srgb,var(--nv-active) 75%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 22%,transparent) var(--nv-glow),transparent)}
+.bar .pb{width:44px;padding:0}
+.rb.pinb.on ha-icon{transform:rotate(35deg)}
+@media (prefers-reduced-motion:reduce){.nr.new{animation:none}}`;
+  var NDEF = { name: "Notizen", icon: "mdi:note-multiple-outline", show_header: true, view: "full", max_notes: 0, height: 380, print_field: "text", ...PRINT_DEF };
+  var SAVE_MS2 = 800;
   var NovaNoteCard = class extends HTMLElement {
     static getConfigElement() {
       return document.createElement(tag("note-card-editor"));
     }
     static getStubConfig(h) {
-      const ids = Object.keys(h.states);
-      const script = ids.find((id) => /^script\..*notiz.*druck/.test(id)), notes = ids.find((id) => /^todo\..*notiz/.test(id));
-      return { ...script ? { print_script: script } : {}, ...notes ? { notes_entity: notes } : {} };
+      const script = Object.keys(h.states).find((id) => /^script\..*notiz.*druck/.test(id));
+      return script ? { print_script: script } : {};
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       this._c = { ...NDEF, ...c };
-      (this._feed ||= new TodoFeed(this, () => this._render())).setEntity(this._c.notes_entity);
-      this._ids = [this._c.print_script, this._c.notes_entity].filter(Boolean);
+      this._ids = [this._c.print_script].filter(Boolean);
       if (this._e) this._apply();
-      if (this._h) this._feed.update(this._h);
     }
     set hass(h) {
       const old = this._h;
       this._h = h;
       if (!this._c) return;
       if (!this._e) this._build();
-      this._feed.update(h, old);
+      this._watch();
       if (hassChanged(old, h, this._ids)) this._render();
     }
     getCardSize() {
-      return this._c?.notes_entity ? 8 : 4;
+      return 6;
     }
     getGridOptions() {
       return { columns: 6, rows: "auto", min_columns: 3 };
     }
     connectedCallback() {
-      if (this._h && this._c) this._feed.update(this._h);
+      this._watch();
     }
     disconnectedCallback() {
-      this._feed?.stop();
+      this._flush();
+      this._off?.();
+      this._off = null;
       stopFeedback(this);
       clearTimeout(this._st);
-      clearTimeout(this._armT);
-      this._armed = null;
-      this._save();
+      clearTimeout(this._okT);
+      this._del?.reset();
     }
-    // Entwurf je Karte (Name + Skript), nur in diesem Browser
-    _key() {
-      return `${STORE}${this._c.storage_key || `${this._c.print_script || ""}|${this._c.name || ""}`}`;
-    }
-    _load() {
-      try {
-        return localStorage.getItem(this._key()) || "";
-      } catch {
-        return "";
-      }
-    }
-    _save() {
-      if (!this._e) return;
-      const v = this._e.ta.value;
-      try {
-        if (v) localStorage.setItem(this._key(), v);
-        else localStorage.removeItem(this._key());
-      } catch {
-      }
+    _watch() {
+      if (this._off || !this._h || !this.isConnected) return;
+      this._off = watch(this._h, "notes", this, (d, err) => {
+        this._data = d;
+        this._err = err;
+        this._onData();
+      });
     }
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
-      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${NCSS}</style><div class="g nt">
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${VIEW_CSS}${RICH_CSS}${NCSS}</style><div class="g nt">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
-<textarea class="fld ta" spellcheck="true"></textarea>
-<div class="ft"><span class="cnt"></span><button class="cl" type="button" title="Leeren" aria-label="Leeren"><ha-icon icon="mdi:eraser"></ha-icon></button></div>
-<div class="ns"><div class="bt">Gespeichert</div><div class="nl"></div></div></div>`;
+<div class="stage"><div class="view main"><div class="scroll"><div class="nl"></div></div></div>
+<div class="view side"><div class="bar"></div><input class="fld ti" type="text" placeholder="Titel" maxlength="200" enterkeyhint="next" autocomplete="off"><div class="ed"></div></div></div></div>`;
       const q = (s) => r.querySelector(s);
-      this._e = {
-        g: q(".g"),
-        hd: q(".hd"),
-        ic: q(".hd .ic"),
-        name: q(".hd b"),
-        sub: q(".hd small"),
-        ta: q("textarea"),
-        ft: q(".ft"),
-        cnt: q(".cnt"),
-        cl: q(".cl"),
-        ns: q(".ns"),
-        nt: q(".ns .bt"),
-        nl: q(".nl")
-      };
-      const e = this._e;
+      const e = this._e = { g: q(".g"), hd: q(".hd"), ic: q(".hd .ic"), name: q(".hd b"), sub: q(".hd small"), nl: q(".nl"), bar: q(".bar"), ti: q(".ti"), ed: q(".ed") };
       this._pstate = "idle";
-      this._sstate = "idle";
-      this._nstate = {};
-      e.ta.value = this._load();
-      e.ta.addEventListener("input", () => {
-        this._render();
-        clearTimeout(this._st);
-        this._st = setTimeout(() => this._save(), 400);
-      });
-      e.ta.addEventListener("keydown", (ev) => {
+      this._all = false;
+      this._seen = /* @__PURE__ */ new Set();
+      e.add = roundBtn("mdi:plus", "Neue Notiz", () => this._open(null), "plus");
+      e.hd.append(e.add);
+      e.back = roundBtn("mdi:arrow-left", "Zurück zur Liste", () => this._close());
+      e.state = document.createElement("div");
+      e.state.className = "state sp";
+      e.pin = roundBtn("mdi:pin-outline", "Anpinnen", () => this._togglePin(), "pinb");
+      this._pb = printButton(() => this._print());
+      this._del = armButton("mdi:delete-outline", "Löschen", () => this._remove());
+      e.bar.append(e.back, e.state, e.pin, this._pb, this._del);
+      this._rt = richEditor({ placeholder: "Notiz schreiben …", onInput: () => this._dirty() });
+      e.ed.append(this._rt.el);
+      e.ti.addEventListener("input", () => this._dirty());
+      e.ti.addEventListener("keydown", (ev) => {
         ev.stopPropagation();
-        if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
+        if (ev.key === "Enter") {
           ev.preventDefault();
-          this._print();
+          this._rt.focus();
         }
       });
-      e.cl.addEventListener("click", () => {
-        e.ta.value = "";
-        this._save();
-        this._render();
-        e.ta.focus();
-      });
-      this._sb = printButton(() => this._store());
-      this._pb = printButton(() => this._print());
-      e.ft.append(this._sb, this._pb);
       this._apply();
     }
     _apply() {
       const c = this._c, e = this._e;
       e.hd.hidden = c.show_header === false;
-      e.ta.placeholder = c.placeholder || "";
-      e.g.style.setProperty("--th", `${Math.max(60, +c.height || NDEF.height)}px`);
-      e.g.style.setProperty("--nh", `${Math.max(60, +c.notes_height || NDEF.notes_height)}px`);
-      if (!e.ta.value) e.ta.value = this._load();
-      this._key2 = null;
+      e.g.classList.toggle("compact", c.view === "compact");
+      e.g.style.setProperty("--vh", `${Math.max(160, +c.height || NDEF.height)}px`);
+      this._key = null;
+      this._render();
+    }
+    _list() {
+      return [...this._data?.notes || []].sort((a, b) => b.pinned - a.pinned || b.updated - a.updated);
+    }
+    _onData() {
+      const cur2 = this._cur && this._data?.notes.find((n) => n.id === this._cur.id);
+      if (this._cur?.id && this._data && !cur2) {
+        this._cur = null;
+        this._e?.g.classList.remove("detail");
+      } else if (cur2 && !this._pending && !this._saving && cur2.updated !== this._cur.updated) {
+        this._cur = { ...cur2 };
+        this._fill();
+      }
       this._render();
     }
     _render() {
@@ -15175,161 +16588,197 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07)}
       if (!h || !c || !e) return;
       setIcon(e.ic, c.icon);
       e.name.textContent = c.name || NDEF.name;
-      const txt = e.ta.value, n = txt.trim().length, lines = txt ? txt.split("\n").length : 0;
-      const missing = c.print_script && !h.states[c.print_script];
-      const notes = c.notes_entity && h.states[c.notes_entity];
-      const saved2 = this._feed.items?.filter((i) => i.status !== "completed") || [];
-      e.sub.textContent = missing ? `Skript nicht gefunden: ${c.print_script}` : n ? "Bereit" : notes ? `${saved2.length} gespeichert` : "Leer";
-      e.cnt.textContent = n ? `${txt.length} Zeichen · ${lines} ${lines === 1 ? "Zeile" : "Zeilen"}` : "";
-      e.cl.hidden = c.show_clear === false;
-      e.cl.disabled = !txt;
-      const pill = c.print_style !== "round";
-      this._pb.hidden = !c.print_script;
-      this._sb.hidden = !c.notes_entity;
-      e.ft.hidden = !c.print_script && !c.notes_entity && c.show_clear === false;
-      printPaint(this._pb, c, this._pstate, n > 0 && !missing);
-      paintBtn(this._sb, { icon: "mdi:content-save-outline", label: "Speichern", pill, busy: "Speichert …", ok: "Gespeichert", err: "Fehler" }, this._sstate, n > 0 && !!notes);
-      e.ft.classList.toggle("wide", pill && c.show_clear === false);
-      this._renderNotes(saved2, notes, missing);
-    }
-    // Gespeicherte Notizen, neueste oben (todo.add_item hängt hinten an)
-    _renderNotes(saved2, notes, missing) {
-      const c = this._c, e = this._e;
-      e.ns.hidden = !c.notes_entity;
-      if (!c.notes_entity) return;
+      const list2 = this._list(), n = list2.length;
+      e.sub.textContent = this._err ? "" : !this._data ? "Wird geladen …" : n ? `${n} ${n === 1 ? "Notiz" : "Notizen"}` : "Noch leer";
+      e.add.disabled = !this._data;
+      const max = Math.max(0, +c.max_notes || 0), cut = max && !this._all && n > max ? list2.slice(0, max) : list2;
       let msg = null;
-      if (!notes) msg = ["mdi:alert-circle-outline", `Liste nicht gefunden: ${c.notes_entity}`];
-      else if (this._feed.err && !this._feed.items) msg = ["mdi:alert-circle-outline", this._feed.err];
-      else if (!this._feed.items) msg = ["mdi:timer-sand", "Wird geladen …"];
-      else if (!saved2.length) msg = ["mdi:note-outline", "Noch keine Notizen gespeichert"];
-      const rows = [...saved2].reverse();
-      e.nt.textContent = rows.length ? `Gespeichert · ${rows.length}` : "Gespeichert";
-      const key = JSON.stringify([msg, rows.map((r) => [r.uid, r.summary, r.description, this._nstate[r.uid], this._armed === r.uid]), !!c.print_script, missing, c.print_icon]);
-      if (key === this._key2) return;
-      this._key2 = key;
-      if (msg) {
-        const m = document.createElement("div");
-        m.className = "msg";
-        m.innerHTML = "<ha-icon></ha-icon><span></span>";
-        m.firstChild.setAttribute("icon", msg[0]);
-        m.lastChild.textContent = msg[1];
-        e.nl.replaceChildren(m);
-        return;
+      if (this._err) msg = storeHint(this._err, "notes");
+      else if (!this._data) msg = ["mdi:timer-sand", "Wird geladen …"];
+      else if (!n) msg = ["mdi:note-plus-outline", "Noch keine Notizen – mit + legst du die erste an."];
+      const key = JSON.stringify([msg, cut.map((x) => [x.id, x.title, x.body, x.pinned, ago(x.updated)]), n, this._all, c.view]);
+      if (key !== this._key) {
+        this._key = key;
+        if (msg) {
+          const m = document.createElement("div");
+          m.className = "msg";
+          m.innerHTML = "<ha-icon></ha-icon><span></span>";
+          m.firstChild.setAttribute("icon", msg[0]);
+          m.lastChild.textContent = msg[1];
+          e.nl.replaceChildren(m);
+        } else {
+          const rows = cut.map((x, i) => this._row(x, i));
+          if (max && n > max) {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "more";
+            b.innerHTML = `<ha-icon icon="${this._all ? "mdi:chevron-up" : "mdi:chevron-down"}"></ha-icon><span></span>`;
+            b.lastChild.textContent = this._all ? "Weniger anzeigen" : `${n - max} weitere anzeigen`;
+            b.addEventListener("click", () => {
+              this._all = !this._all;
+              this._render();
+            });
+            rows.push(b);
+          }
+          e.nl.replaceChildren(...rows);
+        }
       }
-      e.nl.replaceChildren(...rows.map((it) => this._noteRow(it, missing)));
+      this._paintBar();
     }
-    _noteRow(it, missing) {
-      const c = this._c, el2 = document.createElement("div");
-      el2.className = "nr";
-      el2.innerHTML = '<div class="tx"><b></b><small></small></div>';
-      el2.querySelector("b").textContent = it.summary;
-      const sm = el2.querySelector("small"), full = textOf(it), rest = full.startsWith(it.summary.replace(/ …$/, "")) ? full.slice(it.summary.replace(/ …$/, "").length).trim() : full;
-      sm.textContent = it.description ? rest : "";
-      sm.hidden = !sm.textContent;
-      if (c.print_script) {
-        const pb = printButton(() => this._printNote(it));
-        paintBtn(pb, { icon: c.print_icon || PRINT_DEF.print_icon, label: "Drucken", pill: false, busy: "Druckt …", ok: "Gedruckt", err: "Fehler" }, this._nstate[it.uid], !missing);
-        el2.append(pb);
-      }
-      const del = document.createElement("button");
-      del.type = "button";
-      const armed = this._armed === it.uid;
-      del.className = `nb${armed ? " arm" : ""}`;
-      del.title = armed ? "Nochmal tippen zum Löschen" : "Löschen";
-      del.setAttribute("aria-label", del.title);
-      del.innerHTML = `<ha-icon icon="${armed ? "mdi:delete-alert-outline" : "mdi:delete-outline"}"></ha-icon>`;
-      del.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        this._delete(it);
-      });
-      el2.append(del);
+    _row(x, i) {
+      const el2 = document.createElement("div");
+      el2.className = `nr${x.pinned ? " pin" : ""}${this._seen.has(x.id) ? "" : " new"}`;
+      this._seen.add(x.id);
+      el2.style.setProperty("--i", Math.min(i, 8));
+      el2.innerHTML = `${x.pinned ? '<ha-icon class="pi" icon="mdi:pin"></ha-icon>' : ""}<div class="tx"><b></b><div class="pv"></div></div><time></time>`;
+      const lines = toPlain(x.body).split("\n").map((l) => l.replace(/^(\[.?\]|•)\s*/, "").trim()).filter(Boolean);
+      el2.querySelector("b").textContent = x.title || lines[0] || "Ohne Titel";
+      el2.querySelector(".pv").textContent = (x.title ? lines : lines.slice(1)).join(" · ");
+      el2.querySelector("time").textContent = ago(x.updated);
+      press(el2, { tap: () => this._open(x) });
       return el2;
     }
-    async _print() {
-      const c = this._c, e = this._e, txt = e.ta.value.replace(/\s+$/, "");
-      if (!txt.trim() || this._pstate === "busy") return;
-      const ok3 = await runPrint(this, this._h, c.print_script, { [c.print_field || "text"]: txt }, (st) => {
-        this._pstate = st;
-        this._render();
-      });
-      if (ok3 && c.clear_after_print !== false && e.ta.value.replace(/\s+$/, "") === txt) {
-        e.ta.value = "";
-        this._save();
-        this._render();
-      }
+    /* ----- Detail ----- */
+    _open(note) {
+      if (!this._data) return;
+      this._flush();
+      this._cur = note ? { ...note } : { id: null, title: "", body: "", pinned: false, updated: 0 };
+      this._fill();
+      this._e.g.classList.add("detail");
+      this._del.reset();
+      this._paintBar();
+      if (!note) setTimeout(() => this._e.ti.focus({ preventScroll: true }), 320);
     }
-    _printNote(it) {
-      const c = this._c, txt = textOf(it);
-      if (!txt || this._nstate[it.uid] === "busy") return;
-      runPrint(this, this._h, c.print_script, { [c.print_field || "text"]: txt }, (st) => {
-        if (st === "idle") delete this._nstate[it.uid];
-        else this._nstate[it.uid] = st;
-        this._render();
-      }, it.uid);
+    _fill() {
+      const e = this._e, x = this._cur;
+      if (e.ti.value !== x.title) e.ti.value = x.title || "";
+      this._rt.set(x.body || "");
     }
-    async _store() {
-      const c = this._c, e = this._e, h = this._h, txt = e.ta.value.replace(/\s+$/, "").replace(/^\s*\n/, "");
-      if (!txt.trim() || !c.notes_entity || this._sstate === "busy") return;
-      const summary = shortOf(txt), data = { item: summary, ...txt !== summary ? { description: txt } : {} };
-      const ok3 = await runFeedback(this, "save", () => this._feed.call(h, "add_item", data), (st) => {
-        this._sstate = st;
-        this._render();
-      });
-      if (ok3 && c.clear_after_save !== false && e.ta.value.replace(/\s+$/, "").replace(/^\s*\n/, "") === txt) {
-        e.ta.value = "";
-        this._save();
-        this._render();
-      }
-    }
-    // Löschen in zwei Schritten: erstes Antippen färbt den Knopf rot, zweites (innerhalb von 3 s) löscht
-    _delete(it) {
-      clearTimeout(this._armT);
-      if (this._armed !== it.uid) {
-        this._armed = it.uid;
-        this._armT = setTimeout(() => {
-          this._armed = null;
-          this._render();
-        }, ARM);
-        this._render();
-        return;
-      }
-      this._armed = null;
-      this._feed.call(this._h, "remove_item", { item: [it.uid] }).catch((err) => console.warn("[nova-cards] Notiz: Löschen fehlgeschlagen", err));
+    _close() {
+      this._flush();
+      this._e.g.classList.remove("detail");
+      this._cur = null;
       this._render();
     }
+    _dirty() {
+      this._pending = true;
+      clearTimeout(this._st);
+      this._st = setTimeout(() => this._flush(), SAVE_MS2);
+      this._paintBar();
+    }
+    // Ausstehende Änderung jetzt speichern. Leere neue Notizen werden gar nicht erst angelegt.
+    _flush(extra) {
+      clearTimeout(this._st);
+      const x = this._cur, h = this._h;
+      if (!x || !h || !this._pending && !extra) return;
+      this._pending = false;
+      const title = this._e.ti.value.trim(), body = this._rt.get();
+      if (!x.id && !title && isEmpty(body)) {
+        this._paintBar();
+        return;
+      }
+      Object.assign(x, { title, body }, extra);
+      const send = { ...x.id ? { id: x.id } : {}, title, body, pinned: !!x.pinned };
+      this._saving = (this._saving || 0) + 1;
+      const run = this._chain = (this._chain || Promise.resolve()).then(() => notes.save(h, { ...send, ...x.id ? { id: x.id } : {} })).then((n) => {
+        x.id = n.id;
+        x.updated = n.updated;
+        this._saved = "ok";
+        clearTimeout(this._okT);
+        this._okT = setTimeout(() => {
+          this._saved = null;
+          this._paintBar();
+        }, 2500);
+      }).catch((err) => {
+        console.warn("[nova-cards] Notiz: Speichern fehlgeschlagen", err);
+        this._saved = "err";
+      }).finally(() => {
+        this._saving--;
+        if (this._chain === run) this._chain = null;
+        this._paintBar();
+      });
+      this._paintBar();
+    }
+    _paintBar() {
+      const e = this._e, x = this._cur, c = this._c, h = this._h;
+      if (!e || !x) return;
+      const st = this._pending || this._saving ? ["mdi:cloud-sync-outline", "Speichert …", ""] : this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : this._saved === "ok" ? ["mdi:check-circle-outline", "Gespeichert", "ok"] : x.updated ? ["mdi:clock-outline", `Geändert ${ago(x.updated)}`, ""] : ["mdi:pencil-outline", "Neue Notiz", ""];
+      const k = st.join("|");
+      if (e.state._k !== k) {
+        e.state._k = k;
+        e.state.className = `state sp ${st[2]}`;
+        e.state.innerHTML = `<ha-icon icon="${st[0]}"></ha-icon><span></span>`;
+        e.state.lastChild.textContent = st[1];
+      }
+      e.pin.classList.toggle("on", !!x.pinned);
+      setBtnIcon(e.pin, x.pinned ? "mdi:pin" : "mdi:pin-outline");
+      e.pin.title = x.pinned ? "Nicht mehr anpinnen" : "Anpinnen";
+      const has = !!this._e.ti.value.trim() || !isEmpty(this._rt.get());
+      this._pb.hidden = !c.print_script;
+      paintBtn(
+        this._pb,
+        { icon: c.print_icon || PRINT_DEF.print_icon, label: c.print_label || PRINT_DEF.print_label, pill: false, busy: "Druckt …", ok: "Gedruckt", err: "Fehler" },
+        this._pstate,
+        has && !!h.states[c.print_script]
+      );
+      this._del.hidden = !x.id;
+    }
+    _togglePin() {
+      const x = this._cur;
+      if (!x) return;
+      this._flush({ pinned: !x.pinned });
+    }
+    _remove() {
+      const x = this._cur, h = this._h;
+      if (!x?.id) return;
+      clearTimeout(this._st);
+      this._pending = false;
+      this._cur = null;
+      this._e.g.classList.remove("detail");
+      notes.remove(h, x.id).catch((err) => console.warn("[nova-cards] Notiz: Löschen fehlgeschlagen", err));
+      this._render();
+    }
+    // Titel + Text als Klartext ans Druck-Skript
+    _print() {
+      const c = this._c;
+      if (this._pstate === "busy") return;
+      const title = this._e.ti.value.trim(), body = toPlain(this._rt.get()), txt = [title, body].filter(Boolean).join("\n\n");
+      if (!txt) return;
+      runPrint(this, this._h, c.print_script, { [c.print_field || "text"]: txt }, (st) => {
+        this._pstate = st;
+        this._paintBar();
+      });
+    }
   };
-  define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Mehrzeiliges Notizfeld mit Druck-Knopf (z. B. für einen Bondrucker); Notizen lassen sich in einer todo-Liste speichern und später wieder drucken oder löschen.", documentationURL: docUrl("nova-notiz-card") });
-  var H2 = (n) => ({ name: n, selector: { number: { min: 60, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } });
+  define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Notizen mit Titel und formatiertem Text (Fett, Listen, Checklisten): Liste und Detailansicht, anpinnen, auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf z. B. für einen Bondrucker.", documentationURL: docUrl("nova-notiz-card") });
   var GEN5 = [
     g2({ name: "name", selector: T }, { name: "icon", selector: I }),
-    { name: "show_header", selector: { boolean: {} } },
-    { name: "placeholder", selector: T },
-    g2({ name: "show_clear", selector: { boolean: {} } }, H2("height"))
+    { name: "show_header", selector: { boolean: {} } }
   ];
-  var NOTES = [
-    { name: "notes_entity", selector: { entity: { domain: "todo" } } },
-    g2(H2("notes_height"), { name: "clear_after_save", selector: { boolean: {} } })
+  var VIEW = [
+    sel("view", [["full", "Voll (Titel, Vorschau, Datum)"], ["compact", "Kompakt (nur Titel und Datum)"]]),
+    g2(
+      { name: "max_notes", selector: { number: { min: 0, max: 50, step: 1, mode: "box" } } },
+      { name: "height", selector: { number: { min: 160, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } }
+    )
   ];
-  var PRINT2 = printSchema([g2({ name: "print_field", selector: T }, { name: "clear_after_print", selector: { boolean: {} } })]);
+  var PRINT2 = printSchema([{ name: "print_field", selector: T }]).filter((f3) => f3.name !== "print_style");
   var LABELS9 = {
     ...BASE_LABELS,
     ...PRINT_LABELS,
-    name: "Name",
+    name: "Titel der Karte",
     show_header: "Kopfzeile anzeigen",
-    placeholder: "Platzhalter im Textfeld",
-    show_clear: "Knopf „Leeren“",
-    height: "Mindesthöhe des Textfelds",
-    print_field: "Feldname im Skript",
-    clear_after_print: "Nach dem Druck leeren",
-    notes_entity: "Liste für gespeicherte Notizen (todo)",
-    notes_height: "Mindesthöhe der Liste",
-    clear_after_save: "Nach dem Speichern leeren"
+    view: "Ansicht der Liste",
+    max_notes: "Max. sichtbare Notizen",
+    height: "Mindesthöhe",
+    print_field: "Feldname im Skript"
   };
   var HELPERS9 = {
     ...PRINT_HELPERS,
-    print_field: "Unter diesem Namen bekommt das Skript den Text (Standard: text).",
-    height: "Im Raster füllt das Textfeld den Platz aus.",
-    notes_entity: "Leer = ohne Speichern. Z. B. eine lokale To-do-Liste „Notizen“. Erste Zeile = Titel, ganzer Text in der Beschreibung."
+    max_notes: "0 = alle. Weitere Notizen lassen sich in der Karte aufklappen.",
+    height: "Im Raster füllt die Karte den Platz aus.",
+    print_field: "Unter diesem Namen bekommt das Skript Titel und Text als Klartext (Standard: text).",
+    print_script: "Leer = kein Druck-Knopf. Der Knopf sitzt in der geöffneten Notiz."
   };
   var NovaNoteCardEditor = class extends NovaEditorBase {
     _build() {
@@ -15343,7 +16792,7 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07)}
       const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
       w.append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN5))),
-        this._section("notes", "mdi:note-multiple-outline", "Gespeicherte Notizen", (b) => b.append(form(NOTES))),
+        this._section("view", "mdi:view-list-outline", "Ansicht", (b) => b.append(form(VIEW))),
         this._section("print", "mdi:printer-pos", "Drucken", (b) => b.append(form(PRINT2)))
       );
     }
@@ -15353,8 +16802,1865 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07)}
   __publicField(NovaNoteCardEditor, "openSections", ["general"]);
   define("note-card-editor", NovaNoteCardEditor);
 
+  // src/shared/recipe-util.js
+  var num3 = (q) => String(Math.round((+q || 0) * 100) / 100).replace(".", ",");
+  var amount = (ing, k = 1) => ing.qty == null ? ing.unit || "" : `${num3(ing.qty * k)}${ing.unit ? ` ${ing.unit}` : ""}`;
+  var mins = (t) => t >= 60 ? `${Math.floor(t / 60)} Std${t % 60 ? ` ${t % 60} Min` : ""}` : `${t} Min`;
+  var ingredientLine = (ing) => [amount(ing), ing.name].filter(Boolean).join(" ");
+  function parseIngredient(line, units = []) {
+    const s = String(line || "").trim();
+    if (!s) return null;
+    const m = /^(\d+(?:[.,]\d+)?)\s*(.*)$/.exec(s);
+    if (!m || !m[2]) return { qty: null, unit: "", name: s };
+    const [first, ...rest] = m[2].split(/\s+/);
+    const unit = rest.length ? units.find((u) => u && u.toLowerCase() === first.toLowerCase()) : null;
+    return { qty: parseFloat(m[1].replace(",", ".")), unit: unit || "", name: unit ? rest.join(" ") : m[2] };
+  }
+
+  // src/recipe.js
+  var RCSS2 = `
+.g.rc{gap:var(--nv-s5)}
+.hd .rb{margin-left:auto}
+.srch{height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8);flex:none}
+.tags{display:flex;gap:var(--nv-s3);overflow-x:auto;flex:none;scrollbar-width:none;margin:0 calc(var(--nv-s2) * -1);padding:var(--nv-s1) var(--nv-s2);
+-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
+.tags::-webkit-scrollbar{display:none}
+.tags:empty{display:none}
+.chip{display:inline-flex;align-items:center;gap:var(--nv-s2);height:38px;padding:0 var(--nv-s6);border-radius:var(--nv-r-pill);flex:none;cursor:pointer;
+border:1px solid rgba(var(--nv-tint),.1);background:var(--nv-chip);color:inherit;font:inherit;font-size:var(--nv-fs-6);white-space:nowrap;-webkit-tap-highlight-color:transparent;
+transition:transform var(--nv-d2) var(--nv-ease),background-color var(--nv-d2),border-color var(--nv-d2),box-shadow var(--nv-d2)}
+.chip:active{transform:scale(var(--nv-press))}
+.chip ha-icon{--mdc-icon-size:17px}
+.chip.on{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));border-color:transparent;color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));
+box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 50%,transparent) var(--nv-glow),transparent),var(--nv-fill-edge)}
+.chip.ro{cursor:default;height:30px;font-size:var(--nv-fs-4);padding:0 var(--nv-s5)}
+.rl{display:flex;flex-direction:column;gap:var(--nv-s3)}
+.rc.grid .rl{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:var(--nv-s4)}
+.rr{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s3);padding-right:var(--nv-s6);border-radius:var(--nv-r-md);min-width:0;position:relative;overflow:hidden;
+background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);transition:transform var(--nv-d2) var(--nv-ease),border-color var(--nv-d3)}
+.rr.new{animation:rb-in var(--nv-d5) var(--nv-ease) both;animation-delay:calc(var(--i,0) * 40ms)}
+.rr:active{transform:scale(.98)}
+.rr .im{width:56px;height:56px;border-radius:var(--nv-r-sm);flex:none;display:flex;align-items:center;justify-content:center;background:rgba(var(--nv-tint),.08);overflow:hidden}
+.rr .im img{width:100%;height:100%;object-fit:cover;transition:transform var(--nv-d6) var(--nv-ease)}
+.rr .im ha-icon{--mdc-icon-size:26px;opacity:.5}
+.rr .tx{flex:1;min-width:0}
+.rr b{display:block;font-weight:var(--nv-fw-medium);font-size:var(--nv-fs-8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rr small{display:flex;gap:var(--nv-s4);align-items:center;font-size:var(--nv-fs-3);opacity:.6;margin-top:var(--nv-s1);white-space:nowrap;overflow:hidden}
+.rr small ha-icon{--mdc-icon-size:13px}
+.rr small span{display:inline-flex;gap:var(--nv-s1);align-items:center}
+.rr .fav{--mdc-icon-size:18px;color:var(--nv-error);flex:none}
+.rc.grid .rr{flex-direction:column;align-items:stretch;padding:0;gap:0}
+.rc.grid .rr .im{width:auto;height:auto;aspect-ratio:4/3;border-radius:0}
+.rc.grid .rr .tx{padding:var(--nv-s4) var(--nv-s5) var(--nv-s5)}
+.rc.grid .rr .fav{position:absolute;top:var(--nv-s4);right:var(--nv-s4);filter:drop-shadow(0 1px 2px rgba(var(--nv-shade),.6))}
+.rd{display:flex;flex-direction:column;gap:var(--nv-s6);padding-bottom:var(--nv-s6)}
+.hero{border-radius:var(--nv-r-md);overflow:hidden;aspect-ratio:16/9;flex:none;background:rgba(var(--nv-tint),.08);animation:rc-hero var(--nv-d6) var(--nv-ease)}
+.hero img{width:100%;height:100%;object-fit:cover;display:block}
+.rd h2{margin:0;font-size:var(--nv-fd-1);font-weight:var(--nv-fw-heavy);line-height:1.2;overflow-wrap:anywhere}
+.meta{display:flex;gap:var(--nv-s3);flex-wrap:wrap}
+.lb{font-size:var(--nv-fs-3);font-weight:var(--nv-fw-bold);opacity:.6;text-transform:uppercase;letter-spacing:var(--nv-caps);display:flex;align-items:center;gap:var(--nv-s4)}
+.lb .sp{flex:1}
+.qt{display:flex;align-items:center;flex:none;border-radius:var(--nv-r-pill);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);text-transform:none;letter-spacing:0;opacity:1}
+.qt button{width:44px;height:40px;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;border-radius:var(--nv-r-pill);
+-webkit-tap-highlight-color:transparent;outline:none;transition:transform var(--nv-d2) var(--nv-ease)}
+.qt button:active{transform:scale(.8)}
+.qt button:focus-visible{box-shadow:var(--nv-focus)}
+.qt button ha-icon{--mdc-icon-size:18px}
+.qt span{min-width:74px;text-align:center;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-bold);white-space:nowrap}
+.ing{display:flex;flex-direction:column}
+.ig{display:flex;align-items:center;gap:var(--nv-s5);min-height:44px;border-top:1px solid rgba(var(--nv-tint),.08);cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
+.ig:first-child{border-top:0}
+.ig:focus-visible{box-shadow:var(--nv-focus)}
+.ig .ck{width:22px;height:22px;border-radius:50%;box-sizing:border-box;border:2px solid rgba(var(--nv-tint),.45);flex:none;display:flex;align-items:center;justify-content:center;
+transition:background-color var(--nv-d3),border-color var(--nv-d3),transform var(--nv-d2) var(--nv-ease)}
+.ig .ck ha-icon{--mdc-icon-size:15px;opacity:0;transform:scale(.3);transition:opacity var(--nv-d2),transform var(--nv-d4) var(--nv-ease)}
+.ig.on .ck{background:var(--nv-active);border-color:var(--nv-active);color:var(--nv-active-fg)}
+.ig.on .ck ha-icon{opacity:1;transform:none}
+.ig .q{min-width:68px;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-7);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ig .q.bump{animation:rc-bump var(--nv-d4) var(--nv-ease)}
+.ig .n{flex:1;min-width:0;font-size:var(--nv-fs-8);overflow-wrap:anywhere}
+.ig:not(.on) .n,.ig:not(.on) .q{opacity:.5}
+.tolist{align-self:stretch}
+.tolist.pb.pill{flex:none;width:100%}
+.form{display:flex;flex-direction:column;gap:var(--nv-s5);padding-bottom:var(--nv-s6)}
+.form .fld{height:44px;border-radius:var(--nv-r-md);padding:0 var(--nv-s6)}
+.form .ti{font-weight:var(--nv-fw-bold)}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:var(--nv-s4)}
+.form label{display:flex;flex-direction:column;gap:var(--nv-s2);font-size:var(--nv-fs-3);opacity:.9;min-width:0}
+.form label span{opacity:.65;font-weight:var(--nv-fw-bold);text-transform:uppercase;letter-spacing:var(--nv-caps)}
+.ie{display:grid;grid-template-columns:64px 84px minmax(0,1fr) 40px;gap:var(--nv-s3);align-items:center}
+.ie .fld{padding:0 var(--nv-s4);text-overflow:ellipsis}
+.ie select.fld{padding-right:var(--nv-s1)}
+.ie select option{color:initial}
+.addi{align-self:flex-start}
+.form .rte{min-height:120px;border-radius:var(--nv-r-md);padding:var(--nv-s5) var(--nv-s7);border:1px solid var(--nv-box-border);background:var(--nv-box);margin-top:var(--nv-s3);
+transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
+.form .rte:focus{border-color:color-mix(in srgb,var(--nv-active) 75%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 22%,transparent) var(--nv-glow),transparent)}
+.rb.favb.on{background:color-mix(in srgb,var(--nv-error) 22%,var(--nv-chip));color:var(--nv-error);border-color:color-mix(in srgb,var(--nv-error) 55%,transparent);box-shadow:none}
+.rb.favb.on ha-icon{animation:rb-pop var(--nv-d5) var(--nv-ease)}
+.bar .pb{width:44px;padding:0}
+@keyframes rc-hero{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
+@keyframes rc-bump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.rr.new,.hero,.ig .q.bump,.rb.favb.on ha-icon{animation:none}}`;
+  var RDEF2 = { name: "Rezepte", icon: "mdi:chef-hat", show_header: true, view: "list", show_search: true, height: 420, print_field: "text", ...PRINT_DEF };
+  var SAVE_MS3 = 800;
+  var NovaRecipeCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("recipe-card-editor"));
+    }
+    static getStubConfig() {
+      return {};
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._c = { ...RDEF2, ...c };
+      this._ids = [this._c.print_script].filter(Boolean);
+      if (this._e) this._apply();
+    }
+    set hass(h) {
+      const old = this._h;
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) this._build();
+      this._watch();
+      this._picker?.setHass(h);
+      if (hassChanged(old, h, this._ids)) this._render();
+    }
+    getCardSize() {
+      return 8;
+    }
+    getGridOptions() {
+      return { columns: 6, rows: "auto", min_columns: 3 };
+    }
+    connectedCallback() {
+      this._watch();
+    }
+    disconnectedCallback() {
+      this._flush();
+      this._off?.();
+      this._off = null;
+      stopFeedback(this);
+      clearTimeout(this._st);
+      clearTimeout(this._okT);
+      this._del?.reset();
+    }
+    _watch() {
+      if (this._off || !this._h || !this.isConnected) return;
+      this._off = watch(this._h, "recipes", this, (d, err) => {
+        this._data = d;
+        this._err = err;
+        this._onData();
+      });
+    }
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${VIEW_CSS}${RICH_CSS}${PICK_MEDIA_CSS}${RCSS2}</style><div class="g rc">
+<div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
+<div class="stage"><div class="view main"><input class="fld srch" type="search" placeholder="Rezept suchen …" autocomplete="off" enterkeyhint="search">
+<div class="tags"></div><div class="scroll"><div class="rl"></div></div></div>
+<div class="view side"><div class="bar"></div><div class="scroll"><div class="body"></div></div></div></div></div>`;
+      const q = (s) => r.querySelector(s);
+      const e = this._e = { g: q(".g"), hd: q(".hd"), ic: q(".hd .ic"), name: q(".hd b"), sub: q(".hd small"), srch: q(".srch"), tags: q(".tags"), rl: q(".rl"), bar: q(".bar"), body: q(".body") };
+      this._seen = /* @__PURE__ */ new Set();
+      this._pstate = "idle";
+      this._lstate = "idle";
+      this._tag = null;
+      this._favOnly = false;
+      e.add = roundBtn("mdi:plus", "Neues Rezept", () => this._edit(null), "plus");
+      e.hd.append(e.add);
+      e.srch.addEventListener("input", () => this._render());
+      e.srch.addEventListener("keydown", (ev) => ev.stopPropagation());
+      e.back = roundBtn("mdi:arrow-left", "Zurück", () => this._back());
+      e.state = document.createElement("div");
+      e.state.className = "state sp";
+      e.fav = roundBtn("mdi:heart-outline", "Favorit", () => this._toggleFav(), "favb");
+      e.edit = roundBtn("mdi:pencil-outline", "Bearbeiten", () => this._edit(this._cur));
+      this._pb = printButton(() => this._print());
+      this._del = armButton("mdi:delete-outline", "Rezept löschen", () => this._remove());
+      e.bar.append(e.back, e.state, e.fav, e.edit, this._pb, this._del);
+      this._apply();
+    }
+    _apply() {
+      const c = this._c, e = this._e;
+      e.hd.hidden = c.show_header === false;
+      e.srch.hidden = c.show_search === false;
+      e.g.classList.toggle("grid", c.view === "grid");
+      e.g.style.setProperty("--vh", `${Math.max(240, +c.height || RDEF2.height)}px`);
+      this._key = null;
+      this._render();
+    }
+    _onData() {
+      const d = this._data, cur2 = this._cur?.id && d?.recipes.find((x) => x.id === this._cur.id);
+      if (this._cur?.id && d && !cur2) {
+        this._cur = null;
+        this._mode = null;
+        this._e?.g.classList.remove("detail");
+      } else if (cur2 && this._mode === "read" && cur2.updated !== this._cur.updated) {
+        this._cur = cur2;
+        this._read();
+      }
+      this._render();
+    }
+    _img(x) {
+      return x.image ? imageUrl(this._h, "recipes", x.image) : "";
+    }
+    /* ----- Liste ----- */
+    _render() {
+      const h = this._h, c = this._c, e = this._e;
+      if (!h || !c || !e) return;
+      setIcon(e.ic, c.icon);
+      e.name.textContent = c.name || RDEF2.name;
+      const all = this._data?.recipes || [], n = all.length;
+      e.sub.textContent = this._err ? "" : !this._data ? "Wird geladen …" : n ? `${n} ${n === 1 ? "Rezept" : "Rezepte"}` : "Noch leer";
+      e.add.disabled = !this._data;
+      const tags = [...new Set(all.flatMap((x) => x.tags || []))].sort((a, b) => a.localeCompare(b, "de"));
+      if (this._tag && !tags.includes(this._tag)) this._tag = null;
+      const q = e.srch.value.trim().toLowerCase();
+      const list2 = all.filter((x) => (!this._favOnly || x.favorite) && (!this._tag || x.tags?.includes(this._tag)) && (!q || x.title.toLowerCase().includes(q) || x.tags?.some((t) => t.toLowerCase().includes(q)) || x.ingredients?.some((i) => i.name.toLowerCase().includes(q)))).sort((a, b) => b.favorite - a.favorite || a.title.localeCompare(b.title, "de"));
+      let msg = null;
+      if (this._err) msg = storeHint(this._err, "recipes");
+      else if (!this._data) msg = ["mdi:timer-sand", "Wird geladen …"];
+      else if (!n) msg = ["mdi:book-plus-outline", "Noch keine Rezepte – mit + legst du das erste an."];
+      else if (!list2.length) msg = ["mdi:magnify-close", "Kein Rezept gefunden"];
+      const key = JSON.stringify([msg, list2.map((x) => [x.id, x.title, x.image, x.time, x.servings, x.favorite]), tags, this._tag, this._favOnly, c.view]);
+      if (key !== this._key) {
+        this._key = key;
+        const chip = (label, on, fn, icon2) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = `chip${on ? " on" : ""}`;
+          if (icon2) {
+            const i = document.createElement("ha-icon");
+            i.setAttribute("icon", icon2);
+            b.append(i);
+          }
+          b.append(document.createTextNode(label));
+          b.addEventListener("click", fn);
+          return b;
+        };
+        e.tags.replaceChildren(...n && (tags.length || all.some((x) => x.favorite)) ? [
+          ...all.some((x) => x.favorite) ? [chip("Favoriten", this._favOnly, () => {
+            this._favOnly = !this._favOnly;
+            this._render();
+          }, this._favOnly ? "mdi:heart" : "mdi:heart-outline")] : [],
+          ...tags.map((t) => chip(t, this._tag === t, () => {
+            this._tag = this._tag === t ? null : t;
+            this._render();
+          }))
+        ] : []);
+        if (msg) {
+          const m = document.createElement("div");
+          m.className = "msg";
+          m.innerHTML = "<ha-icon></ha-icon><span></span>";
+          m.firstChild.setAttribute("icon", msg[0]);
+          m.lastChild.textContent = msg[1];
+          e.rl.replaceChildren(m);
+        } else e.rl.replaceChildren(...list2.map((x, i) => this._row(x, i)));
+      }
+      this._paintBar();
+    }
+    _row(x, i) {
+      const el2 = document.createElement("div");
+      el2.className = `rr${this._seen.has(x.id) ? "" : " new"}`;
+      this._seen.add(x.id);
+      el2.style.setProperty("--i", Math.min(i, 8));
+      el2.innerHTML = `<div class="im"></div><div class="tx"><b></b><small></small></div>${x.favorite ? '<ha-icon class="fav" icon="mdi:heart"></ha-icon>' : ""}`;
+      const im = el2.firstChild, src = this._img(x);
+      if (src) {
+        const g = document.createElement("img");
+        g.alt = "";
+        g.loading = "lazy";
+        g.src = src;
+        im.append(g);
+      } else im.innerHTML = '<ha-icon icon="mdi:silverware-fork-knife"></ha-icon>';
+      el2.querySelector("b").textContent = x.title;
+      const sm = el2.querySelector("small");
+      const meta = (icon2, t) => {
+        const s = document.createElement("span");
+        s.innerHTML = `<ha-icon icon="${icon2}"></ha-icon>`;
+        s.append(document.createTextNode(t));
+        sm.append(s);
+      };
+      if (x.time) meta("mdi:clock-outline", mins(x.time));
+      meta("mdi:account-multiple-outline", `${x.servings}`);
+      if (x.ingredients?.length) meta("mdi:format-list-bulleted", `${x.ingredients.length}`);
+      press(el2, { tap: () => this._show(x) });
+      return el2;
+    }
+    /* ----- Rezept lesen ----- */
+    _show(x) {
+      this._cur = x;
+      this._servings = x.servings;
+      this._pick = new Set((x.ingredients || []).map((_, i) => i));
+      this._read();
+      this._e.g.classList.add("detail");
+    }
+    _read() {
+      const e = this._e, x = this._cur;
+      this._mode = "read";
+      this._picker = null;
+      const body = document.createElement("div");
+      body.className = "rd";
+      const src = this._img(x);
+      if (src) {
+        const hero = document.createElement("div");
+        hero.className = "hero";
+        const g = document.createElement("img");
+        g.alt = "";
+        g.src = src;
+        hero.append(g);
+        body.append(hero);
+      }
+      const h2 = document.createElement("h2");
+      h2.textContent = x.title;
+      body.append(h2);
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const ro = (t, icon2) => {
+        const s = document.createElement("span");
+        s.className = "chip ro";
+        if (icon2) s.innerHTML = `<ha-icon icon="${icon2}"></ha-icon>`;
+        s.append(document.createTextNode(t));
+        meta.append(s);
+      };
+      if (x.time) ro(mins(x.time), "mdi:clock-outline");
+      (x.tags || []).forEach((t) => ro(t));
+      if (meta.childNodes.length) body.append(meta);
+      if (x.ingredients?.length) {
+        const lb = document.createElement("div");
+        lb.className = "lb";
+        lb.innerHTML = '<span>Zutaten</span><span class="sp"></span><div class="qt"><button type="button" aria-label="Weniger Portionen"><ha-icon icon="mdi:minus"></ha-icon></button><span></span><button type="button" aria-label="Mehr Portionen"><ha-icon icon="mdi:plus"></ha-icon></button></div>';
+        const qt = lb.querySelector(".qt");
+        this._sv = qt.children[1];
+        qt.children[0].addEventListener("click", () => this._setServings(this._servings - 1));
+        qt.children[2].addEventListener("click", () => this._setServings(this._servings + 1));
+        this._ing = document.createElement("div");
+        this._ing.className = "ing";
+        this._lb = printButton(() => this._toList());
+        this._lb.classList.add("tolist");
+        body.append(lb, this._ing, this._lb);
+        this._paintIng();
+      }
+      if (x.steps) {
+        const lb = document.createElement("div");
+        lb.className = "lb";
+        lb.textContent = "Zubereitung";
+        const st = document.createElement("div");
+        richView(st, x.steps, () => {
+        });
+        body.append(lb, st);
+      }
+      e.body.replaceChildren(body);
+      e.body.parentElement.scrollTop = 0;
+      this._del.reset();
+      this._paintBar();
+    }
+    _setServings(n) {
+      n = Math.max(1, Math.min(99, n));
+      if (n === this._servings) return;
+      this._servings = n;
+      this._paintIng(true);
+    }
+    _paintIng(bump) {
+      const x = this._cur, k = this._servings / (x.servings || 1);
+      this._sv.textContent = `${this._servings} ${this._servings === 1 ? "Portion" : "Portionen"}`;
+      this._ing.replaceChildren(...x.ingredients.map((ing, i) => {
+        const el2 = document.createElement("div");
+        el2.className = `ig${this._pick.has(i) ? " on" : ""}`;
+        el2.tabIndex = 0;
+        el2.setAttribute("role", "checkbox");
+        el2.setAttribute("aria-checked", this._pick.has(i));
+        el2.innerHTML = `<span class="ck"><ha-icon icon="mdi:check-bold"></ha-icon></span><span class="q${bump && ing.qty != null ? " bump" : ""}"></span><span class="n"></span>`;
+        el2.children[1].textContent = amount(ing, k);
+        el2.children[2].textContent = ing.name;
+        const tog = () => {
+          if (this._pick.has(i)) this._pick.delete(i);
+          else this._pick.add(i);
+          el2.classList.toggle("on");
+          el2.setAttribute("aria-checked", this._pick.has(i));
+          this._paintList();
+        };
+        el2.addEventListener("click", tog);
+        el2.addEventListener("keydown", (ev) => {
+          if (ev.key === " " || ev.key === "Enter") {
+            ev.preventDefault();
+            tog();
+          }
+        });
+        return el2;
+      }));
+      this._paintList();
+    }
+    _paintList() {
+      const n = this._pick.size;
+      paintBtn(this._lb, {
+        icon: "mdi:cart-plus",
+        label: n ? `${n} ${n === 1 ? "Zutat" : "Zutaten"} auf die Einkaufsliste` : "Keine Zutat gewählt",
+        pill: true,
+        busy: "Wird eingetragen …",
+        ok: "Steht auf der Liste",
+        err: "Einkauf nicht erreichbar"
+      }, this._lstate, n > 0);
+      this._lb.classList.add("tolist");
+    }
+    _toList() {
+      const x = this._cur;
+      if (!x || !this._pick.size || this._lstate === "busy") return;
+      const only = this._pick.size === x.ingredients.length ? null : [...this._pick].sort((a, b) => a - b);
+      runFeedback(this, "list", () => recipes.toShopping(this._h, x.id, this._servings, only), (st) => {
+        this._lstate = st;
+        if (this._mode === "read" && this._lb?.isConnected) this._paintList();
+      });
+    }
+    _toggleFav() {
+      const x = this._cur;
+      if (!x?.id) return;
+      this._cur = { ...x, favorite: !x.favorite };
+      this._paintBar();
+      recipes.save(this._h, { id: x.id, favorite: !x.favorite }).catch((err) => console.warn("[nova-cards] Rezept: Favorit nicht gespeichert", err));
+    }
+    _back() {
+      if (this._mode === "edit") {
+        this._flush();
+        const saved2 = this._draft?.id && (this._data?.recipes.find((r) => r.id === this._draft.id) || this._draft);
+        this._draft = null;
+        if (saved2) {
+          this._cur = saved2;
+          this._servings = saved2.servings;
+          this._pick = new Set((saved2.ingredients || []).map((_, i) => i));
+          this._read();
+          return;
+        }
+      }
+      this._e.g.classList.remove("detail");
+      this._cur = null;
+      this._mode = null;
+      this._key = null;
+      this._render();
+    }
+    /* ----- Rezept bearbeiten ----- */
+    _edit(x) {
+      if (!this._data) return;
+      const e = this._e, d = this._draft = x ? JSON.parse(JSON.stringify(x)) : { id: null, title: "", image: null, servings: 2, time: null, tags: [], ingredients: [], steps: "", favorite: false };
+      this._mode = "edit";
+      this._cur = d;
+      const f3 = document.createElement("div");
+      f3.className = "form";
+      const field = (label, el2) => {
+        const l = document.createElement("label");
+        const s = document.createElement("span");
+        s.textContent = label;
+        l.append(s, el2);
+        return l;
+      };
+      const inp = (v, attrs = {}) => {
+        const i = document.createElement("input");
+        i.className = "fld";
+        Object.assign(i, { type: "text", autocomplete: "off", ...attrs });
+        i.value = v ?? "";
+        i.addEventListener("keydown", (ev) => ev.stopPropagation());
+        return i;
+      };
+      const ti = inp(d.title, { maxLength: 200, placeholder: "Name des Rezepts" });
+      ti.classList.add("ti");
+      ti.addEventListener("input", () => {
+        d.title = ti.value;
+        this._dirty();
+      });
+      const sv = inp(d.servings, { type: "number", min: 1, max: 99, inputMode: "numeric" });
+      sv.addEventListener("input", () => {
+        d.servings = Math.max(1, Math.min(99, Math.round(+sv.value) || 1));
+        this._dirty();
+      });
+      const tm = inp(d.time, { type: "number", min: 0, max: 6e3, inputMode: "numeric", placeholder: "–" });
+      tm.addEventListener("input", () => {
+        d.time = tm.value === "" ? null : Math.max(0, Math.round(+tm.value) || 0);
+        this._dirty();
+      });
+      const two = document.createElement("div");
+      two.className = "two";
+      two.append(field("Portionen", sv), field("Zeit in Minuten", tm));
+      const tg = inp((d.tags || []).join(", "), { placeholder: "z. B. schnell, vegetarisch" });
+      tg.addEventListener("input", () => {
+        d.tags = tg.value.split(",").map((s) => s.trim()).filter(Boolean);
+        this._dirty();
+      });
+      const lb = (t) => {
+        const l = document.createElement("div");
+        l.className = "lb";
+        l.textContent = t;
+        return l;
+      };
+      const ings = document.createElement("div");
+      ings.className = "form";
+      const units = this._data.units || [""];
+      const row = (ing) => {
+        const el2 = document.createElement("div");
+        el2.className = "ie";
+        const q = inp(ing.qty == null ? "" : String(ing.qty).replace(".", ","), { inputMode: "decimal", placeholder: "Menge" });
+        q.setAttribute("aria-label", "Menge");
+        q.addEventListener("input", () => {
+          const v = parseFloat(q.value.replace(",", "."));
+          ing.qty = Number.isFinite(v) ? v : null;
+          this._dirty();
+        });
+        const u = document.createElement("select");
+        u.className = "fld";
+        u.setAttribute("aria-label", "Einheit");
+        units.forEach((x2) => {
+          const o = document.createElement("option");
+          o.value = x2;
+          o.textContent = x2 || "–";
+          u.append(o);
+        });
+        u.value = ing.unit || "";
+        u.addEventListener("change", () => {
+          ing.unit = u.value;
+          this._dirty();
+        });
+        const n = inp(ing.name, { maxLength: 120, placeholder: "Zutat" });
+        n.setAttribute("aria-label", "Zutat");
+        n.addEventListener("input", () => {
+          ing.name = n.value;
+          this._dirty();
+        });
+        n.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            if (el2 === ings.lastChild) addIng();
+            else el2.nextSibling?.children[2].focus();
+          }
+        });
+        const rm = roundBtn("mdi:close", "Zutat entfernen", () => {
+          d.ingredients.splice(d.ingredients.indexOf(ing), 1);
+          el2.remove();
+          this._dirty();
+        }, "sm");
+        el2.append(q, u, n, rm);
+        return el2;
+      };
+      const addIng = () => {
+        const ing = { name: "", qty: null, unit: "" };
+        d.ingredients.push(ing);
+        const el2 = row(ing);
+        ings.append(el2);
+        el2.children[0].focus({ preventScroll: true });
+        el2.scrollIntoView({ block: "nearest" });
+      };
+      d.ingredients.forEach((ing) => ings.append(row(ing)));
+      const add = document.createElement("button");
+      add.type = "button";
+      add.className = "chip addi";
+      add.innerHTML = '<ha-icon icon="mdi:plus"></ha-icon>Zutat';
+      add.addEventListener("click", addIng);
+      this._picker = mediaPicker({ hass: this._h, module: "recipes", value: { image: d.image }, icons: [], search: false, fallback: "mdi:image-outline", onChange: (v) => {
+        d.image = v.image;
+        this._dirty();
+      } });
+      this._rt = richEditor({ placeholder: "Schritt für Schritt …", onInput: () => {
+        d.steps = this._rt.get();
+        this._dirty();
+      } });
+      this._rt.set(d.steps || "");
+      f3.append(ti, two, field("Schlagwörter (mit Komma getrennt)", tg), lb("Bild"), this._picker, lb("Zutaten"), ings, add, lb("Zubereitung"), this._rt.el);
+      e.body.replaceChildren(f3);
+      e.body.parentElement.scrollTop = 0;
+      e.g.classList.add("detail");
+      this._del.reset();
+      this._paintBar();
+      if (!x) setTimeout(() => ti.focus({ preventScroll: true }), 320);
+    }
+    _dirty() {
+      this._pending = true;
+      clearTimeout(this._st);
+      this._st = setTimeout(() => this._flush(), SAVE_MS3);
+      this._paintBar();
+    }
+    // Speichern; ein neues Rezept wird erst angelegt, wenn es einen Namen hat
+    _flush() {
+      clearTimeout(this._st);
+      const d = this._draft, h = this._h;
+      if (!d || !h || !this._pending) return;
+      if (!d.title.trim()) {
+        this._paintBar();
+        return;
+      }
+      this._pending = false;
+      this._saving = (this._saving || 0) + 1;
+      const run = this._chain = (this._chain || Promise.resolve()).then(() => recipes.save(h, {
+        ...d.id ? { id: d.id } : {},
+        title: d.title.trim(),
+        image: d.image || null,
+        servings: d.servings,
+        time: d.time,
+        tags: d.tags,
+        ingredients: d.ingredients.filter((i) => i.name.trim()).map((i) => ({ name: i.name.trim(), qty: i.qty, unit: i.unit || "" })),
+        steps: d.steps
+      })).then((rec) => {
+        d.id = rec.id;
+        d.updated = rec.updated;
+        this._saved = "ok";
+        clearTimeout(this._okT);
+        this._okT = setTimeout(() => {
+          this._saved = null;
+          this._paintBar();
+        }, 2500);
+      }).catch((err) => {
+        console.warn("[nova-cards] Rezept: Speichern fehlgeschlagen", err);
+        this._saved = "err";
+      }).finally(() => {
+        this._saving--;
+        if (this._chain === run) this._chain = null;
+        this._paintBar();
+      });
+      this._paintBar();
+    }
+    _remove() {
+      const x = this._cur;
+      if (!x?.id) return;
+      clearTimeout(this._st);
+      this._pending = false;
+      this._draft = null;
+      this._cur = null;
+      this._mode = null;
+      this._e.g.classList.remove("detail");
+      recipes.remove(this._h, x.id).catch((err) => console.warn("[nova-cards] Rezept: Löschen fehlgeschlagen", err));
+      this._render();
+    }
+    _paintBar() {
+      const e = this._e, x = this._cur, c = this._c, h = this._h;
+      if (!e || !x) return;
+      const edit = this._mode === "edit";
+      const st = !edit ? ["", "", ""] : this._pending && !x.title.trim() ? ["mdi:form-textbox", "Name fehlt noch", ""] : this._pending || this._saving ? ["mdi:cloud-sync-outline", "Speichert …", ""] : this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : this._saved === "ok" ? ["mdi:check-circle-outline", "Gespeichert", "ok"] : ["mdi:pencil-outline", x.id ? "Rezept bearbeiten" : "Neues Rezept", ""];
+      const k = st.join("|");
+      if (e.state._k !== k) {
+        e.state._k = k;
+        e.state.className = `state sp ${st[2]}`;
+        e.state.innerHTML = st[0] ? `<ha-icon icon="${st[0]}"></ha-icon><span></span>` : "";
+        if (st[0]) e.state.lastChild.textContent = st[1];
+      }
+      e.fav.hidden = edit;
+      e.edit.hidden = edit;
+      this._del.hidden = !edit || !x.id;
+      e.back.title = edit && x.id ? "Fertig" : "Zurück zur Liste";
+      setBtnIcon(e.back, edit && x.id ? "mdi:check" : "mdi:arrow-left");
+      e.fav.classList.toggle("on", !!x.favorite);
+      setBtnIcon(e.fav, x.favorite ? "mdi:heart" : "mdi:heart-outline");
+      this._pb.hidden = edit || !c.print_script;
+      paintBtn(
+        this._pb,
+        { icon: c.print_icon || PRINT_DEF.print_icon, label: c.print_label || PRINT_DEF.print_label, pill: false, busy: "Druckt …", ok: "Gedruckt", err: "Fehler" },
+        this._pstate,
+        !!h.states[c.print_script]
+      );
+    }
+    // Rezept als Klartext: Titel, Portionen/Zeit, Zutaten (umgerechnet), Zubereitung
+    _print() {
+      const c = this._c, x = this._cur;
+      if (!x || this._pstate === "busy") return;
+      const k = this._servings / (x.servings || 1), out = [x.title.toUpperCase(), [`${this._servings} ${this._servings === 1 ? "Portion" : "Portionen"}`, x.time ? mins(x.time) : ""].filter(Boolean).join(" · ")];
+      if (x.ingredients?.length) out.push("", "ZUTATEN", ...x.ingredients.map((i) => `[ ] ${[amount(i, k), i.name].filter(Boolean).join(" ")}`));
+      const steps = toPlain(x.steps);
+      if (steps) out.push("", "ZUBEREITUNG", steps);
+      runPrint(this, this._h, c.print_script, { [c.print_field || "text"]: out.join("\n") }, (st) => {
+        this._pstate = st;
+        this._paintBar();
+      });
+    }
+  };
+  define("recipe-card", NovaRecipeCard, { name: "Nova Rezeptliste", description: "Kompakte Rezeptliste mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf.", documentationURL: docUrl("nova-rezeptliste") });
+  var GEN6 = [
+    g2({ name: "name", selector: T }, { name: "icon", selector: I }),
+    { name: "show_header", selector: { boolean: {} } }
+  ];
+  var VIEW2 = [
+    sel("view", [["list", "Liste (kleines Bild, eine Zeile je Rezept)"], ["grid", "Kacheln (großes Bild)"]]),
+    g2({ name: "show_search", selector: { boolean: {} } }, { name: "height", selector: { number: { min: 240, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } })
+  ];
+  var PRINT3 = printSchema([{ name: "print_field", selector: T }]).filter((f3) => f3.name !== "print_style");
+  var LABELS10 = {
+    ...BASE_LABELS,
+    ...PRINT_LABELS,
+    name: "Titel der Karte",
+    show_header: "Kopfzeile anzeigen",
+    view: "Ansicht der Liste",
+    show_search: "Suchfeld anzeigen",
+    height: "Mindesthöhe",
+    print_field: "Feldname im Skript"
+  };
+  var HELPERS10 = {
+    ...PRINT_HELPERS,
+    height: "Im Raster füllt die Karte den Platz aus.",
+    print_script: "Leer = kein Druck-Knopf. Der Knopf sitzt im geöffneten Rezept.",
+    print_field: "Unter diesem Namen bekommt das Skript das Rezept als Klartext (Standard: text)."
+  };
+  var NovaRecipeCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot, c0 = this._config;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const w = r.querySelector(".wrap"), data = { ...RDEF2, ...c0 };
+      const strip3 = (c) => {
+        Object.entries(RDEF2).forEach(([k, x]) => c[k] === x && delete c[k]);
+        return c;
+      };
+      const form = (schema) => this._form(schema, data, (v) => this._emit(strip3(merge(this._config, names(schema), v))));
+      w.append(
+        this._section("general", "mdi:cog-outline", "Allgemein", (b) => b.append(form(GEN6))),
+        this._section("view", "mdi:view-grid-outline", "Ansicht", (b) => b.append(form(VIEW2))),
+        this._section("print", "mdi:printer-pos", "Drucken", (b) => b.append(form(PRINT3)))
+      );
+    }
+  };
+  __publicField(NovaRecipeCardEditor, "labels", LABELS10);
+  __publicField(NovaRecipeCardEditor, "helpers", HELPERS10);
+  __publicField(NovaRecipeCardEditor, "openSections", ["general"]);
+  define("recipe-card-editor", NovaRecipeCardEditor);
+
+  // src/recipe-book.js
+  var DEF7 = { title: "Rezepte", subtitle: "", style: "old", layout: "auto", cover_color: "brown", start_open: false, close_after: 0, turn: "auto" };
+  var NAV_H = 48;
+  var Lite = { slow: null, bad: 0 };
+  var COVERS = ["brown", "red", "green", "blue"];
+  var STYLES2 = ["old", "modern", "fantasy"];
+  var OPEN_MS = 1100;
+  var TURN_MS = 800;
+  var PAGE_RATIO = 0.72;
+  var IMG_MAX = 960;
+  var FONT_URL = "/nova/static/fonts";
+  var fontsLoaded = false;
+  var loadFonts = () => {
+    if (fontsLoaded) return;
+    fontsLoaded = true;
+    const st = document.createElement("style");
+    st.dataset.nova = "recipe-fonts";
+    const ff = (fam, file, w, s = "normal") => `@font-face{font-family:'${fam}';src:url(${FONT_URL}/${file}.woff2?v=1) format('woff2');font-weight:${w};font-style:${s};font-display:swap}`;
+    st.textContent = ff("Nova Hand", "nova-hand-400", 400) + ff("Nova Hand", "nova-hand-700", 700) + ff("Nova Serif", "nova-serif-400", 400) + ff("Nova Serif", "nova-serif-400-italic", 400, "italic");
+    document.head.append(st);
+  };
+  var noise = (freq, oct, rgb, op, type = "fractalNoise", size = 220) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'><filter id='n'><feTurbulence type='${type}' baseFrequency='${freq}' numOctaves='${oct}' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 ${rgb[0]} 0 0 0 0 ${rgb[1]} 0 0 0 0 ${rgb[2]} ${op} 0 0 0 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`)}")`;
+  var PAPER_FIBER = noise(0.85, 3, [0.35, 0.24, 0.1], 0.55);
+  var PAPER_CLOUD = noise(0.012, 3, [0.55, 0.38, 0.12], 0.5, "fractalNoise", 400);
+  var LEATHER_GRAIN = noise(1.4, 2, [0, 0, 0], 0.9, "turbulence", 160);
+  var LEATHER_MOTTLE = noise(0.02, 3, [0.95, 0.8, 0.6], 0.45, "fractalNoise", 420);
+  var rnd = (seed) => () => {
+    seed = seed + 1831565813 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t ^= t + Math.imul(t ^ t >>> 7, 61 | t);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+  var stains = (seed) => {
+    const r = rnd(seed * 7919 + 13), out = [];
+    if (r() < 0.55) {
+      const x = 10 + r() * 80, y = 8 + r() * 84, s = 70 + r() * 70;
+      out.push(`radial-gradient(circle ${s}px at ${x}% ${y}%,transparent 82%,rgba(122,74,24,.16) 88%,rgba(122,74,24,.05) 93%,transparent 97%)`);
+    }
+    const n = 2 + Math.floor(r() * 5);
+    for (let i = 0; i < n; i++) {
+      const x = r() * 100, y = r() * 100, s = 3 + r() * 9;
+      out.push(`radial-gradient(circle ${s}px at ${x}% ${y}%,rgba(140,90,40,${(0.12 + r() * 0.14).toFixed(2)}),transparent)`);
+    }
+    if (r() < 0.35) {
+      const x = r() * 100, y = r() * 100;
+      out.push(`radial-gradient(ellipse 60px 34px at ${x}% ${y}%,rgba(160,110,40,.1),transparent 70%)`);
+    }
+    return out.join(",");
+  };
+  var BOOK_CSS = `
+:host{display:block;height:100%;
+--ink:var(--nova-book-ink,#3a2814);--paper:var(--nova-book-paper,#efe0bb);--leather:var(--nova-book-brown,#6b3b1e);--gold:var(--nova-book-gold,#c9a14a);
+--f-hand:'Nova Hand','Segoe Script','Bradley Hand',cursive;--f-serif:'Nova Serif',Georgia,'Times New Roman',serif;--acc:#8a1f12;--acc2:#1f4f7a}
+:host([cover=red]){--leather:var(--nova-book-red,#5e1a1d)}:host([cover=green]){--leather:var(--nova-book-green,#2e4630)}:host([cover=blue]){--leather:var(--nova-book-blue,#1f2c48)}
+*{box-sizing:border-box}
+.rb{position:relative;height:100%;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;
+font-family:var(--f-serif);color:var(--ink);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.stage{position:relative;perspective:2400px;perspective-origin:50% 40%}
+.book{position:absolute;inset:0;transform-style:preserve-3d;transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1)}
+/* Aufgeschlagen gehören waagrechte Wischgesten dem Buch (Nova Swipe Card blättert dann nicht mit), zugeklappt nicht */
+.book.open{touch-action:pan-y}
+.book.closed{transform:translateX(calc(var(--pw) * -.5))}
+.book.single.closed,.book.single{transform:none}
+/* Seitenblock: Papierkanten unten und rechts (Buchdicke) */
+.block{position:absolute;top:0;bottom:0;right:0;width:var(--pw);border-radius:2px 6px 6px 2px;
+background:repeating-linear-gradient(90deg,#e9dcb8 0 1px,#cdbb8f 1px 2px);box-shadow:3px 4px 0 -1px #bfae84,5px 7px 14px rgba(0,0,0,.45);transform:translate3d(4px,4px,-2px)}
+.double .block.l{right:auto;left:0;transform:translate3d(-4px,4px,-2px);border-radius:6px 2px 2px 6px}
+/* Buchschnitt links erst, wenn dort Seiten liegen – auf der ersten Doppelseite liegt links nur der Einband (wie im echten Buch).
+   visibility statt display: die Ebene bleibt bestehen und wird nicht neu aufgebaut. */
+.single .block.l,.closed .block.l,.at0 .block.l{visibility:hidden}
+/* Seiten */
+.pg,.face{position:absolute;top:0;bottom:0;width:var(--pw);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.pg.r,.leaf{left:auto;right:0}.pg.l{left:0}
+/* Feste Tiefen statt z-index (in 3D zählt nur die Tiefe): Einband innen -3, Buchschnitt -2, Seiten +1, Blatt +3, Einband zu +4.
+   Keine zwei Flächen liegen gleich tief – sonst flackert es in Safari und schwachen WebViews (Z-Fighting). */
+.pg{transform:translateZ(1px)}
+.pg,.leaf .face{contain:layout paint}
+.single .pg.r,.single .leaf{right:auto;left:0}
+.single .pg.l{display:none}
+.paper{background-color:var(--paper);background-image:var(--st),${PAPER_FIBER},${PAPER_CLOUD},
+radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(120,80,30,.22) 100%);background-size:auto,220px 220px,400px 400px,auto;
+box-shadow:inset 0 0 0 1px rgba(110,80,40,.25),inset 0 0 30px rgba(140,95,40,.22)}
+.pg.r.paper,.face.f.paper{border-radius:2px 6px 6px 2px}.pg.l.paper,.face.b.paper{border-radius:6px 2px 2px 6px}
+/* Schatten am Falz */
+.pg.r::before,.leaf .face.f::before{content:"";position:absolute;inset:0 auto 0 0;width:14%;background:linear-gradient(90deg,rgba(60,35,10,.28),rgba(60,35,10,.06) 45%,transparent);pointer-events:none;z-index:2}
+.pg.l::before,.leaf .face.b::before{content:"";position:absolute;inset:0 0 0 auto;width:14%;background:linear-gradient(270deg,rgba(60,35,10,.3),rgba(60,35,10,.06) 45%,transparent);pointer-events:none;z-index:2}
+.single .pg.r::before,.single .leaf .face.f::before{width:5%}
+.in{position:absolute;inset:0;padding:calc(var(--pw) * .09) calc(var(--pw) * .1) calc(var(--pw) * .11);overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:none;
+font-size:clamp(12px,calc(var(--pw) * .036),19px);line-height:1.45}
+.in::-webkit-scrollbar{display:none}
+.no{position:absolute;bottom:calc(var(--pw) * .035);left:0;right:0;text-align:center;font-style:italic;font-size:clamp(10px,calc(var(--pw) * .026),14px);opacity:.55;pointer-events:none}
+.leaf{position:absolute;top:0;bottom:0;width:var(--pw);transform-style:preserve-3d;transform-origin:0 50%;z-index:5;pointer-events:none;will-change:transform;transform:translateZ(3px)}
+.leaf .face{left:0}.leaf .face.b{transform:rotateY(180deg)}
+.leaf .sh{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0}
+.leaf.fwd{animation:turn-f ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) both}.leaf.bwd{animation:turn-b ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) both}
+.leaf .face.f .sh{background:linear-gradient(90deg,rgba(0,0,0,.35),transparent 60%)}.leaf .face.b .sh{background:linear-gradient(270deg,rgba(0,0,0,.35),transparent 60%)}
+.leaf.fwd .face.f .sh,.leaf.bwd .face.b .sh{animation:sh-in ${TURN_MS}ms ease-in both}.leaf.fwd .face.b .sh,.leaf.bwd .face.f .sh{animation:sh-out ${TURN_MS}ms ease-out both}
+.single .leaf.fwd{animation-name:turn-sf}.single .leaf.bwd{animation-name:turn-sb}
+/* Einzelseite: das Blatt blendet aus – die Deckkraft sitzt auf der Seite, nicht am Blatt (opacity am 3D-Blatt würde es flach drücken) */
+.single .leaf.fwd .face.f{animation:fade-out ${TURN_MS}ms linear both}.single .leaf.bwd .face.f{animation:fade-out ${TURN_MS}ms linear reverse both}
+/* Vorbereitet: Blatt steht schon fertig gezeichnet über der Seite, die Animation läuft erst danach los */
+.leaf.prep,.leaf.prep *{animation-play-state:paused!important}
+@keyframes turn-f{from{transform:translateZ(3px) rotateY(0)}to{transform:translateZ(3px) rotateY(-180deg)}}
+@keyframes turn-b{from{transform:translateZ(3px) rotateY(-180deg)}to{transform:translateZ(3px) rotateY(0)}}
+@keyframes turn-sf{from{transform:translateZ(3px) rotateY(0)}to{transform:translateZ(3px) rotateY(-160deg)}}
+@keyframes turn-sb{from{transform:translateZ(3px) rotateY(-160deg)}to{transform:translateZ(3px) rotateY(0)}}
+@keyframes fade-out{0%,70%{opacity:1}to{opacity:0}}
+/* Einfaches Blättern für schwache Geräte (Echo Show, Kiosk-WebView): nur zwei flache Ebenen, die zum Falz hin schmaler werden und
+   auf der anderen Seite wieder aufgehen – mit demselben Schatten. Kein 3D, kein preserve-3d. */
+.book.lite .leaf{transform-style:flat;transform:translateZ(3px);animation:none;will-change:auto}
+.book.lite .leaf .face{will-change:transform;backface-visibility:visible;-webkit-backface-visibility:visible}
+.book.lite .leaf .face.f{transform-origin:0 50%}
+.book.lite .leaf .face.b{left:calc(var(--pw) * -1);transform-origin:100% 50%}
+.book.lite .leaf.fwd .face.f{animation:lt-a ${TURN_MS}ms linear both}.book.lite .leaf.fwd .face.b{animation:lt-b ${TURN_MS}ms linear both}
+.book.lite .leaf.bwd .face.f{animation:lt-b ${TURN_MS}ms linear both}.book.lite .leaf.bwd .face.b{animation:lt-a ${TURN_MS}ms linear both}
+.book.lite.single .leaf.fwd .face.f{animation:lt-s ${TURN_MS * 0.8}ms cubic-bezier(.5,0,.75,.5) both}.book.lite.single .leaf.bwd .face.f{animation:lt-s ${TURN_MS * 0.8}ms cubic-bezier(.5,0,.75,.5) reverse both}
+@keyframes lt-a{0%{transform:scaleX(1);animation-timing-function:cubic-bezier(.45,0,.9,.55)}50%,to{transform:scaleX(0)}}
+@keyframes lt-b{0%,50%{transform:scaleX(0);animation-timing-function:cubic-bezier(.1,.45,.55,1)}to{transform:scaleX(1)}}
+@keyframes lt-s{from{transform:scaleX(1);opacity:1}75%{opacity:1}to{transform:scaleX(.08);opacity:0}}
+@keyframes sh-in{from{opacity:0}to{opacity:1}}@keyframes sh-out{from{opacity:1}to{opacity:0}}
+/* Einband */
+.cover{position:absolute;top:-2%;bottom:-2%;right:-1.5%;width:calc(var(--pw) * 1.03);transform-style:preserve-3d;transform-origin:0 50%;z-index:8;transform:translateZ(4px) rotateY(0);will-change:transform;
+transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1)}
+.single .cover{right:auto;left:0}
+.cover .face{width:100%;top:0;bottom:0;left:0}.cover .face.b{transform:rotateY(180deg)}
+.open .cover{transform:translateZ(-3px) rotateY(-180deg)}
+.single.open .cover{transform:translateZ(-3px) rotateY(-160deg)}
+/* ausblenden über die Seiten des Einbands – opacity am 3D-Einband selbst würde ihn mitten in der Drehung flach drücken */
+.cover .face{transition:opacity .3s}.single.open .cover .face{opacity:0;transition:opacity .3s ${OPEN_MS * 0.7}ms}
+.cover.gone{visibility:hidden}
+.leather{border-radius:3px 10px 10px 3px;background-color:var(--leather);
+background-image:radial-gradient(ellipse at 88% 6%,rgba(255,230,190,.32),transparent 22%),radial-gradient(ellipse at 92% 96%,rgba(255,225,180,.3),transparent 20%),
+radial-gradient(ellipse at 30% 98%,rgba(255,220,170,.16),transparent 25%),radial-gradient(ellipse 40% 30% at 62% 40%,rgba(0,0,0,.18),transparent 70%),
+radial-gradient(ellipse at 20% 15%,rgba(255,220,170,.1),transparent 30%),${LEATHER_MOTTLE},${LEATHER_GRAIN},
+linear-gradient(100deg,rgba(0,0,0,.35),rgba(255,255,255,.06) 18%,rgba(0,0,0,.08) 60%,rgba(0,0,0,.3));
+background-size:auto,auto,auto,auto,auto,420px 420px,160px 160px,auto;background-blend-mode:normal,normal,normal,normal,normal,soft-light,multiply,normal;
+box-shadow:inset 0 0 0 1px rgba(0,0,0,.5),inset 0 0 40px rgba(0,0,0,.5),inset -3px 0 6px rgba(255,220,180,.12),6px 8px 22px rgba(0,0,0,.5)}
+/* Rücken mit Bünden und abgegriffener Kante */
+.spine{position:absolute;inset:0 auto 0 0;width:9%;border-radius:3px 0 0 3px;
+background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,230,190,.12) 40%,rgba(0,0,0,.35)),
+repeating-linear-gradient(180deg,transparent 0 17%,rgba(0,0,0,.35) 17% 18%,rgba(255,220,170,.18) 18% 19%,transparent 19% 21%)}
+.stitch{position:absolute;inset:6% 7% 6% 13%;border:2px dashed rgba(235,205,150,.35);border-radius:6px;box-shadow:0 0 0 1px rgba(0,0,0,.25),inset 0 0 0 1px rgba(0,0,0,.25)}
+.emb{position:absolute;inset:0 0 0 9%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--pw) * .03);text-align:center;padding:0 12%}
+.emb .orn{width:56%;height:auto;opacity:.9}
+.emb h1{margin:0;font-family:var(--f-serif);font-style:italic;font-weight:400;font-size:clamp(22px,calc(var(--pw) * .13),78px);line-height:1.05;
+background:linear-gradient(170deg,#f3dc9a,var(--gold) 45%,#8a6424 70%,#d9b665);-webkit-background-clip:text;background-clip:text;color:transparent;
+filter:drop-shadow(0 1px 0 rgba(0,0,0,.6)) drop-shadow(0 -1px 0 rgba(255,230,180,.15));opacity:.92}
+.emb p{margin:0;font-family:var(--f-hand);font-size:clamp(14px,calc(var(--pw) * .06),34px);color:#e9cf93;opacity:.75;text-shadow:0 1px 0 rgba(0,0,0,.6)}
+.emb .gold{fill:none;stroke:var(--gold);stroke-width:1.2;opacity:.85}
+/* abgewetzte Ecken */
+.wear{position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+background:radial-gradient(circle at 100% 0,rgba(240,210,170,.35),transparent 7%),radial-gradient(circle at 100% 100%,rgba(240,210,170,.32),transparent 7%),
+linear-gradient(180deg,rgba(255,225,180,.12),transparent 3%,transparent 97%,rgba(255,225,180,.12));mix-blend-mode:screen}
+.inside{background-color:#e7d6ae;background-image:var(--st),${PAPER_FIBER},radial-gradient(ellipse at 50% 50%,transparent 50%,rgba(110,70,20,.3)),
+repeating-linear-gradient(45deg,rgba(120,80,30,.05) 0 6px,transparent 6px 12px);border-radius:10px 3px 3px 10px;
+box-shadow:inset 0 0 0 8px var(--leather),inset 0 0 0 9px rgba(0,0,0,.4),inset 0 0 40px rgba(110,70,20,.35)}
+.inside .ded{position:absolute;inset:18% 16%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;
+font-family:var(--f-hand);font-size:clamp(18px,calc(var(--pw) * .085),46px);transform:rotate(-3deg);opacity:.8}
+.inside .ded small{font-size:.55em;opacity:.75}
+.hit{position:absolute;inset:0;cursor:pointer;z-index:9}
+/* Lesebändchen zum Schließen */
+.ribbon{position:absolute;top:calc(100% - 6px);left:calc(var(--bw) / 2 + var(--pw) * .1);width:clamp(14px,calc(var(--pw) * .045),24px);height:calc(var(--tail) + 6px);z-index:7;transform:translateZ(5px);cursor:pointer;border:0;padding:0;
+background:linear-gradient(90deg,#7c1d1d,#b03030 50%,#7c1d1d);clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);box-shadow:0 2px 4px rgba(0,0,0,.4);
+transition:opacity .4s;opacity:0;pointer-events:none}
+.single .ribbon{left:12%}
+.open .ribbon{opacity:1;pointer-events:auto;transition-delay:${OPEN_MS}ms}
+/* Navigation unter dem Buch: Zurück, Inhalt, Weiter – groß genug für Wandpanels; Platz ist immer reserviert (Kartenhöhe bleibt gleich) */
+.nav{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;width:var(--bw);height:${NAV_H}px;margin-top:var(--tail);flex:none;
+opacity:0;pointer-events:none;transition:opacity .35s}
+.rb.isopen .nav{opacity:1;pointer-events:auto;transition-delay:${OPEN_MS * 0.6}ms}
+.nb{min-width:${NAV_H}px;height:${NAV_H}px;display:inline-flex;align-items:center;justify-content:center;gap:.25em;padding:0 1em;border-radius:999px;cursor:pointer;
+font-family:var(--f-hand);font-weight:700;font-size:20px;line-height:1;color:var(--ink);background-color:var(--paper);background-image:${PAPER_FIBER};background-size:220px 220px;
+border:1.5px solid rgba(70,45,20,.45);box-shadow:inset 0 0 12px rgba(140,95,40,.2),0 2px 6px rgba(0,0,0,.35);transition:transform .15s,opacity .2s;-webkit-tap-highlight-color:transparent}
+.nb ha-icon{--mdc-icon-size:24px;flex:none}
+.nb:active:not([disabled]){transform:scale(.94)}
+.nb[disabled]{opacity:.38;cursor:default;box-shadow:inset 0 0 12px rgba(140,95,40,.2)}
+.nav.tight .nb.prev span,.nav.tight .nb.next span{display:none}
+.nav.tight .nb.prev,.nav.tight .nb.next{padding:0}
+/* Inhalt der Seiten */
+h2{margin:0 0 .35em;font-family:var(--f-hand);font-weight:700;font-size:2.15em;line-height:1;color:var(--ink);transform:rotate(-1deg)}
+h3{margin:1em 0 .3em;font-family:var(--f-hand);font-weight:700;font-size:1.45em;line-height:1;border-bottom:1px solid rgba(70,45,20,.3);padding-bottom:.15em}
+h3:first-child{margin-top:0}
+ul.ing{list-style:none;margin:0;padding:0}ul.ing li{padding:.12em 0 .12em 1.1em;position:relative;border-bottom:1px dotted rgba(70,45,20,.22)}
+ul.ing li::before{content:"–";position:absolute;left:.1em;font-family:var(--f-hand);font-weight:700}
+ol.st{list-style:none;margin:0;padding:0;counter-reset:s}ol.st li{counter-increment:s;position:relative;padding:.25em 0 .35em 2em}
+ol.st li::before{content:counter(s);position:absolute;left:0;top:.05em;width:1.45em;height:1.45em;border:1.5px solid rgba(70,45,20,.55);border-radius:50%;
+display:flex;align-items:center;justify-content:center;font-family:var(--f-hand);font-weight:700;font-size:1.05em;line-height:1;transform:rotate(-4deg)}
+.toc h2{text-align:center;transform:none;margin-bottom:.6em}
+.toc .it{display:flex;align-items:baseline;gap:.4em;width:100%;border:0;background:none;color:inherit;font:inherit;padding:.32em 0;cursor:pointer;text-align:left}
+.toc .it .t{font-family:var(--f-hand);font-size:1.35em;line-height:1.1}
+.toc .it .d{flex:1;border-bottom:2px dotted rgba(70,45,20,.35);transform:translateY(-.25em)}
+.toc .it .n{font-style:italic;opacity:.75}
+.toc .it:active .t{text-decoration:underline}
+.msg{font-family:var(--f-hand);font-size:1.35em;line-height:1.25;text-align:center;margin:1em 0;opacity:.85}
+.msg.hint{text-align:left;font-size:1.25em}.msg.hint ol{margin:.4em 0 0;padding-left:1.2em}.msg.hint code{font-family:inherit;background:rgba(120,80,30,.12);padding:0 .2em;border-radius:3px}
+.act{display:flex;flex-wrap:wrap;gap:.5em;justify-content:center;margin-top:1.2em}
+.btn{display:inline-flex;align-items:center;gap:.35em;border:1.5px solid rgba(70,45,20,.5);border-radius:999px;background:rgba(255,248,225,.35);color:var(--ink);
+font-family:var(--f-hand);font-size:1.2em;font-weight:700;padding:.15em .8em .2em;cursor:pointer;line-height:1.2;transition:background-color .2s,transform .15s}
+.btn ha-icon{--mdc-icon-size:1em}
+.btn:active{transform:scale(.95)}.btn.warn{border-color:rgba(150,30,20,.7);color:#8a1f12;background:rgba(200,60,40,.12)}
+.btn.ok{border-color:rgba(40,100,40,.6);color:#2e5e22}
+.btn[disabled]{opacity:.45;cursor:default}.btn.ok[disabled],.btn.warn[disabled]{opacity:1}
+.tools{display:flex;gap:.4em;justify-content:flex-end;margin-top:1.2em}
+.tools .btn{font-size:1em;padding:.1em .6em}
+/* eingeklebtes Foto mit Fotoecken */
+.photo{position:relative;margin:.4em auto 1em;width:86%;padding:4%;background:#f7f1e3;box-shadow:0 2px 6px rgba(60,35,10,.35),0 0 0 1px rgba(0,0,0,.05);transform:rotate(-1.6deg)}
+.photo img{-webkit-user-drag:none;pointer-events:none;display:block;width:100%;aspect-ratio:4/3;object-fit:cover;filter:sepia(.18) saturate(.9) contrast(.96)}
+.photo i{position:absolute;width:16%;aspect-ratio:1;background:linear-gradient(135deg,#3a2a1c,#1b130c 60%,#3d2c1d);box-shadow:0 1px 1px rgba(0,0,0,.3)}
+.photo i::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18),transparent 40%);clip-path:inherit}
+.photo i.tl{top:-2%;left:-2%;clip-path:polygon(0 0,100% 0,0 100%)}.photo i.tr{top:-2%;right:-2%;clip-path:polygon(0 0,100% 0,100% 100%)}
+.photo i.bl{bottom:-2%;left:-2%;clip-path:polygon(0 0,100% 100%,0 100%)}.photo i.br{bottom:-2%;right:-2%;clip-path:polygon(100% 0,100% 100%,0 100%)}
+/* Formular: Karteikarte über dem Buch */
+.form{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(20,12,4,.45);padding:12px;animation:fade .25s}
+.form[hidden]{display:none}
+@keyframes fade{from{opacity:0}}
+.card{position:relative;width:min(640px,100%);max-height:100%;overflow-y:auto;overscroll-behavior:contain;border-radius:6px;padding:20px 22px 18px;
+background-color:#f6ecd2;background-image:${PAPER_FIBER},repeating-linear-gradient(180deg,transparent 0 31px,rgba(80,110,160,.18) 31px 32px),
+linear-gradient(90deg,transparent 46px,rgba(190,60,60,.3) 46px 47px,transparent 47px);box-shadow:0 12px 40px rgba(0,0,0,.5);transform:rotate(-.6deg);font-size:16px}
+.card h2{font-size:2em}
+.card label{display:block;font-family:var(--f-hand);font-weight:700;font-size:1.3em;margin:.6em 0 .15em}
+.card input[type=text],.card textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;
+padding:.45em .6em;outline:none;-webkit-user-select:text;user-select:text}
+.card textarea{min-height:7.5em;resize:vertical;line-height:1.45}
+.card input:focus,.card textarea:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
+.card .pic{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card .pic img{width:110px;height:82px;object-fit:cover;border:4px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transform:rotate(-2deg)}
+.card .pic input[type=file]{display:none}
+.card .row{display:flex;gap:10px;justify-content:flex-end;margin-top:1em;flex-wrap:wrap}
+.card .err{color:#8a1f12;font-family:var(--f-hand);font-size:1.2em;min-height:1.2em;margin-top:.4em}
+.card small{display:block;opacity:.65;font-style:italic}
+@media (prefers-reduced-motion:reduce){.book,.cover,.cover .face,.leaf,.leaf .face,.leaf .sh{transition:none!important;animation-duration:1ms!important}}
+.still .book,.still .cover,.still .cover .face{transition:none!important}
+/* ----- Neu gegenüber dem ersten Buch: Angaben, Portionen, formatierte Zubereitung ----- */
+.meta{margin:-.1em 0 .7em;font-style:italic;opacity:.7;font-size:.92em}
+h3.zl{display:flex;align-items:flex-end;gap:.4em}
+h3 .sv{margin-left:auto;display:inline-flex;align-items:center;gap:.35em;font-family:var(--f-serif);font-weight:400;font-style:italic;font-size:.62em;white-space:nowrap;transform:translateY(-.1em)}
+.sb{width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(70,45,20,.5);background:rgba(255,248,225,.35);color:var(--ink);font:inherit;font-style:normal;font-weight:700;font-size:16px;line-height:1;
+cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}
+.sb:active{transform:scale(.88)}
+.sb[disabled]{opacity:.35;cursor:default}
+ul.ing li .q{display:inline-block;margin-right:.35em;font-variant-numeric:tabular-nums}
+ul.ing li .q[hidden]{display:none}
+ul.ing li .q.bump{animation:q-bump .35s ease}
+@keyframes q-bump{40%{transform:scale(1.25)}}
+ol.st li p{margin:0}
+.in .fs-s{font-size:.85em}.in .fs-l{font-size:1.2em}.in .c-accent{color:var(--acc2)}.in .c-warn{color:var(--acc)}.in .c-muted{opacity:.55}
+.in u{text-decoration-thickness:1px;text-underline-offset:.15em}
+/* Formular: Felder nebeneinander, Zubereitung mit Formatierungsleiste (Farben des Papiers statt Nova-Glas) */
+.card{--nv-tint:70,45,20;--nv-fg:var(--ink);--nv-active:#7a4a1c;--nv-active-fg:#fff8e1;--nv-text-accent:var(--acc2);--nv-text-warn:var(--acc);--nv-glow:0%;color:var(--ink)}
+.card .two{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.card input[type=number]{width:100%;font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;padding:.45em .6em;outline:none}
+.card .rte{min-height:7.5em;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;padding:.45em .6em;outline:none;
+-webkit-user-select:text;user-select:text;margin-top:6px}
+.card .rte:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
+/* Kapitel-Zeile über dem Rezepttitel gibt es nur im Fantasy Book */
+.chap{display:none}
+
+/* ===== Modern Book: schlicht, grau, ohne Gebrauchsspuren ===== */
+:host([book=modern]) .nb{font-weight:600;font-size:15px;letter-spacing:.01em;background-image:none;border:1px solid rgba(0,0,0,.12);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.22)}
+:host([book=modern]) .nb[disabled]{box-shadow:none}
+:host([book=modern]){--f-hand:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;--f-serif:var(--f-hand);--paper:#f3f3f1;--ink:#24272c;--gold:#d7dadf;--leather:#4a4e55;--acc:#b3261e;--acc2:#2b5c8a}
+:host([book=modern][cover=red]){--leather:#6d4a4f}:host([book=modern][cover=green]){--leather:#4a5a52}:host([book=modern][cover=blue]){--leather:#44506a}
+:host([book=modern]) .paper{background-image:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+:host([book=modern]) .block{background:#e4e4e1;box-shadow:2px 3px 0 -1px #cfcfcb,4px 6px 14px rgba(0,0,0,.3)}
+:host([book=modern]) .pg.r::before,:host([book=modern]) .leaf .face.f::before{background:linear-gradient(90deg,rgba(0,0,0,.14),rgba(0,0,0,.03) 45%,transparent)}
+:host([book=modern]) .pg.l::before,:host([book=modern]) .leaf .face.b::before{background:linear-gradient(270deg,rgba(0,0,0,.14),rgba(0,0,0,.03) 45%,transparent)}
+:host([book=modern]) .leather{border-radius:3px 8px 8px 3px;background-image:linear-gradient(100deg,rgba(0,0,0,.2),rgba(255,255,255,.06) 18%,rgba(0,0,0,.03) 60%,rgba(0,0,0,.16));background-size:auto;background-blend-mode:normal;
+box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),6px 8px 22px rgba(0,0,0,.35)}
+:host([book=modern]) .spine{background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(255,255,255,.07) 60%,rgba(0,0,0,.14))}
+:host([book=modern]) .stitch,:host([book=modern]) .wear,:host([book=modern]) .emb .orn{display:none}
+:host([book=modern]) .emb{align-items:flex-start;justify-content:flex-end;text-align:left;padding:0 10% 14%;gap:calc(var(--pw) * .015)}
+:host([book=modern]) .emb h1{font-style:normal;font-weight:300;letter-spacing:-.01em;background:none;color:#f1f2f4;filter:none;opacity:1;font-size:clamp(20px,calc(var(--pw) * .11),64px)}
+:host([book=modern]) .emb h1::after{content:"";display:block;width:2.2em;height:2px;background:currentColor;opacity:.5;margin-top:.35em}
+:host([book=modern]) .emb p{color:#f1f2f4;opacity:.6;text-shadow:none;font-size:clamp(12px,calc(var(--pw) * .045),24px)}
+:host([book=modern]) .inside{background-color:#e9e9e6;background-image:none;box-shadow:inset 0 0 0 8px var(--leather)}
+:host([book=modern]) .inside .ded{transform:none;font-weight:300;opacity:.6}
+:host([book=modern]) h2{transform:none;font-weight:600;font-size:1.7em;letter-spacing:-.01em;line-height:1.1;margin-bottom:.5em}
+:host([book=modern]) h3{font-weight:600;font-size:.82em;text-transform:uppercase;letter-spacing:.08em;border-bottom-color:rgba(0,0,0,.12);padding-bottom:.45em;color:rgba(36,39,44,.6)}
+:host([book=modern]) h3 .sv{font-style:normal;font-size:1.05em;text-transform:none;letter-spacing:0;color:var(--ink)}
+:host([book=modern]) .sb{border:1px solid rgba(0,0,0,.18);background:rgba(0,0,0,.04);font-weight:400}
+:host([book=modern]) ul.ing li{border-bottom:1px solid rgba(0,0,0,.07);padding-left:0}
+:host([book=modern]) ul.ing li::before{content:none}
+:host([book=modern]) ul.ing li .q{font-weight:600}
+:host([book=modern]) ol.st li::before{transform:none;border:0;background:rgba(0,0,0,.08);font-weight:600;font-size:.8em;width:1.8em;height:1.8em}
+:host([book=modern]) .toc h2{text-align:left}
+:host([book=modern]) .toc .it .t{font-size:1.05em}
+:host([book=modern]) .toc .it .d{border-bottom:1px solid rgba(0,0,0,.12)}
+:host([book=modern]) .toc .it .n,:host([book=modern]) .no,:host([book=modern]) .meta{font-style:normal}
+:host([book=modern]) .msg{font-size:1em;opacity:.65}
+:host([book=modern]) .btn{font-size:.9em;font-weight:600;border:1px solid rgba(0,0,0,.2);background:rgba(0,0,0,.04);padding:.45em 1em}
+:host([book=modern]) .tools .btn{font-size:.85em;padding:.4em .9em}
+:host([book=modern]) .photo{transform:none;padding:0;background:none;box-shadow:none;width:100%}
+:host([book=modern]) .photo img{filter:none;border-radius:8px}
+:host([book=modern]) .photo i{display:none}
+:host([book=modern]) .ribbon{background:#8b9099}
+:host([book=modern]) .card{transform:none;background-color:#f6f6f4;background-image:none;border-radius:12px;--nv-tint:0,0,0;--nv-active:#4a4e55;--nv-active-fg:#fff}
+:host([book=modern]) .card label{font-size:.85em;font-weight:600;opacity:.75}
+:host([book=modern]) .card h2{font-size:1.4em}
+:host([book=modern]) .card .pic img{transform:none;border:0;border-radius:6px}
+:host([book=modern]) .card .err{font-size:.9em}
+
+/* ===== Fantasy Book: hochwertige Hardcover-Ausgabe – matter Einband, Goldfolie, Farbschnitt, sauberes Papier, Kapitel-Optik.
+   Bewusst ohne Filter, Texturen und Dauer-Animationen (läuft auch auf dem Echo Show). ===== */
+
+
+:host([book=fantasy]){--f-hand:'Nova Serif',Georgia,'Times New Roman',serif;--f-serif:'Nova Serif',Georgia,'Times New Roman',serif;--paper:#f6efdd;--ink:#2a2420}
+:host([book=fantasy]) .paper,:host([book=fantasy]) .pg,:host([book=fantasy]) .face.paper{--st:none;background-image:none;background-color:var(--paper);box-shadow:inset 0 0 0 1px rgba(60,40,20,.07)}
+:host([book=fantasy]) .pg.r::before,:host([book=fantasy]) .leaf .face.f::before{width:9%;background:linear-gradient(90deg,rgba(40,28,15,.16),rgba(40,28,15,.03) 45%,transparent)}
+:host([book=fantasy]) .pg.l::before,:host([book=fantasy]) .leaf .face.b::before{width:9%;background:linear-gradient(270deg,rgba(40,28,15,.18),rgba(40,28,15,.03) 45%,transparent)}
+:host([book=fantasy]) .block{background:var(--edge);box-shadow:inset 0 0 0 1px rgba(214,183,110,.3),2px 3px 0 -1px rgba(0,0,0,.4),4px 7px 14px rgba(0,0,0,.4);transform:translate3d(6px,6px,-2px)}
+:host([book=fantasy]) .double .block.l{transform:translate3d(-6px,6px,-2px)}
+:host([book=fantasy]) .leather{border-radius:2px 6px 6px 2px;background-color:var(--leather);background-image:linear-gradient(100deg,rgba(0,0,0,.3),rgba(255,255,255,.05) 11%,transparent 28%,rgba(0,0,0,.1));
+background-size:auto;background-blend-mode:normal;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45),5px 7px 18px rgba(0,0,0,.45)}
+:host([book=fantasy]) .spine{width:7%;border-radius:2px 0 0 2px;background:linear-gradient(90deg,rgba(0,0,0,.4),rgba(255,255,255,.07) 55%,rgba(0,0,0,.3))}
+:host([book=fantasy]) .wear{display:none}
+:host([book=fantasy]) .emb{inset:0 0 0 7%}
+:host([book=fantasy]) .emb h1{font-style:normal;font-weight:400;background:linear-gradient(180deg,#f3dfa6,var(--gold) 50%,#a9823a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:none;opacity:1}
+:host([book=fantasy]) .emb p{font-family:var(--f-serif);font-style:italic;color:var(--gold);opacity:.85;text-shadow:none}
+:host([book=fantasy]) .emb .gold{stroke:var(--gold);opacity:1}
+:host([book=fantasy]) .inside{background-color:var(--leather);background-image:var(--endpaper);box-shadow:inset 0 0 0 14px var(--leather),inset 0 0 0 15px rgba(214,183,110,.35),inset 0 0 0 1px rgba(0,0,0,.4)}
+:host([book=fantasy]) .inside .ded{inset:30% 18%;transform:none;font-family:var(--f-serif);font-variant:small-caps;letter-spacing:.08em;font-size:clamp(15px,calc(var(--pw) * .06),30px);color:var(--ink);background:var(--paper);
+box-shadow:0 0 0 1px var(--gold),0 0 0 4px var(--paper),0 0 0 5px var(--gold);opacity:1}
+:host([book=fantasy]) .inside .ded small{font-variant:normal;font-style:italic;letter-spacing:0}
+:host([book=fantasy]) h2{font-family:var(--f-serif);font-weight:400;transform:none;text-align:center;font-size:1.85em;line-height:1.12;margin-bottom:.25em}
+:host([book=fantasy]) h2::first-letter{color:var(--acc)}
+:host([book=fantasy]) .meta{text-align:center;font-style:italic;opacity:.65;padding-bottom:16px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%2010%22%3E%3Cpath%20d%3D%22M2%205H50M70%205H118%22%20stroke%3D%22%239a8255%22%20stroke-width%3D%22.8%22%2F%3E%3Cpath%20d%3D%22M60%201l4%204-4%204-4-4z%22%20fill%3D%22%239a8255%22%2F%3E%3Ccircle%20cx%3D%2253%22%20cy%3D%225%22%20r%3D%221%22%20fill%3D%22%239a8255%22%2F%3E%3Ccircle%20cx%3D%2267%22%20cy%3D%225%22%20r%3D%221%22%20fill%3D%22%239a8255%22%2F%3E%3C%2Fsvg%3E") bottom center/46% 9px no-repeat}
+:host([book=fantasy]) h3{font-family:var(--f-serif);font-weight:400;font-variant:small-caps;letter-spacing:.14em;font-size:1.08em;border:0;padding:0;margin:1.1em 0 .55em;color:var(--acc)}
+:host([book=fantasy]) h3 .sv{font-variant:normal;letter-spacing:0;color:var(--ink);font-size:.8em}
+:host([book=fantasy]) .sb{width:28px;height:28px;border:1px solid rgba(60,40,20,.3);background:transparent;font-weight:400;font-size:15px}
+:host([book=fantasy]) ul.ing li{border-bottom:1px solid rgba(60,40,20,.09);padding-left:1em}
+:host([book=fantasy]) ul.ing li::before{content:"◆";font-size:.45em;top:.85em;color:var(--acc);font-family:var(--f-serif)}
+:host([book=fantasy]) ol.st li{padding-left:1.8em}
+:host([book=fantasy]) ol.st li::before{content:counter(s);border:0;transform:none;font-family:var(--f-serif);font-weight:400;font-style:italic;font-size:1.15em;color:var(--acc);width:1.2em;justify-content:flex-start}
+:host([book=fantasy]) .toc h2{font-variant:small-caps;letter-spacing:.12em;padding-bottom:18px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%2010%22%3E%3Cpath%20d%3D%22M2%205H50M70%205H118%22%20stroke%3D%22%239a8255%22%20stroke-width%3D%22.8%22%2F%3E%3Cpath%20d%3D%22M60%201l4%204-4%204-4-4z%22%20fill%3D%22%239a8255%22%2F%3E%3Ccircle%20cx%3D%2253%22%20cy%3D%225%22%20r%3D%221%22%20fill%3D%22%239a8255%22%2F%3E%3Ccircle%20cx%3D%2267%22%20cy%3D%225%22%20r%3D%221%22%20fill%3D%22%239a8255%22%2F%3E%3C%2Fsvg%3E") bottom center/52% 9px no-repeat;margin-bottom:.8em}
+:host([book=fantasy]) .toc .it .t{font-family:var(--f-serif);font-size:1.08em}
+:host([book=fantasy]) .toc .it .d{border-bottom:1px dotted rgba(60,40,20,.35)}
+:host([book=fantasy]) .toc .it .n{font-style:normal;opacity:.7}
+:host([book=fantasy]) .no{font-style:normal;letter-spacing:.15em;opacity:.5}
+:host([book=fantasy]) .msg{font-family:var(--f-serif);font-style:italic;font-size:1.05em;opacity:.7}
+:host([book=fantasy]) .btn{font-family:var(--f-serif);font-weight:400;font-variant:small-caps;letter-spacing:.06em;font-size:1em;border:1px solid rgba(60,40,20,.3);background:transparent;padding:.3em 1em}
+:host([book=fantasy]) .tools .btn{font-size:.85em}
+:host([book=fantasy]) .photo{transform:none;padding:0;background:none;box-shadow:0 1px 5px rgba(0,0,0,.2);width:100%}:host([book=fantasy]) .photo i{display:none}:host([book=fantasy]) .photo img{filter:none}
+:host([book=fantasy]) .ribbon{background:var(--rib);clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%);box-shadow:none}
+:host([book=fantasy]) .nb{font-family:var(--f-serif);font-variant:small-caps;letter-spacing:.07em;font-weight:400;font-size:19px;color:var(--gold);background-color:var(--leather);background-image:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.15));
+border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
+
+:host([book=fantasy]){--leather:#1b2338;--gold:#d6b76e;--acc:#7a5a1f;--rib:linear-gradient(90deg,#9c7a2e,#f1d68e 42%,#c9a24e 58%,#8a6a25);
+--edge:linear-gradient(135deg,rgba(214,183,110,.22),rgba(214,183,110,.06) 50%,rgba(214,183,110,.2)),var(--leather);
+--endpaper:repeating-linear-gradient(90deg,transparent 0 13px,rgba(214,183,110,.28) 13px 14px),repeating-linear-gradient(0deg,transparent 0 13px,rgba(214,183,110,.14) 13px 14px)}
+:host([book=fantasy]) .stitch{display:block;inset:0 0 0 7%;border:0;border-radius:0;box-shadow:none;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20140%22%20preserveAspectRatio%3D%22none%22%3E%3Cg%20fill%3D%22none%22%20stroke-width%3D%221.6%22%3E%3Cpath%20stroke%3D%22rgba(0%2C0%2C0%2C.45)%22%20d%3D%22M10%2010h80v120H10z%20M18%2018h64v104H18z%22%2F%3E%3Cpath%20stroke%3D%22rgba(255%2C255%2C255%2C.09)%22%20d%3D%22M10%2011h80v120H10z%20M18%2019h64v104H18z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") center/100% 100% no-repeat}
+:host([book=fantasy]) .emb .orn{display:none}
+:host([book=fantasy]) .emb::before,:host([book=fantasy]) .emb::after{content:"";width:56%;aspect-ratio:200/60;flex:none;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20200%2060%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23d6b76e%22%20stroke-width%3D%221%22%3E%3Cpath%20d%3D%22M100%2058V2%22%2F%3E%3Cpath%20d%3D%22M100%2058L35.1%2037.0%22%2F%3E%3Cpath%20d%3D%22M100%2058L45.6%2022.8%22%2F%3E%3Cpath%20d%3D%22M100%2058L60.9%2011.6%22%2F%3E%3Cpath%20d%3D%22M100%2058L79.5%204.4%22%2F%3E%3Cpath%20d%3D%22M100%2058L100.0%202.0%22%2F%3E%3Cpath%20d%3D%22M100%2058L120.5%204.4%22%2F%3E%3Cpath%20d%3D%22M100%2058L139.1%2011.6%22%2F%3E%3Cpath%20d%3D%22M100%2058L154.4%2022.8%22%2F%3E%3Cpath%20d%3D%22M100%2058L164.9%2037.0%22%2F%3E%3Cpath%20d%3D%22M30%2058a70%2056%200%200%201%20140%200%22%2F%3E%3Cpath%20d%3D%22M52%2058a48%2038%200%200%201%2096%200%22%2F%3E%3Cpath%20d%3D%22M2%2058H198%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") center/contain no-repeat}
+:host([book=fantasy]) .emb::before{order:-1;margin-bottom:calc(var(--pw) * .02)}:host([book=fantasy]) .emb::after{order:9;margin-top:calc(var(--pw) * .02);transform:scaleY(-1)}
+:host([book=fantasy]) .emb h1{text-transform:uppercase;letter-spacing:.2em;text-indent:.2em;font-size:clamp(16px,calc(var(--pw) * .085),48px);padding:.45em 0;border-top:1px solid var(--gold);border-bottom:1px solid var(--gold)}
+:host([book=fantasy]) .emb p{letter-spacing:.06em;text-indent:.06em}
+:host([book=fantasy]) h2::first-letter{font-size:1.3em}
+
+:host([book=fantasy][cover=brown]){--leather:#1b2338}:host([book=fantasy][cover=red]){--leather:#4b1622}:host([book=fantasy][cover=green]){--leather:#173229}:host([book=fantasy][cover=blue]){--leather:#1b2338}
+:host([book=fantasy]) .chap{display:block;text-align:center;font-family:var(--f-serif);font-size:.62em;letter-spacing:.35em;text-transform:uppercase;color:var(--acc);margin:0 0 .9em}
+:host([book=fantasy]) .card{transform:none;background-color:var(--paper);background-image:none;border-radius:4px;box-shadow:0 0 0 1px var(--gold),0 0 0 5px var(--paper),0 0 0 6px var(--gold),0 12px 40px rgba(0,0,0,.55);--nv-active:var(--leather);--nv-active-fg:var(--gold)}
+:host([book=fantasy]) .card h2{font-variant:small-caps;letter-spacing:.06em}
+:host([book=fantasy]) .card label{font-family:var(--f-serif);font-variant:small-caps;font-weight:400;letter-spacing:.1em;font-size:1em;color:var(--acc)}
+:host([book=fantasy]) .card .err{font-style:italic;font-size:1em}
+@media (prefers-reduced-motion:reduce){ul.ing li .q.bump{animation:none}}
+`;
+  var ORN = `<svg class="orn" viewBox="0 0 200 24" aria-hidden="true"><path class="gold" d="M4 12H78M122 12H196M84 12c4-8 12-8 16 0s12 8 16 0M84 12c4 8 12 8 16 0s12-8 16 0"/><circle cx="100" cy="12" r="2.2" fill="currentColor" class="gold"/></svg>`;
+  var roman = (n) => {
+    if (!(n > 0)) return "";
+    let out = "";
+    for (const [v, t] of [[1e3, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]]) while (n >= v) {
+      out += t;
+      n -= v;
+    }
+    return out;
+  };
+  function stepsHtml(html) {
+    const t = document.createElement("template");
+    t.innerHTML = sanitize(html || "");
+    const out = [];
+    let open = false;
+    const li = (h) => {
+      if (!h.replace(/<br\s*\/?>|&nbsp;|\s/g, "")) return;
+      if (!open) {
+        out.push('<ol class="st">');
+        open = true;
+      }
+      out.push(`<li>${h}</li>`);
+    };
+    const close = () => {
+      if (open) {
+        out.push("</ol>");
+        open = false;
+      }
+    };
+    [...t.content.childNodes].forEach((n) => {
+      if (n.nodeType === 3) {
+        if (n.textContent.trim()) li(esc(n.textContent));
+        return;
+      }
+      if (n.nodeType !== 1) return;
+      if (n.localName === "h3") {
+        close();
+        out.push(`<h3>${n.innerHTML}</h3>`);
+      } else if (n.localName === "ul") [...n.children].forEach((c) => li(c.innerHTML));
+      else li(n.localName === "p" ? n.innerHTML : n.outerHTML);
+    });
+    close();
+    return out.join("");
+  }
+  var NovaRecipeBookCard = class extends HTMLElement {
+    static getConfigElement() {
+      return document.createElement(tag("recipe-book-card-editor"));
+    }
+    static getStubConfig() {
+      return {};
+    }
+    setConfig(c) {
+      if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      const was = this._c;
+      this._c = { ...DEF7, ...c };
+      this.setAttribute("cover", COVERS.includes(this._c.cover_color) ? this._c.cover_color : "brown");
+      this.setAttribute("book", STYLES2.includes(this._c.style) ? this._c.style : "old");
+      if (this._e) {
+        if (!was || was.title !== this._c.title || was.subtitle !== this._c.subtitle) this._coverText();
+        if (this._vis && this._c.style !== "modern") loadFonts();
+        this._resize(true);
+      }
+    }
+    set hass(h) {
+      this._h = h;
+      if (!this._c) return;
+      if (!this._e) this._build();
+      this._watch();
+    }
+    getCardSize() {
+      return 8;
+    }
+    getGridOptions() {
+      return { columns: 12, rows: 8, min_columns: 6, min_rows: 5 };
+    }
+    connectedCallback() {
+      this._quiet = inPicker(this);
+      this._stopVis?.();
+      this._stopVis = watchVisible(this, (v) => {
+        this._vis = v;
+        if (v && this._c?.style !== "modern") loadFonts();
+        this._e?.rb.classList.toggle("live", v && !this._quiet);
+      });
+      if (!this._e && this._c && this._h) this._build();
+      if (this._e) {
+        this._ro?.observe(this);
+        this._watch();
+      }
+    }
+    disconnectedCallback() {
+      this._ro?.disconnect();
+      this._stopVis?.();
+      this._stopVis = null;
+      this._off?.();
+      this._off = null;
+      clearTimeout(this._idle);
+      clearTimeout(this._tt);
+      clearTimeout(this._delT);
+      clearTimeout(this._ct);
+    }
+    /* ---------- Aufbau ---------- */
+    _build() {
+      const r = this.shadowRoot || this.attachShadow({ mode: "open" });
+      r.innerHTML = `<style>${NOVA_VARS}${RICH_CSS}${BOOK_CSS}</style><div class="rb"><div class="stage"><div class="book closed">
+<div class="block l"></div><div class="block r"></div>
+<div class="pg l paper"><div class="in"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="no"></div></div>
+<div class="cover"><div class="face f leather"><div class="spine"></div><div class="stitch"></div><div class="emb">${ORN}<h1></h1><p></p>${ORN}</div><div class="wear"></div></div>
+<div class="face b inside"><div class="ded"></div></div><div class="hit" role="button" aria-label="Buch öffnen"></div></div>
+<button class="ribbon" aria-label="Buch schließen" title="Buch schließen"></button>
+</div></div><nav class="nav" aria-label="Blättern"><button class="nb prev" aria-label="Zurück"><ha-icon icon="mdi:chevron-left"></ha-icon><span>Zurück</span></button>
+<button class="nb toc"><ha-icon icon="mdi:format-list-bulleted"></ha-icon><span>Inhalt</span></button>
+<button class="nb next" aria-label="Weiter"><span>Weiter</span><ha-icon icon="mdi:chevron-right"></ha-icon></button></nav><div class="form" hidden></div></div>`;
+      const q = (s) => r.querySelector(s);
+      this._e = {
+        rb: q(".rb"),
+        stage: q(".stage"),
+        book: q(".book"),
+        L: q(".pg.l"),
+        R: q(".pg.r"),
+        cover: q(".cover"),
+        ded: q(".ded"),
+        h1: q(".emb h1"),
+        sub: q(".emb p"),
+        form: q(".form"),
+        nav: q(".nav"),
+        prev: q(".nb.prev"),
+        toc: q(".nb.toc"),
+        next: q(".nb.next")
+      };
+      this._e.cover.style.setProperty("--st", stains(99));
+      this._e.cover.querySelector(".inside").style.setProperty("--st", stains(98));
+      this._e.rb.classList.toggle("live", !!this._vis && !this._quiet);
+      this._sp = 0;
+      this._open = false;
+      this._serv = /* @__PURE__ */ new Map();
+      this._coverText();
+      q(".hit").addEventListener("click", () => this._setOpen(true));
+      q(".ribbon").addEventListener("click", () => this._setOpen(false));
+      this._e.prev.addEventListener("click", () => this._go(this._sp - 1));
+      this._e.next.addEventListener("click", () => this._go(this._sp + 1));
+      this._e.toc.addEventListener("click", () => this._go(0));
+      this._gestures();
+      this._ro = new ResizeObserver(() => this._resize());
+      if (this.isConnected) this._ro.observe(this);
+      if (this._c.start_open && !this._quiet) this._setOpen(true, false);
+    }
+    _coverText() {
+      const c = this._c, e = this._e;
+      e.h1.textContent = c.title || DEF7.title;
+      e.sub.textContent = c.subtitle || "";
+      e.sub.hidden = !c.subtitle;
+      e.ded.innerHTML = `<span>${esc(c.title || DEF7.title)}</span>${c.subtitle ? `<small>${esc(c.subtitle)}</small>` : ""}`;
+    }
+    // Größe: Seite im Verhältnis 0,72, so groß wie der Platz erlaubt. Ohne feste Höhe (Masonry) ergibt sich die Höhe aus der Breite.
+    _resize(force) {
+      const e = this._e, c = this._c;
+      if (!e) return;
+      const W2 = this.clientWidth || 0, Hh = this.clientHeight || 0;
+      if (!W2) return;
+      const auto = Hh < 150;
+      const dbl = c.layout === "double" || c.layout !== "single" && W2 >= 560 && (auto || W2 / Math.max(Hh, 1) > 1.05);
+      const pad = Math.max(10, W2 * 0.025);
+      let pw = dbl ? (W2 - 2 * pad) / 2 : W2 - 2 * pad;
+      const tail = (p) => Math.round(Math.min(40, Math.max(22, p * 0.08)));
+      if (!auto) pw = Math.min(pw, (Hh - 2 * pad - NAV_H - tail(pw)) * PAGE_RATIO);
+      pw = Math.max(120, Math.floor(pw));
+      const tl = tail(pw);
+      const ph = Math.floor(pw / PAGE_RATIO), bw = dbl ? 2 * pw : pw;
+      if (auto) e.rb.style.height = `${ph + 2 * pad + NAV_H + tl}px`;
+      else e.rb.style.removeProperty("height");
+      e.rb.style.setProperty("--tail", `${tl}px`);
+      e.nav.classList.toggle("tight", bw < 360);
+      e.stage.style.width = `${bw}px`;
+      e.stage.style.height = `${ph}px`;
+      e.rb.style.setProperty("--pw", `${pw}px`);
+      e.rb.style.setProperty("--bw", `${bw}px`);
+      if (force || dbl !== this._dbl) {
+        const spreads = this._spreads(this._dbl), cur2 = spreads[this._sp];
+        this._dbl = dbl;
+        e.book.classList.toggle("double", dbl);
+        e.book.classList.toggle("single", !dbl);
+        const ns = this._spreads(dbl), key = cur2 && (cur2.rid ?? cur2.key);
+        const i = ns.findIndex((s) => (s.rid ?? s.key) === key);
+        this._sp = i >= 0 ? i : Math.min(this._sp, ns.length - 1);
+        this._paint();
+      }
+    }
+    /* ---------- Daten ---------- */
+    // Rezepte aus der Nova-Integration (ein Abo für alle Rezept-Karten); in der Kartenauswahl zwei Beispielrezepte
+    _watch() {
+      if (!this._h || !this.isConnected || !this._e) return;
+      if (this._quiet) {
+        if (!this._recipes) {
+          this._recipes = DEMO;
+          this._paint();
+        }
+        return;
+      }
+      if (this._off) return;
+      this._off = watch(this._h, "recipes", this, (d, err) => {
+        this._units = d?.units || this._units;
+        this._setRecipes(d?.recipes, err);
+      });
+    }
+    _setRecipes(list2, err) {
+      const spreads = this._spreads(this._dbl), cur2 = spreads[this._sp], key = cur2 && (cur2.rid ?? cur2.key);
+      this._err = list2 ? null : err || null;
+      this._recipes = list2 ? [...list2].sort((a, b) => String(a.title).localeCompare(String(b.title), "de")) : err ? [] : null;
+      const ns = this._spreads(this._dbl);
+      if (this._jump) {
+        const i = ns.findIndex((s) => s.rid === this._jump);
+        if (i >= 0) {
+          this._jump = null;
+          this._sp = i;
+        }
+      } else {
+        const i = ns.findIndex((s) => (s.rid ?? s.key) === key);
+        this._sp = i >= 0 ? i : Math.max(0, Math.min(this._sp, ns.length - 1));
+      }
+      this._paint();
+    }
+    _servings(r) {
+      return this._serv.get(r.id) || r.servings || 1;
+    }
+    /* ---------- Seiten ---------- */
+    // Doppelseiten: [Vorsatz | Inhalt], dann je Rezept [Titel, Foto, Zutaten | Zubereitung]. Einzelseiten: Inhalt, dann je Rezept eine Seite.
+    _spreads(dbl = this._dbl) {
+      const rs = this._recipes || [];
+      return dbl ? [{ key: "toc", L: { k: "end" }, R: { k: "toc", n: 1 } }, ...rs.map((r, i) => ({ rid: r.id, L: { k: "A", r, n: 2 * i + 2 }, R: { k: "B", r, n: 2 * i + 3 } }))] : [{ key: "toc", P: { k: "toc", n: 1 } }, ...rs.map((r, i) => ({ rid: r.id, P: { k: "R", r, n: i + 2 } }))];
+    }
+    _pageNo(i) {
+      return this._dbl ? 2 * i + 2 : i + 2;
+    }
+    _paint() {
+      const e = this._e;
+      if (!e || this._dbl == null || this._turning) return;
+      const s = this._spreads()[this._sp] || this._spreads()[0];
+      this._navState(this._sp);
+      e.book.classList.toggle("at0", this._sp === 0);
+      if (this._dbl) {
+        this._fill(e.L, s.L);
+        this._fill(e.R, s.R);
+        e.L.style.visibility = s.L.k === "end" ? "hidden" : "";
+      } else this._fill(e.R, s.P);
+    }
+    // Seite füllen: Inhalt + Seitenzahl + eigene Flecken
+    _fill(pg, d) {
+      const inn = pg.querySelector(".in"), no = pg.querySelector(".no");
+      const sig = JSON.stringify([d.k, d.r?.id, d.r?.updated, d.n, d.k === "toc" ? [this._recipes?.length, this._err, (this._recipes || []).map((r) => r.title)] : 0, this._dbl]);
+      if (pg._sig === sig) return;
+      pg._sig = sig;
+      pg.style.setProperty("--st", stains(d.n || 0));
+      inn.replaceChildren(this._content(d));
+      inn.scrollTop = 0;
+      no.textContent = d.n && d.k !== "end" ? `— ${d.n} —` : "";
+    }
+    _content(d) {
+      const box = document.createElement("div");
+      const r = d.r;
+      if (d.k === "end") {
+        box.className = "inside";
+        return box;
+      }
+      if (d.k === "toc") {
+        box.className = "toc";
+        box.innerHTML = "<h2>Inhalt</h2>";
+        const msg = (t) => {
+          const m = document.createElement("div");
+          m.className = "msg";
+          m.textContent = t;
+          box.append(m);
+        };
+        if (this._err) {
+          msg(storeHint(this._err, "recipes")[1]);
+          return box;
+        }
+        if (!this._recipes) {
+          msg("Einen Moment, die Seiten werden geblättert …");
+          return box;
+        }
+        if (!this._recipes.length) box.insertAdjacentHTML("beforeend", '<div class="msg">Noch keine Rezepte.<br>Trag das erste ein!</div>');
+        this._recipes.forEach((x, i) => {
+          const b = document.createElement("button");
+          b.className = "it";
+          b.innerHTML = '<span class="t"></span><span class="d"></span><span class="n"></span>';
+          b.firstChild.textContent = x.title;
+          b.lastChild.textContent = this._pageNo(i);
+          b.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            this._go(i + 1);
+          });
+          box.append(b);
+        });
+        if (!this._quiet) {
+          const act = document.createElement("div");
+          act.className = "act";
+          act.append(this._btn("mdi:plus", "Neues Rezept", () => this._edit(null)));
+          box.append(act);
+        }
+        return box;
+      }
+      const src = r.image ? imageUrl(this._h, "recipes", r.image) : "", meta = [r.time ? mins(r.time) : "", ...r.tags || []].filter(Boolean).join(" · ");
+      const head = () => `<div class="chap">Kapitel ${roman((this._recipes || []).indexOf(r) + 1)}</div><h2>${esc(r.title)}</h2>${meta ? `<div class="meta">${esc(meta)}</div>` : ""}${src ? `<div class="photo"><img alt="" loading="lazy" src="${esc(src)}"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>` : ""}`;
+      const ing = () => r.ingredients?.length ? `<h3 class="zl"><span>Zutaten</span><span class="sv"><button class="sb" data-d="-1" aria-label="Weniger Portionen">−</button><span class="svn"></span><button class="sb" data-d="1" aria-label="Mehr Portionen">+</button></span></h3>
+<ul class="ing">${r.ingredients.map(() => '<li><span class="q"></span><span class="nm"></span></li>').join("")}</ul>` : "";
+      const steps = () => {
+        const h = stepsHtml(r.steps);
+        return h ? `${/^<h3/.test(h) ? "" : "<h3>Zubereitung</h3>"}${h}` : "";
+      };
+      if (d.k === "A") box.innerHTML = head() + ing();
+      else if (d.k === "B") box.innerHTML = steps() || '<div class="msg">Ohne Anleitung – einfach drauflos kochen.</div>';
+      else box.innerHTML = head() + ing() + steps();
+      box.dataset.rid = r.id;
+      box.querySelectorAll(".sb").forEach((b) => b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        this._step(r, +b.dataset.d);
+      }));
+      this._paintIng(box, r);
+      if (d.k !== "A") box.append(this._tools(r));
+      return box;
+    }
+    // Mengen einer Rezeptseite für die gewählten Portionen eintragen
+    _paintIng(box, r, bump) {
+      const n = this._servings(r), k = n / (r.servings || 1), lis = box.querySelectorAll("ul.ing li");
+      (r.ingredients || []).forEach((x, i) => {
+        const li = lis[i];
+        if (!li) return;
+        const q = li.firstChild;
+        q.textContent = amount(x, k);
+        q.hidden = x.qty == null && !x.unit;
+        li.lastChild.textContent = x.name;
+        if (bump && x.qty != null) {
+          q.classList.remove("bump");
+          void q.offsetWidth;
+          q.classList.add("bump");
+        }
+      });
+      const sv = box.querySelector(".svn");
+      if (sv) sv.textContent = `${n} ${n === 1 ? "Portion" : "Portionen"}`;
+      const [minus, plus] = box.querySelectorAll(".sb");
+      if (minus) {
+        minus.disabled = n <= 1;
+        plus.disabled = n >= 99;
+      }
+    }
+    // Portionen umrechnen – gilt, bis das Buch zugeklappt wird, und ändert das Rezept nicht
+    _step(r, dir) {
+      const n = Math.max(1, Math.min(99, this._servings(r) + dir));
+      if (n === this._servings(r)) return;
+      this._serv.set(r.id, n);
+      this._poke();
+      this.shadowRoot.querySelectorAll(".in > div").forEach((box) => {
+        if (box.dataset.rid === r.id) this._paintIng(box, r, true);
+      });
+    }
+    _btn(icon2, label, fn, cls = "") {
+      const b = document.createElement("button");
+      b.className = `btn ${cls}`;
+      b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon><span></span>`;
+      b.lastChild.textContent = label;
+      b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        fn(b);
+      });
+      return b;
+    }
+    // Knöpfe unter einem Rezept: Zutaten auf die Einkaufsliste, Bearbeiten, Löschen (mit Rückfrage)
+    _tools(r) {
+      const w = document.createElement("div");
+      if (this._quiet) return w;
+      if (r.ingredients?.length) {
+        const act = document.createElement("div");
+        act.className = "act";
+        act.append(this._btn("mdi:cart-plus", "Zutaten auf die Einkaufsliste", (b) => this._toList(r, b)));
+        w.append(act);
+      }
+      const t = document.createElement("div");
+      t.className = "tools";
+      t.append(this._btn("mdi:pencil", "Bearbeiten", () => this._edit(r)), this._btn("mdi:delete-outline", "Löschen", (b) => this._del(r, b)));
+      w.append(t);
+      return w;
+    }
+    /* ---------- Öffnen, Blättern, Gesten ---------- */
+    // Vor dem Aufklappen: Seiten fertig setzen, Schriften und Bilder laden – höchstens 800 ms, dann geht es trotzdem los.
+    // So ist beim Aufklappen alles schon gezeichnet und nichts wird während der Bewegung neu gesetzt.
+    async _ready() {
+      const r = this.shadowRoot, wait2 = [];
+      if (this._c.style !== "modern" && document.fonts?.load) {
+        loadFonts();
+        wait2.push(...['400 16px "Nova Hand"', '700 16px "Nova Hand"', '400 16px "Nova Serif"', 'italic 400 16px "Nova Serif"'].map((f3) => document.fonts.load(f3).catch(() => null)));
+      }
+      r.querySelectorAll(".pg img, .cover img").forEach((i) => wait2.push(i.decode?.().catch(() => null)));
+      await Promise.race([Promise.all(wait2), new Promise((res) => setTimeout(res, 800))]);
+    }
+    _setOpen(open, anim = true, ready = false) {
+      const e = this._e;
+      if (!e || open === this._open || this._quiet && open) return;
+      if (open && anim && !ready) {
+        if (this._prep) return;
+        this._prep = true;
+        this._resize(true);
+        this._ready().then(() => requestAnimationFrame(() => requestAnimationFrame(() => {
+          this._prep = false;
+          this._setOpen(true, true, true);
+        })));
+        return;
+      }
+      this._open = open;
+      this._resize(true);
+      e.book.classList.toggle("still", !anim);
+      e.cover.classList.remove("gone");
+      e.book.classList.toggle("open", open);
+      e.book.classList.toggle("closed", !open);
+      e.rb.classList.toggle("isopen", open);
+      clearTimeout(this._ct);
+      if (open && !this._dbl) this._ct = setTimeout(() => e.cover.classList.add("gone"), anim ? OPEN_MS : 0);
+      if (!open) {
+        this._sp = 0;
+        this._serv.clear();
+        this._ct = setTimeout(() => {
+          [e.L, e.R].forEach((p) => {
+            p._sig = null;
+          });
+          this._paint();
+        }, anim ? OPEN_MS : 0);
+      }
+      this._poke();
+    }
+    // Nach close_after Sekunden ohne Bedienung wieder zuklappen
+    _poke() {
+      clearTimeout(this._idle);
+      const s = +this._c.close_after;
+      if (this._open && s > 0) this._idle = setTimeout(() => {
+        if (this._e.form.hidden) this._setOpen(false);
+        else this._poke();
+      }, s * 1e3);
+    }
+    _navState(i) {
+      const e = this._e, n = this._spreads().length;
+      e.prev.disabled = i <= 0;
+      e.toc.disabled = i <= 0;
+      e.next.disabled = i >= n - 1;
+    }
+    // Einfaches Blättern? Option turn: auto (schwaches Gerät oder zu wenige Bilder pro Sekunde gemessen), 3d, simple
+    _lite() {
+      const t = this._c.turn;
+      if (t === "simple") return true;
+      if (t === "3d") return false;
+      if (Lite.slow == null) {
+        let v = null;
+        try {
+          v = localStorage.getItem("nova-book-lite");
+        } catch (_) {
+        }
+        Lite.slow = v === "1" || weakDevice();
+      }
+      return Lite.slow;
+    }
+    // Bilder pro Sekunde beim 3D-Blättern messen: zweimal unter ~35 fps → ab dann einfach blättern (merkt sich das Gerät)
+    _measure(leaf) {
+      let n = 0, t0 = 0;
+      const tick = (t) => {
+        if (!leaf.isConnected || leaf.classList.contains("prep")) return;
+        if (!t0) t0 = t;
+        n++;
+        if (t - t0 < TURN_MS - 40) requestAnimationFrame(tick);
+        else done(t);
+      };
+      const done = (t) => {
+        const fps = (n - 1) * 1e3 / Math.max(1, t - t0);
+        if (fps >= 35) {
+          Lite.bad = 0;
+          return;
+        }
+        if (++Lite.bad < 2) return;
+        Lite.slow = true;
+        try {
+          localStorage.setItem("nova-book-lite", "1");
+        } catch (_) {
+        }
+      };
+      requestAnimationFrame(tick);
+    }
+    _go(i) {
+      const n = this._spreads().length;
+      i = Math.max(0, Math.min(n - 1, i));
+      if (i === this._sp || this._turning || !this._open) return;
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const dir = i > this._sp ? 1 : -1, from = this._spreads()[this._sp], to = this._spreads()[i];
+      this._poke();
+      this._navState(i);
+      if (reduce) {
+        this._sp = i;
+        this._paint();
+        return;
+      }
+      const e = this._e, leaf = document.createElement("div"), lite = this._lite();
+      leaf.className = `leaf prep ${dir > 0 ? "fwd" : "bwd"}`;
+      leaf.innerHTML = '<div class="face f paper"><div class="in"></div><div class="no"></div><div class="sh"></div></div><div class="face b paper"><div class="in"></div><div class="no"></div><div class="sh"></div></div>';
+      const [ff, fb] = leaf.querySelectorAll(".face");
+      let under;
+      if (this._dbl) {
+        if (dir > 0) {
+          this._fill(ff, from.R);
+          this._fill(fb, to.L);
+          under = () => this._fill(e.R, to.R);
+        } else {
+          this._fill(ff, to.R);
+          this._fill(fb, from.L);
+          under = () => {
+            this._fill(e.L, to.L);
+            e.L.style.visibility = to.L.k === "end" ? "hidden" : "";
+            e.book.classList.toggle("at0", i === 0);
+          };
+        }
+      } else {
+        if (dir > 0) {
+          this._fill(ff, from.P);
+          under = () => this._fill(e.R, to.P);
+        } else this._fill(ff, to.P);
+        fb.replaceChildren();
+      }
+      this._turning = true;
+      e.book.classList.toggle("lite", lite);
+      e.book.append(leaf);
+      const raf = (f3) => requestAnimationFrame(() => requestAnimationFrame(f3));
+      raf(() => {
+        if (!leaf.isConnected) return;
+        under?.();
+        requestAnimationFrame(() => {
+          if (!leaf.isConnected) return;
+          leaf.classList.remove("prep");
+          if (!lite && this._c.turn !== "3d") this._measure(leaf);
+          this._tt = setTimeout(() => {
+            this._turning = false;
+            this._sp = i;
+            this._paint();
+            raf(() => leaf.remove());
+          }, TURN_MS + 30);
+        });
+      });
+    }
+    _gestures() {
+      const b = this._e.book;
+      let x0 = null, y0 = 0, t0 = 0;
+      b.addEventListener("pointerdown", (ev) => {
+        if (!this._open || ev.button > 0) return;
+        x0 = ev.clientX;
+        y0 = ev.clientY;
+        t0 = Date.now();
+        this._poke();
+      });
+      const end = (ev) => {
+        if (x0 == null) return;
+        const dx = ev.clientX - x0, dy = ev.clientY - y0, dt = Date.now() - t0;
+        x0 = null;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3 && dt < 900) this._go(this._sp + (dx < 0 ? 1 : -1));
+      };
+      b.addEventListener("pointerup", end);
+      b.addEventListener("pointercancel", () => {
+        x0 = null;
+      });
+      b.addEventListener("dragstart", (ev) => ev.preventDefault());
+      this.tabIndex = this.tabIndex >= 0 ? this.tabIndex : 0;
+      this.addEventListener("keydown", (ev) => {
+        if (!this._open || !this._e.form.hidden) return;
+        if (ev.key === "ArrowRight") this._go(this._sp + 1);
+        else if (ev.key === "ArrowLeft") this._go(this._sp - 1);
+      });
+    }
+    /* ---------- Einkaufsliste ---------- */
+    // Alle Zutaten für die gewählten Portionen auf die Nova-Einkaufsliste; was dort schon offen steht, wird in der Menge erhöht
+    async _toList(r, b) {
+      const h = this._h, label = b.lastChild;
+      if (!h || b.disabled) return;
+      b.disabled = true;
+      label.textContent = "Wird eingetragen …";
+      try {
+        const n = await recipes.toShopping(h, r.id, this._servings(r));
+        label.textContent = n ? `${n} ${n === 1 ? "Zutat" : "Zutaten"} eingetragen` : "Steht schon alles drauf";
+        b.classList.add("ok");
+      } catch (err) {
+        console.warn("[nova-cards] Rezeptbuch: Einkaufsliste", err);
+        label.textContent = err?.code === "module_disabled" ? "Einkauf ist abgeschaltet" : "Hat nicht geklappt";
+        b.classList.add("warn");
+      }
+      setTimeout(() => {
+        b.disabled = false;
+        b.classList.remove("ok", "warn");
+        label.textContent = "Zutaten auf die Einkaufsliste";
+      }, 3500);
+    }
+    /* ---------- Bearbeiten, Löschen ---------- */
+    _del(r, b) {
+      const label = b.lastChild;
+      if (!b.classList.contains("warn")) {
+        b.classList.add("warn");
+        label.textContent = "Wirklich löschen?";
+        clearTimeout(this._delT);
+        this._delT = setTimeout(() => {
+          b.classList.remove("warn");
+          label.textContent = "Löschen";
+        }, 4e3);
+        return;
+      }
+      clearTimeout(this._delT);
+      b.disabled = true;
+      recipes.remove(this._h, r.id).catch((err) => {
+        console.warn("[nova-cards] Rezeptbuch: Löschen fehlgeschlagen", err);
+        b.disabled = false;
+        label.textContent = "Fehler – nochmal?";
+      });
+    }
+    // Karteikarte über dem Buch: Titel, Portionen, Zeit, Schlagwörter, Bild, Zutaten (eine pro Zeile), Zubereitung mit Formatierung
+    _edit(r) {
+      if (this._err || !this._recipes) return;
+      const f3 = this._e.form, st = { image: r?.image || null, data: null };
+      f3.innerHTML = `<form class="card" novalidate><h2>${r ? "Rezept bearbeiten" : "Neues Rezept"}</h2>
+<label for="t">Titel</label><input id="t" type="text" maxlength="200" autocomplete="off" enterkeyhint="next">
+<div class="two"><div><label for="p">Portionen</label><input id="p" type="number" min="1" max="99" inputmode="numeric"></div>
+<div><label for="z">Zeit in Minuten</label><input id="z" type="number" min="0" max="6000" inputmode="numeric" placeholder="–"></div></div>
+<label for="g">Schlagwörter</label><input id="g" type="text" autocomplete="off" placeholder="z. B. schnell, vegetarisch"><small>Mit Komma getrennt</small>
+<label>Bild</label><div class="pic"><img alt="" hidden><button type="button" class="btn" data-a="pick"><ha-icon icon="mdi:camera-outline"></ha-icon><span>Foto wählen</span></button>
+<button type="button" class="btn" data-a="clear" hidden><ha-icon icon="mdi:close"></ha-icon><span>Entfernen</span></button><input type="file" accept="image/*"></div>
+<label for="i">Zutaten</label><textarea id="i" placeholder="250 g Mehl&#10;2 Eier&#10;1 Prise Salz"></textarea><small>Eine Zutat pro Zeile, Menge und Einheit vorn – dann lassen sich die Portionen umrechnen</small>
+<label>Zubereitung</label><div class="steps"></div><small>Ein Absatz oder Listenpunkt je Schritt</small>
+<div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>Speichern</span></button></div></form>`;
+      const q = (s) => f3.querySelector(s), img = q(".pic img"), file = q("input[type=file]"), clr = q("[data-a=clear]"), err = q(".err");
+      const rt = richEditor({ placeholder: "Mehl und Eier verrühren …" });
+      rt.set(r?.steps || "");
+      q(".steps").append(rt.el);
+      q("#t").value = r?.title || "";
+      q("#p").value = r?.servings || 2;
+      q("#z").value = r?.time ?? "";
+      q("#g").value = (r?.tags || []).join(", ");
+      q("#i").value = (r?.ingredients || []).map(ingredientLine).join("\n");
+      const showPic = (src) => {
+        img.hidden = !src;
+        if (src) img.src = src;
+        else img.removeAttribute("src");
+        clr.hidden = !src;
+      };
+      showPic(st.image ? imageUrl(this._h, "recipes", st.image) : null);
+      f3.addEventListener("keydown", (ev) => ev.stopPropagation());
+      f3.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+      q("[data-a=pick]").addEventListener("click", () => file.click());
+      clr.addEventListener("click", () => {
+        st.image = null;
+        st.data = null;
+        showPic(null);
+      });
+      file.addEventListener("change", async () => {
+        const fl = file.files?.[0];
+        if (!fl) return;
+        err.textContent = "";
+        try {
+          st.data = await compressImage(fl, IMG_MAX);
+          st.image = null;
+          showPic(st.data);
+        } catch (x) {
+          err.textContent = "Das Bild ließ sich nicht lesen.";
+          console.warn(x);
+        }
+      });
+      q("[data-a=cancel]").addEventListener("click", () => this._closeForm());
+      q("form").addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const title = q("#t").value.trim(), save = q("button[type=submit]");
+        if (!title) {
+          err.textContent = "Ein Titel fehlt noch.";
+          q("#t").focus();
+          return;
+        }
+        save.disabled = true;
+        err.textContent = "";
+        try {
+          let image = st.image;
+          if (st.data) image = (await uploadImage(this._h, "recipes", st.data)).image;
+          const z = q("#z").value.trim();
+          const recipe = {
+            ...r ? { id: r.id } : {},
+            title,
+            image,
+            servings: Math.max(1, Math.min(99, Math.round(+q("#p").value) || 2)),
+            time: z === "" ? null : Math.max(0, Math.round(+z) || 0),
+            tags: q("#g").value.split(",").map((x) => x.trim()).filter(Boolean),
+            ingredients: q("#i").value.split("\n").map((x) => parseIngredient(x, this._units)).filter(Boolean),
+            steps: rt.get()
+          };
+          const res = await recipes.save(this._h, recipe);
+          if (!r && res?.id) this._jump = res.id;
+          if (r) this._serv.delete(r.id);
+          this._closeForm();
+          if (this._jump) this._setRecipes(this._recipes);
+        } catch (x) {
+          console.warn("[nova-cards] Rezeptbuch: Speichern fehlgeschlagen", x);
+          err.textContent = `Speichern hat nicht geklappt${x?.message ? `: ${x.message}` : ""}`;
+          save.disabled = false;
+        }
+      });
+      f3.hidden = false;
+      this._poke();
+      if (!r) setTimeout(() => q("#t").focus(), 50);
+    }
+    _closeForm() {
+      const f3 = this._e.form;
+      f3.hidden = true;
+      f3.replaceChildren();
+      this._poke();
+    }
+  };
+  var DEMO = [
+    {
+      id: "demo1",
+      title: "Apfelkuchen",
+      image: null,
+      servings: 12,
+      time: 75,
+      tags: ["Backen"],
+      ingredients: [{ qty: 200, unit: "g", name: "Mehl" }, { qty: 125, unit: "g", name: "Butter" }, { qty: 100, unit: "g", name: "Zucker" }, { qty: 1, unit: "", name: "Ei" }, { qty: 4, unit: "", name: "Äpfel" }],
+      steps: "<p>Teig kneten</p><p>Äpfel schälen und schneiden</p><p>45 Minuten bei 180 °C backen</p>"
+    },
+    {
+      id: "demo2",
+      title: "Kartoffelsuppe",
+      image: null,
+      servings: 4,
+      time: 40,
+      tags: [],
+      ingredients: [{ qty: 1, unit: "kg", name: "Kartoffeln" }, { qty: 1, unit: "", name: "Zwiebel" }, { qty: 1, unit: "l", name: "Brühe" }],
+      steps: "<p>Kartoffeln würfeln</p><p>Alles 20 Minuten kochen</p><p>Pürieren</p>"
+    }
+  ];
+  define("recipe-book-card", NovaRecipeBookCard, { name: "Nova Rezeptbuch", description: "Rezeptbuch zum Blättern in drei Stilen (altes Kochbuch, modern, Fantasy): Inhaltsverzeichnis, Rezepte mit Foto, Zutaten und Zubereitung, Portionen umrechnen, Zutaten auf die Einkaufsliste. Dieselben Rezepte wie in der Nova Rezeptliste (Nova-Integration).", documentationURL: docUrl("nova-rezeptbuch") });
+  var S_BOOK = [
+    g2({ name: "title", selector: T }, { name: "subtitle", selector: T }),
+    g2(
+      sel("style", [["old", "Old Book (altes Kochbuch)"], ["modern", "Modern Book (schlicht, grau)"], ["fantasy", "Fantasy Book (Zauberbuch)"]]),
+      sel("cover_color", [["brown", "Standard des Stils"], ["red", "Rot"], ["green", "Grün"], ["blue", "Blau"]])
+    )
+  ];
+  var S_USE = [
+    sel("layout", [["auto", "Automatisch"], ["double", "Doppelseite"], ["single", "Einzelseite"]]),
+    sel("turn", [["auto", "Automatisch"], ["3d", "3D"], ["simple", "Einfach (schwache Geräte)"]]),
+    g2({ name: "start_open", selector: { boolean: {} } }, { name: "close_after", selector: { number: { min: 0, max: 3600, step: 10, mode: "box", unit_of_measurement: "s" } } })
+  ];
+  var LABELS11 = { title: "Titel auf dem Einband", subtitle: "Untertitel (optional)", style: "Stil", cover_color: "Einband", layout: "Seiten", start_open: "Aufgeschlagen starten", close_after: "Zuklappen nach", turn: "Blättern" };
+  var HELPERS11 = {
+    layout: "Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.",
+    close_after: "0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.",
+    subtitle: "Steht unter dem Titel, z. B. „von Oma Erna“.",
+    cover_color: "Standard: Old Book braunes Leder, Modern Book grau, Fantasy Book nachtblau. Rot, Grün und Blau sind je Stil passend abgetönt.",
+    style: "Alle Stile zeigen dieselben Rezepte – auch die Nova Rezeptliste.",
+    turn: "Automatisch: 3D-Blättern, auf schwachen Geräten (z. B. Echo Show) oder wenn es ruckelt flaches Blättern mit Schatten."
+  };
+  var NovaRecipeBookCardEditor = class extends NovaEditorBase {
+    _build() {
+      const r = this.shadowRoot;
+      r.innerHTML = `<style>${SECTION_EDITOR_CSS}</style><div class="wrap"></div>`;
+      const data = () => ({ ...DEF7, ...this._config });
+      const form = (s) => this._form(s, data(), (v) => {
+        const c = merge(this._config, names(s), v);
+        Object.keys(DEF7).forEach((k) => {
+          if (c[k] === DEF7[k]) delete c[k];
+        });
+        this._emit(c);
+      });
+      r.querySelector(".wrap").append(
+        this._section("book", "mdi:book-open-page-variant-outline", "Buch", (b) => b.append(form(S_BOOK))),
+        this._section("use", "mdi:gesture-swipe-horizontal", "Seiten und Verhalten", (b) => b.append(form(S_USE)))
+      );
+    }
+  };
+  __publicField(NovaRecipeBookCardEditor, "labels", LABELS11);
+  __publicField(NovaRecipeBookCardEditor, "helpers", HELPERS11);
+  __publicField(NovaRecipeBookCardEditor, "openSections", ["book"]);
+  define("recipe-book-card-editor", NovaRecipeBookCardEditor);
+
   // src/theme-switch.js
-  var DEF7 = { display: "button", name: "Theme", icon: "mdi:palette-outline" };
+  var DEF8 = { display: "button", name: "Theme", icon: "mdi:palette-outline" };
   var MSG2 = { admin: "Einmal als Admin umschalten", failed: "Hat nicht geklappt" };
   var CSS2 = `${NOVA_VARS}${PANEL_CSS}${NOVA_CHIPS_CSS}
 :host([data-display=chip]){height:auto}:host([data-display=chip])::before{display:none}
@@ -15377,7 +18683,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
       if (c.display && !["chip", "button", "dropdown"].includes(c.display)) throw new Error("display: chip, button oder dropdown");
-      this._c = { ...DEF7, ...c };
+      this._c = { ...DEF8, ...c };
       this.dataset.display = this._c.display;
       this._built = false;
       if (this._h) this._render();
@@ -15421,8 +18727,12 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
       this._busy = false;
       this._render();
     }
+    connectedCallback() {
+      window.addEventListener(THEME_EVENT, this._onStore ||= () => this._c && this._h && this._render());
+    }
     disconnectedCallback() {
       clearTimeout(this._mt);
+      window.removeEventListener(THEME_EVENT, this._onStore);
     }
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" }), c = this._c;
@@ -15452,7 +18762,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
     sel("display", [["button", "Button (Antippen schaltet weiter)"], ["chip", "Chip (wie die Chips Card)"], ["dropdown", "Dropdown (Liste)"]]),
     g2({ name: "name", selector: T }, { name: "icon", selector: I })
   ];
-  var LABELS10 = { display: "Darstellung", name: "Beschriftung", icon: "Icon" };
+  var LABELS12 = { display: "Darstellung", name: "Beschriftung", icon: "Icon" };
   var NovaThemeSwitchCardEditor = class extends NovaEditorBase {
     // der Schalter zeigt immer das globale Theme
     _build() {
@@ -15461,9 +18771,9 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
       r.querySelector(".wrap").append(
         this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
           b.append(this._hint("Gilt für alle Nova Cards auf allen Geräten. Beim ersten Umschalten legt die Karte dafür selbst einen Helfer „Nova Theme“ an – das darf in Home Assistant nur ein Administrator, danach können alle umschalten."));
-          b.append(this._form(S_GEN7, { ...DEF7, ...this._config }, (v) => {
+          b.append(this._form(S_GEN7, { ...DEF8, ...this._config }, (v) => {
             const c = merge(this._config, names(S_GEN7), v);
-            Object.entries(DEF7).forEach(([k, x]) => {
+            Object.entries(DEF8).forEach(([k, x]) => {
               if (c[k] === x) delete c[k];
             });
             this._emit(c);
@@ -15472,7 +18782,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
       );
     }
   };
-  __publicField(NovaThemeSwitchCardEditor, "labels", LABELS10);
+  __publicField(NovaThemeSwitchCardEditor, "labels", LABELS12);
   __publicField(NovaThemeSwitchCardEditor, "openSections", ["general"]);
   __publicField(NovaThemeSwitchCardEditor, "noTheme", true);
   define("theme-card-editor", NovaThemeSwitchCardEditor);

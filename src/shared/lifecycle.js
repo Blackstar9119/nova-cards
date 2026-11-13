@@ -45,3 +45,12 @@ export const watchVisible = (el, cb) => {
   upd();
   return () => { io?.disconnect(); document.removeEventListener('visibilitychange', upd); if (last) { last = false; cb(false); } };
 };
+
+// Schwaches Gerät (z. B. Echo Show mit Kiosk-WebView, alte Tablets): wenig Speicher oder wenige Kerne.
+// Karten nehmen dann einfachere Animationen. deviceMemory gibt es nur in Chromium (auch in Android-WebViews).
+export const weakDevice = () => {
+  const n = globalThis.navigator || {}, mem = n.deviceMemory, cpu = n.hardwareConcurrency;
+  if (mem && mem <= 2) return true;
+  if (cpu && cpu <= 2) return true;
+  return /Android/.test(n.userAgent || '') && /; wv\)/.test(n.userAgent || '') && (!cpu || cpu <= 4);
+};
