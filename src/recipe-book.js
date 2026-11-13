@@ -317,7 +317,7 @@ box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),6px 8px 22px rgba(0,0,0,.35)}
 :host([book=fantasy]) .paper,:host([book=fantasy]) .pg,:host([book=fantasy]) .face.paper{--st:none;background-image:none;background-color:var(--paper);box-shadow:inset 0 0 0 1px rgba(60,40,20,.07)}
 :host([book=fantasy]) .pg.r::before,:host([book=fantasy]) .leaf .face.f::before{width:9%;background:linear-gradient(90deg,rgba(40,28,15,.16),rgba(40,28,15,.03) 45%,transparent)}
 :host([book=fantasy]) .pg.l::before,:host([book=fantasy]) .leaf .face.b::before{width:9%;background:linear-gradient(270deg,rgba(40,28,15,.18),rgba(40,28,15,.03) 45%,transparent)}
-:host([book=fantasy]) .block{background:var(--edge);box-shadow:2px 3px 0 -1px rgba(0,0,0,.4),4px 7px 14px rgba(0,0,0,.4);transform:translate3d(6px,6px,-2px)}
+:host([book=fantasy]) .block{background:var(--edge);box-shadow:inset 0 0 0 1px rgba(214,183,110,.3),2px 3px 0 -1px rgba(0,0,0,.4),4px 7px 14px rgba(0,0,0,.4);transform:translate3d(6px,6px,-2px)}
 :host([book=fantasy]) .double .block.l{transform:translate3d(-6px,6px,-2px)}
 :host([book=fantasy]) .leather{border-radius:2px 6px 6px 2px;background-color:var(--leather);background-image:linear-gradient(100deg,rgba(0,0,0,.3),rgba(255,255,255,.05) 11%,transparent 28%,rgba(0,0,0,.1));
 background-size:auto;background-blend-mode:normal;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45),5px 7px 18px rgba(0,0,0,.45)}
@@ -327,7 +327,7 @@ background-size:auto;background-blend-mode:normal;box-shadow:inset 0 0 0 1px rgb
 :host([book=fantasy]) .emb h1{font-style:normal;font-weight:400;background:linear-gradient(180deg,#f3dfa6,var(--gold) 50%,#a9823a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:none;opacity:1}
 :host([book=fantasy]) .emb p{font-family:var(--f-serif);font-style:italic;color:var(--gold);opacity:.85;text-shadow:none}
 :host([book=fantasy]) .emb .gold{stroke:var(--gold);opacity:1}
-:host([book=fantasy]) .inside{background-color:var(--leather);background-image:var(--endpaper);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+:host([book=fantasy]) .inside{background-color:var(--leather);background-image:var(--endpaper);box-shadow:inset 0 0 0 14px var(--leather),inset 0 0 0 15px rgba(214,183,110,.35),inset 0 0 0 1px rgba(0,0,0,.4)}
 :host([book=fantasy]) .inside .ded{inset:30% 18%;transform:none;font-family:var(--f-serif);font-variant:small-caps;letter-spacing:.08em;font-size:clamp(15px,calc(var(--pw) * .06),30px);color:var(--ink);background:var(--paper);
 box-shadow:0 0 0 1px var(--gold),0 0 0 4px var(--paper),0 0 0 5px var(--gold);opacity:1}
 :host([book=fantasy]) .inside .ded small{font-variant:normal;font-style:italic;letter-spacing:0}
@@ -355,7 +355,7 @@ box-shadow:0 0 0 1px var(--gold),0 0 0 4px var(--paper),0 0 0 5px var(--gold);op
 border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
 
 :host([book=fantasy]){--leather:#1b2338;--gold:#d6b76e;--acc:#7a5a1f;--rib:linear-gradient(90deg,#9c7a2e,#f1d68e 42%,#c9a24e 58%,#8a6a25);
---edge:radial-gradient(circle,#d6b76e 0 .8px,transparent 1.3px) 0 0/5px 5px,radial-gradient(circle,rgba(214,183,110,.5) 0 .6px,transparent 1px) 2.5px 2.5px/5px 5px,var(--leather);
+--edge:linear-gradient(135deg,rgba(214,183,110,.22),rgba(214,183,110,.06) 50%,rgba(214,183,110,.2)),var(--leather);
 --endpaper:repeating-linear-gradient(90deg,transparent 0 13px,rgba(214,183,110,.28) 13px 14px),repeating-linear-gradient(0deg,transparent 0 13px,rgba(214,183,110,.14) 13px 14px)}
 :host([book=fantasy]) .stitch{display:block;inset:0 0 0 7%;border:0;border-radius:0;box-shadow:none;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20140%22%20preserveAspectRatio%3D%22none%22%3E%3Cg%20fill%3D%22none%22%20stroke-width%3D%221.6%22%3E%3Cpath%20stroke%3D%22rgba(0%2C0%2C0%2C.45)%22%20d%3D%22M10%2010h80v120H10z%20M18%2018h64v104H18z%22%2F%3E%3Cpath%20stroke%3D%22rgba(255%2C255%2C255%2C.09)%22%20d%3D%22M10%2011h80v120H10z%20M18%2019h64v104H18z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") center/100% 100% no-repeat}
 :host([book=fantasy]) .emb .orn{display:none}
