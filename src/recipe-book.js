@@ -8,6 +8,7 @@ import {watch, recipes as api, storeHint, imageUrl, uploadImage} from './shared/
 import {RICH_CSS, richEditor, sanitize} from './shared/rich-text.js';
 import {compressImage} from './shared/media-picker.js';
 import {amount, mins, parseIngredient, sourceHost, importError} from './shared/recipe-util.js';
+import {fromSettings, onSettings, setting} from './shared/settings-store.js';
 
 /* ---------- Nova Rezeptbuch ----------
    Ein Kochbuch zum Blättern: zugeklappt der Einband, Tippen schlägt es auf, Wischen blättert. Drei Stile (Option style):
@@ -15,7 +16,8 @@ import {amount, mins, parseIngredient, sourceHost, importError} from './shared/r
    Die Rezepte kommen aus der Nova-Integration (Modul „Rezeptbuch“) – dieselben wie in der Nova Rezeptliste.
    Portionen lassen sich je Rezept umrechnen, die Zutaten gehen umgerechnet auf die Nova-Einkaufsliste.
    Das Buch ist eine Zeichnung: Papier-, Leder- und Goldtöne sind Materialfarben und stehen hier, nicht in den Tokens. */
-const DEF = {title: 'Rezepte', subtitle: '', style: 'old', layout: 'auto', cover_color: 'brown', start_open: false, close_after: 0, turn: 'auto'};
+// style fehlt hier absichtlich: ohne eigenen Stil gilt die Nova-Einstellung rezepte.buch_variante, sonst „old“
+const DEF = {title: 'Rezepte', subtitle: '', layout: 'auto', cover_color: 'brown', start_open: false, close_after: 0, turn: 'auto'};
 const NAV_H = 48;
 // Gemessen einmal pro Seite: langsames Gerät → einfaches Blättern (gilt für alle Rezeptbücher)
 const Lite = {slow: null, bad: 0};
@@ -425,8 +427,14 @@ class NovaRecipeBookCard extends HTMLElement {
   static getStubConfig() { return {}; }
   setConfig(c) {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
+    this._raw = c;
+    this._conf();
+  }
+  // Option der Karte → Nova-Einstellung (rezepte.buch_variante) → „old“
+  _conf() {
     const was = this._c;
-    this._c = {...DEF, ...c};
+    this._c = {...DEF, style: 'old', ...fromSettings(this._h, {style: ['rezepte', 'buch_variante']}), ...this._raw};
+    if (was && JSON.stringify(was) === JSON.stringify(this._c)) return;
     this.setAttribute('cover', COVERS.includes(this._c.cover_color) ? this._c.cover_color : 'brown');
     this.setAttribute('book', STYLES.includes(this._c.style) ? this._c.style : 'old');
     if (this._e) {
@@ -460,6 +468,7 @@ class NovaRecipeBookCard extends HTMLElement {
     this._ro?.disconnect();
     this._stopVis?.(); this._stopVis = null;
     this._off?.(); this._off = null;
+    this._offS?.(); this._offS = null;
     clearTimeout(this._idle); clearTimeout(this._tt); clearTimeout(this._delT); clearTimeout(this._ct);
   }
 
@@ -548,6 +557,8 @@ class NovaRecipeBookCard extends HTMLElement {
     if (!this._h || !this.isConnected || !this._e) return;
     if (this._quiet) { if (!this._recipes) { this._recipes = DEMO; this._paint(); } return; }
     if (this._off) return;
+    this._offS = onSettings(() => this._conf());
+    this._conf();
     this._off = watch(this._h, 'recipes', this, (d, err) => { this._units = d?.units || this._units; this._setRecipes(d?.recipes, err); });
   }
   _setRecipes(list, err) {
@@ -907,7 +918,7 @@ class NovaRecipeBookCard extends HTMLElement {
     rt.set(r?.steps || '');
     q('.steps').append(rt.el);
     q('#t').value = r?.title || '';
-    q('#p').value = r?.servings || 2;
+    q('#p').value = r?.servings || setting(this._h, 'rezepte', 'standard_portionen') || 2;
     q('#z').value = r?.time ?? '';
     q('#g').value = (r?.tags || []).join(', ');
     // Zutaten als Zeilen: Menge | Einheit (Liste der Integration) | Zutat | Entfernen
@@ -1026,7 +1037,7 @@ class NovaRecipeBookCard extends HTMLElement {
         if (code === 'no_recipe') {
           ask('Auf der Seite steht kein Rezept, das ich lesen kann. Magst du es selbst anlegen?', [
             ['Abbrechen', () => this._closeForm()],
-            ['Selbst anlegen', () => this._edit(null, {title: x.message || '', source: url, servings: 2, ingredients: [], steps: '', tags: []}), true],
+            ['Selbst anlegen', () => this._edit(null, {title: x.message || '', source: url, servings: setting(this._h, 'rezepte', 'standard_portionen') || 2, ingredients: [], steps: '', tags: []}), true],
           ]);
           return;
         }
@@ -1064,7 +1075,7 @@ const S_USE = [
   g2({name: 'start_open', selector: {boolean: {}}}, {name: 'close_after', selector: {number: {min: 0, max: 3600, step: 10, mode: 'box', unit_of_measurement: 's'}}}),
 ];
 const LABELS = {title: 'Titel auf dem Einband', subtitle: 'Untertitel (optional)', style: 'Stil', cover_color: 'Einband', layout: 'Seiten', start_open: 'Aufgeschlagen starten', close_after: 'Zuklappen nach', turn: 'Blättern'};
-const HELPERS = {layout: 'Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.', close_after: '0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.',
+const HELPERS = {style: 'Leer = wie in den Nova-Einstellungen (sonst Old Book).', layout: 'Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.', close_after: '0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.',
   subtitle: 'Steht unter dem Titel, z. B. „von Oma Erna“.', cover_color: 'Standard: Old Book braunes Leder, Modern Book grau, Fantasy Book nachtblau. Rot, Grün und Blau sind je Stil passend abgetönt.',
   style: 'Alle Stile zeigen dieselben Rezepte – auch die Nova Rezeptliste.',
   turn: 'Automatisch: 3D-Blättern, auf schwachen Geräten (z. B. Echo Show) oder wenn es ruckelt flaches Blättern mit Schatten.'};

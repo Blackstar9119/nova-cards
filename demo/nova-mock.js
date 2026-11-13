@@ -4,7 +4,13 @@ const id = () => Math.random().toString(16).slice(2).padEnd(12, '0');
 const now = () => Date.now() / 1000;
 const T0 = now();
 const stores = [{id: 's1', name: 'Lidl', icon: 'mdi:cart-outline'}, {id: 's2', name: 'dm', icon: 'mdi:lipstick'}];
+// Einstellungen wie nova/settings/get; in der Demo per ?settings={"allgemein":{"animationen":"aus"}} vorbelegbar
+const SETTINGS = {allgemein: {theme: null, animationen: 'normal', schriftgroesse: 'normal'}, module: {theme: true, notes: true, shopping: true, recipes: true},
+  einkauf: {standard_geschaeft: null, gruppierung: 'geschaeft', todo_entity: null, bilder: true}, notizen: {standard_schriftgroesse: 'normal', kompakt: false},
+  rezepte: {buch_variante: 'old', standard_portionen: 2}, mealie: {url: null, token_gesetzt: false}};
+try { for (const [k, v] of Object.entries(JSON.parse(new URLSearchParams(location.search).get('settings') || '{}'))) Object.assign(SETTINGS[k], v); } catch { /* ungültig → Standard */ }
 const db = {
+  settings: SETTINGS,
   theme: {theme: null, themes: ['blau', 'hell', 'midnight', 'velvet']},
   notes: {notes: [
     {id: 'n1', title: 'Wochenende', body: '<h3>Samstag</h3><ul class="check"><li class="done">Auto waschen</li><li>Rasen mähen</li><li>Getränke holen</li></ul><p><span class="c-warn">Nicht vergessen:</span> Geschenk für <b>Oma</b></p>', pinned: true, created: T0 - 9e4, updated: T0 - 1800},
@@ -28,7 +34,7 @@ const db = {
       ingredients: [{name: 'Tomaten', qty: 2, unit: 'Dose'}, {name: 'Knoblauch', qty: 2, unit: 'Zehe'}, {name: 'Basilikum', qty: 1, unit: 'Bund'}], steps: '<p>Alles köcheln lassen.</p>'},
     {id: 'r3', title: 'Linsensuppe mit Würstchen', image: null, servings: 4, time: 75, tags: ['herzhaft'], favorite: false, updated: T0, ingredients: [], steps: ''}]},
 };
-const subs = {theme: new Set(), notes: new Set(), shopping: new Set(), recipes: new Set()};
+const subs = {settings: new Set(), theme: new Set(), notes: new Set(), shopping: new Set(), recipes: new Set()};
 const push = k => subs[k].forEach(cb => cb(JSON.parse(JSON.stringify(db[k]))));
 const upsert = (arr, data, fresh) => {
   let x = arr.find(y => y.id === data.id);
@@ -50,6 +56,7 @@ export const novaCall = m => {
   const s = db.shopping;
   let res = {};
   if (mod === 'theme') db.theme.theme = m.theme;
+  else if (mod === 'settings' && cmd === 'set') { for (const [k, v] of Object.entries(m.settings)) Object.assign(db.settings[k], v); res = db.settings; }
   else if (mod === 'notes' && cmd === 'save') res = {note: upsert(db.notes.notes, m.note, {title: '', body: '', pinned: false})};
   else if (mod === 'notes') db.notes.notes = db.notes.notes.filter(n => n.id !== m.note_id);
   else if (cmd === 'item_save') {

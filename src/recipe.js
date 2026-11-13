@@ -11,6 +11,7 @@ import {RICH_CSS, richEditor, richView, toPlain} from './shared/rich-text.js';
 import {amount, mins, sourceHost, importError} from './shared/recipe-util.js';
 import {VIEW_CSS, roundBtn, armButton, setBtnIcon} from './shared/stack-view.js';
 import {PICK_MEDIA_CSS, mediaPicker} from './shared/media-picker.js';
+import {setting} from './shared/settings-store.js';
 
 /* ---------- Nova Rezept Card ---------- */
 // Rezeptbuch aus der Nova-Integration: Liste (Suche, Schlagwörter, Favoriten) ↔ Rezept (Bild, Zutaten, Zubereitung).
@@ -358,7 +359,7 @@ class NovaRecipeCard extends HTMLElement {
   // pre: Entwurf aus dem Import → Vorschau (speichert nicht von selbst, erst „Übernehmen“); pre.replace = ID des ersetzten Rezepts
   _edit(x, pre = null) {
     if (!this._data) return;
-    const e = this._e, blank = {id: null, title: '', image: null, servings: 2, time: null, tags: [], ingredients: [], steps: '', favorite: false};
+    const e = this._e, blank = {id: null, title: '', image: null, servings: setting(this._h, 'rezepte', 'standard_portionen') || 2, time: null, tags: [], ingredients: [], steps: '', favorite: false};
     const d = this._draft = pre ? {...blank, ...JSON.parse(JSON.stringify(pre)), id: pre.replace || null, image: null} : x ? JSON.parse(JSON.stringify(x)) : blank;
     this._preview = pre ? {data: pre.image_data || null} : null;
     delete d.image_data; delete d.replace;

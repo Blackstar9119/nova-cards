@@ -26,7 +26,8 @@ print_script: script.notiz_drucken
 |---|---|---|
 | `name`, `icon` | `Notizen`, `mdi:note-multiple-outline` | Kopfzeile |
 | `show_header` | `true` | Kopfzeile mit Anzahl und Plus-Knopf |
-| `view` | `full` | `full` = Titel, Vorschau, Datum · `compact` = nur Titel und Datum |
+| `view` | `full` | `full` = Titel, Vorschau, Datum · `compact` = nur Titel und Datum. Ohne Angabe gilt die Nova-Einstellung „Kompakte Liste“ |
+| `text_size` | `normal` | Schriftgröße der Notiz: `klein`, `normal`, `gross`. Ohne Angabe gilt die Nova-Einstellung |
 | `max_notes` | `0` | Höchstens so viele Notizen zeigen, der Rest lässt sich aufklappen (0 = alle) |
 | `height` | `380` | Mindesthöhe in px; im Raster füllt die Karte den Platz aus |
 | `print_script` | – | Skript für den Druck-Knopf in der geöffneten Notiz (leer = kein Knopf) |
