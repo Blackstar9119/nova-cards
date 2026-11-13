@@ -27,7 +27,7 @@ Schmaler gibt es eine Seite pro Rezept.
 | `modern` | Schlicht und grau: Leineneinband, glattes Papier, klare Schrift, ohne Gebrauchsspuren |
 | `fantasy` | Hochwertige Fantasy-Hardcover-Ausgabe: matter Einband mit Goldfolie, Farbschnitt, cremefarbenes Papier, Kapitel je Rezept, Trennornamente, Satin-Lesebändchen |
 
-`cover_color` (`brown`, `red`, `green`, `blue`) tönt den Einband passend zum Stil.
+`cover_color` tönt den Einband passend zum Stil. `brown` ist der Standard des Stils (Old Book braun, Modern Book grau, Fantasy Book nachtblau), dazu `red`, `green`, `blue`.
 
 ```yaml
 type: custom:nova-recipe-book-card

@@ -18619,7 +18619,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
     g2({ name: "title", selector: T }, { name: "subtitle", selector: T }),
     g2(
       sel("style", [["old", "Old Book (altes Kochbuch)"], ["modern", "Modern Book (schlicht, grau)"], ["fantasy", "Fantasy Book (Zauberbuch)"]]),
-      sel("cover_color", [["brown", "Braun"], ["red", "Rot"], ["green", "Grün"], ["blue", "Blau"]])
+      sel("cover_color", [["brown", "Standard des Stils"], ["red", "Rot"], ["green", "Grün"], ["blue", "Blau"]])
     )
   ];
   var S_USE = [
@@ -18632,7 +18632,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
     layout: "Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.",
     close_after: "0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.",
     subtitle: "Steht unter dem Titel, z. B. „von Oma Erna“.",
-    cover_color: "Der Farbton passt sich dem Stil an (Leder, Leinen grau getönt, matter Hardcover-Einband; im Fantasy Book ist „Braun“ das Nachtblau des Entwurfs).",
+    cover_color: "Standard: Old Book braunes Leder, Modern Book grau, Fantasy Book nachtblau. Rot, Grün und Blau sind je Stil passend abgetönt.",
     style: "Alle Stile zeigen dieselben Rezepte – auch die Nova Rezeptliste.",
     turn: "Automatisch: 3D-Blättern, auf schwachen Geräten (z. B. Echo Show) oder wenn es ruckelt flaches Blättern mit Schatten."
   };

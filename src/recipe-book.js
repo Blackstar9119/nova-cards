@@ -914,7 +914,7 @@ define('recipe-book-card', NovaRecipeBookCard, {name: 'Nova Rezeptbuch', descrip
 const S_BOOK = [
   g2({name: 'title', selector: T}, {name: 'subtitle', selector: T}),
   g2(sel('style', [['old', 'Old Book (altes Kochbuch)'], ['modern', 'Modern Book (schlicht, grau)'], ['fantasy', 'Fantasy Book (Zauberbuch)']]),
-    sel('cover_color', [['brown', 'Braun'], ['red', 'Rot'], ['green', 'Grün'], ['blue', 'Blau']])),
+    sel('cover_color', [['brown', 'Standard des Stils'], ['red', 'Rot'], ['green', 'Grün'], ['blue', 'Blau']])),
 ];
 const S_USE = [
   sel('layout', [['auto', 'Automatisch'], ['double', 'Doppelseite'], ['single', 'Einzelseite']]),
@@ -923,7 +923,7 @@ const S_USE = [
 ];
 const LABELS = {title: 'Titel auf dem Einband', subtitle: 'Untertitel (optional)', style: 'Stil', cover_color: 'Einband', layout: 'Seiten', start_open: 'Aufgeschlagen starten', close_after: 'Zuklappen nach', turn: 'Blättern'};
 const HELPERS = {layout: 'Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.', close_after: '0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.',
-  subtitle: 'Steht unter dem Titel, z. B. „von Oma Erna“.', cover_color: 'Der Farbton passt sich dem Stil an (Leder, Leinen grau getönt, matter Hardcover-Einband; im Fantasy Book ist „Braun“ das Nachtblau des Entwurfs).',
+  subtitle: 'Steht unter dem Titel, z. B. „von Oma Erna“.', cover_color: 'Standard: Old Book braunes Leder, Modern Book grau, Fantasy Book nachtblau. Rot, Grün und Blau sind je Stil passend abgetönt.',
   style: 'Alle Stile zeigen dieselben Rezepte – auch die Nova Rezeptliste.',
   turn: 'Automatisch: 3D-Blättern, auf schwachen Geräten (z. B. Echo Show) oder wenn es ruckelt flaches Blättern mit Schatten.'};
 
