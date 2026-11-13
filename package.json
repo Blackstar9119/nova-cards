@@ -9,6 +9,7 @@
     "build": "node build.mjs",
     "dev": "node build.mjs --dev",
     "panel": "node build.mjs --panel",
+    "integration": "node build.mjs --integration",
     "check": "node tools/check-tokens.mjs"
   },
   "devDependencies": {
