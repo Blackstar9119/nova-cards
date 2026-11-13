@@ -3,7 +3,7 @@ import {setIcon} from './shared/utils.js';
 import {hassAction} from './shared/actions.js';
 import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {MARQUEE_CSS, marquee, stopMarquee} from './shared/marquee.js';
-import {CARD_CSS, roleVars, SECTION_EDITOR_CSS, TONE_SCOPE} from './shared/styles.js';
+import {CARD_CSS, roleVars, SECTION_EDITOR_CSS, tintLayer} from './shared/styles.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, A, ROLE} from './shared/editor-schema.js';
 import {normRows, PREV, EDIT, GRID_CSS, GridCard} from './shared/card-grid.js';
@@ -18,9 +18,7 @@ const MAX_CHIPS = 3; // höchstens so viele Chips direkt in der Kopfzeile
 const ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
 :host::before{background:var(--nv-sheen),var(--nv-area-bg)}
-:host(.tint)::before{background:var(--nv-sheen),linear-gradient(160deg,color-mix(in srgb,var(--tt) 45%,transparent),transparent 75%),var(--nv-area-bg)}
-/* Unterkarten im selben Farbton, nur schwächer */
-:host(.tint) .body{${TONE_SCOPE}}
+:host(.tint)::before{background:var(--nv-sheen),${tintLayer('var(--tt)')},var(--nv-area-bg)}
 .g{height:auto;display:flex;flex-direction:column;gap:var(--nv-s6);padding:var(--nv-s7)}
 .g{overflow:visible}
 /* Kopfzeile: feste Höhe, alles einzeilig. Höchstens 3 Chips, der Rest steckt hinter „+X“ (Klappliste unter der Leiste).
@@ -188,7 +186,7 @@ const S_GEN = icon => [
 const LABELS = {
   ...CHIP_LABELS, ...GRID_LABELS,
   area: 'Area', name: 'Name', icon: 'Icon', back_action: 'Zurück-Knopf: Aktion',
-  tint: 'Farbton (leer = Nova-Glas)', stack_below: 'Untereinander unter Breite',
+  tint: 'Farbton (Hauch, leer = keiner)', stack_below: 'Untereinander unter Breite',
 };
 const HELPERS = {
   ...CHIP_HELPERS, ...GRID_HELPERS,

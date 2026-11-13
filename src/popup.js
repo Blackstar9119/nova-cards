@@ -2,7 +2,7 @@ import {define, docUrl, tag} from './shared/define.js';
 import {setIcon, list} from './shared/utils.js';
 import {iconOf, nameOf, valueOf} from './shared/state.js';
 import {moreInfo} from './shared/actions.js';
-import {NOVA_VARS, roleVars, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, TONE_SCOPE} from './shared/styles.js';
+import {NOVA_VARS, roleVars, EDITOR_CSS, EDITOR_ICON_CSS, EDITOR_LIST_CSS, tintLayer} from './shared/styles.js';
 import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {MARQUEE_CSS, marquee, stopMarquee} from './shared/marquee.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
@@ -28,7 +28,7 @@ ha-icon{--mdc-icon-size:var(--nv-icon-lg);display:flex}
 .sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96%);max-height:88vh;
 background:var(--nv-sheen),var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
 box-shadow:var(--nv-shadow-popup);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s var(--nv-ease),opacity var(--nv-d2)}
-.sh.tint{background:var(--nv-sheen),linear-gradient(160deg,color-mix(in srgb,var(--tt) 55%,var(--nv-popup-base)),var(--nv-popup-base));${TONE_SCOPE}}
+.sh.tint{background:var(--nv-sheen),${tintLayer('var(--tt)')},var(--nv-popup-bg)}
 .pop.in .ov{opacity:1}.pop.in .sh{opacity:1;transform:none}
 .grip{display:none;justify-content:center;padding:var(--nv-s4) 0 0;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.35}
 .hd{display:flex;align-items:center;gap:var(--nv-s5);margin:var(--nv-s7) var(--nv-s7) var(--nv-s5);padding:var(--nv-s3) var(--nv-s3) var(--nv-s3) var(--nv-s7);border-radius:var(--nv-r-pill);flex:none;touch-action:pan-x;

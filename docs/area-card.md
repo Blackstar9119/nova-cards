@@ -24,7 +24,7 @@ einem Abschnitt bzw. in einer Panel-Ansicht verwenden.
 | `area` | Area, aus der Name und Icon kommen |
 | `name`, `icon` | Eigener Name / eigenes Icon (leer = wie in der Area). Ein zu langer Name läuft langsam hin und her statt umzubrechen |
 | `back_action` | Aktion des Zurück-Knopfs. Ohne Angabe eine Seite zurück, `action: none` blendet den Knopf aus |
-| `tint` | Farbton des Rahmens als Nova-Farbrolle (`neutral`, `accent-1` … `accent-4`), leer = Nova-Glas. Karten darin bekommen denselben Farbton, schwächer |
+| `tint` | Farbton des Rahmens als Nova-Farbrolle (`neutral`, `accent-1` … `accent-4`), leer = keiner. Nur ein Hauch (7 %) über dem Rahmen, Karten darin bleiben in der Theme-Farbe |
 
 ## Chips in der Kopfzeile
 

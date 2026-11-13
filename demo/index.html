@@ -53,7 +53,9 @@ for (const [type, conf, width] of cards) {
   if (!cls) { fig.querySelector('.slot').textContent = 'fehlt im Build'; continue; }
   try {
     const el = document.createElement(tag);
-    el.setConfig({type: 'custom:' + tag, ...(conf || await cls.getStubConfig?.(hass) || {})});
+    // Nova Navi in der Demo als Leiste im Fluss (?navi=float = schwebend), damit sie in Bildern nichts verdeckt
+    const nav = type === 'navi-card' && q.get('navi') !== 'float' ? {inline: true} : {};
+    el.setConfig({type: 'custom:' + tag, ...(conf || await cls.getStubConfig?.(hass) || {}), ...nav});
     el.hass = hass;
     fig.querySelector('.slot').append(el);
   } catch (e) { fig.querySelector('.slot').textContent = 'Fehler: ' + e.message; }

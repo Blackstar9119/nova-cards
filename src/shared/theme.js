@@ -25,9 +25,8 @@ export const TOKENS = [
   // Glanz über jeder Kartenfläche (oberste Ebene, Bild oder none): weiches Licht von oben links und ein schräger Spiegelstreifen.
   // Nova Blau hat ihn schon im Glas selbst, darum none.
   ['sheen', 'sheen', 'none'],
-  // Farbton der Fläche als Bild-Ebene: setzen Bereich und Pop-up mit Farbton für alles darin (Nova-Karten und fremde Karten,
-  // siehe TONE_SCOPE in styles.js), sonst none. tone-mix = Anteil des Farbtons oben links, er läuft nach unten rechts aus
-  ['tone-layer', 'tone-layer', 'none'], ['tone-mix', 'tone-mix', '22%'],
+  // Farbton (tint) von Bereich und Pop-up: nur ein Hauch über der Theme-Fläche, Unterkarten bleiben in der Theme-Farbe
+  ['tint-mix', 'tint-mix', '7%'],
   // Fremde Karten (Home-Assistant-Karten in Bereich, Pop-up, Swipe): einfarbige Kartenfarbe, wo HA keine Verläufe nimmt
   ['card-solid', 'card-color', '#1e2638'],
   // Akzente und Farbrollen
@@ -42,8 +41,8 @@ export const TOKENS = [
   ['a3', 'accent-3', '#b5794a'], ['a3-fg', 'accent-3-text', '#fff'],
   ['a4', 'accent-4', '#4caf6a'], ['a4-fg', 'accent-4-text', '#fff'],
   ['neutral', 'neutral', '#7b8794'], ['neutral-fg', 'neutral-text', '#fff'],
-  // Farbtöne der Flächen (Farbton von Bereich und Pop-up, Unterkarten darin) – die zentrale Palette für Hintergründe.
-  // Standard = die Rolle selbst, ein Theme kann sie für Flächen weicher oder wärmer stimmen
+  // Farbtöne für den Hauch von Bereich und Pop-up (tint) – zentrale Palette. Standard = die Rolle selbst, ein Theme kann sie
+  // für Flächen klarer oder wärmer stimmen
   ['a1-tone', 'accent-1-tone', 'var(--nv-a1)'], ['a2-tone', 'accent-2-tone', 'var(--nv-a2)'], ['a3-tone', 'accent-3-tone', 'var(--nv-a3)'],
   ['a4-tone', 'accent-4-tone', 'var(--nv-a4)'], ['neutral-tone', 'neutral-tone', 'var(--nv-neutral)'],
   // Farbrolle in Gerätezeichnungen (Leuchten auf dunklem Gehäuse) – Standard = die Rolle selbst, ein Theme kann sie aufhellen
@@ -139,7 +138,7 @@ export const THEMES = {
     page: 'linear-gradient(180deg,#0e0e10,#000 70%)',
     // Wie der Dark Mode von Apple: Seite schwarz, Karten um #1c1c1e (weicher Verlauf mit feinem Glanz), Kacheln #2c2c2e,
     // feine Linien, kein Glow, kein Blur. Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante).
-    bg: 'linear-gradient(160deg,#252528,#19191b)', sheen: SHEEN_DARK, 'card-solid': '#1c1c1e', 'tone-mix': '26%', border: 'rgba(255,255,255,.06)', fg: '#e5e5ea', chip: '#2c2c2e',
+    bg: 'linear-gradient(160deg,#252528,#19191b)', sheen: SHEEN_DARK, 'card-solid': '#1c1c1e', border: 'rgba(255,255,255,.06)', fg: '#e5e5ea', chip: '#2c2c2e',
     box: '#2c2c2e', 'box-border': 'rgba(255,255,255,.06)', knob: '#e5e5ea', cut: 'rgba(28,28,30,.85)',
     accent: '#b08d57', 'accent-fg': '#121214', 'accent-ink': '#b08d57',
     active: '#6b8db5', 'active-fg': '#121214', warn: '#7fa6c9', error: '#c86a6a', 'error-fg': '#121214',
@@ -209,10 +208,11 @@ const MOTION = `:host([nova-motion]) *,:host([nova-motion]) *::before,:host([nov
 :host([nova-motion=off]) *,:host([nova-motion=off]) *::before,:host([nova-motion=off]) *::after{transition:none!important}
 :host([nova-motion=off]){${TOKENS.filter(([n]) => /^d\d$|^sweep$/.test(n)).map(([n]) => `--nv-${n}:0s`).join(';')}}`;
 
-// Kartenfläche: Glanz, Farbton, Grund. Gemeinsam für Nova-Karten (styles.js) und fremde Karten.
-export const SURFACE = 'var(--nv-sheen),var(--nv-tone-layer),var(--nv-bg)';
-// Farbton-Ebene aus einer Farbe (läuft nach unten rechts aus)
-export const toneLayer = c => `linear-gradient(160deg,color-mix(in srgb,${c} var(--nv-tone-mix),transparent),transparent 85%)`;
+// Kartenfläche: Glanz über dem Grund des Themes – Verlauf und Glanz kommen nur aus der Theme-Farbe. Gemeinsam für
+// Nova-Karten (styles.js) und fremde Karten.
+export const SURFACE = 'var(--nv-sheen),var(--nv-bg)';
+// Hauch eines Farbtons über einer Fläche (Bereich, Pop-up mit tint): höchstens tint-mix Deckkraft, läuft nach unten rechts aus
+export const tintLayer = c => `linear-gradient(160deg,color-mix(in srgb,${c} var(--nv-tint-mix),transparent),color-mix(in srgb,${c} calc(var(--nv-tint-mix) / 2),transparent))`;
 // Fremde Karten in Nova-Karten (Bereich, Pop-up, Swipe …): dieselbe Fläche, dieselben Radien, Rahmen und Schriftfarben wie die
 // Nova-Unterkarten – keine weißen Karten in dunklen Themes, Fehlerkarten (HA legt --error-color mit 12 % darüber) bleiben dezent
 export const HA_VARS = `--ha-card-background:${SURFACE};--card-background-color:var(--nv-card-solid);--ha-card-border-radius:var(--nv-radius);

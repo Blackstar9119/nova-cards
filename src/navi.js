@@ -66,8 +66,10 @@ define('navi-popup', NovaNaviPopup);
 // Scroll-Bereich .dock mit den Buttons. .dock ragt ringsum 6px über das Glas hinaus (Innenabstand), damit Pille und Schatten
 // am Rand nicht abgeschnitten werden; gibt es in einer Richtung mehr zu scrollen, blendet der Rand dort weich aus (fs/fe)
 const DCSS = `
-:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px));transition:height var(--nv-d4) ease}
-:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
+/* Platzhalter im Dashboard, damit die schwebende Leiste nichts verdeckt: gemessene Höhe der Leiste (inkl. Mini-Player)
+   + Abstand unten + Luft. --nova-navi-space übersteuert wie bisher (dann + 62px für den Mini-Player). */
+:host{display:block;--nv-navi-auto:calc(var(--nv-navi-h,38px) + 26px + env(safe-area-inset-bottom,0px));height:var(--nova-navi-space,var(--nova-dock-space,var(--nv-navi-auto)));transition:height var(--nv-d4) ease}
+:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,calc(var(--nv-navi-auto) - 62px))) + 62px)}
 :host([side]){height:0}
 ha-icon{--mdc-icon-size:22px;display:flex}
 .wrap{position:fixed;left:50%;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:stretch;gap:var(--nv-s4);max-width:calc(100vw - 24px)}
@@ -259,6 +261,7 @@ class NovaNaviCard extends HTMLElement {
     this._closePlayers();
     clearTimeout(this._mpt); clearTimeout(this._wt); clearTimeout(this._pend?.t); this._pend = null;
     if (this._hp) { this._hp.remove(); this._hp = null; }
+    this._spro?.disconnect(); this._spw = null;
   }
   getCardSize() { return 1; }
   getGridOptions() { return {columns: 'full', rows: 1}; }
@@ -353,7 +356,23 @@ class NovaNaviCard extends HTMLElement {
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); run('tap'); } });
   }
 
+  // Höhe der Leiste messen (Platzhalter-Höhe im CSS); nur schwebend, inline steht sie ohnehin im Fluss
+  _space() {
+    const w = this.shadowRoot?.querySelector('.wrap');
+    if (!w || typeof ResizeObserver === 'undefined') return;
+    if (this._spw !== w) {
+      this._spro ||= new ResizeObserver(() => this._spaceSet());
+      this._spro.disconnect(); this._spro.observe(w); this._spw = w;
+    }
+    this._spaceSet();
+  }
+  _spaceSet() {
+    const w = this._spw;
+    if (!w || this._inline || !w.offsetHeight) this.style.removeProperty('--nv-navi-h');
+    else this.style.setProperty('--nv-navi-h', `${Math.ceil(w.offsetHeight)}px`);
+  }
   _update() {
+    this._space();
     if (!this._btns || !this._h) return;
     const h = this._h, here = normPath(location.pathname);
     const isHere = it => { const p = pathOf(it); return !!p && normPath(p) === here; };

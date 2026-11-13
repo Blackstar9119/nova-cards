@@ -65,7 +65,7 @@ export const cards = [
   ['modular-card', null], ['camera-card', null], ['media-card', null], ['vacuum-card', null], ['waste-card', null], ['weather-card', null],
   ['popup-card', null, 900], ['area-card', null, 900],
   // Bereich mit Farbton, vielen Chips, Unterkarten und fremden Karten (demo-ha-card ahmt eine HA-Karte nach, error = Fehlerkarte)
-  ...[[900, 'accent-4'], [460, 'accent-1']].map(([w, tint]) => ['area-card', {area: 'wohnzimmer', tint, chips: [
+  ...[[900, 'accent-4'], [900, 'accent-1'], [900, 'accent-2'], [460, 'accent-3']].map(([w, tint]) => ['area-card', {area: 'wohnzimmer', tint, chips: [
     {entity: 'sensor.wohnzimmer_temperatur'}, {entity: 'sensor.wohnzimmer_luftfeuchte'}, {entity: 'light.wohnzimmer_decke', name: 'Decke'},
     {type: 'button', preset: 'lights_off'}, {type: 'button', name: 'Gemütlich', icon: 'mdi:sofa', tap_action: {action: 'none'}}],
   rows: [{cells: [{card: {type: 'custom:nova-light-card', area: 'wohnzimmer'}}, {card: {type: 'custom:nova-thermostat-card', entity: 'climate.wohnzimmer'}}]},
