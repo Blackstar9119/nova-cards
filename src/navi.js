@@ -15,7 +15,7 @@ const countOn = (h, group, ex) => ((h.states[group]?.attributes.entity_id) || []
 const PCSS = `
 :host{position:fixed;inset:0 var(--nv-pop-r,0px) 0 var(--nv-pop-l,0px);z-index:6;display:flex;align-items:center;justify-content:center;background:var(--nv-popup-backdrop);backdrop-filter:blur(var(--nv-blur-xs));-webkit-backdrop-filter:blur(var(--nv-blur-xs));animation:fi .2s}
 .root{width:min(var(--nova-popup-width,1180px),96%);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:var(--nv-s7);border-radius:28px;
-background:var(--nv-navi-popup-bg);border:1px solid var(--nv-border);box-shadow:var(--nv-shadow-popup);color:var(--nv-fg);font-family:var(--nv-font);animation:up .28s var(--nv-ease)}
+background:var(--nv-sheen),var(--nv-navi-popup-bg);border:1px solid var(--nv-border);box-shadow:var(--nv-shadow-popup);color:var(--nv-fg);font-family:var(--nv-font);animation:up .28s var(--nv-ease)}
 .hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:var(--nv-s5);margin-bottom:var(--nv-s7);padding:var(--nv-s3) var(--nv-s3) var(--nv-s3) var(--nv-s7);border-radius:var(--nv-r-pill);background:var(--nv-popup-head);backdrop-filter:blur(var(--nv-blur-lg));-webkit-backdrop-filter:blur(var(--nv-blur-lg))}
 .tt{flex:1;min-width:0;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .x{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(var(--nv-tint),.14);cursor:pointer;flex:none}
@@ -66,8 +66,10 @@ define('navi-popup', NovaNaviPopup);
 // Scroll-Bereich .dock mit den Buttons. .dock ragt ringsum 6px über das Glas hinaus (Innenabstand), damit Pille und Schatten
 // am Rand nicht abgeschnitten werden; gibt es in einer Richtung mehr zu scrollen, blendet der Rand dort weich aus (fs/fe)
 const DCSS = `
-:host{display:block;height:var(--nova-navi-space,var(--nova-dock-space,64px));transition:height var(--nv-d4) ease}
-:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,64px)) + 62px)}
+/* Platzhalter im Dashboard, damit die schwebende Leiste nichts verdeckt: gemessene Höhe der Leiste (inkl. Mini-Player)
+   + Abstand unten + Luft. --nova-navi-space übersteuert wie bisher (dann + 62px für den Mini-Player). */
+:host{display:block;--nv-navi-auto:calc(var(--nv-navi-h,38px) + 26px + env(safe-area-inset-bottom,0px));height:var(--nova-navi-space,var(--nova-dock-space,var(--nv-navi-auto)));transition:height var(--nv-d4) ease}
+:host([media]){height:calc(var(--nova-navi-space,var(--nova-dock-space,calc(var(--nv-navi-auto) - 62px))) + 62px)}
 :host([side]){height:0}
 ha-icon{--mdc-icon-size:22px;display:flex}
 .wrap{position:fixed;left:50%;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:stretch;gap:var(--nv-s4);max-width:calc(100vw - 24px)}
@@ -75,7 +77,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .wrap.side{top:50%;bottom:auto;left:14px;right:auto;transform:translateY(-50%);max-width:none;max-height:calc(100vh - 28px);flex-direction:column}
 .wrap.side.right{left:auto;right:14px}
 .wrap.inline{position:static;transform:none;margin:0 auto;width:max-content;max-width:100%}
-.glass{background:var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat-2));-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat-2));border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(var(--nv-shade),.4)}
+.glass{background:var(--nv-sheen),var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat-2));-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat-2));border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(var(--nv-shade),.4)}
 .dk{position:relative;display:flex;border-radius:var(--nv-r-pill);max-width:100%;min-width:0;min-height:0}
 .side .dk{flex-direction:column}
 .dock{--g:8px;--o:6px;position:relative;z-index:1;flex:1 1 auto;min-width:0;min-height:0;margin:calc(-1 * var(--o));display:flex;align-items:center;gap:var(--g);padding:calc(8px + var(--o));border-radius:var(--nv-r-pill);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-sizing:border-box;--a1:1;--a2:1;--md:to right}
@@ -259,6 +261,7 @@ class NovaNaviCard extends HTMLElement {
     this._closePlayers();
     clearTimeout(this._mpt); clearTimeout(this._wt); clearTimeout(this._pend?.t); this._pend = null;
     if (this._hp) { this._hp.remove(); this._hp = null; }
+    this._spro?.disconnect(); this._spw = null;
   }
   getCardSize() { return 1; }
   getGridOptions() { return {columns: 'full', rows: 1}; }
@@ -353,7 +356,23 @@ class NovaNaviCard extends HTMLElement {
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); run('tap'); } });
   }
 
+  // Höhe der Leiste messen (Platzhalter-Höhe im CSS); nur schwebend, inline steht sie ohnehin im Fluss
+  _space() {
+    const w = this.shadowRoot?.querySelector('.wrap');
+    if (!w || typeof ResizeObserver === 'undefined') return;
+    if (this._spw !== w) {
+      this._spro ||= new ResizeObserver(() => this._spaceSet());
+      this._spro.disconnect(); this._spro.observe(w); this._spw = w;
+    }
+    this._spaceSet();
+  }
+  _spaceSet() {
+    const w = this._spw;
+    if (!w || this._inline || !w.offsetHeight) this.style.removeProperty('--nv-navi-h');
+    else this.style.setProperty('--nv-navi-h', `${Math.ceil(w.offsetHeight)}px`);
+  }
   _update() {
+    this._space();
     if (!this._btns || !this._h) return;
     const h = this._h, here = normPath(location.pathname);
     const isHere = it => { const p = pathOf(it); return !!p && normPath(p) === here; };

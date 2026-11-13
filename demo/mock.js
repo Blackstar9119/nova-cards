@@ -39,7 +39,7 @@ const events = [{start: {date: '2026-11-12'}, end: {date: '2026-11-13'}, summary
   {start: {date: '2026-11-18'}, end: {date: '2026-11-19'}, summary: 'Papier'}, {start: {date: '2026-11-25'}, end: {date: '2026-11-26'}, summary: 'Gelber Sack'}];
 
 export const hass = {
-  states, language: 'de', locale: {language: 'de', number_format: 'comma_decimal', time_format: '24', date_format: 'DMY', first_weekday: 'monday'},
+  states, language: 'de', locale: {language: 'de', number_format: 'decimal_comma', time_format: '24', date_format: 'DMY', first_weekday: 'monday'},
   config: {time_zone: 'Europe/Berlin', unit_system: {temperature: '°C', length: 'km', wind_speed: 'km/h'}, components: [], language: 'de'},
   user: {id: 'u1', name: 'Demo', is_admin: true}, themes: {darkMode: true, themes: {}},
   areas: {wohnzimmer: {area_id: 'wohnzimmer', name: 'Wohnzimmer', icon: 'mdi:sofa'}},
@@ -63,7 +63,13 @@ export const cards = [
   ['light-card', null], ['light-card', {entity: 'light.wohnzimmer_stehlampe'}],
   ['navi-card', null, 900],
   ['modular-card', null], ['camera-card', null], ['media-card', null], ['vacuum-card', null], ['waste-card', null], ['weather-card', null],
-  ['popup-card', null, 900], ['area-card', null, 900], ['swipe-card', null], ['chips-card', null],
+  ['popup-card', null, 900], ['area-card', null, 900],
+  // Bereich mit Farbton, vielen Chips, Unterkarten und fremden Karten (demo-ha-card ahmt eine HA-Karte nach, error = Fehlerkarte)
+  ...[[900, 'accent-4'], [900, 'accent-1'], [900, 'accent-2'], [460, 'accent-3']].map(([w, tint]) => ['area-card', {area: 'wohnzimmer', tint, chips: [
+    {entity: 'sensor.wohnzimmer_temperatur'}, {entity: 'sensor.wohnzimmer_luftfeuchte'}, {entity: 'light.wohnzimmer_decke', name: 'Decke'},
+    {type: 'button', preset: 'lights_off'}, {type: 'button', name: 'Gemütlich', icon: 'mdi:sofa', tap_action: {action: 'none'}}],
+  rows: [{cells: [{card: {type: 'custom:nova-light-card', area: 'wohnzimmer'}}, {card: {type: 'custom:nova-thermostat-card', entity: 'climate.wohnzimmer'}}]},
+    {cells: [{card: {type: 'demo-ha-card', title: 'Nova Demo Energie', text: '1.234,50 kWh'}}, {card: {type: 'demo-ha-card', title: 'Konfigurationsfehler', error: true}}]}]}, w]), ['swipe-card', null], ['chips-card', null],
   ...dev({}),
   ...['print', 'heat', 'pause', 'done', 'error', 'off'].map(d => ['drucker-card', {demo: d}]), ['drucker-card', {demo: 'print', demo_ams: false}],
   ['remote-card', null], ['timer-card', null],

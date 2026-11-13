@@ -24,14 +24,17 @@ einem Abschnitt bzw. in einer Panel-Ansicht verwenden.
 | `area` | Area, aus der Name und Icon kommen |
 | `name`, `icon` | Eigener Name / eigenes Icon (leer = wie in der Area). Ein zu langer Name läuft langsam hin und her statt umzubrechen |
 | `back_action` | Aktion des Zurück-Knopfs. Ohne Angabe eine Seite zurück, `action: none` blendet den Knopf aus |
-| `tint` | Farbton des Rahmens als Nova-Farbrolle (`neutral`, `accent-1` … `accent-4`), leer = Nova-Glas |
+| `tint` | Farbton des Rahmens als Nova-Farbrolle (`neutral`, `accent-1` … `accent-4`), leer = keiner. Nur ein Hauch (7 %) über dem Rahmen, Karten darin bleiben in der Theme-Farbe |
 
 ## Chips in der Kopfzeile
 
 | Option | Bedeutung |
 |---|---|
 | `chips` | Liste der Chips, gleiche Optionen wie in der [Nova Chips Card](chips-card.md#optionen-je-chip). Standard: keine |
-| `chips_layout` | `wrap` (umbrechen, Standard) oder `scroll` (waagrecht scrollen) |
+
+Die Kopfzeile hat immer dieselbe Höhe, Chips stehen einzeilig darin. Höchstens drei Chips sind direkt zu sehen, und nur so viele,
+wie neben dem Namen Platz haben – der Rest steckt hinter einem „+X“-Chip, der sie beim Antippen unter der Leiste aufklappt.
+Der Name nimmt den übrigen Platz und läuft nur dort durch. (Die frühere Option `chips_layout` wird ignoriert.)
 
 „Alle Lichter im Raum aus“ schaltet die Lichter der gewählten `area` aus. Auf dem Handy zeigen Chips mit Icon nur das
 Icon (Wert-Chips Icon und Wert).

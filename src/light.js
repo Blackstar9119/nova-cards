@@ -273,6 +273,8 @@ const LIGHT_CSS = `
 .hd .all{margin-left:auto;padding:var(--nv-s2) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-3);font-weight:var(--nv-fw-medium);cursor:pointer;display:none}
 .hd .all.show{display:block}.hd .all:active{transform:scale(.94)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-light-min-width,150px),1fr));gap:var(--nv-s4)}
+/* Spalten gleichmäßig verteilt (setzt _cols): 4 Lampen bei Platz für 3 = 2 × 2 statt 3 + 1 mit leerem Rest */
+.grid.bal{grid-template-columns:repeat(var(--lcols),minmax(0,1fr))}
 .t{position:relative;border-radius:var(--nv-r-md);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);padding:var(--nv-s5);display:flex;flex-direction:column;gap:var(--nv-s4);overflow:hidden;transition:background var(--nv-d4),box-shadow var(--nv-d4);min-width:0}
 .t.on{background:color-mix(in srgb,var(--lc,var(--nv-accent)) 22%,rgba(var(--nv-tint),.08));box-shadow:0 0 18px color-mix(in srgb,color-mix(in srgb,var(--lc,var(--nv-accent)) 30%,transparent) var(--nv-glow),transparent);border-color:color-mix(in srgb,var(--lc,var(--nv-accent)) 45%,transparent)}
 .t.na{opacity:.35}
@@ -281,7 +283,7 @@ const LIGHT_CSS = `
 .ic ha-icon{--mdc-icon-size:var(--nv-icon-md)}
 .t.on .ic{background:var(--lc,var(--nv-accent));color:var(--nv-accent-fg);box-shadow:0 0 12px color-mix(in srgb,color-mix(in srgb,var(--lc,var(--nv-accent)) 60%,transparent) var(--nv-glow),transparent)}
 .top:active .ic{transform:scale(.9)}
-.nm{flex:1;min-width:0}.nm b{display:block;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-medium);overflow-wrap:anywhere;hyphens:auto;line-height:1.25}.nm small{display:block;font-size:var(--nv-fs-2);opacity:.6}
+.nm{flex:1;min-width:0}.nm b{display:block;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-medium);overflow-wrap:break-word;word-break:normal;hyphens:manual;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.nm small{display:block;font-size:var(--nv-fs-2);opacity:.6}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;border-radius:11px;margin:0;outline:none;
 background:linear-gradient(90deg,var(--lc,var(--nv-accent)) 0 var(--p,0%),rgba(var(--nv-tint),.14) var(--p,0%) 100%)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--nv-knob);box-shadow:var(--nv-shadow-knob)}
@@ -329,6 +331,23 @@ class NovaLightCard extends HTMLElement {
     this._update();
   }
   getCardSize() { return 1 + Math.ceil((this._list?.length || 2) / 2) * 2; }
+  connectedCallback() {
+    this._ro ||= new ResizeObserver(() => this._cols());
+    this._ro.observe(this);
+  }
+  disconnectedCallback() { this._ro?.disconnect(); }
+  // Lampen gleichmäßig auf die Reihen verteilen: so viele Reihen wie nötig, dann so wenige Spalten wie möglich –
+  // kein Loch rechts neben der letzten Lampe
+  _cols() {
+    const g = this.shadowRoot?.querySelector('.grid'), n = g?.children.length || 0;
+    if (!g || this._single || !n) return;
+    const w = g.clientWidth, cs = getComputedStyle(g), min = parseFloat(cs.getPropertyValue('--nova-light-min-width')) || 150, gap = parseFloat(cs.columnGap) || 8;
+    if (w <= 0) return;
+    const max = w <= 300 ? 1 : Math.max(1, Math.floor((w + gap) / (min + gap)));
+    const cols = Math.ceil(n / Math.ceil(n / max));
+    g.style.setProperty('--lcols', cols);
+    g.classList.add('bal');
+  }
   // Genau eine Lampe ohne Bereich = Einzelkachel
   get _single() { return this._c && !this._c.area && this._c.entities.length === 1; }
   getGridOptions() { return this._single ? {columns: 6, rows: 'auto', min_columns: 3} : {columns: 12, rows: 'auto', min_columns: 4}; }
@@ -393,6 +412,7 @@ class NovaLightCard extends HTMLElement {
       grid.appendChild(tile);
       return {id, o, t: tile, ic: tile.querySelector('ha-icon'), nm: tile.querySelector('b'), st: tile.querySelector('small'), sl: slider, dots};
     });
+    this._cols();
   }
   _update() {
     if (!this._h || !this._tiles) return;

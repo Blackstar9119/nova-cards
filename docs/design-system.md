@@ -28,6 +28,9 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 | --- | --- | --- | --- |
 | `--nova-page-background` | `--nv-page` | `linear-gradient(160deg,#2b3650,#111624 70%)` | Seite hinter den Karten, nur im Nova-Panel |
 | `--nova-background` | `--nv-bg` | `linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62))` | Kartenfläche |
+| `--nova-sheen` | `--nv-sheen` | `none` | Glanz über jeder Kartenfläche: Licht von oben links und ein schräger Spiegelstreifen (Hell, Midnight, Velvet; Blau hat ihn im Glas) |
+| `--nova-tint-mix` | `--nv-tint-mix` | `7%` | Deckkraft des Farbtons (`tint`) von Bereich und Pop-up – nur ein Hauch, läuft auf die Hälfte aus |
+| `--nova-card-color` | `--nv-card-solid` | `#1e2638` | Einfarbige Kartenfarbe für fremde HA-Karten (`--card-background-color`) |
 | `--nova-border-color` | `--nv-border` | `rgba(255,255,255,.14)` | Kartenrand (Navi: Weiß 16 %) |
 | `--nova-text-color` | `--nv-fg` | `#fff` | Text und Icons |
 | `--nova-chip-color` | `--nv-chip` | `rgba(255,255,255,.13)` | Icon-Kreise, Pillen, Knöpfe (Navi: Weiß 10 %) |
@@ -198,6 +201,19 @@ Gegenstandsfarben in Zeichnungen (Wasser, Kaffee, Futter, Wäsche) hängen nicht
 | `--nova-ease-soft` | `--nv-ease-soft` | `cubic-bezier(.3,.7,.3,1)` | weiche Kurve |
 | `--nova-press-scale` | `--nv-press` | `.92` | Verkleinerung beim Drücken |
 | `--nova-sweep-dur` | `--nv-sweep` | `.9s` | Dauer des Lichtstreifens |
+
+### Farbtöne (zentrale Palette)
+
+Der Farbton von Bereich und Pop-up (`tint`) kommt aus einer festen Palette je Theme: `--nova-accent-1-tone` … `--nova-accent-4-tone`,
+`--nova-neutral-tone` (Kurzform `--nv-a1-tone` …). Standard ist die Rolle selbst; Hell nimmt klarere Töne für Blau und Grün,
+Velvet Cognac, Gold, Bordeaux und Oliv. Er liegt nur als Hauch über dem Rahmen (`--nv-tint-mix`, 7 %, `tintLayer()` in
+`theme.js`). Verlauf und Glanz kommen immer aus der Grundfarbe des Themes, Unterkarten bleiben in der Theme-Farbe.
+
+### Fläche und fremde Karten
+
+Jede Kartenfläche ist `SURFACE` aus `theme.js`: Glanz (`--nv-sheen`) über dem Grund (`--nv-bg`, in allen Themes ein Verlauf). Dieselbe Fläche bekommen fremde HA-Karten in Nova-Karten über `HA_VARS`: `--ha-card-background`,
+`--card-background-color`, Radius, Rahmen, Schatten, Schriftfarben und `--error-color`. So gibt es keine weißen Karten in dunklen
+Themes, und Fehlerkarten (HA legt `--error-color` mit 12 % darüber) bleiben dezent im Farbton des Themes.
 
 ## Was bewusst kein Token ist
 

@@ -22,6 +22,13 @@ export const TOKENS = [
   ['knob', 'knob-color', '#fff'],      // Griff von Regler und Schalter
   ['stage', 'stage-color', '#000'],    // Fläche hinter Vollbild-Video
   ['cut', 'cutout-color', 'rgba(20,24,38,.6)'], // Rand um Icons, die auf einer Farbfläche sitzen (Müllkalender)
+  // Glanz über jeder Kartenfläche (oberste Ebene, Bild oder none): weiches Licht von oben links und ein schräger Spiegelstreifen.
+  // Nova Blau hat ihn schon im Glas selbst, darum none.
+  ['sheen', 'sheen', 'none'],
+  // Farbton (tint) von Bereich und Pop-up: nur ein Hauch über der Theme-Fläche, Unterkarten bleiben in der Theme-Farbe
+  ['tint-mix', 'tint-mix', '7%'],
+  // Fremde Karten (Home-Assistant-Karten in Bereich, Pop-up, Swipe): einfarbige Kartenfarbe, wo HA keine Verläufe nimmt
+  ['card-solid', 'card-color', '#1e2638'],
   // Akzente und Farbrollen
   ['accent', 'accent-color', '#f5b83d'], ['accent-fg', 'accent-text-color', '#3a2a00'],
   ['accent-ink', 'accent-ink-color', '#f5b83d'], // Akzent als Schrift- oder Icon-Farbe direkt auf der Fläche (helle Themes: dunkler)
@@ -34,6 +41,10 @@ export const TOKENS = [
   ['a3', 'accent-3', '#b5794a'], ['a3-fg', 'accent-3-text', '#fff'],
   ['a4', 'accent-4', '#4caf6a'], ['a4-fg', 'accent-4-text', '#fff'],
   ['neutral', 'neutral', '#7b8794'], ['neutral-fg', 'neutral-text', '#fff'],
+  // Farbtöne für den Hauch von Bereich und Pop-up (tint) – zentrale Palette. Standard = die Rolle selbst, ein Theme kann sie
+  // für Flächen klarer oder wärmer stimmen
+  ['a1-tone', 'accent-1-tone', 'var(--nv-a1)'], ['a2-tone', 'accent-2-tone', 'var(--nv-a2)'], ['a3-tone', 'accent-3-tone', 'var(--nv-a3)'],
+  ['a4-tone', 'accent-4-tone', 'var(--nv-a4)'], ['neutral-tone', 'neutral-tone', 'var(--nv-neutral)'],
   // Farbrolle in Gerätezeichnungen (Leuchten auf dunklem Gehäuse) – Standard = die Rolle selbst, ein Theme kann sie aufhellen
   ['a1-dev', 'accent-1-device', 'var(--nv-a1)'], ['a2-dev', 'accent-2-device', 'var(--nv-a2)'], ['a3-dev', 'accent-3-device', 'var(--nv-a3)'],
   ['a4-dev', 'accent-4-device', 'var(--nv-a4)'], ['neutral-dev', 'neutral-device', 'var(--nv-neutral)'],
@@ -96,20 +107,27 @@ export const TOKENS = [
 // Gewählt wird ein Theme über das Attribut nova-theme am Kartenelement (setzt theme-apply.js); Blau = kein Attribut.
 // Zeichnungen (hi/lo, PAL in scene.js) bleiben in allen Themes dunkle Geräte.
 const INK = '20,28,45'; // Grundton von Nova Hell: Schiefer
+// Glanz der Flächen: Licht von oben links, darüber ein schräger, sehr weicher Spiegelstreifen (wie Glas unter einer Lampe)
+const sheen = (rgb, a, b) => `linear-gradient(165deg,rgba(${rgb},${a}),rgba(${rgb},0) 42%),linear-gradient(118deg,rgba(${rgb},0) 30%,rgba(${rgb},${b}) 46%,rgba(${rgb},0) 62%)`;
+const SHEEN_LIGHT = sheen('255,255,255', .6, .22);
+const SHEEN_WARM = sheen('255,250,240', .55, .2);
+const SHEEN_DARK = sheen('255,255,255', .07, .025);
 const MOKKA = '74,48,28'; // Grundton von Nova Velvet: Mokka
 export const THEMES = {
   blau: {name: 'Nova Blau', vars: {}},
   hell: {name: 'Nova Hell', vars: {
-    page: 'linear-gradient(160deg,#d6dbe3,#c7cdd7)',
-    bg: 'linear-gradient(160deg,rgba(236,238,242,.94),rgba(225,228,233,.94))',
+    page: 'linear-gradient(160deg,#dde2ea,#c4cbd6)',
+    bg: 'linear-gradient(160deg,rgba(246,248,251,.95),rgba(222,227,234,.94))', sheen: SHEEN_LIGHT, 'card-solid': '#eceef2',
+    'area-bg': 'linear-gradient(160deg,rgba(231,235,241,.94),rgba(207,214,224,.94))',
     border: `rgba(${INK},.1)`, fg: '#0e121a', chip: `rgba(${INK},.07)`,
     box: `rgba(${INK},.04)`, 'box-border': `rgba(${INK},.08)`,
     tint: INK, shade: INK, scrim: '236,238,242', knob: '#fff', cut: 'rgba(236,238,242,.9)',
     accent: '#f0b02e', 'accent-fg': '#3a2a00', 'accent-ink': '#8a5a00',
     active: '#1a66cc', 'active-fg': '#fff', warn: '#0f65b8', error: '#c62f2f', 'error-fg': '#fff',
     a1: '#1a66cc', a2: '#f0b02e', 'a2-fg': '#3a2a00', a3: '#9a5f33', a4: '#2a7a46', neutral: '#5b6673',
+    'a1-tone': '#4f8fe0', 'a4-tone': '#4f9a68', // Flächen hell und klar statt dunkler Schriftfarben
     'clock-night': '#2f4fd6', 'clock-morning': '#c4621a', 'clock-noon': '#0e121a',
-    'popup-bg': 'linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))',
+    'popup-bg': 'linear-gradient(160deg,rgba(246,248,251,.97),rgba(224,229,236,.97))',
     'popup-base': 'rgba(236,239,243,.97)', 'popup-head': 'rgba(226,230,236,.97)', 'popup-backdrop': 'rgba(30,38,55,.28)',
     'navi-popup-bg': 'linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))',
     shadow: `0 1px 2px rgba(${INK},.06),0 6px 18px rgba(${INK},.08)`, edge: 'inset 0 1px 0 rgba(255,255,255,.7)',
@@ -117,25 +135,27 @@ export const THEMES = {
     glow: '0%', 'text-shadow': '0%', blur: '12px', sat: '120%', 'sat-2': '120%',
   }, navi: {border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: '14px', warn: '#8a5a00'}},
   midnight: {name: 'Nova Midnight', vars: {
-    page: '#000',
-    // Wie der Dark Mode von Apple: Seite schwarz, Karten #1c1c1e, Kacheln #2c2c2e, feine Linien, kein Glow, kein Blur.
-    // Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante), Schrift darauf hell.
-    bg: '#1c1c1e', border: 'rgba(255,255,255,.06)', fg: '#e5e5ea', chip: '#2c2c2e',
+    page: 'linear-gradient(180deg,#0e0e10,#000 70%)',
+    // Wie der Dark Mode von Apple: Seite schwarz, Karten um #1c1c1e (weicher Verlauf mit feinem Glanz), Kacheln #2c2c2e,
+    // feine Linien, kein Glow, kein Blur. Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante).
+    bg: 'linear-gradient(160deg,#252528,#19191b)', sheen: SHEEN_DARK, 'card-solid': '#1c1c1e', border: 'rgba(255,255,255,.06)', fg: '#e5e5ea', chip: '#2c2c2e',
     box: '#2c2c2e', 'box-border': 'rgba(255,255,255,.06)', knob: '#e5e5ea', cut: 'rgba(28,28,30,.85)',
     accent: '#b08d57', 'accent-fg': '#121214', 'accent-ink': '#b08d57',
     active: '#6b8db5', 'active-fg': '#121214', warn: '#7fa6c9', error: '#c86a6a', 'error-fg': '#121214',
     a1: '#6b8db5', 'a1-fg': '#121214', a2: '#b08d57', 'a2-fg': '#121214', a3: '#ad805c', 'a3-fg': '#121214',
     a4: '#5f9a72', 'a4-fg': '#121214', neutral: '#8a929c', 'neutral-fg': '#121214',
     'clock-night': '#5a6fb8', 'clock-morning': '#c98a4e', 'clock-noon': '#c7ccd6',
-    'area-bg': '#000', 'popup-bg': '#000', 'popup-base': '#1c1c1e', 'popup-head': '#2c2c2e', 'popup-backdrop': 'rgba(0,0,0,.72)', 'navi-popup-bg': '#1c1c1e',
+    'area-bg': 'linear-gradient(160deg,#141416,#030303 70%)', 'popup-bg': 'linear-gradient(160deg,#141416,#030303 70%)', 'popup-base': '#1c1c1e',
+    'popup-head': '#2c2c2e', 'popup-backdrop': 'rgba(0,0,0,.72)', 'navi-popup-bg': 'linear-gradient(160deg,#252528,#19191b)',
     shadow: '0 0 0 transparent', edge: 'inset 0 1px 0 rgba(255,255,255,.05)', 'shadow-popup': '0 0 0 1px rgba(255,255,255,.08)',
     glow: '0%', ring: '70%', blur: '0px', sat: '100%', 'sat-2': '100%',
     fill: '22%', 'fill-ink': '0%', 'tint-ink': '0%', 'fill-edge': 'inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.1)',
   }, navi: {border: 'rgba(255,255,255,.08)', chip: '#2c2c2e', blur: '0px', warn: '#b08d57'}},
   velvet: {name: 'Nova Velvet', vars: {
-    page: 'linear-gradient(160deg,#d8c9ad,#c4b393)',
+    page: 'linear-gradient(160deg,#e0d2b6,#bfac88)',
     // Warm und edel: cremiges Beige, Espresso-Schrift, Gold und Cognac, weiche warme Schatten statt Glow
-    bg: `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))`,
+    bg: 'linear-gradient(160deg,rgba(247,240,228,.95),rgba(226,212,189,.94))', sheen: SHEEN_WARM, 'card-solid': '#efe6d6',
+    'area-bg': 'linear-gradient(160deg,rgba(236,226,207,.94),rgba(212,195,166,.94))',
     border: 'rgba(90,62,40,.14)', fg: '#1a0f09', chip: `rgba(${MOKKA},.08)`, box: `rgba(${MOKKA},.05)`, 'box-border': `rgba(${MOKKA},.1)`,
     tint: MOKKA, shade: MOKKA, scrim: '239,230,214', knob: '#fbf6ec', cut: 'rgba(239,230,214,.9)',
     accent: '#b8935a', 'accent-fg': '#1a0f09', 'accent-ink': '#7a5a1e',
@@ -144,8 +164,9 @@ export const THEMES = {
     a2: '#b8935a', 'a2-fg': '#1a0f09', a3: '#7a2f3a', 'a3-fg': '#fbf6ec',
     coffee: '#8a5a33', 'coffee-fg': '#fbf6ec', 'coffee-dev': '#b07a48', // Kaffee warmes Braun statt Bordeaux
     a4: '#4f5f2a', 'a4-fg': '#fbf6ec', neutral: '#62554c', 'neutral-fg': '#fbf6ec',
+    'a1-tone': '#8a5a33', 'a2-tone': '#b8935a', 'a3-tone': '#8a3a45', 'a4-tone': '#6b7a3a', // Flächen: Cognac, Gold, Bordeaux, Oliv
     'clock-night': '#6b3a2a', 'clock-morning': '#9a5a1e', 'clock-noon': '#1a0f09',
-    'popup-bg': 'linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))',
+    'popup-bg': 'linear-gradient(160deg,rgba(247,240,228,.97),rgba(228,215,192,.97))',
     'popup-base': 'rgba(243,236,223,.97)', 'popup-head': 'rgba(233,223,205,.97)', 'popup-backdrop': 'rgba(40,26,16,.32)',
     'navi-popup-bg': 'linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))',
     shadow: `0 1px 2px rgba(${MOKKA},.08),0 8px 22px rgba(${MOKKA},.12)`, edge: 'inset 0 1px 0 rgba(255,255,255,.6)',
@@ -187,6 +208,19 @@ const MOTION = `:host([nova-motion]) *,:host([nova-motion]) *::before,:host([nov
 :host([nova-motion=off]) *,:host([nova-motion=off]) *::before,:host([nova-motion=off]) *::after{transition:none!important}
 :host([nova-motion=off]){${TOKENS.filter(([n]) => /^d\d$|^sweep$/.test(n)).map(([n]) => `--nv-${n}:0s`).join(';')}}`;
 
+// Kartenfläche: Glanz über dem Grund des Themes – Verlauf und Glanz kommen nur aus der Theme-Farbe. Gemeinsam für
+// Nova-Karten (styles.js) und fremde Karten.
+export const SURFACE = 'var(--nv-sheen),var(--nv-bg)';
+// Hauch eines Farbtons über einer Fläche (Bereich, Pop-up mit tint): höchstens tint-mix Deckkraft, läuft nach unten rechts aus
+export const tintLayer = c => `linear-gradient(160deg,color-mix(in srgb,${c} var(--nv-tint-mix),transparent),color-mix(in srgb,${c} calc(var(--nv-tint-mix) / 2),transparent))`;
+// Fremde Karten in Nova-Karten (Bereich, Pop-up, Swipe …): dieselbe Fläche, dieselben Radien, Rahmen und Schriftfarben wie die
+// Nova-Unterkarten – keine weißen Karten in dunklen Themes, Fehlerkarten (HA legt --error-color mit 12 % darüber) bleiben dezent
+export const HA_VARS = `--ha-card-background:${SURFACE};--card-background-color:var(--nv-card-solid);--ha-card-border-radius:var(--nv-radius);
+--ha-card-border-color:var(--nv-border);--ha-card-border-width:1px;--ha-card-box-shadow:var(--nv-shadow),var(--nv-edge);
+--primary-text-color:var(--nv-fg);--secondary-text-color:color-mix(in srgb,var(--nv-fg) 62%,transparent);
+--divider-color:rgba(var(--nv-tint),.12);--error-color:var(--nv-error)`;
+const HA = `:host{${HA_VARS}}`;
+
 // Variablen-Block für das Stylesheet einer Karte
-export const NOVA_VARS = block(':host') + themed(false) + sized + MOTION;
-export const NAVI_VARS = block(':host', {...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI}) + themed(true) + sized + MOTION;
+export const NOVA_VARS = block(':host') + themed(false) + HA + sized + MOTION;
+export const NAVI_VARS = block(':host', {...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI}) + themed(true) + HA + sized + MOTION;
