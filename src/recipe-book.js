@@ -262,8 +262,8 @@ ol.st li p{margin:0}
 .card .rte{min-height:7.5em;font-size:16px;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(70,45,20,.35);border-radius:4px;padding:.45em .6em;outline:none;
 -webkit-user-select:text;user-select:text;margin-top:6px}
 .card .rte:focus{border-color:rgba(70,45,20,.8);box-shadow:0 0 0 3px rgba(150,100,40,.2)}
-/* Beschläge und Siegel gibt es nur im Fantasy Book */
-.fit,.sigil{display:none}
+/* Kapitel-Zeile über dem Rezepttitel gibt es nur im Fantasy Book */
+.chap{display:none}
 
 /* ===== Modern Book: schlicht, grau, ohne Gebrauchsspuren ===== */
 :host([book=modern]) .nb{font-weight:600;font-size:15px;letter-spacing:.01em;background-image:none;border:1px solid rgba(0,0,0,.12);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.22)}
@@ -309,70 +309,80 @@ box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),6px 8px 22px rgba(0,0,0,.35)}
 :host([book=modern]) .card .pic img{transform:none;border:0;border-radius:6px}
 :host([book=modern]) .card .err{font-size:.9em}
 
-/* ===== Fantasy Book: Zauberbuch mit Beschlägen, Siegel und Pergament ===== */
-:host([book=fantasy]){--f-hand:'Nova Serif',Georgia,'Times New Roman',serif;--paper:#e4d0a0;--ink:#2b1a0e;--gold:#e0b354;--leather:#3a2413;--acc:#8c1c13;--acc2:#3b2a7a}
-:host([book=fantasy][cover=red]){--leather:#4a0f1c}:host([book=fantasy][cover=green]){--leather:#12352a}:host([book=fantasy][cover=blue]){--leather:#171c4a}
-:host([book=fantasy]) .paper{box-shadow:inset 0 0 0 1px rgba(90,50,15,.35),inset 0 0 60px rgba(90,45,10,.45),inset 0 0 14px rgba(60,25,5,.35)}
-:host([book=fantasy]) .leather{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6),inset 0 0 60px rgba(0,0,0,.65),inset 0 0 0 5px rgba(224,179,84,.14),6px 8px 26px rgba(0,0,0,.6)}
-:host([book=fantasy]) .stitch{inset:7% 8% 7% 14%;border:3px double rgba(224,179,84,.6);border-radius:3px;box-shadow:0 0 10px rgba(224,179,84,.18),inset 0 0 10px rgba(224,179,84,.1)}
-:host([book=fantasy]) .cover .face.f{overflow:visible}
-:host([book=fantasy]) .nb{font-family:var(--f-serif);font-variant:small-caps;letter-spacing:.04em;font-size:19px;color:var(--gold);background-color:var(--leather);
-background-image:linear-gradient(180deg,rgba(255,230,190,.14),rgba(0,0,0,.25));border:1.5px solid var(--gold);text-shadow:0 1px 0 rgba(0,0,0,.6);
-box-shadow:inset 0 0 0 1px rgba(0,0,0,.5),inset 0 0 10px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.45)}
-:host([book=fantasy]) .nb[disabled]{box-shadow:inset 0 0 0 1px rgba(0,0,0,.5)}
-:host([book=fantasy]) .fit{display:block;position:absolute;width:17%;aspect-ratio:1;z-index:1;background:linear-gradient(135deg,#f6e2a6,var(--gold) 38%,#7a5a1e 72%,#c9a14a);filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
-:host([book=fantasy]) .fit::after{content:"";position:absolute;width:14%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c8,#6b4d16 70%)}
-:host([book=fantasy]) .fit.tr{top:-1%;right:-1%;clip-path:polygon(0 0,100% 0,100% 100%,72% 72%,62% 28%,28% 38%);border-radius:0 10px 0 0}
-:host([book=fantasy]) .fit.br{bottom:-1%;right:-1%;clip-path:polygon(100% 0,100% 100%,0 100%,28% 62%,62% 72%,72% 28%);border-radius:0 0 10px 0}
-:host([book=fantasy]) .fit.tl{top:-1%;left:9%;clip-path:polygon(0 0,100% 0,72% 38%,38% 28%,28% 72%,0 100%)}
-:host([book=fantasy]) .fit.bl{bottom:-1%;left:9%;clip-path:polygon(0 0,28% 28%,38% 72%,72% 62%,100% 100%,0 100%)}
-:host([book=fantasy]) .fit.tr::after{top:14%;right:14%}:host([book=fantasy]) .fit.br::after{bottom:14%;right:14%}
-:host([book=fantasy]) .fit.tl::after{top:14%;left:14%}:host([book=fantasy]) .fit.bl::after{bottom:14%;left:14%}
-:host([book=fantasy]) .sigil{display:block;width:34%;height:auto;overflow:visible;filter:drop-shadow(0 0 5px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,.7))}
-:host([book=fantasy]) .sigil .gold{stroke-width:1.6}
-:host([book=fantasy]) .sigil .gem{fill:var(--acc);stroke:var(--gold);stroke-width:1.2}
-:host([book=fantasy]) .live .sigil{animation:sigil 4.5s ease-in-out infinite alternate}
-@keyframes sigil{from{filter:drop-shadow(0 0 3px rgba(224,179,84,.3)) drop-shadow(0 1px 0 rgba(0,0,0,.7))}to{filter:drop-shadow(0 0 11px rgba(224,179,84,.75)) drop-shadow(0 1px 0 rgba(0,0,0,.7))}}
-:host([book=fantasy]) .emb .orn:first-of-type{display:none}
-:host([book=fantasy]) .emb h1{font-style:normal;font-variant:small-caps;letter-spacing:.06em;font-size:clamp(20px,calc(var(--pw) * .115),70px);
-filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,.7));opacity:1}
-:host([book=fantasy]) .emb p{font-style:italic;font-size:clamp(13px,calc(var(--pw) * .05),28px);color:#e9cf93}
-:host([book=fantasy]) .inside{background-color:#d8c38f}
-:host([book=fantasy]) .inside .ded{transform:none;font-variant:small-caps;letter-spacing:.06em;font-size:clamp(16px,calc(var(--pw) * .07),40px)}
+/* ===== Fantasy Book: hochwertige Hardcover-Ausgabe – matter Einband, Goldfolie, Farbschnitt, sauberes Papier, Kapitel-Optik.
+   Bewusst ohne Filter, Texturen und Dauer-Animationen (läuft auch auf dem Echo Show). ===== */
+
+:host([book=fantasy]){--f-hand:'Nova Serif',Georgia,'Times New Roman',serif;--f-serif:'Nova Serif',Georgia,'Times New Roman',serif;--paper:#f6efdd;--ink:#2a2420}
+:host([book=fantasy]) .paper,:host([book=fantasy]) .pg,:host([book=fantasy]) .face.paper{--st:none;background-image:none;background-color:var(--paper);box-shadow:inset 0 0 0 1px rgba(60,40,20,.07)}
+:host([book=fantasy]) .pg.r::before,:host([book=fantasy]) .leaf .face.f::before{width:9%;background:linear-gradient(90deg,rgba(40,28,15,.16),rgba(40,28,15,.03) 45%,transparent)}
+:host([book=fantasy]) .pg.l::before,:host([book=fantasy]) .leaf .face.b::before{width:9%;background:linear-gradient(270deg,rgba(40,28,15,.18),rgba(40,28,15,.03) 45%,transparent)}
+:host([book=fantasy]) .block{background:var(--edge);box-shadow:2px 3px 0 -1px rgba(0,0,0,.4),4px 7px 14px rgba(0,0,0,.4);transform:translate3d(6px,6px,-2px)}
+:host([book=fantasy]) .double .block.l{transform:translate3d(-6px,6px,-2px)}
+:host([book=fantasy]) .leather{border-radius:2px 6px 6px 2px;background-color:var(--leather);background-image:linear-gradient(100deg,rgba(0,0,0,.3),rgba(255,255,255,.05) 11%,transparent 28%,rgba(0,0,0,.1));
+background-size:auto;background-blend-mode:normal;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45),5px 7px 18px rgba(0,0,0,.45)}
+:host([book=fantasy]) .spine{width:7%;border-radius:2px 0 0 2px;background:linear-gradient(90deg,rgba(0,0,0,.4),rgba(255,255,255,.07) 55%,rgba(0,0,0,.3))}
+:host([book=fantasy]) .wear{display:none}
+:host([book=fantasy]) .emb{inset:0 0 0 7%}
+:host([book=fantasy]) .emb h1{font-style:normal;font-weight:400;background:linear-gradient(180deg,#f3dfa6,var(--gold) 50%,#a9823a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:none;opacity:1}
+:host([book=fantasy]) .emb p{font-family:var(--f-serif);font-style:italic;color:var(--gold);opacity:.85;text-shadow:none}
+:host([book=fantasy]) .emb .gold{stroke:var(--gold);opacity:1}
+:host([book=fantasy]) .inside{background-color:var(--leather);background-image:var(--endpaper);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+:host([book=fantasy]) .inside .ded{inset:30% 18%;transform:none;font-family:var(--f-serif);font-variant:small-caps;letter-spacing:.08em;font-size:clamp(15px,calc(var(--pw) * .06),30px);color:var(--ink);background:var(--paper);
+box-shadow:0 0 0 1px var(--gold),0 0 0 4px var(--paper),0 0 0 5px var(--gold);opacity:1}
 :host([book=fantasy]) .inside .ded small{font-variant:normal;font-style:italic;letter-spacing:0}
-:host([book=fantasy]) h2{font-variant:small-caps;font-weight:400;letter-spacing:.04em;transform:none;font-size:1.8em;text-align:center;line-height:1.05}
-:host([book=fantasy]) h2::first-letter{font-size:1.45em;color:var(--acc)}
-:host([book=fantasy]) h2::after{content:"❦";display:block;font-size:.5em;opacity:.55;margin-top:.25em;letter-spacing:0}
-:host([book=fantasy]) .toc h2::after{content:"✦  ❦  ✦"}
-:host([book=fantasy]) h3{font-variant:small-caps;font-weight:400;letter-spacing:.08em;font-size:1.2em;border-bottom:3px double rgba(70,35,10,.4);padding-bottom:.25em}
-:host([book=fantasy]) h3 .sv{font-variant:normal;letter-spacing:0;font-size:.75em}
-:host([book=fantasy]) .meta{text-align:center}
-:host([book=fantasy]) ul.ing li::before{content:"✦";font-size:.7em;top:.5em;color:var(--acc);font-weight:400}
-:host([book=fantasy]) ol.st{counter-reset:s}
-:host([book=fantasy]) ol.st li::before{content:counter(s,upper-roman);font-size:.8em;width:1.9em;height:1.9em;transform:none;border:1.5px solid rgba(110,70,15,.7);background:radial-gradient(circle at 40% 35%,rgba(224,179,84,.45),rgba(224,179,84,.1))}
-:host([book=fantasy]) .toc .it .t{font-variant:small-caps;letter-spacing:.03em;font-size:1.12em}
-:host([book=fantasy]) .msg{font-style:italic;font-size:1.1em}
-:host([book=fantasy]) .btn{font-variant:small-caps;font-weight:400;letter-spacing:.05em;border-radius:4px;font-size:1em;border-color:rgba(110,70,15,.7);background:rgba(224,179,84,.18);padding:.3em .9em}
-:host([book=fantasy]) .tools .btn{font-size:.9em}
-:host([book=fantasy]) .sb{border-color:rgba(110,70,15,.7);background:rgba(224,179,84,.18)}
-:host([book=fantasy]) .photo{background:#2a1a10;padding:2.5%;box-shadow:0 0 0 2px var(--gold),0 3px 8px rgba(0,0,0,.4);transform:rotate(.8deg)}
-:host([book=fantasy]) .photo i{display:none}
-:host([book=fantasy]) .photo img{filter:sepia(.35) saturate(.85)}
-:host([book=fantasy]) .ribbon{background:linear-gradient(90deg,#3b1a5c,#6a35a0 50%,#3b1a5c)}
-:host([book=fantasy]) .card{transform:none;background-color:#e4d0a0;background-image:${PAPER_FIBER};border-radius:3px;box-shadow:0 0 0 2px var(--gold),0 12px 40px rgba(0,0,0,.6);--nv-active:#6b4d16}
-:host([book=fantasy]) .card label{font-variant:small-caps;font-weight:400;letter-spacing:.05em;font-size:1.05em}
+:host([book=fantasy]) h2{font-family:var(--f-serif);font-weight:400;transform:none;text-align:center;font-size:1.85em;line-height:1.12;margin-bottom:.25em}
+:host([book=fantasy]) h2::first-letter{color:var(--acc)}
+:host([book=fantasy]) .meta{text-align:center;font-style:italic;opacity:.65;padding-bottom:16px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%2010%22%3E%3Cpath%20d%3D%22M2%205H50M70%205H118%22%20stroke%3D%22%239a8255%22%20stroke-width%3D%22.8%22%2F%3E%3Cpath%20d%3D%22M60%201l4%204-4%204-4-4z%22%20fill%3D%22%239a8255%22%2F%3E%3Ccircle%20cx%3D%2253%22%20cy%3D%225%22%20r%3D%221%22%20fill%3D%22%239a8255%22%2F%3E%3Ccircle%20cx%3D%2267%22%20cy%3D%225%22%20r%3D%221%22%20fill%3D%22%239a8255%22%2F%3E%3C%2Fsvg%3E") bottom center/46% 9px no-repeat}
+:host([book=fantasy]) h3{font-family:var(--f-serif);font-weight:400;font-variant:small-caps;letter-spacing:.14em;font-size:1.08em;border:0;padding:0;margin:1.1em 0 .55em;color:var(--acc)}
+:host([book=fantasy]) h3 .sv{font-variant:normal;letter-spacing:0;color:var(--ink);font-size:.8em}
+:host([book=fantasy]) .sb{width:28px;height:28px;border:1px solid rgba(60,40,20,.3);background:transparent;font-weight:400;font-size:15px}
+:host([book=fantasy]) ul.ing li{border-bottom:1px solid rgba(60,40,20,.09);padding-left:1em}
+:host([book=fantasy]) ul.ing li::before{content:"◆";font-size:.45em;top:.85em;color:var(--acc);font-family:var(--f-serif)}
+:host([book=fantasy]) ol.st li{padding-left:1.8em}
+:host([book=fantasy]) ol.st li::before{content:counter(s);border:0;transform:none;font-family:var(--f-serif);font-weight:400;font-style:italic;font-size:1.15em;color:var(--acc);width:1.2em;justify-content:flex-start}
+:host([book=fantasy]) .toc h2{font-variant:small-caps;letter-spacing:.12em;padding-bottom:18px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%2010%22%3E%3Cpath%20d%3D%22M2%205H50M70%205H118%22%20stroke%3D%22%239a8255%22%20stroke-width%3D%22.8%22%2F%3E%3Cpath%20d%3D%22M60%201l4%204-4%204-4-4z%22%20fill%3D%22%239a8255%22%2F%3E%3Ccircle%20cx%3D%2253%22%20cy%3D%225%22%20r%3D%221%22%20fill%3D%22%239a8255%22%2F%3E%3Ccircle%20cx%3D%2267%22%20cy%3D%225%22%20r%3D%221%22%20fill%3D%22%239a8255%22%2F%3E%3C%2Fsvg%3E") bottom center/52% 9px no-repeat;margin-bottom:.8em}
+:host([book=fantasy]) .toc .it .t{font-family:var(--f-serif);font-size:1.08em}
+:host([book=fantasy]) .toc .it .d{border-bottom:1px dotted rgba(60,40,20,.35)}
+:host([book=fantasy]) .toc .it .n{font-style:normal;opacity:.7}
+:host([book=fantasy]) .no{font-style:normal;letter-spacing:.15em;opacity:.5}
+:host([book=fantasy]) .msg{font-family:var(--f-serif);font-style:italic;font-size:1.05em;opacity:.7}
+:host([book=fantasy]) .btn{font-family:var(--f-serif);font-weight:400;font-variant:small-caps;letter-spacing:.06em;font-size:1em;border:1px solid rgba(60,40,20,.3);background:transparent;padding:.3em 1em}
+:host([book=fantasy]) .tools .btn{font-size:.85em}
+:host([book=fantasy]) .photo{transform:none;padding:0;background:none;box-shadow:0 1px 5px rgba(0,0,0,.2);width:100%}:host([book=fantasy]) .photo i{display:none}:host([book=fantasy]) .photo img{filter:none}
+:host([book=fantasy]) .ribbon{background:var(--rib);clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%);box-shadow:none}
+:host([book=fantasy]) .nb{font-family:var(--f-serif);font-variant:small-caps;letter-spacing:.07em;font-weight:400;font-size:19px;color:var(--gold);background-color:var(--leather);background-image:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.15));
+border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
+
+:host([book=fantasy]){--leather:#1b2338;--gold:#d6b76e;--acc:#7a5a1f;--rib:linear-gradient(90deg,#9c7a2e,#f1d68e 42%,#c9a24e 58%,#8a6a25);
+--edge:radial-gradient(circle,#d6b76e 0 .8px,transparent 1.3px) 0 0/5px 5px,radial-gradient(circle,rgba(214,183,110,.5) 0 .6px,transparent 1px) 2.5px 2.5px/5px 5px,#1b2338;
+--endpaper:radial-gradient(circle,rgba(214,183,110,.55) 0 1px,transparent 1.6px) 0 0/14px 14px,radial-gradient(circle,rgba(214,183,110,.3) 0 .7px,transparent 1.2px) 7px 7px/14px 14px}
+:host([book=fantasy]) .stitch{display:block;inset:5.5% 6.5% 5.5% 12%;border:1px solid var(--gold);border-radius:0;box-shadow:inset 0 0 0 4px var(--leather),inset 0 0 0 5px rgba(214,183,110,.6)}
+:host([book=fantasy]) .emb::before{content:"";width:30%;aspect-ratio:1;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23d6b76e%22%20stroke-width%3D%221.4%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2230%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2226%22%20stroke-width%3D%22.6%22%2F%3E%3C%2Fg%3E%3Cpath%20fill%3D%22%23d6b76e%22%20d%3D%22M50%208l5%2034%2034%208-34%208-5%2034-5-34-34-8%2034-8z%22%2F%3E%3Cpath%20fill%3D%22%23d6b76e%22%20opacity%3D%22.7%22%20d%3D%22M50%2030l3%2017%2017%203-17%203-3%2017-3-17-17-3%2017-3z%22%20transform%3D%22rotate(45%2050%2050)%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat;margin-bottom:calc(var(--pw) * .02)}
+:host([book=fantasy]) .emb .orn:first-of-type{display:none}
+:host([book=fantasy]) .emb h1{font-variant:small-caps;letter-spacing:.08em;font-size:clamp(20px,calc(var(--pw) * .115),66px)}
+:host([book=fantasy]) h2::first-letter{font-size:1.25em}
+
+:host([book=fantasy][cover=brown]){--leather:#1b2338}:host([book=fantasy][cover=red]){--leather:#4b1622}:host([book=fantasy][cover=green]){--leather:#173229}:host([book=fantasy][cover=blue]){--leather:#1b2338}
+:host([book=fantasy]) .chap{display:block;text-align:center;font-family:var(--f-serif);font-size:.62em;letter-spacing:.35em;text-transform:uppercase;color:var(--acc);margin:0 0 .9em}
+:host([book=fantasy]) .card{transform:none;background-color:var(--paper);background-image:none;border-radius:4px;box-shadow:0 0 0 1px var(--gold),0 0 0 5px var(--paper),0 0 0 6px var(--gold),0 12px 40px rgba(0,0,0,.55);--nv-active:var(--leather);--nv-active-fg:var(--gold)}
+:host([book=fantasy]) .card h2{font-variant:small-caps;letter-spacing:.06em}
+:host([book=fantasy]) .card label{font-family:var(--f-serif);font-variant:small-caps;font-weight:400;letter-spacing:.1em;font-size:1em;color:var(--acc)}
 :host([book=fantasy]) .card .err{font-style:italic;font-size:1em}
-@media (prefers-reduced-motion:reduce){.live .sigil{animation:none!important}ul.ing li .q.bump{animation:none}}
+@media (prefers-reduced-motion:reduce){ul.ing li .q.bump{animation:none}}
 `;
 
-// Zierlinie für den Einband (Goldprägung) und Siegel des Fantasy Book
+// Zierlinie für den Einband (Goldprägung)
 const ORN = `<svg class="orn" viewBox="0 0 200 24" aria-hidden="true"><path class="gold" d="M4 12H78M122 12H196M84 12c4-8 12-8 16 0s12 8 16 0M84 12c4 8 12 8 16 0s12-8 16 0"/><circle cx="100" cy="12" r="2.2" fill="currentColor" class="gold"/></svg>`;
-const SIGIL = `<svg class="sigil" viewBox="0 0 100 100" aria-hidden="true"><circle class="gold" cx="50" cy="50" r="46"/><circle class="gold" cx="50" cy="50" r="39" stroke-dasharray="2 4"/>
-<path class="gold" d="M50 8 59 41 92 50 59 59 50 92 41 59 8 50 41 41Z"/><path class="gold" d="M50 22 56 44 78 50 56 56 50 78 44 56 22 50 44 44Z" transform="rotate(45 50 50)"/><circle class="gem" cx="50" cy="50" r="7"/></svg>`;
-const FITS = '<i class="fit tl"></i><i class="fit tr"></i><i class="fit bl"></i><i class="fit br"></i>';
 
 // Zubereitung (bereinigtes HTML aus der Formatierungsleiste) als nummerierte Schritte: jeder Absatz und jeder Listenpunkt ein Schritt,
 // Überschriften bleiben Überschriften. Fett, Kursiv, Größen und Farben bleiben erhalten.
+// Kapitelnummer als römische Zahl (Fantasy Book)
+const roman = n => {
+  if (!(n > 0)) return '';
+  let out = '';
+  for (const [v, t] of [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]) while (n >= v) { out += t; n -= v; }
+  return out;
+};
 function stepsHtml(html) {
   const t = document.createElement('template');
   t.innerHTML = sanitize(html || '');
@@ -440,7 +450,7 @@ class NovaRecipeBookCard extends HTMLElement {
     r.innerHTML = `<style>${NOVA_VARS}${RICH_CSS}${BOOK_CSS}</style><div class="rb"><div class="stage"><div class="book closed">
 <div class="block l"></div><div class="block r"></div>
 <div class="pg l paper"><div class="in"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="no"></div></div>
-<div class="cover"><div class="face f leather"><div class="spine"></div><div class="stitch"></div>${FITS}<div class="emb">${SIGIL}${ORN}<h1></h1><p></p>${ORN}</div><div class="wear"></div></div>
+<div class="cover"><div class="face f leather"><div class="spine"></div><div class="stitch"></div><div class="emb">${ORN}<h1></h1><p></p>${ORN}</div><div class="wear"></div></div>
 <div class="face b inside"><div class="ded"></div></div><div class="hit" role="button" aria-label="Buch öffnen"></div></div>
 <button class="ribbon" aria-label="Buch schließen" title="Buch schließen"></button>
 </div></div><nav class="nav" aria-label="Blättern"><button class="nb prev" aria-label="Zurück"><ha-icon icon="mdi:chevron-left"></ha-icon><span>Zurück</span></button>
@@ -588,7 +598,7 @@ class NovaRecipeBookCard extends HTMLElement {
       return box;
     }
     const src = r.image ? imageUrl(this._h, 'recipes', r.image) : '', meta = [r.time ? mins(r.time) : '', ...(r.tags || [])].filter(Boolean).join(' · ');
-    const head = () => `<h2>${esc(r.title)}</h2>${meta ? `<div class="meta">${esc(meta)}</div>` : ''}${src ? `<div class="photo"><img alt="" loading="lazy" src="${esc(src)}"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>` : ''}`;
+    const head = () => `<div class="chap">Kapitel ${roman((this._recipes || []).indexOf(r) + 1)}</div><h2>${esc(r.title)}</h2>${meta ? `<div class="meta">${esc(meta)}</div>` : ''}${src ? `<div class="photo"><img alt="" loading="lazy" src="${esc(src)}"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>` : ''}`;
     const ing = () => r.ingredients?.length ? `<h3 class="zl"><span>Zutaten</span><span class="sv"><button class="sb" data-d="-1" aria-label="Weniger Portionen">−</button><span class="svn"></span><button class="sb" data-d="1" aria-label="Mehr Portionen">+</button></span></h3>
 <ul class="ing">${r.ingredients.map(() => '<li><span class="q"></span><span class="nm"></span></li>').join('')}</ul>` : '';
     const steps = () => { const h = stepsHtml(r.steps); return h ? `${/^<h3/.test(h) ? '' : '<h3>Zubereitung</h3>'}${h}` : ''; };
@@ -910,7 +920,7 @@ const S_USE = [
 ];
 const LABELS = {title: 'Titel auf dem Einband', subtitle: 'Untertitel (optional)', style: 'Stil', cover_color: 'Einband', layout: 'Seiten', start_open: 'Aufgeschlagen starten', close_after: 'Zuklappen nach', turn: 'Blättern'};
 const HELPERS = {layout: 'Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.', close_after: '0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.',
-  subtitle: 'Steht unter dem Titel, z. B. „von Oma Erna“.', cover_color: 'Der Farbton passt sich dem Stil an (Leder, Leinen grau getönt, dunkles Zauberbuch).',
+  subtitle: 'Steht unter dem Titel, z. B. „von Oma Erna“.', cover_color: 'Der Farbton passt sich dem Stil an (Leder, Leinen grau getönt, matter Hardcover-Einband; im Fantasy Book ist „Braun“ das Nachtblau des Entwurfs).',
   style: 'Alle Stile zeigen dieselben Rezepte – auch die Nova Rezeptliste.',
   turn: 'Automatisch: 3D-Blättern, auf schwachen Geräten (z. B. Echo Show) oder wenn es ruckelt flaches Blättern mit Schatten.'};
 

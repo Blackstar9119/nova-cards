@@ -25,7 +25,7 @@ Schmaler gibt es eine Seite pro Rezept.
 |---|---|
 | `old` (Standard) | Altes, abgegriffenes Kochbuch: Ledereinband mit Goldprägung, vergilbte Seiten mit Flecken, Handschrift, eingeklebte Fotos |
 | `modern` | Schlicht und grau: Leineneinband, glattes Papier, klare Schrift, ohne Gebrauchsspuren |
-| `fantasy` | Zauberbuch: dunkles Leder mit Goldbeschlägen und glimmendem Siegel, Pergament, Kapitälchen, römische Schrittnummern |
+| `fantasy` | Hochwertige Fantasy-Hardcover-Ausgabe: matter Einband mit Goldfolie, Farbschnitt, cremefarbenes Papier, Kapitel je Rezept, Trennornamente, Satin-Lesebändchen |
 
 `cover_color` (`brown`, `red`, `green`, `blue`) tönt den Einband passend zum Stil.
 

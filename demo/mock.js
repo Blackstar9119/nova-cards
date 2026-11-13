@@ -68,6 +68,6 @@ export const cards = [
   ...['print', 'heat', 'pause', 'done', 'error', 'off'].map(d => ['drucker-card', {demo: d}]), ['drucker-card', {demo: 'print', demo_ams: false}],
   ['remote-card', null], ['timer-card', null],
   ...['default', 'flip', 'analog', 'glow', 'retro'].map(s => ['clock-card', {style: s}]),
-  ['shopping-card', null], ['note-card', null], ['note-card', {view: 'compact', max_notes: 2}], ['recipe-card', null], ['recipe-card', {view: 'grid'}], ['recipe-book-card', {start_open: true, subtitle: 'von Oma Erna'}], ['recipe-book-card', {style: 'modern', cover_color: 'blue', start_open: true}], ['recipe-book-card', {style: 'fantasy', cover_color: 'red', subtitle: 'Tränke & Speisen', start_open: true}],
+  ['shopping-card', null], ['note-card', null], ['note-card', {view: 'compact', max_notes: 2}], ['recipe-card', null], ['recipe-card', {view: 'grid'}], ['recipe-book-card', {start_open: true, subtitle: 'von Oma Erna'}], ['recipe-book-card', {style: 'modern', cover_color: 'blue', start_open: true}], ['recipe-book-card', {style: 'fantasy', subtitle: 'Tränke & Speisen', start_open: true}],
   ...['button', 'chip', 'dropdown'].map(d => ['theme-card', {display: d}]),
 ];
