@@ -4064,7 +4064,9 @@ font-family:var(--f-serif);color:var(--ink);-webkit-tap-highlight-color:transpar
 .block{position:absolute;top:0;bottom:0;right:0;width:var(--pw);border-radius:2px 6px 6px 2px;
 background:repeating-linear-gradient(90deg,#e9dcb8 0 1px,#cdbb8f 1px 2px);box-shadow:3px 4px 0 -1px #bfae84,5px 7px 14px rgba(0,0,0,.45);transform:translate3d(4px,4px,-2px)}
 .double .block.l{right:auto;left:0;transform:translate3d(-4px,4px,-2px);border-radius:6px 2px 2px 6px}
-.single .block.l,.closed .block.l{display:none}
+/* Buchschnitt links erst, wenn dort Seiten liegen – auf der ersten Doppelseite liegt links nur der Einband (wie im echten Buch).
+   visibility statt display: die Ebene bleibt bestehen und wird nicht neu aufgebaut. */
+.single .block.l,.closed .block.l,.at0 .block.l{visibility:hidden}
 /* Seiten */
 .pg,.face{position:absolute;top:0;bottom:0;width:var(--pw);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .pg.r,.leaf{left:auto;right:0}.pg.l{left:0}
@@ -4116,7 +4118,7 @@ font-size:clamp(12px,calc(var(--pw) * .036),19px);line-height:1.45}
 @keyframes lt-s{from{transform:scaleX(1);opacity:1}75%{opacity:1}to{transform:scaleX(.08);opacity:0}}
 @keyframes sh-in{from{opacity:0}to{opacity:1}}@keyframes sh-out{from{opacity:1}to{opacity:0}}
 /* Einband */
-.cover{position:absolute;top:-2%;bottom:-2%;right:-1.5%;width:calc(var(--pw) * 1.03);transform-style:preserve-3d;transform-origin:0 50%;z-index:8;transform:translateZ(4px) rotateY(0);
+.cover{position:absolute;top:-2%;bottom:-2%;right:-1.5%;width:calc(var(--pw) * 1.03);transform-style:preserve-3d;transform-origin:0 50%;z-index:8;transform:translateZ(4px) rotateY(0);will-change:transform;
 transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1)}
 .single .cover{right:auto;left:0}
 .cover .face{width:100%;top:0;bottom:0;left:0}.cover .face.b{transform:rotateY(180deg)}
@@ -4583,6 +4585,7 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
       if (!e || this._dbl == null || this._turning) return;
       const s = this._spreads()[this._sp] || this._spreads()[0];
       this._navState(this._sp);
+      e.book.classList.toggle("at0", this._sp === 0);
       if (this._dbl) {
         this._fill(e.L, s.L);
         this._fill(e.R, s.R);
@@ -4727,9 +4730,30 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
       return w;
     }
     /* ---------- Öffnen, Blättern, Gesten ---------- */
-    _setOpen(open, anim = true) {
+    // Vor dem Aufklappen: Seiten fertig setzen, Schriften und Bilder laden – höchstens 800 ms, dann geht es trotzdem los.
+    // So ist beim Aufklappen alles schon gezeichnet und nichts wird während der Bewegung neu gesetzt.
+    async _ready() {
+      const r = this.shadowRoot, wait2 = [];
+      if (this._c.style !== "modern" && document.fonts?.load) {
+        loadFonts();
+        wait2.push(...['400 16px "Nova Hand"', '700 16px "Nova Hand"', '400 16px "Nova Serif"', 'italic 400 16px "Nova Serif"'].map((f) => document.fonts.load(f).catch(() => null)));
+      }
+      r.querySelectorAll(".pg img, .cover img").forEach((i) => wait2.push(i.decode?.().catch(() => null)));
+      await Promise.race([Promise.all(wait2), new Promise((res) => setTimeout(res, 800))]);
+    }
+    _setOpen(open, anim = true, ready = false) {
       const e = this._e;
       if (!e || open === this._open || this._quiet && open) return;
+      if (open && anim && !ready) {
+        if (this._prep) return;
+        this._prep = true;
+        this._resize(true);
+        this._ready().then(() => requestAnimationFrame(() => requestAnimationFrame(() => {
+          this._prep = false;
+          this._setOpen(true, true, true);
+        })));
+        return;
+      }
       this._open = open;
       this._resize(true);
       e.book.classList.toggle("still", !anim);
@@ -4835,6 +4859,7 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
           under = () => {
             this._fill(e.L, to.L);
             e.L.style.visibility = to.L.k === "end" ? "hidden" : "";
+            e.book.classList.toggle("at0", i === 0);
           };
         }
       } else {
