@@ -17606,6 +17606,10 @@ box-shadow:inset 0 0 0 1px rgba(110,80,40,.25),inset 0 0 30px rgba(140,95,40,.22
 .in{position:absolute;inset:0;padding:calc(var(--pw) * .09) calc(var(--pw) * .1) calc(var(--pw) * .11);overflow-y:auto;overscroll-behavior:auto contain;scrollbar-width:none;
 font-size:clamp(12px,calc(var(--pw) * .036),19px);line-height:1.45}
 .in::-webkit-scrollbar{display:none}
+.mo{position:absolute;left:0;right:0;bottom:0;height:calc(var(--pw) * .2);z-index:3;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(var(--pw) * .06);
+background:linear-gradient(180deg,transparent,var(--paper) 70%);opacity:0;pointer-events:none;transition:opacity .25s;cursor:pointer;border-radius:inherit}
+.mo::after{content:"";width:calc(var(--pw) * .05);aspect-ratio:1;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);opacity:.55}
+.more .mo{opacity:1;pointer-events:auto}.more .no{opacity:0}
 .no{position:absolute;bottom:calc(var(--pw) * .035);left:0;right:0;text-align:center;font-style:italic;font-size:clamp(10px,calc(var(--pw) * .026),14px);opacity:.55;pointer-events:none}
 .leaf{position:absolute;top:0;bottom:0;width:var(--pw);transform-style:preserve-3d;transform-origin:0 50%;z-index:5;pointer-events:none;will-change:transform;transform:translateZ(3px)}
 .leaf .face{left:0}.leaf .face.b{transform:rotateY(180deg)}
@@ -17986,7 +17990,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
       r.innerHTML = `<style>${NOVA_VARS}${RICH_CSS}${BOOK_CSS}</style><div class="rb"><div class="stage"><div class="book closed">
 <div class="block l"></div><div class="block r"></div>
-<div class="pg l paper"><div class="in"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="no"></div></div>
+<div class="pg l paper"><div class="in"></div><div class="mo" aria-hidden="true"></div><div class="no"></div></div><div class="pg r paper"><div class="in"></div><div class="mo" aria-hidden="true"></div><div class="no"></div></div>
 <div class="cover"><div class="face f leather"><div class="spine"></div><div class="stitch"></div><div class="emb">${ORN}<h1></h1><p></p>${ORN}</div><div class="wear"></div></div>
 <div class="face b inside"><div class="ded"></div></div><div class="hit" role="button" aria-label="Buch öffnen"></div></div>
 <button class="ribbon" aria-label="Buch schließen" title="Buch schließen"></button>
@@ -18019,6 +18023,14 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
       this._coverText();
       q(".hit").addEventListener("click", () => this._setOpen(true));
       q(".ribbon").addEventListener("click", () => this._setOpen(false));
+      [this._e.L, this._e.R].forEach((pg) => {
+        pg.querySelector(".in").addEventListener("scroll", () => this._over(pg), { passive: true });
+        pg.querySelector(".mo").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          const i = pg.querySelector(".in");
+          i.scrollBy({ top: i.clientHeight * 0.7, behavior: "smooth" });
+        });
+      });
       this._e.prev.addEventListener("click", () => this._go(this._sp - 1));
       this._e.next.addEventListener("click", () => this._go(this._sp + 1));
       this._e.toc.addEventListener("click", () => this._go(0));
@@ -18067,6 +18079,9 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
         this._sp = i >= 0 ? i : Math.min(this._sp, ns.length - 1);
         this._paint();
       }
+      requestAnimationFrame(() => {
+        if (this._e) [this._e.L, this._e.R].forEach((pg) => this._over(pg, true));
+      });
     }
     /* ---------- Daten ---------- */
     // Rezepte aus der Nova-Integration (ein Abo für alle Rezept-Karten); in der Kartenauswahl zwei Beispielrezepte
@@ -18135,7 +18150,23 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
       pg.style.setProperty("--st", stains(d.n || 0));
       inn.replaceChildren(this._content(d));
       inn.scrollTop = 0;
+      if (pg.classList.contains("pg")) {
+        requestAnimationFrame(() => this._over(pg, true));
+        inn.querySelectorAll("img").forEach((i) => i.addEventListener("load", () => this._over(pg, true), { once: true }));
+      }
       no.textContent = d.n && d.k !== "end" ? `— ${d.n} —` : "";
+    }
+    // Passt der Inhalt nicht auf die Seite, zeigt unten ein Verlauf mit Pfeil, dass es weitergeht (verschwindet am Ende)
+    // Vorher: Foto so weit verkleinern, dass alles auf die Seite passt (höchstens bis auf ein Viertel der Seitenhöhe)
+    // (nur auf der Doppelseite: dort steht links Titel, Foto und Zutaten; die Einzelseite scrollt ohnehin)
+    _over(pg, fit2) {
+      const i = pg.querySelector(".in"), img = fit2 && this._dbl && i.querySelector(".photo img");
+      if (img && img.complete) {
+        img.style.removeProperty("height");
+        const extra = i.scrollHeight - i.clientHeight, h = img.clientHeight;
+        if (extra > 0 && h) img.style.height = `${Math.max(i.clientHeight * 0.25, h - extra - 2)}px`;
+      }
+      pg.classList.toggle("more", i.scrollHeight - i.scrollTop - i.clientHeight > 6);
     }
     _content(d) {
       const box = document.createElement("div");
@@ -18183,16 +18214,17 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
         return box;
       }
       const src = r.image ? imageUrl(this._h, "recipes", r.image) : "", meta = [r.time ? mins(r.time) : "", ...r.tags || []].filter(Boolean).join(" · ");
-      const head = () => `<div class="chap">Kapitel ${roman((this._recipes || []).indexOf(r) + 1)}</div><h2>${esc(r.title)}</h2>${meta ? `<div class="meta">${esc(meta)}</div>` : ""}${src ? `<div class="photo"><img alt="" loading="lazy" src="${esc(src)}"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>` : ""}`;
+      const head = () => `<div class="chap">Kapitel ${roman((this._recipes || []).indexOf(r) + 1)}</div><h2>${esc(r.title)}</h2>${meta ? `<div class="meta">${esc(meta)}</div>` : ""}`;
+      const photo = () => src ? `<div class="photo"><img alt="" loading="lazy" src="${esc(src)}"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>` : "";
       const ing = () => r.ingredients?.length ? `<h3 class="zl"><span>Zutaten</span><span class="sv"><button class="sb" data-d="-1" aria-label="Weniger Portionen">−</button><span class="svn"></span><button class="sb" data-d="1" aria-label="Mehr Portionen">+</button></span></h3>
 <ul class="ing">${r.ingredients.map(() => '<li><span class="q"></span><span class="nm"></span></li>').join("")}</ul>` : "";
       const steps = () => {
         const h = stepsHtml(r.steps);
         return h ? `${/^<h3/.test(h) ? "" : "<h3>Zubereitung</h3>"}${h}` : "";
       };
-      if (d.k === "A") box.innerHTML = head() + ing();
+      if (d.k === "A") box.innerHTML = head() + photo() + ing();
       else if (d.k === "B") box.innerHTML = steps() || '<div class="msg">Ohne Anleitung – einfach drauflos kochen.</div>';
-      else box.innerHTML = head() + ing() + steps();
+      else box.innerHTML = head() + photo() + ing() + steps();
       box.dataset.rid = r.id;
       box.querySelectorAll(".sb").forEach((b) => b.addEventListener("click", (ev) => {
         ev.stopPropagation();
