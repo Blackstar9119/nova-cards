@@ -15448,6 +15448,10 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
       paint();
     });
     paint();
+    el2.set = (v) => {
+      cur2 = { icon: v?.icon || null, image: v?.image || null };
+      paint(true);
+    };
     el2.setHass = (x) => {
       h = x;
       if (form && "hass" in form) form.hass = x;
@@ -15459,7 +15463,20 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
   var SCSS2 = `
 .g.sh{gap:var(--nv-s5)}
 .add{display:flex;gap:var(--nv-s4);align-items:center;flex:none}
-.add .fld{height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8)}
+.add .fld{height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8);flex:1;min-width:0;display:flex;align-items:center;gap:var(--nv-s4);font:inherit;color:inherit;text-align:left;cursor:pointer;
+-webkit-tap-highlight-color:transparent;transition:transform var(--nv-d2) var(--nv-ease),border-color var(--nv-d2)}
+.add .fld:active:not([disabled]){transform:scale(var(--nv-press))}
+.add .fld[disabled]{opacity:.4;cursor:default}
+.add .fld span{opacity:.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.form .sug{margin-top:calc(var(--nv-s3) * -1)}
+.cta{height:48px;border-radius:var(--nv-r-pill);flex:none;width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:var(--nv-s4);font:inherit;font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);
+cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;color:inherit;border:1px solid color-mix(in srgb,var(--nv-active) 60%,transparent);background:color-mix(in srgb,var(--nv-active) 24%,var(--nv-chip));
+box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 35%,transparent) var(--nv-glow),transparent);transition:transform var(--nv-d2) var(--nv-ease),opacity var(--nv-d3)}
+.cta:active:not([disabled]){transform:scale(var(--nv-press))}
+.cta:focus-visible{box-shadow:var(--nv-focus)}
+.cta[disabled]{opacity:.4;cursor:default}
+.cta ha-icon{--mdc-icon-size:22px}
+.cta[hidden]{display:none}
 .sug{display:flex;gap:var(--nv-s3);overflow-x:auto;flex:none;scrollbar-width:none;margin:0 calc(var(--nv-s2) * -1);padding:var(--nv-s1) var(--nv-s2);
 -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
 .sug::-webkit-scrollbar{display:none}
@@ -15601,6 +15618,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       stopFeedback(this);
       clearTimeout(this._st);
       clearTimeout(this._okT);
+      clearTimeout(this._ft);
       this._hold?.forEach((t) => clearTimeout(t));
       this._hold = /* @__PURE__ */ new Map();
       this._del?.reset();
@@ -15618,9 +15636,10 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${VIEW_CSS}${RICH_CSS}${PICK_MEDIA_CSS}${SCSS2}</style><div class="g sh">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
 <div class="stage"><div class="view main">
-<form class="add"><input class="fld" type="text" enterkeyhint="done" autocomplete="off" maxlength="120"></form>
+<div class="add"><button class="fld" type="button"><span></span></button></div>
 <div class="sug"></div><div class="scroll"><div class="items"></div></div><div class="ft"></div></div>
-<div class="view side"><div class="bar"></div><div class="scroll"><div class="form"></div></div></div></div></div>`;
+<div class="view side"><div class="bar"></div><div class="scroll"><div class="form"></div></div>
+<button class="cta" type="button" hidden><ha-icon icon="mdi:plus"></ha-icon><span>Hinzufügen</span></button></div></div></div>`;
       const q = (s) => r.querySelector(s);
       const e = this._e = {
         g: q(".g"),
@@ -15628,9 +15647,10 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         ic: q(".hd .ic"),
         name: q(".hd b"),
         sub: q(".hd small"),
-        form: q("form.add"),
-        inp: q(".add input"),
+        form: q(".add"),
+        inp: q(".add .fld"),
         sug: q(".sug"),
+        cta: q(".cta"),
         items: q(".items"),
         ft: q(".ft"),
         bar: q(".bar"),
@@ -15640,17 +15660,10 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       this._seen = /* @__PURE__ */ new Set();
       this._qty = /* @__PURE__ */ new Map();
       this._pstate = "idle";
-      e.ab = roundBtn("mdi:plus", "Hinzufügen", () => this._add(), "plus");
+      e.ab = roundBtn("mdi:plus", "Artikel hinzufügen", () => this._openNew(), "plus");
       e.form.append(e.ab);
-      e.form.addEventListener("submit", (ev) => {
-        ev.preventDefault();
-        this._add();
-      });
-      e.inp.addEventListener("input", () => {
-        e.ab.disabled = !e.inp.value.trim();
-        this._renderSug();
-      });
-      e.inp.addEventListener("keydown", (ev) => ev.stopPropagation());
+      e.inp.addEventListener("click", () => this._openNew());
+      e.cta.addEventListener("click", () => this._addNew());
       this._pb = printButton(() => this._print());
       e.ft.append(this._pb);
       e.back = roundBtn("mdi:arrow-left", "Zurück zur Liste", () => this._close());
@@ -15663,8 +15676,8 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
     _apply() {
       const c = this._c, e = this._e;
       e.hd.hidden = c.show_header === false;
-      e.inp.placeholder = c.placeholder || "";
-      e.ab.disabled = !e.inp.value.trim();
+      e.inp.firstChild.textContent = c.placeholder || SDEF.placeholder;
+      e.inp.setAttribute("aria-label", c.placeholder || SDEF.placeholder);
       e.g.style.setProperty("--vh", `${Math.max(200, +c.height || SDEF.height)}px`);
       this._key = this._skey = null;
       this._render();
@@ -15685,6 +15698,10 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       if (this._cur?.id && d && !d.items.some((i) => i.id === this._cur.id)) {
         this._cur = null;
         this._e?.g.classList.remove("detail");
+      }
+      if (this._new && this._nsug && this._ti?.value) {
+        this._nkey = null;
+        this._suggest();
       }
       if (this._cur && this._e) this._paintStores();
       this._render();
@@ -15715,7 +15732,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       const all = this._items(), open = all.filter((i) => !i.done || this._hold.has(i.id)), done = all.filter((i) => i.done && !this._hold.has(i.id));
       const nOpen = all.filter((i) => !i.done).length;
       e.sub.textContent = this._err ? "" : !this._data ? "Wird geladen …" : nOpen ? `${nOpen} offen${done.length ? ` · ${done.length} erledigt` : ""}` : all.length ? "Alles erledigt" : "Liste ist leer";
-      e.inp.disabled = !this._data;
+      e.inp.disabled = e.ab.disabled = !this._data;
       let msg = null;
       if (this._err) msg = storeHint(this._err, "shopping");
       else if (!this._data) msg = ["mdi:timer-sand", "Wird geladen …"];
@@ -15858,6 +15875,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       if (q === cur2.qty) return;
       if (detail) {
         cur2.qty = q;
+        this._touched?.add("qty");
         this._dirty();
         this._paintQty();
         return;
@@ -15908,34 +15926,21 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       });
     }
     /* ----- Hinzufügen + Schnellauswahl ----- */
+    // Schnellauswahl: bekannter Artikel direkt auf die Liste (Icon, Bild, Geschäft, Einheit kennt die Integration)
     _add(name) {
-      const h = this._h, e = this._e, v = (name ?? e.inp.value).trim();
+      const h = this._h, v = String(name || "").trim();
       if (!h || !v || !this._data) return;
-      const typed = name == null;
-      if (typed) {
-        e.inp.value = "";
-        e.ab.disabled = true;
-      }
       const twin = this._items().find((i) => !i.done && hkey(i.name) === hkey(v));
-      const known = this._data.history.some((x) => x.key === hkey(v));
-      const def = this._c.default_store && this._store(this._c.default_store) ? this._c.default_store : null;
-      const item = twin ? { id: twin.id, qty: Math.round(((+twin.qty || 0) + (STEP[twin.unit] || 1)) * 1e3) / 1e3 } : { name: v, ...!known && def ? { store: def } : {} };
+      const item = twin ? { id: twin.id, qty: Math.round(((+twin.qty || 0) + (STEP[twin.unit] || 1)) * 1e3) / 1e3 } : { name: v };
       if (twin) this._bump = twin.id;
-      shop.save(h, item).catch((err) => {
-        console.warn("[nova-cards] Einkauf: Hinzufügen fehlgeschlagen", err);
-        if (typed && !e.inp.value) {
-          e.inp.value = v;
-          e.ab.disabled = false;
-        }
-      });
-      if (typed) e.inp.focus();
+      shop.save(h, item).catch((err) => console.warn("[nova-cards] Einkauf: Hinzufügen fehlgeschlagen", err));
       this._renderSug();
     }
     _renderSug() {
       const c = this._c, e = this._e, d = this._data;
       if (!e) return;
-      const q = hkey(e.inp.value), onList = new Set(this._items().filter((i) => !i.done).map((i) => hkey(i.name)));
-      const list2 = !d || c.show_suggestions === false ? [] : d.history.filter((x) => !onList.has(x.key) && (!q || x.key.includes(q))).sort((a, b) => q ? b.key.startsWith(q) - a.key.startsWith(q) || b.count - a.count : 0).slice(0, 12);
+      const onList = new Set(this._items().filter((i) => !i.done).map((i) => hkey(i.name)));
+      const list2 = !d || c.show_suggestions === false ? [] : d.history.filter((x) => !onList.has(x.key)).slice(0, 12);
       const key = JSON.stringify([list2.map((x) => [x.key, x.icon, x.image]), c.show_images]);
       if (key === this._skey) return;
       this._skey = key;
@@ -15949,10 +15954,6 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         press(b, {
           tap: () => {
             b.classList.add("go");
-            if (e.inp.value) {
-              e.inp.value = "";
-              e.ab.disabled = true;
-            }
             this._add(x.name);
           },
           hold: () => {
@@ -15968,18 +15969,116 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
     _open(it) {
       this._flush();
       this._cur = { ...it };
+      this._new = false;
+      this._touched = null;
+      this._show();
+    }
+    // Neuer Artikel: dasselbe Formular, aber nichts wird gespeichert, bis „Hinzufügen“ getippt ist
+    _openNew() {
+      const c = this._c, e = this._e;
+      if (!this._data) return;
+      this._flush();
+      this._cur = { id: null, name: "", qty: 1, unit: "Stk", store: c.default_store && this._store(c.default_store) ? c.default_store : null, icon: null, image: null, note: "" };
+      this._new = true;
+      this._touched = /* @__PURE__ */ new Set();
+      this._busy = false;
+      this._saved = null;
+      this._show();
+      clearTimeout(this._ft);
+      this._ft = setTimeout(() => this._new && this._ti?.focus({ preventScroll: true }), 320);
+    }
+    _show() {
+      const e = this._e;
       this._buildForm();
-      this._e.g.classList.add("detail");
+      e.g.classList.add("detail");
       this._del.reset();
+      this._del.hidden = this._new;
+      e.cta.hidden = !this._new;
+      e.back.title = this._new ? "Abbrechen" : "Zurück zur Liste";
+      e.back.setAttribute("aria-label", e.back.title);
       this._paintBar();
+      this._paintNew();
     }
     _close() {
       this._flush();
       this._flushQty();
+      clearTimeout(this._ft);
       this._e.g.classList.remove("detail");
       this._cur = null;
+      this._new = false;
       this._key = null;
       this._render();
+    }
+    _paintNew() {
+      const e = this._e;
+      if (this._new) e.cta.disabled = this._busy || !this._ti?.value.trim();
+    }
+    // Bekannte Artikel beim Tippen: Chips zum Übernehmen; passt der Name genau, kommen Icon/Bild, Geschäft und Einheit von selbst
+    _suggest() {
+      const d = this._data, q = hkey(this._ti.value);
+      const list2 = !q || !d ? [] : d.history.filter((h) => h.key.includes(q)).sort((a, b) => b.key.startsWith(q) - a.key.startsWith(q) || (b.count || 0) - (a.count || 0)).slice(0, 6);
+      const exact = list2.find((h) => h.key === q);
+      if (exact) this._take(exact, false);
+      const rest = list2.filter((h) => h !== exact), key = JSON.stringify(rest.map((h) => [h.key, h.icon, h.image]));
+      if (key === this._nkey) return;
+      this._nkey = key;
+      this._nsug.replaceChildren(...rest.map((h, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.style.setProperty("--i", i);
+        b.title = `${h.name} übernehmen`;
+        b.append(this._thumb(h), document.createTextNode(h.name));
+        b.addEventListener("click", () => {
+          this._ti.value = h.name;
+          this._take(h, true);
+          this._suggest();
+          this._paintNew();
+        });
+        return b;
+      }));
+    }
+    // Vorschlag ins Formular; was schon von Hand gewählt wurde, bleibt (außer der Vorschlag wurde angetippt)
+    _take(h, force) {
+      const x = this._cur, t = this._touched;
+      if ((force || !t.has("media")) && (h.icon || h.image)) {
+        x.icon = h.icon || null;
+        x.image = h.image || null;
+        this._picker.set(x);
+      }
+      if ((force || !t.has("store")) && h.store && this._store(h.store)) x.store = h.store;
+      if ((force || !t.has("unit")) && h.unit && h.unit !== x.unit) {
+        if (!t.has("qty")) x.qty = (STEP[h.unit] || 1) === 50 ? 500 : 1;
+        x.unit = h.unit;
+      }
+      this._paintQty();
+      this._paintStores();
+    }
+    _addNew() {
+      const x = this._cur, h = this._h, name = this._ti?.value.trim();
+      if (!this._new || !x || !h || this._busy) return;
+      if (!name) {
+        this._ti.focus();
+        return;
+      }
+      const note = this._rt.get();
+      const twin = this._items().find((i) => !i.done && hkey(i.name) === hkey(name) && (i.unit || "Stk") === x.unit);
+      const item = twin ? { id: twin.id, qty: Math.round(((+twin.qty || 0) + (+x.qty || 0)) * 1e3) / 1e3, ...note && !twin.note ? { note } : {} } : { name, qty: x.qty, unit: x.unit, store: x.store || null, icon: x.icon || null, image: x.image || null, note };
+      this._busy = true;
+      this._saved = null;
+      this._paintNew();
+      this._paintBar();
+      shop.save(h, item).then(() => {
+        this._busy = false;
+        if (twin) this._bump = twin.id;
+        if (this._new) this._close();
+      }).catch((err) => {
+        console.warn("[nova-cards] Einkauf: Hinzufügen fehlgeschlagen", err);
+        this._busy = false;
+        this._saved = "err";
+        this._paintNew();
+        this._paintBar();
+      });
     }
     _buildForm() {
       const e = this._e, x = this._cur, f3 = e.dform;
@@ -15996,7 +16095,10 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       ti.placeholder = "Name";
       ti.value = x.name || "";
       ti.autocomplete = "off";
-      ti.addEventListener("input", () => this._dirty());
+      ti.addEventListener("input", () => {
+        if (this._new) this._suggest();
+        this._dirty();
+      });
       ti.addEventListener("keydown", (ev) => {
         ev.stopPropagation();
         if (ev.key === "Enter") ti.blur();
@@ -16018,12 +16120,16 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         onChange: (v) => {
           x.icon = v.icon;
           x.image = v.image;
+          this._touched?.add("media");
           this._dirty();
         }
       });
       this._rt = richEditor({ placeholder: "Notiz zum Artikel …", onInput: () => this._dirty() });
       this._rt.set(x.note || "");
-      f3.replaceChildren(ti, lb("Menge"), rowq, lb("Geschäft"), this._stores, this._sform, lb("Icon oder Bild"), this._picker, lb("Notiz"), this._rt.el);
+      this._nsug = document.createElement("div");
+      this._nsug.className = "sug";
+      this._nkey = null;
+      f3.replaceChildren(ti, ...this._new ? [this._nsug] : [], lb("Menge"), rowq, lb("Geschäft"), this._stores, this._sform, lb("Icon oder Bild"), this._picker, lb("Notiz"), this._rt.el);
       this._paintQty();
       this._paintStores();
       f3.parentElement.scrollTop = 0;
@@ -16042,6 +16148,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
           const was = STEP[x.unit] || 1, now = STEP[u] || 1;
           if (x.qty === was || x.qty === 1) x.qty = now === 50 ? 500 : 1;
           x.unit = u;
+          this._touched?.add("unit");
           this._dirty();
           this._paintQty();
         });
@@ -16067,6 +16174,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       const none = chip(null, "Keins");
       none.addEventListener("click", () => {
         x.store = null;
+        this._touched?.add("store");
         this._dirty();
         this._paintStores();
       });
@@ -16077,6 +16185,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         b.title = `${s.name} (lange drücken: bearbeiten)`;
         press(b, { tap: () => {
           x.store = s.id;
+          this._touched?.add("store");
           this._dirty();
           this._paintStores();
         }, hold: () => this._storeForm(s) });
@@ -16119,6 +16228,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         shop.saveStore(this._h, { ...s ? { id: s.id } : {}, name, icon: icon2 }).then((st) => {
           if (!s && this._cur) {
             this._cur.store = st.id;
+            this._touched?.add("store");
             this._dirty();
           }
           this._paintStores();
@@ -16139,6 +16249,10 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       box.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
     _dirty() {
+      if (this._new) {
+        this._paintNew();
+        return;
+      }
       this._pending = true;
       clearTimeout(this._st);
       this._st = setTimeout(() => this._flush(), SAVE_MS);
@@ -16147,7 +16261,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
     _flush() {
       clearTimeout(this._st);
       const x = this._cur, h = this._h;
-      if (!x || !h || !this._pending) return;
+      if (!x || !h || !this._pending || this._new) return;
       this._pending = false;
       const name = this._ti.value.trim() || x.name;
       x.name = name;
@@ -16174,7 +16288,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
     _paintBar() {
       const e = this._e;
       if (!e || !this._cur) return;
-      const st = this._pending || this._saving ? ["mdi:cloud-sync-outline", "Speichert …", ""] : this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : this._saved === "ok" ? ["mdi:check-circle-outline", "Gespeichert", "ok"] : ["mdi:pencil-outline", "Artikel bearbeiten", ""];
+      const st = this._new ? this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : ["mdi:cart-plus", "Neuer Artikel", ""] : this._pending || this._saving ? ["mdi:cloud-sync-outline", "Speichert …", ""] : this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : this._saved === "ok" ? ["mdi:check-circle-outline", "Gespeichert", "ok"] : ["mdi:pencil-outline", "Artikel bearbeiten", ""];
       const k = st.join("|");
       if (e.state._k === k) return;
       e.state._k = k;

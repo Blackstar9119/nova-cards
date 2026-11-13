@@ -134,6 +134,8 @@ export function mediaPicker({hass, module = 'shopping', value = {}, icons = FOOD
     paint();
   });
   paint();
+  // Wert von außen setzen (z. B. Vorschlag für einen bekannten Artikel), ohne onChange
+  el.set = v => { cur = {icon: v?.icon || null, image: v?.image || null}; paint(true); };
   el.setHass = x => { h = x; if (form && 'hass' in form) form.hass = x; };
   return el;
 }
