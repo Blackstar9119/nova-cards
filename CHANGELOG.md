@@ -6,6 +6,12 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 ## [0.12.0] – unveröffentlicht
 
 ### Hinzugefügt
+- Nova Rezept Card (`custom:nova-recipe-card`): Rezeptbuch mit Bild, Zutaten und formatierter Zubereitung, Suche, Schlagwörtern und Favoriten. Portionen umrechnen, gewählte Zutaten auf die Einkaufsliste setzen, Rezept als Klartext drucken.
+- Nova Einkauf Card neu aufgebaut: Artikel mit Menge und Einheit (+ / – direkt in der Liste), Geschäft (frei anlegbar, mit Icon), Icon oder eigenem Bild (wird verkleinert) und formatierter Notiz. Gruppiert nach Geschäft, Abhaken mit Animation, Erledigtes unten zum Auf- und Zuklappen, „Erledigte löschen“, zuletzt Gekauftes als Schnellauswahl. Neue Optionen `group`, `show_images`, `show_suggestions`, `default_store`, `print_field`.
+- Nova Notiz Card neu aufgebaut: mehrere Notizen mit Titel, Liste und Detailansicht, anpinnen, „zuletzt geändert“, automatisches Speichern. Neue Optionen `view` (voll/kompakt) und `max_notes`.
+- Formatierter Text in Notiz, Einkauf und Rezept: Leiste mit Fett, Kursiv, Unterstrichen, Durchgestrichen, Schriftgröße, Aufzählung, Checkliste und drei Textfarben aus dem Theme (`--nova-text-accent-color`, `--nova-text-warning-color`). Gespeichert als bereinigtes HTML aus einer festen Liste von Elementen.
+- Daten von Einkauf, Notiz und Rezept liegen in der neuen [Nova-Integration](https://github.com/Blackstar9119/nova-integration) und sind auf allen Geräten gleich. Die Einkaufsliste lässt sich dort mit einer `todo.*`-Liste abgleichen (Option `entity`), damit Assist weiter funktioniert.
+- Theme: Mit der Nova-Integration (Modul „Theme“) liegt das globale Theme dort; jeder Benutzer darf es umschalten. Ohne Integration bleibt es beim Helfer `input_select.nova_theme`.
 - Nova Gerät Card: neuer Gerätetyp Trockner (`device_type: dryer`) mit eigener Zeichnung (Bullauge mit Wäsche, warme Luft, Kondensbehälter, Flusensieb) und Hinweis-Animationen `condensate` und `lint`.
 - Theme Nova Velvet: cremiges Beige, Espresso-Schrift, Gold, Cognac und Espresso als Akzente (keine Blautöne), weiche warme Schatten statt Glow, Kontraste nach WCAG AA.
 - Theme Nova Midnight im Stil des Apple Dark Mode: Karten `#1c1c1e`, Kacheln `#2c2c2e`, feine Linien, kein Glow und kein Blur (schnell auf dem Echo Show), gedämpfte Akzente. Rahmen von Bereich und Pop-up schwarz (`--nova-area-background`), Karten darin grau. Aktive und primäre Knöpfe aller Karten als getöntes Glas wie der Start-Knopf der Timer Card, Schrift darauf hell. Kontraste nach WCAG AA.
@@ -53,6 +59,8 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
   Fokus hat, springt die Karte nicht zurück.
 
 ### Geändert
+- **Einkauf und Notiz Card brauchen jetzt die Nova-Integration.** Einkauf: `entity` ist nicht mehr die angezeigte Liste, sondern die todo-Liste für den Abgleich (offene Einträge werden übernommen). Notiz: das einzelne Textfeld und die Optionen `placeholder`, `show_clear`, `clear_after_print`, `clear_after_save`, `notes_entity`, `notes_height`, `storage_key`, `print_style` entfallen; Notizen aus der todo-Liste werden nicht automatisch übernommen.
+- Druck-Skripte bekommen den Inhalt als Klartext im Feld `text` (Einkauf zusätzlich `items`), Checklisten als `[ ]`/`[x]`.
 - Farbrollen: Ohne Auswahl im Editor nutzt jede Karte die Primärfarbe des Themes (Akzent 1). Einzige Ausnahme: die Kaffeemaschine behält ihr Kaffeebraun (Nova Blau Kupfer, Velvet eigenes warmes Braun `#8a5a33`, Token `--nova-coffee-color`).
 - Nova Uhr Card: `mode: analog` gilt als ältere Schreibweise von `style: analog` und funktioniert unverändert weiter.
 

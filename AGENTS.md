@@ -3,7 +3,7 @@
 ## Projekt
 
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Navi,
-Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz und Themes Schalter – alle als `custom:nova-*`, jede mit grafischem Editor.
+Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezept und Themes Schalter – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
 
@@ -34,8 +34,9 @@ src/
   timer.js            Nova Timer Card + Editor (steuert einen timer.*-Helfer, Stoppuhr-Zeichnung, Hinweis beim Ablauf)
   clock.js            Nova Uhr Card + Editor (Stile default/flip/analog/glow/retro, ein einziger Zeitgeber)
   clock-styles.js     Stile der Uhr: Klappzahlen, Leuchtziffern (Farbe nach Sonnenstand), Radiowecker (Sieben-Segment-SVG)
-  shopping.js         Nova Einkauf Card + Editor (todo-Liste: Eingabefeld, abhaken, Druck-Knopf)
-  note.js             Nova Notiz Card + Editor (mehrzeiliges Notizfeld, Entwurf im Browser, Druck-Knopf)
+  shopping.js         Nova Einkauf Card + Editor (Nova-Integration: Artikel mit Menge, Geschäft, Icon/Bild, Notiz; Schnellauswahl, Druck-Knopf)
+  note.js             Nova Notiz Card + Editor (Nova-Integration: mehrere Notizen mit formatiertem Text, Liste ↔ Detail, Druck-Knopf)
+  recipe.js           Nova Rezept Card + Editor (Nova-Integration: Rezeptbuch, Portionen umrechnen, Zutaten auf die Einkaufsliste)
   theme-switch.js     Nova Themes Schalter + Editor (globales Theme wählen: Chip, Button oder Dropdown)
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
@@ -49,8 +50,14 @@ src/
                       (TOKENS, THEMES, NOVA_VARS, NAVI_VARS) – siehe docs/design-system.md
     theme-apply.js    Theme am Kartenelement setzen (Attribut nova-theme): Option theme → Theme-Variable nova-theme → global → Blau;
                       läuft zentral über define(), Karten müssen nichts tun
-    theme-store.js    Speicher des globalen Themes (input_select.nova_theme, legt ihn selbst an) – EINZIGE Stelle, zieht später
-                      in die Nova-Integration um
+    theme-store.js    Speicher des globalen Themes – EINZIGE Stelle: Nova-Integration (Modul Theme), ohne sie der Helfer
+                      input_select.nova_theme (legt ihn selbst an)
+    nova-store.js     Zugriff auf die Nova-Integration (Repo nova-integration) – EINZIGE Stelle, die ihre WebSocket-API kennt:
+                      Abo je Modul (watch), Notizen, Einkauf, Rezepte, Theme, Bilder
+    rich-text.js      Formatierter Text: Leiste + Eingabefeld (richEditor), Anzeige (richView), Bereinigung (sanitize – dieselbe
+                      Liste wie sanitize.py der Integration, beide zusammen ändern), Klartext für den Bondrucker (toPlain)
+    media-picker.js   Icon oder eigenes Bild wählen: Lebensmittel-Icons, MDI-Suche, Upload mit Verkleinern
+    stack-view.js     Zwei Ansichten in einer Karte (Liste ↔ Detail, gleiten seitlich), runde Knöpfe, Löschen in zwei Schritten
     styles.js         Gemeinsame CSS-Bausteine (Glas-Hintergrund, Karten- und Panel-CSS, Farbrollen, Editor-Styles)
     scene.js          Zeichenstil der Gerätezeichnungen: Farbpalette, Verläufe (Gehäuse, Glas, Chrom), Glas-Spiegelung,
                       Lichtstreifen beim Reinscrollen (sweep), Rahmen-Glow, Badge-Stelle (badgeAt) – siehe „Stil der Zeichnungen“
@@ -75,6 +82,7 @@ docs/
   design-system.md    Alle Design-Tokens (--nova-…) mit Wert und Zweck, Themes
 demo/
   index.html, mock.js Alle Karten mit Testdaten ohne Home Assistant – Vorschau und Bildvergleich bei Umbauten
+  nova-mock.js        Nova-Integration für die Demo (Notizen, Einkauf, Rezepte im Speicher des Browsers)
 tools/
   check-tokens.mjs    „npm run check“: keine festen Farben im Karten-CSS
 dev/
@@ -155,6 +163,8 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | WebSocket `config/auth/list` (Benutzerliste, nur Admins) | `navi.js` (Editor, Sichtbarkeit) | nur der eigene Benutzer in der Auswahl |
 | Event `card-visibility-changed` + `element.hidden` (Karte ausblenden) | `appliance.js` | Karte ist leer (`:host([hidden])`), Platz im Raster bleibt |
 | WebSocket `todo/item/subscribe` (Einträge einer todo-Liste) | `shopping.js` | Dienst `todo.get_items` bei jeder Zustandsänderung der Liste |
+| `ha-form` mit Icon-Auswahl außerhalb eines Editors (MDI-Suche in der Karte) | `media-picker.js` | Textfeld für `mdi:…` |
+| `shadowRoot.getSelection()` bzw. `Selection.getComposedRanges()` (Auswahl im Schattenbaum) und `document.execCommand` | `rich-text.js` | Größe/Farbe wirken nicht, Tippen und Speichern gehen weiter |
 | `home-assistant` → `home-assistant-main` → `partial-panel-resolver` (Inhaltsbereich neben der Seitenleiste) | `popup-hub.js` (`followContent`, Pop-up Card und Navi-Pop-up) | Pop-up deckt das ganze Fenster ab |
 
 ## Dev-Workflow

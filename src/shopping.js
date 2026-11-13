@@ -101,7 +101,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
 @media (prefers-reduced-motion:reduce){.chip,.it.new,.sf,.it.tick .ck,.it.tick .ck::after,.qt span.bump{animation:none}.it,.ck,.ck ha-icon,.it .tx b::after{transition:none}}`;
 
 const SDEF = {name: 'Einkaufsliste', icon: 'mdi:cart-outline', placeholder: 'Artikel hinzufügen …', show_header: true, group: true, show_images: true, show_completed: false,
-  show_suggestions: true, height: 320, print_field: 'text', ...PRINT_DEF};
+  show_suggestions: true, height: 420, print_field: 'text', ...PRINT_DEF};
 const HOLD = 750, SAVE_MS = 700, QTY_MS = 350;
 const STEP = {g: 50, ml: 50, kg: 0.5, l: 0.5};
 const hkey = s => String(s || '').toLowerCase().split(/\s+/).filter(Boolean).join(' ');

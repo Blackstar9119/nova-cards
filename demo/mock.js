@@ -1,3 +1,4 @@
+import {novaSubscribe, novaCall} from './nova-mock.js';
 /* Nova Demo – Testdaten statt Home Assistant. Liefert ein hass-Objekt mit festen Zuständen und die Liste der Demo-Karten.
    Gehört nicht zu nova-cards.js; wird nur von demo/index.html geladen (Vorschau aller Karten in allen Themes, Bildvergleich). */
 const S = (id, state, attributes = {}) => ({entity_id: id, state, attributes: {friendly_name: attributes.friendly_name || id.split('.')[1].replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()), ...attributes},
@@ -46,11 +47,11 @@ export const hass = {
   entities: Object.fromEntries(list.map(s => [s.entity_id, {entity_id: s.entity_id, area_id: /wohnzimmer/.test(s.entity_id) ? 'wohnzimmer' : null, device_id: null, platform: 'demo', labels: []}])),
   services: {light: {turn_on: {}, turn_off: {}, toggle: {}}, vacuum: {start: {}, pause: {}, return_to_base: {}}},
   localize: k => k.split('.').pop(), formatEntityState: s => s.state, formatEntityAttributeValue: (s, a) => String(s.attributes[a] ?? ''),
-  formatEntityAttributeName: (s, a) => a, hassUrl: p => p, callService: async () => ({response: {'todo.einkauf': {items: todo}, 'todo.notizen': {items: todo.slice(0, 1)}}}),
+  formatEntityAttributeName: (s, a) => a, hassUrl: p => window.__novaImages?.[p.split('/').pop()] || p, callService: async () => ({response: {'todo.einkauf': {items: todo}, 'todo.notizen': {items: todo.slice(0, 1)}}}),
   callApi: async (m, p) => /calendars/.test(p) ? events : [],
-  callWS: async m => m.type === 'todo/item/list' ? {items: todo} : m.type === 'lovelace/config' ? {views: []} : m.type === 'config/auth/list' ? [] : m.type === 'history/history_during_period'
+  callWS: async m => m.type.startsWith('nova/') ? novaCall(m) : m.type === 'todo/item/list' ? {items: todo} : m.type === 'lovelace/config' ? {views: []} : m.type === 'config/auth/list' ? [] : m.type === 'history/history_during_period'
     ? Object.fromEntries((m.entity_ids || []).map(id => [id, Array.from({length: 24}, (_, i) => ({s: String(20 + Math.sin(i / 3) * 1.5), lu: 1762848000 + i * 3600}))])) : {},
-  connection: {subscribeMessage: async (cb, m) => { if (m.type === 'weather/subscribe_forecast') cb(forecast(m.forecast_type)); if (m.type === 'todo/item/subscribe') cb({items: todo}); return () => {}; },
+  connection: {subscribeMessage: async (cb, m) => { if (m.type.startsWith('nova/')) return novaSubscribe(cb, m); if (m.type === 'weather/subscribe_forecast') cb(forecast(m.forecast_type)); if (m.type === 'todo/item/subscribe') cb({items: todo}); return () => {}; },
     subscribeEvents: async () => () => {}, sendMessagePromise: async () => ({})},
 };
 
@@ -67,6 +68,6 @@ export const cards = [
   ...['print', 'heat', 'pause', 'done', 'error', 'off'].map(d => ['drucker-card', {demo: d}]), ['drucker-card', {demo: 'print', demo_ams: false}],
   ['remote-card', null], ['timer-card', null],
   ...['default', 'flip', 'analog', 'glow', 'retro'].map(s => ['clock-card', {style: s}]),
-  ['shopping-card', null], ['note-card', null],
+  ['shopping-card', null], ['note-card', null], ['note-card', {view: 'compact', max_notes: 2}], ['recipe-card', null], ['recipe-card', {view: 'grid'}],
   ...['button', 'chip', 'dropdown'].map(d => ['theme-card', {display: d}]),
 ];

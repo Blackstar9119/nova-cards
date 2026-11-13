@@ -7,7 +7,7 @@ import {NovaEditorBase, names, merge} from './shared/editor-base.js';
 import {g2, T, I, sel, BASE_LABELS} from './shared/editor-schema.js';
 import {PRINT_CSS, PRINT_DEF, printButton, paintBtn, runPrint, stopFeedback, printSchema, PRINT_LABELS, PRINT_HELPERS} from './shared/print-button.js';
 import {watch, notes as api, storeHint} from './shared/nova-store.js';
-import {RICH_CSS, richEditor, toPlain, firstLine, isEmpty} from './shared/rich-text.js';
+import {RICH_CSS, richEditor, toPlain, isEmpty} from './shared/rich-text.js';
 import {VIEW_CSS, roundBtn, armButton, setBtnIcon, ago} from './shared/stack-view.js';
 
 /* ---------- Nova Notiz Card ---------- */
@@ -44,7 +44,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
 .rb.pinb.on ha-icon{transform:rotate(35deg)}
 @media (prefers-reduced-motion:reduce){.nr.new{animation:none}}`;
 
-const NDEF = {name: 'Notizen', icon: 'mdi:note-multiple-outline', show_header: true, view: 'full', max_notes: 0, height: 320, print_field: 'text', ...PRINT_DEF};
+const NDEF = {name: 'Notizen', icon: 'mdi:note-multiple-outline', show_header: true, view: 'full', max_notes: 0, height: 380, print_field: 'text', ...PRINT_DEF};
 const SAVE_MS = 800;
 
 class NovaNoteCard extends HTMLElement {
@@ -163,9 +163,10 @@ class NovaNoteCard extends HTMLElement {
     this._seen.add(x.id);
     el.style.setProperty('--i', Math.min(i, 8));
     el.innerHTML = `${x.pinned ? '<ha-icon class="pi" icon="mdi:pin"></ha-icon>' : ''}<div class="tx"><b></b><div class="pv"></div></div><time></time>`;
-    const pv = toPlain(x.body).replace(/\n+/g, ' · ');
-    el.querySelector('b').textContent = x.title || firstLine(x.body) || 'Ohne Titel';
-    el.querySelector('.pv').textContent = x.title ? pv : pv.slice(firstLine(x.body).length).replace(/^[\s·•\[\]x]+/, '');
+    // Vorschau ohne Listenzeichen; ohne Titel steht die erste Zeile schon oben
+    const lines = toPlain(x.body).split('\n').map(l => l.replace(/^(\[.?\]|•)\s*/, '').trim()).filter(Boolean);
+    el.querySelector('b').textContent = x.title || lines[0] || 'Ohne Titel';
+    el.querySelector('.pv').textContent = (x.title ? lines : lines.slice(1)).join(' · ');
     el.querySelector('time').textContent = ago(x.updated);
     press(el, {tap: () => this._open(x)});
     return el;

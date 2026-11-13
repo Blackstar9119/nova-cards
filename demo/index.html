@@ -2,6 +2,7 @@
 <!-- Nova Demo: alle Karten mit Testdaten, ohne Home Assistant. Aufruf über einen lokalen Webserver im Repo-Root:
      demo/index.html            lädt ../nova-cards.js
      demo/index.html?src=…      lädt einen anderen Build (z. B. ../dev/nova-dev-cards.js)
+     demo/index.html?only=a,b   zeigt nur diese Karten (z. B. shopping-card,note-card)
      demo/index.html?theme=…    setzt das Nova-Theme für alle Karten (wie die Theme-Variable nova-theme eines HA-Themes) -->
 <html lang="de">
 <head>
@@ -33,7 +34,9 @@ for (const t of ['ha-icon', 'ha-state-icon', 'ha-svg-icon', 'ha-card']) customEl
 window.loadCardHelpers = async () => ({createCardElement: c => { const el = document.createElement(String(c.type).replace(/^custom:/, '')); try { el.setConfig?.(c); } catch (e) { el.textContent = e.message; } return el; }});
 await new Promise((ok, no) => { const s = document.createElement('script'); s.src = q.get('src') || '../nova-cards.js'; s.onload = ok; s.onerror = no; document.head.append(s); });
 const pre = (window.customCards || []).some(c => c.type.startsWith('nova-dev-')) ? 'nova-dev-' : 'nova-';
+const only = q.get('only')?.split(',');
 for (const [type, conf, width] of cards) {
+  if (only && !only.includes(type)) continue;
   const tag = pre + type, cls = customElements.get(tag), fig = document.createElement('figure');
   fig.innerHTML = `<figcaption>${type}${conf ? ' · ' + Object.entries(conf).filter(([, v]) => typeof v !== 'object').map(([k, v]) => `${k}: ${v}`).join(', ') : ''}</figcaption><div class="slot" style="width:${width || 380}px"></div>`;
   document.body.append(fig);

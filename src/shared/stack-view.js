@@ -1,8 +1,9 @@
 // Zwei Ansichten in einer Karte (Liste ↔ Detail), die seitlich hineingleiten – Notiz und Einkauf.
-// Die Karte behält dabei ihre Höhe (Detail scrollt in sich). Dazu runde Knöpfe und Löschen in zwei Schritten.
+// Die Karte behält dabei ihre Höhe (Detail scrollt in sich). overflow:clip statt hidden, damit der Browser die Bühne
+// nicht verschiebt, wenn er ein Feld der ausgeblendeten Ansicht ins Bild holen will. Dazu runde Knöpfe und Löschen in zwei Schritten.
 
 export const VIEW_CSS = `
-.stage{position:relative;flex:1 1 0;min-height:var(--vh,240px);overflow:hidden;margin:0 calc(var(--nv-s2) * -1)}
+.stage{position:relative;flex:1 1 0;min-height:var(--vh,240px);overflow:hidden;overflow:clip;margin:0 calc(var(--nv-s2) * -1)}
 .view{position:absolute;inset:0;display:flex;flex-direction:column;gap:var(--nv-s5);padding:0 var(--nv-s2);box-sizing:border-box;
 transition:transform var(--nv-d5) var(--nv-ease),opacity var(--nv-d5) var(--nv-ease),visibility 0s linear var(--nv-d5)}
 .view.main{transform:none}

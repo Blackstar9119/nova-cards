@@ -24,7 +24,8 @@ export function sanitize(html) {
     if (name === 'span' && !cls.length) return inner;
     return `<${name}${cls.length ? ` class="${cls.join(' ')}"` : ''}>${inner}</${name}>`;
   }).join('');
-  return walk(t.content).replace(/^(<br>)+|(<br>)+$/g, '');
+  // Chrome packt Listen gern in einen Absatz – das ergäbe beim nächsten Einlesen leere Absätze
+  return walk(t.content).replace(/<p>(<ul[^>]*>)/g, '$1').replace(/<\/ul><\/p>/g, '</ul>').replace(/<p><\/p>/g, '').replace(/^(<br>)+|(<br>)+$/g, '');
 }
 export const isEmpty = html => !String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;| |​/g, '').trim();
 
@@ -75,9 +76,12 @@ transform:rotate(45deg) scale(0);transition:transform var(--nv-d3) var(--nv-ease
 .rt ul.check li.done{text-decoration:line-through;opacity:.55}
 .rte{outline:none;min-height:3em;cursor:text;-webkit-user-select:text;user-select:text}
 .rte:empty::before{content:attr(data-ph);opacity:.45;pointer-events:none}
-.tb{display:flex;gap:var(--nv-s2);flex-wrap:wrap;align-items:center;padding:var(--nv-s2);border-radius:var(--nv-r-md);background:rgba(var(--nv-tint),.06);border:1px solid rgba(var(--nv-tint),.08)}
-.tb .sep{width:1px;align-self:stretch;margin:var(--nv-s2) var(--nv-s1);background:rgba(var(--nv-tint),.14)}
-.tb button{width:44px;height:44px;border-radius:var(--nv-r-sm);border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;
+.tb{display:flex;gap:var(--nv-s1);align-items:center;padding:var(--nv-s2);border-radius:var(--nv-r-md);background:rgba(var(--nv-tint),.06);border:1px solid rgba(var(--nv-tint),.08);flex:none;
+overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+.tb::-webkit-scrollbar{display:none}
+.tb.fade{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+.tb .sep{width:1px;flex:none;align-self:stretch;margin:var(--nv-s2) var(--nv-s1);background:rgba(var(--nv-tint),.14)}
+.tb button{width:44px;height:44px;flex:none;border-radius:var(--nv-r-sm);border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;
 cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:background-color var(--nv-d2),color var(--nv-d2),transform var(--nv-d2)}
 .tb button ha-icon{--mdc-icon-size:22px}
 .tb button:active{transform:scale(var(--nv-press))}
@@ -92,16 +96,31 @@ cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:back
 const SIZES = [['fs-s', 'mdi:format-font-size-decrease', 'Klein'], ['', 'mdi:format-text', 'Normal'], ['fs-l', 'mdi:format-font-size-increase', 'Groß'], ['h3', 'mdi:format-header-1', 'Überschrift']];
 const COLORS = [['c-accent', 'Akzent'], ['c-warn', 'Wichtig'], ['c-muted', 'Gedämpft'], ['', 'Normal']];
 
-const sel = root => (root.getSelection ? root.getSelection() : document.getSelection());
+// Auswahl im Schattenbaum der Karte. Chromium: shadowRoot.getSelection(); Safari/Firefox: getComposedRanges()
+// (document.getSelection() zeigt in Safari sonst nur auf das Kartenelement).
+function getRange(root) {
+  try {
+    if (root.getSelection) { const x = root.getSelection(); return x?.rangeCount ? x.getRangeAt(0) : null; }
+    const s = document.getSelection();
+    if (s?.getComposedRanges) {
+      let st;
+      try { st = s.getComposedRanges({shadowRoots: [root]})[0]; } catch { st = s.getComposedRanges(root)[0]; }
+      if (!st) return null;
+      const r = document.createRange();
+      r.setStart(st.startContainer, st.startOffset); r.setEnd(st.endContainer, st.endOffset);
+      return r;
+    }
+    return s?.rangeCount ? s.getRangeAt(0) : null;
+  } catch { return null; }
+}
+const anchor = root => getRange(root)?.startContainer;
 const within = (rte, n) => n && (n === rte || rte.contains(n));
 const closest = (n, s, stop) => { for (let x = n?.nodeType === 1 ? n : n?.parentElement; x && x !== stop; x = x.parentElement) if (x.matches(s)) return x; return null; };
 
 // Auswahl in eine span mit Klasse aus der Gruppe packen (cls leer = Gruppe entfernen)
 function wrap(rte, root, group, cls) {
-  const s = sel(root);
-  if (!s?.rangeCount) return;
-  const r = s.getRangeAt(0);
-  if (!within(rte, r.commonAncestorContainer)) return;
+  const r = getRange(root);
+  if (!r || !within(rte, r.commonAncestorContainer)) return;
   if (r.collapsed) {
     // ohne Auswahl: ganzes Wort unter dem Cursor
     const n = r.startContainer;
@@ -130,7 +149,10 @@ function wrap(rte, root, group, cls) {
   if (cls) { node = document.createElement('span'); node.className = cls; node.append(frag); }
   const first = node === frag ? frag.firstChild : node, last = node === frag ? frag.lastChild : node;
   r.insertNode(node);
-  if (first && last) { const nr = document.createRange(); nr.setStartBefore(first); nr.setEndAfter(last); s.removeAllRanges(); s.addRange(nr); }
+  if (first && last) {
+    const nr = document.createRange(); nr.setStartBefore(first); nr.setEndAfter(last);
+    try { document.getSelection().setBaseAndExtent(nr.startContainer, nr.startOffset, nr.endContainer, nr.endOffset); } catch { /* Auswahl bleibt, wie sie ist */ }
+  }
 }
 
 // Eingabefeld + Leiste. onInput(html) bei jeder Änderung (bereinigt). Liefert {el, rte, tb, get, set, focus}.
@@ -149,7 +171,7 @@ export function richEditor({placeholder = '', colors = true, onInput} = {}) {
     // pointerdown ohne Fokuswechsel, sonst ist die Auswahl im Textfeld weg
     b.addEventListener('pointerdown', e => e.preventDefault());
     b.addEventListener('mousedown', e => e.preventDefault());
-    b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (!within(rte, sel(root())?.anchorNode)) rte.focus(); fn(); changed(); });
+    b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (!within(rte, anchor(root()))) rte.focus(); fn(); changed(); });
     btns[key] = b;
     tb.append(b);
     return b;
@@ -163,21 +185,21 @@ export function richEditor({placeholder = '', colors = true, onInput} = {}) {
   sep();
   // Größe: ein Knopf, der durch Klein → Normal → Groß → Überschrift schaltet, wäre fummelig; vier Knöpfe sind auf Touch schneller
   SIZES.forEach(([k, icon, title]) => btn(`size:${k}`, icon, title, () => {
-    const blk = closest(sel(root())?.anchorNode, 'h3,p,li', rte);
+    const blk = closest(anchor(root()), 'h3,p,li', rte);
     if (k === 'h3') { exec('formatBlock', blk?.nodeName === 'H3' ? 'p' : 'h3'); return; }
     if (blk?.nodeName === 'H3') exec('formatBlock', 'p');
     wrap(rte, root(), ['fs-s', 'fs-l'], k);
   }));
   sep();
   btn('list', 'mdi:format-list-bulleted', 'Aufzählung', () => {
-    const ul = closest(sel(root())?.anchorNode, 'ul', rte);
+    const ul = closest(anchor(root()), 'ul', rte);
     if (ul?.classList.contains('check')) { ul.classList.remove('check'); return; }
     exec('insertUnorderedList');
   });
   btn('check', 'mdi:format-list-checks', 'Checkliste', () => {
-    let ul = closest(sel(root())?.anchorNode, 'ul', rte);
+    let ul = closest(anchor(root()), 'ul', rte);
     if (ul?.classList.contains('check')) { exec('insertUnorderedList'); return; }
-    if (!ul) { exec('insertUnorderedList'); ul = closest(sel(root())?.anchorNode, 'ul', rte); }
+    if (!ul) { exec('insertUnorderedList'); ul = closest(anchor(root()), 'ul', rte); }
     ul?.classList.add('check');
   });
   if (colors) {
@@ -186,7 +208,7 @@ export function richEditor({placeholder = '', colors = true, onInput} = {}) {
   }
   // Knopfzustände zur aktuellen Auswahl
   const paint = () => {
-    const s = sel(root()), n = s?.anchorNode;
+    const n = anchor(root());
     if (!within(rte, n)) return;
     ['bold', 'italic', 'underline', 'strikeThrough'].forEach(k => btns[k].classList.toggle('on', document.queryCommandState(k)));
     const h3 = !!closest(n, 'h3', rte), sz = closest(n, 'span.fs-s,span.fs-l', rte), ul = closest(n, 'ul', rte), col = closest(n, 'span.c-accent,span.c-warn,span.c-muted', rte);
@@ -201,6 +223,9 @@ export function richEditor({placeholder = '', colors = true, onInput} = {}) {
     paint();
     onInput?.(get());
   };
+  const fade = () => tb.classList.toggle('fade', tb.scrollWidth - tb.clientWidth - tb.scrollLeft > 4);
+  tb.addEventListener('scroll', fade, {passive: true});
+  requestAnimationFrame(fade);
   const onSel = () => paint();
   rte.addEventListener('input', changed);
   rte.addEventListener('keyup', paint);
