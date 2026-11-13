@@ -1919,11 +1919,7 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
   var SCSS = `
 .g.sh{gap:var(--nv-s5)}
 .add{display:flex;gap:var(--nv-s4);align-items:center;flex:none}
-.add .fld{height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8);flex:1;min-width:0;display:flex;align-items:center;gap:var(--nv-s4);font:inherit;color:inherit;text-align:left;cursor:pointer;
--webkit-tap-highlight-color:transparent;transition:transform var(--nv-d2) var(--nv-ease),border-color var(--nv-d2)}
-.add .fld:active:not([disabled]){transform:scale(var(--nv-press))}
-.add .fld[disabled]{opacity:.4;cursor:default}
-.add .fld span{opacity:.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.add .fld{height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8)}
 .form .sug{margin-top:calc(var(--nv-s3) * -1)}
 .cta{height:48px;border-radius:var(--nv-r-pill);flex:none;width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:var(--nv-s4);font:inherit;font-size:var(--nv-fs-8);font-weight:var(--nv-fw-bold);
 cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;color:inherit;border:1px solid color-mix(in srgb,var(--nv-active) 60%,transparent);background:color-mix(in srgb,var(--nv-active) 24%,var(--nv-chip));
@@ -2092,7 +2088,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       r.innerHTML = `<style>${NOVA_VARS}${PANEL_CSS}${FIELD_CSS}${PRINT_CSS}${VIEW_CSS}${RICH_CSS}${PICK_MEDIA_CSS}${SCSS}</style><div class="g sh">
 <div class="hd"><div class="ic"></div><div class="nm"><b></b><small></small></div></div>
 <div class="stage"><div class="view main">
-<div class="add"><button class="fld" type="button"><span></span></button></div>
+<form class="add"><input class="fld" type="text" enterkeyhint="done" autocomplete="off" maxlength="120"></form>
 <div class="sug"></div><div class="scroll"><div class="items"></div></div><div class="ft"></div></div>
 <div class="view side"><div class="bar"></div><div class="scroll"><div class="form"></div></div>
 <button class="cta" type="button" hidden><ha-icon icon="mdi:plus"></ha-icon><span>Hinzufügen</span></button></div></div></div>`;
@@ -2103,8 +2099,8 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         ic: q(".hd .ic"),
         name: q(".hd b"),
         sub: q(".hd small"),
-        form: q(".add"),
-        inp: q(".add .fld"),
+        form: q("form.add"),
+        inp: q(".add input"),
         sug: q(".sug"),
         cta: q(".cta"),
         items: q(".items"),
@@ -2116,9 +2112,14 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       this._seen = /* @__PURE__ */ new Set();
       this._qty = /* @__PURE__ */ new Map();
       this._pstate = "idle";
-      e.ab = roundBtn("mdi:plus", "Artikel hinzufügen", () => this._openNew(), "plus");
+      e.ab = roundBtn("mdi:plus", "Artikel mit Details hinzufügen", () => this._openNew(), "plus");
       e.form.append(e.ab);
-      e.inp.addEventListener("click", () => this._openNew());
+      e.form.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        this._add();
+      });
+      e.inp.addEventListener("input", () => this._renderSug());
+      e.inp.addEventListener("keydown", (ev) => ev.stopPropagation());
       e.cta.addEventListener("click", () => this._addNew());
       this._pb = printButton(() => this._print());
       e.ft.append(this._pb);
@@ -2132,8 +2133,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
     _apply() {
       const c = this._c, e = this._e;
       e.hd.hidden = c.show_header === false;
-      e.inp.firstChild.textContent = c.placeholder || SDEF.placeholder;
-      e.inp.setAttribute("aria-label", c.placeholder || SDEF.placeholder);
+      e.inp.placeholder = c.placeholder || "";
       e.g.style.setProperty("--vh", `${Math.max(200, +c.height || SDEF.height)}px`);
       this._key = this._skey = null;
       this._render();
@@ -2382,21 +2382,30 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       });
     }
     /* ----- Hinzufügen + Schnellauswahl ----- */
-    // Schnellauswahl: bekannter Artikel direkt auf die Liste (Icon, Bild, Geschäft, Einheit kennt die Integration)
+    // Schnelle Eingabe (Textfeld + Enter) und Schnellauswahl: direkt auf die Liste. Icon, Bild, Geschäft und Einheit
+    // eines bekannten Artikels kennt die Integration
     _add(name) {
-      const h = this._h, v = String(name || "").trim();
+      const h = this._h, e = this._e, typed = name == null, v = String(typed ? e.inp.value : name).trim();
       if (!h || !v || !this._data) return;
+      if (typed) e.inp.value = "";
       const twin = this._items().find((i) => !i.done && hkey(i.name) === hkey(v));
-      const item = twin ? { id: twin.id, qty: Math.round(((+twin.qty || 0) + (STEP[twin.unit] || 1)) * 1e3) / 1e3 } : { name: v };
+      const known = this._data.history.some((x) => x.key === hkey(v));
+      const def = this._c.default_store && this._store(this._c.default_store) ? this._c.default_store : null;
+      const item = twin ? { id: twin.id, qty: Math.round(((+twin.qty || 0) + (STEP[twin.unit] || 1)) * 1e3) / 1e3 } : { name: v, ...!known && def ? { store: def } : {} };
       if (twin) this._bump = twin.id;
-      shop.save(h, item).catch((err) => console.warn("[nova-cards] Einkauf: Hinzufügen fehlgeschlagen", err));
+      shop.save(h, item).catch((err) => {
+        console.warn("[nova-cards] Einkauf: Hinzufügen fehlgeschlagen", err);
+        if (typed && !e.inp.value) e.inp.value = v;
+      });
+      if (typed) e.inp.focus();
+      this._skey = null;
       this._renderSug();
     }
     _renderSug() {
       const c = this._c, e = this._e, d = this._data;
       if (!e) return;
-      const onList = new Set(this._items().filter((i) => !i.done).map((i) => hkey(i.name)));
-      const list2 = !d || c.show_suggestions === false ? [] : d.history.filter((x) => !onList.has(x.key)).slice(0, 12);
+      const q = hkey(e.inp.value), onList = new Set(this._items().filter((i) => !i.done).map((i) => hkey(i.name)));
+      const list2 = !d || c.show_suggestions === false ? [] : d.history.filter((x) => !onList.has(x.key) && (!q || x.key.includes(q))).sort((a, b) => q ? b.key.startsWith(q) - a.key.startsWith(q) || b.count - a.count : 0).slice(0, 12);
       const key = JSON.stringify([list2.map((x) => [x.key, x.icon, x.image]), c.show_images]);
       if (key === this._skey) return;
       this._skey = key;
@@ -2410,6 +2419,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         press(b, {
           tap: () => {
             b.classList.add("go");
+            e.inp.value = "";
             this._add(x.name);
           },
           hold: () => {
@@ -2439,7 +2449,12 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       this._touched = /* @__PURE__ */ new Set();
       this._busy = false;
       this._saved = null;
+      const typed = e.inp.value.trim();
+      this._cur.name = typed;
+      e.inp.value = "";
+      this._skey = null;
       this._show();
+      if (typed) this._suggest();
       clearTimeout(this._ft);
       this._ft = setTimeout(() => this._new && this._ti?.focus({ preventScroll: true }), 320);
     }
