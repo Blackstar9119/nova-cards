@@ -3,9 +3,12 @@
 Alle nennenswerten Änderungen an Nova Cards. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 
-## [0.12.0] – unveröffentlicht
+## [0.1.0b6] – unveröffentlicht
+
+Ab hier tragen Nova Cards die Versionsnummer der Nova-Integration, mit der sie ausgeliefert werden.
 
 ### Hinzugefügt
+- Nova Cards kommen mit der Nova-Integration: Sie liefert die Karten selbst aus und meldet sie im Frontend an, ein eigener Marketplace-Eintrag und ein Eintrag unter Ressourcen sind nicht mehr nötig. Karten und Integration haben eine gemeinsame Version; nach einem Update lädt der Browser die neue Datei von selbst. Ist die alte Ressource `nova-cards.js` noch eingetragen, laufen die Karten trotzdem nur einmal, und die Integration zeigt unter Reparaturen, wie man den alten Eintrag entfernt.
 - Nova-Einstellungen (ab Nova-Integration 0.1.0b4): Die Karten lesen die zentralen Einstellungen der Integration und schalten offene Dashboards sofort um. Reihenfolge: Option in der Karte → Nova-Einstellung → Standard. Animationen „vereinfacht“ (keine Dauer-Animationen) und „aus“ (auch keine Übergänge), Schriftgröße klein/groß für alle Karten; Einkauf: Gruppierung, Bilder, Standard-Geschäft; Notiz: kompakte Liste und Schriftgröße (neue Option `text_size`); Rezeptbuch: Stil für Bücher ohne eigenen `style`; neue Rezepte starten mit den Standard-Portionen.
 - Nova-Panel: Einstellungsseite „Nova“ in der Seitenleiste im Nova-Look (alle vier Themes), gebaut mit `npm run panel` aus `src/panel.js` und ausgeliefert von der Nova-Integration. Links eine schmale Navigation (Allgemein, Einkauf, Notizen, Rezepte, Mealie), rechts immer ein Abschnitt in einer ruhigen Spalte; „Zurücksetzen“ dezent unten im Abschnitt. Module an/aus unter Allgemein, Geschäfte anlegen, umbenennen und löschen, Standard-Geschäft wählen, „Liste für den Sprachassistenten“ für Einkauf und Notizen.
 - Hintergründe (Nova-Einstellung „Hintergrund“, ab Nova-Integration 0.1.0b5): passende Verläufe für Nova Blau, Hell, Midnight und Velvet, oder „Passend“ zum gewählten Theme. Gilt auf Dashboards, auf denen Nova Cards sind; ein eigener Hintergrund der Ansicht hat Vorrang. Standard „Keiner“ ändert nichts.

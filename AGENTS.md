@@ -11,6 +11,8 @@ Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard�
 
 ```
 src/
+  main.js             Einstieg des vollen Builds: lädt die Karten nur einmal (window.__novaCards), auch wenn Integration und
+                      alte Ressource beide da sind – die zweite Kopie meldet sich nur in der Konsole
   index.js            Einstieg: importiert alle Karten (Reihenfolge = Reihenfolge in der Kartenauswahl)
   room.js             Nova Raum Card + Editor
   thermostat.js       Nova Thermostat Card + Editor
@@ -101,7 +103,8 @@ tools/
 dev/
   nova-dev-cards.js   ERZEUGT von „npm run dev“ – gitignored, nur Zwischenablage
 nova-dev-cards.js     Kopie des Dev-Builds für jsDelivr – nur auf Feature-Branches, nie nach main mergen
-build.mjs             esbuild-Build → nova-cards.js („npm run dev“ → dev/nova-dev-cards.js)
+build.mjs             esbuild-Build → nova-cards.js („npm run dev“ → dev/nova-dev-cards.js, „npm run integration“ → Karten für
+                      die Nova-Integration)
 package.json          Versionsnummer (einzige Stelle), „npm run build“ und „npm run dev [-- <karte>]“
 nova-cards.js         ERZEUGT – nicht von Hand bearbeiten
 README.md             Doku für Nutzer (ein Abschnitt pro Karte)
@@ -113,6 +116,11 @@ hacs.json             HACS-Metadaten
 
 - **Nur in `src/` arbeiten.** Danach `npm install` (einmalig) und `npm run build`. Die erzeugte `nova-cards.js`
   wird mit committet, weil HACS sie im Repo-Root braucht.
+- **Ausgeliefert wird über die Nova-Integration:** `npm run integration [-- <pfad>]` baut alle Karten verkleinert mit der Version
+  aus deren `manifest.json` und schreibt sie nach `../nova-integration/custom_components/nova/static/nova-cards.js` (ohne das
+  Repo nach `integration/`, gitignored). Dort committen. Die Integration meldet die Datei selbst an (keine Dashboard-Ressource)
+  und zeigt einen Hinweis, wenn die alte Ressource `nova-cards.js` noch eingetragen ist. `nova-cards.js` im Repo-Root bleibt
+  für bestehende Marketplace-Installationen, bis der Eintrag eingestellt wird.
 - **`nova-cards.js` nie direkt ändern** – sie wird bei jedem Build überschrieben.
 - **Version** nur in `package.json` ändern; der Build setzt sie in Banner und Konsolen-Ausgabe ein. Jede Änderung kommt in `CHANGELOG.md`.
 - **Neue Karte** = neue Datei in `src/` (Karte + Editor), Import in `src/index.js`, Registrierung über
