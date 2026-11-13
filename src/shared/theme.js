@@ -155,6 +155,19 @@ export const THEMES = {
 };
 export const THEME_KEYS = Object.keys(THEMES);
 
+// Hintergründe der Dashboards (Nova-Einstellung allgemein.hintergrund, setzt backdrop.js): je Theme ein ruhiger Verlauf
+// mit weichem Licht. „fixed“, damit der Verlauf beim Scrollen stehen bleibt.
+export const BACKGROUNDS = {
+  blau: 'radial-gradient(90vmax 70vmax at 12% -10%,rgba(92,128,204,.38),transparent 60%) fixed,'
+    + 'radial-gradient(80vmax 60vmax at 110% 110%,rgba(56,84,150,.32),transparent 60%) fixed,linear-gradient(160deg,#26324c,#0f1422 75%) fixed',
+  hell: 'radial-gradient(90vmax 70vmax at 10% -10%,rgba(255,255,255,.85),transparent 60%) fixed,'
+    + 'radial-gradient(80vmax 60vmax at 110% 110%,rgba(170,186,214,.45),transparent 60%) fixed,linear-gradient(160deg,#e3e7ee,#c9d0db) fixed',
+  midnight: 'radial-gradient(90vmax 70vmax at 50% -20%,rgba(255,255,255,.07),transparent 60%) fixed,'
+    + 'radial-gradient(70vmax 50vmax at 100% 120%,rgba(120,124,132,.12),transparent 60%) fixed,linear-gradient(180deg,#0b0b0d,#000 70%) fixed',
+  velvet: 'radial-gradient(90vmax 70vmax at 12% -10%,rgba(255,244,222,.75),transparent 60%) fixed,'
+    + 'radial-gradient(80vmax 60vmax at 110% 110%,rgba(184,147,90,.35),transparent 60%) fixed,linear-gradient(160deg,#e2d4b8,#c2ae8a) fixed',
+};
+
 // Abweichungen der Nova Navi gegenüber den Karten (etwas kräftigerer Rand, ruhigere Chips, mehr Blur, Warnung in Gelb)
 const NAVI = {border: 'rgba(255,255,255,.16)', chip: 'rgba(255,255,255,.1)', blur: '22px', warn: '#f5b83d'};
 

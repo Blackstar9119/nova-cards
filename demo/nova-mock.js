@@ -5,8 +5,8 @@ const now = () => Date.now() / 1000;
 const T0 = now();
 const stores = [{id: 's1', name: 'Lidl', icon: 'mdi:cart-outline'}, {id: 's2', name: 'dm', icon: 'mdi:lipstick'}];
 // Einstellungen wie nova/settings/get; in der Demo per ?settings={"allgemein":{"animationen":"aus"}} vorbelegbar
-const SETTINGS = {allgemein: {theme: null, animationen: 'normal', schriftgroesse: 'normal'}, module: {theme: true, notes: true, shopping: true, recipes: true},
-  einkauf: {standard_geschaeft: null, gruppierung: 'geschaeft', todo_entity: null, bilder: true}, notizen: {standard_schriftgroesse: 'normal', kompakt: false},
+const SETTINGS = {allgemein: {theme: null, animationen: 'normal', schriftgroesse: 'normal', hintergrund: 'keiner'}, module: {theme: true, notes: true, shopping: true, recipes: true},
+  einkauf: {standard_geschaeft: null, gruppierung: 'geschaeft', todo_entity: null, bilder: true}, notizen: {standard_schriftgroesse: 'normal', kompakt: false, todo_entity: null},
   rezepte: {buch_variante: 'old', standard_portionen: 2}, mealie: {url: null, token_gesetzt: false}};
 try { for (const [k, v] of Object.entries(JSON.parse(new URLSearchParams(location.search).get('settings') || '{}'))) Object.assign(SETTINGS[k], v); } catch { /* ungültig → Standard */ }
 const db = {
