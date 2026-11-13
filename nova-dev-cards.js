@@ -730,6 +730,12 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
       }
     };
   };
+  var weakDevice = () => {
+    const n = globalThis.navigator || {}, mem = n.deviceMemory, cpu = n.hardwareConcurrency;
+    if (mem && mem <= 2) return true;
+    if (cpu && cpu <= 2) return true;
+    return /Android/.test(n.userAgent || "") && /; wv\)/.test(n.userAgent || "") && (!cpu || cpu <= 4);
+  };
 
   // src/shared/state.js
   var OFF = /* @__PURE__ */ new Set(["off", "unavailable", "unknown", "idle", "docked", "standby", "closed", "paused", "not_home", "none", "ready"]);
@@ -3992,7 +3998,9 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
   define("recipe-card-editor", NovaRecipeCardEditor);
 
   // src/recipe-book.js
-  var DEF = { title: "Rezepte", subtitle: "", style: "old", layout: "auto", cover_color: "brown", start_open: false, close_after: 0 };
+  var DEF = { title: "Rezepte", subtitle: "", style: "old", layout: "auto", cover_color: "brown", start_open: false, close_after: 0, turn: "auto" };
+  var NAV_H = 48;
+  var Lite = { slow: null, bad: 0 };
   var COVERS = ["brown", "red", "green", "blue"];
   var STYLES = ["old", "modern", "fantasy"];
   var OPEN_MS = 1100;
@@ -4044,7 +4052,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
 --f-hand:'Nova Hand','Segoe Script','Bradley Hand',cursive;--f-serif:'Nova Serif',Georgia,'Times New Roman',serif;--acc:#8a1f12;--acc2:#1f4f7a}
 :host([cover=red]){--leather:var(--nova-book-red,#5e1a1d)}:host([cover=green]){--leather:var(--nova-book-green,#2e4630)}:host([cover=blue]){--leather:var(--nova-book-blue,#1f2c48)}
 *{box-sizing:border-box}
-.rb{position:relative;height:100%;min-height:200px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+.rb{position:relative;height:100%;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;
 font-family:var(--f-serif);color:var(--ink);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .stage{position:relative;perspective:2400px;perspective-origin:50% 40%}
 .book{position:absolute;inset:0;transform-style:preserve-3d;transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1)}
@@ -4054,14 +4062,16 @@ font-family:var(--f-serif);color:var(--ink);-webkit-tap-highlight-color:transpar
 .book.single.closed,.book.single{transform:none}
 /* Seitenblock: Papierkanten unten und rechts (Buchdicke) */
 .block{position:absolute;top:0;bottom:0;right:0;width:var(--pw);border-radius:2px 6px 6px 2px;
-background:repeating-linear-gradient(90deg,#e9dcb8 0 1px,#cdbb8f 1px 2px);box-shadow:3px 4px 0 -1px #bfae84,5px 7px 14px rgba(0,0,0,.45);transform:translate(4px,4px)}
-.double .block.l{right:auto;left:0;transform:translate(-4px,4px);border-radius:6px 2px 2px 6px}
+background:repeating-linear-gradient(90deg,#e9dcb8 0 1px,#cdbb8f 1px 2px);box-shadow:3px 4px 0 -1px #bfae84,5px 7px 14px rgba(0,0,0,.45);transform:translate3d(4px,4px,-2px)}
+.double .block.l{right:auto;left:0;transform:translate3d(-4px,4px,-2px);border-radius:6px 2px 2px 6px}
 .single .block.l,.closed .block.l{display:none}
 /* Seiten */
 .pg,.face{position:absolute;top:0;bottom:0;width:var(--pw);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .pg.r,.leaf{left:auto;right:0}.pg.l{left:0}
-/* Seiten minimal vor dem aufgeklappten Einband, das Blatt beim Umblättern vor den Seiten (in 3D zählt die Tiefe, nicht z-index) */
-.open .pg{transform:translateZ(1px)}
+/* Feste Tiefen statt z-index (in 3D zählt nur die Tiefe): Einband innen -3, Buchschnitt -2, Seiten +1, Blatt +3, Einband zu +4.
+   Keine zwei Flächen liegen gleich tief – sonst flackert es in Safari und schwachen WebViews (Z-Fighting). */
+.pg{transform:translateZ(1px)}
+.pg,.leaf .face{contain:layout paint}
 .single .pg.r,.single .leaf{right:auto;left:0}
 .single .pg.l{display:none}
 .paper{background-color:var(--paper);background-image:var(--st),${PAPER_FIBER},${PAPER_CLOUD},
@@ -4076,25 +4086,44 @@ box-shadow:inset 0 0 0 1px rgba(110,80,40,.25),inset 0 0 30px rgba(140,95,40,.22
 font-size:clamp(12px,calc(var(--pw) * .036),19px);line-height:1.45}
 .in::-webkit-scrollbar{display:none}
 .no{position:absolute;bottom:calc(var(--pw) * .035);left:0;right:0;text-align:center;font-style:italic;font-size:clamp(10px,calc(var(--pw) * .026),14px);opacity:.55;pointer-events:none}
-.leaf{position:absolute;top:0;bottom:0;width:var(--pw);transform-style:preserve-3d;transform-origin:0 50%;z-index:5;pointer-events:none}
+.leaf{position:absolute;top:0;bottom:0;width:var(--pw);transform-style:preserve-3d;transform-origin:0 50%;z-index:5;pointer-events:none;will-change:transform;transform:translateZ(3px)}
 .leaf .face{left:0}.leaf .face.b{transform:rotateY(180deg)}
 .leaf .sh{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0}
-.leaf.fwd{animation:turn-f ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) forwards}.leaf.bwd{animation:turn-b ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) forwards}
+.leaf.fwd{animation:turn-f ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) both}.leaf.bwd{animation:turn-b ${TURN_MS}ms cubic-bezier(.4,.1,.3,1) both}
 .leaf .face.f .sh{background:linear-gradient(90deg,rgba(0,0,0,.35),transparent 60%)}.leaf .face.b .sh{background:linear-gradient(270deg,rgba(0,0,0,.35),transparent 60%)}
-.leaf.fwd .face.f .sh,.leaf.bwd .face.b .sh{animation:sh-in ${TURN_MS}ms ease-in forwards}.leaf.fwd .face.b .sh,.leaf.bwd .face.f .sh{animation:sh-out ${TURN_MS}ms ease-out forwards}
+.leaf.fwd .face.f .sh,.leaf.bwd .face.b .sh{animation:sh-in ${TURN_MS}ms ease-in both}.leaf.fwd .face.b .sh,.leaf.bwd .face.f .sh{animation:sh-out ${TURN_MS}ms ease-out both}
 .single .leaf.fwd{animation-name:turn-sf}.single .leaf.bwd{animation-name:turn-sb}
-@keyframes turn-f{from{transform:translateZ(2px) rotateY(0)}50%{transform:translateZ(2px) rotateY(-90deg) skewY(-1.5deg)}to{transform:translateZ(2px) rotateY(-180deg)}}
-@keyframes turn-b{from{transform:translateZ(2px) rotateY(-180deg)}50%{transform:translateZ(2px) rotateY(-90deg) skewY(1.5deg)}to{transform:translateZ(2px) rotateY(0)}}
-@keyframes turn-sf{from{transform:translateZ(2px) rotateY(0);opacity:1}70%{opacity:1}to{transform:translateZ(2px) rotateY(-160deg);opacity:0}}
-@keyframes turn-sb{from{transform:translateZ(2px) rotateY(-160deg);opacity:0}30%{opacity:1}to{transform:translateZ(2px) rotateY(0);opacity:1}}
+/* Einzelseite: das Blatt blendet aus – die Deckkraft sitzt auf der Seite, nicht am Blatt (opacity am 3D-Blatt würde es flach drücken) */
+.single .leaf.fwd .face.f{animation:fade-out ${TURN_MS}ms linear both}.single .leaf.bwd .face.f{animation:fade-out ${TURN_MS}ms linear reverse both}
+/* Vorbereitet: Blatt steht schon fertig gezeichnet über der Seite, die Animation läuft erst danach los */
+.leaf.prep,.leaf.prep *{animation-play-state:paused!important}
+@keyframes turn-f{from{transform:translateZ(3px) rotateY(0)}to{transform:translateZ(3px) rotateY(-180deg)}}
+@keyframes turn-b{from{transform:translateZ(3px) rotateY(-180deg)}to{transform:translateZ(3px) rotateY(0)}}
+@keyframes turn-sf{from{transform:translateZ(3px) rotateY(0)}to{transform:translateZ(3px) rotateY(-160deg)}}
+@keyframes turn-sb{from{transform:translateZ(3px) rotateY(-160deg)}to{transform:translateZ(3px) rotateY(0)}}
+@keyframes fade-out{0%,70%{opacity:1}to{opacity:0}}
+/* Einfaches Blättern für schwache Geräte (Echo Show, Kiosk-WebView): nur zwei flache Ebenen, die zum Falz hin schmaler werden und
+   auf der anderen Seite wieder aufgehen – mit demselben Schatten. Kein 3D, kein preserve-3d. */
+.book.lite .leaf{transform-style:flat;transform:translateZ(3px);animation:none;will-change:auto}
+.book.lite .leaf .face{will-change:transform;backface-visibility:visible;-webkit-backface-visibility:visible}
+.book.lite .leaf .face.f{transform-origin:0 50%}
+.book.lite .leaf .face.b{left:calc(var(--pw) * -1);transform-origin:100% 50%}
+.book.lite .leaf.fwd .face.f{animation:lt-a ${TURN_MS}ms linear both}.book.lite .leaf.fwd .face.b{animation:lt-b ${TURN_MS}ms linear both}
+.book.lite .leaf.bwd .face.f{animation:lt-b ${TURN_MS}ms linear both}.book.lite .leaf.bwd .face.b{animation:lt-a ${TURN_MS}ms linear both}
+.book.lite.single .leaf.fwd .face.f{animation:lt-s ${TURN_MS * 0.8}ms cubic-bezier(.5,0,.75,.5) both}.book.lite.single .leaf.bwd .face.f{animation:lt-s ${TURN_MS * 0.8}ms cubic-bezier(.5,0,.75,.5) reverse both}
+@keyframes lt-a{0%{transform:scaleX(1);animation-timing-function:cubic-bezier(.45,0,.9,.55)}50%,to{transform:scaleX(0)}}
+@keyframes lt-b{0%,50%{transform:scaleX(0);animation-timing-function:cubic-bezier(.1,.45,.55,1)}to{transform:scaleX(1)}}
+@keyframes lt-s{from{transform:scaleX(1);opacity:1}75%{opacity:1}to{transform:scaleX(.08);opacity:0}}
 @keyframes sh-in{from{opacity:0}to{opacity:1}}@keyframes sh-out{from{opacity:1}to{opacity:0}}
 /* Einband */
-.cover{position:absolute;top:-2%;bottom:-2%;right:-1.5%;width:calc(var(--pw) * 1.03);transform-style:preserve-3d;transform-origin:0 50%;z-index:8;
+.cover{position:absolute;top:-2%;bottom:-2%;right:-1.5%;width:calc(var(--pw) * 1.03);transform-style:preserve-3d;transform-origin:0 50%;z-index:8;transform:translateZ(4px) rotateY(0);
 transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1)}
 .single .cover{right:auto;left:0}
 .cover .face{width:100%;top:0;bottom:0;left:0}.cover .face.b{transform:rotateY(180deg)}
-.open .cover{transform:rotateY(-180deg)}
-.single.open .cover{transform:rotateY(-160deg);opacity:0;transition:transform ${OPEN_MS}ms cubic-bezier(.45,.05,.25,1),opacity .3s ${OPEN_MS * 0.7}ms}
+.open .cover{transform:translateZ(-3px) rotateY(-180deg)}
+.single.open .cover{transform:translateZ(-3px) rotateY(-160deg)}
+/* ausblenden über die Seiten des Einbands – opacity am 3D-Einband selbst würde ihn mitten in der Drehung flach drücken */
+.cover .face{transition:opacity .3s}.single.open .cover .face{opacity:0;transition:opacity .3s ${OPEN_MS * 0.7}ms}
 .cover.gone{visibility:hidden}
 .leather{border-radius:3px 10px 10px 3px;background-color:var(--leather);
 background-image:radial-gradient(ellipse at 88% 6%,rgba(255,230,190,.32),transparent 22%),radial-gradient(ellipse at 92% 96%,rgba(255,225,180,.3),transparent 20%),
@@ -4127,11 +4156,23 @@ font-family:var(--f-hand);font-size:clamp(18px,calc(var(--pw) * .085),46px);tran
 .inside .ded small{font-size:.55em;opacity:.75}
 .hit{position:absolute;inset:0;cursor:pointer;z-index:9}
 /* Lesebändchen zum Schließen */
-.ribbon{position:absolute;top:calc(100% - 6px);left:calc(var(--bw) / 2 + var(--pw) * .1);width:clamp(14px,calc(var(--pw) * .045),24px);height:clamp(34px,calc(var(--pw) * .1),60px);z-index:7;transform:translateZ(3px);cursor:pointer;border:0;padding:0;
+.ribbon{position:absolute;top:calc(100% - 6px);left:calc(var(--bw) / 2 + var(--pw) * .1);width:clamp(14px,calc(var(--pw) * .045),24px);height:calc(var(--tail) + 6px);z-index:7;transform:translateZ(5px);cursor:pointer;border:0;padding:0;
 background:linear-gradient(90deg,#7c1d1d,#b03030 50%,#7c1d1d);clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);box-shadow:0 2px 4px rgba(0,0,0,.4);
 transition:opacity .4s;opacity:0;pointer-events:none}
 .single .ribbon{left:12%}
 .open .ribbon{opacity:1;pointer-events:auto;transition-delay:${OPEN_MS}ms}
+/* Navigation unter dem Buch: Zurück, Inhalt, Weiter – groß genug für Wandpanels; Platz ist immer reserviert (Kartenhöhe bleibt gleich) */
+.nav{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;width:var(--bw);height:${NAV_H}px;margin-top:var(--tail);flex:none;
+opacity:0;pointer-events:none;transition:opacity .35s}
+.rb.isopen .nav{opacity:1;pointer-events:auto;transition-delay:${OPEN_MS * 0.6}ms}
+.nb{min-width:${NAV_H}px;height:${NAV_H}px;display:inline-flex;align-items:center;justify-content:center;gap:.25em;padding:0 1em;border-radius:999px;cursor:pointer;
+font-family:var(--f-hand);font-weight:700;font-size:20px;line-height:1;color:var(--ink);background-color:var(--paper);background-image:${PAPER_FIBER};background-size:220px 220px;
+border:1.5px solid rgba(70,45,20,.45);box-shadow:inset 0 0 12px rgba(140,95,40,.2),0 2px 6px rgba(0,0,0,.35);transition:transform .15s,opacity .2s;-webkit-tap-highlight-color:transparent}
+.nb ha-icon{--mdc-icon-size:24px;flex:none}
+.nb:active:not([disabled]){transform:scale(.94)}
+.nb[disabled]{opacity:.38;cursor:default;box-shadow:inset 0 0 12px rgba(140,95,40,.2)}
+.nav.tight .nb.prev span,.nav.tight .nb.next span{display:none}
+.nav.tight .nb.prev,.nav.tight .nb.next{padding:0}
 /* Inhalt der Seiten */
 h2{margin:0 0 .35em;font-family:var(--f-hand);font-weight:700;font-size:2.15em;line-height:1;color:var(--ink);transform:rotate(-1deg)}
 h3{margin:1em 0 .3em;font-family:var(--f-hand);font-weight:700;font-size:1.45em;line-height:1;border-bottom:1px solid rgba(70,45,20,.3);padding-bottom:.15em}
@@ -4184,8 +4225,8 @@ padding:.45em .6em;outline:none;-webkit-user-select:text;user-select:text}
 .card .row{display:flex;gap:10px;justify-content:flex-end;margin-top:1em;flex-wrap:wrap}
 .card .err{color:#8a1f12;font-family:var(--f-hand);font-size:1.2em;min-height:1.2em;margin-top:.4em}
 .card small{display:block;opacity:.65;font-style:italic}
-@media (prefers-reduced-motion:reduce){.book,.cover,.leaf,.leaf .sh{transition:none!important;animation-duration:1ms!important}}
-.still .book,.still .cover{transition:none!important}
+@media (prefers-reduced-motion:reduce){.book,.cover,.cover .face,.leaf,.leaf .face,.leaf .sh{transition:none!important;animation-duration:1ms!important}}
+.still .book,.still .cover,.still .cover .face{transition:none!important}
 /* ----- Neu gegenüber dem ersten Buch: Angaben, Portionen, formatierte Zubereitung ----- */
 .meta{margin:-.1em 0 .7em;font-style:italic;opacity:.7;font-size:.92em}
 h3.zl{display:flex;align-items:flex-end;gap:.4em}
@@ -4212,6 +4253,8 @@ ol.st li p{margin:0}
 .fit,.sigil{display:none}
 
 /* ===== Modern Book: schlicht, grau, ohne Gebrauchsspuren ===== */
+:host([book=modern]) .nb{font-weight:600;font-size:15px;letter-spacing:.01em;background-image:none;border:1px solid rgba(0,0,0,.12);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.22)}
+:host([book=modern]) .nb[disabled]{box-shadow:none}
 :host([book=modern]){--f-hand:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;--f-serif:var(--f-hand);--paper:#f3f3f1;--ink:#24272c;--gold:#d7dadf;--leather:#4a4e55;--acc:#b3261e;--acc2:#2b5c8a}
 :host([book=modern][cover=red]){--leather:#6d4a4f}:host([book=modern][cover=green]){--leather:#4a5a52}:host([book=modern][cover=blue]){--leather:#44506a}
 :host([book=modern]) .paper{background-image:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
@@ -4259,12 +4302,17 @@ box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),6px 8px 22px rgba(0,0,0,.35)}
 :host([book=fantasy]) .paper{box-shadow:inset 0 0 0 1px rgba(90,50,15,.35),inset 0 0 60px rgba(90,45,10,.45),inset 0 0 14px rgba(60,25,5,.35)}
 :host([book=fantasy]) .leather{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6),inset 0 0 60px rgba(0,0,0,.65),inset 0 0 0 5px rgba(224,179,84,.14),6px 8px 26px rgba(0,0,0,.6)}
 :host([book=fantasy]) .stitch{inset:7% 8% 7% 14%;border:3px double rgba(224,179,84,.6);border-radius:3px;box-shadow:0 0 10px rgba(224,179,84,.18),inset 0 0 10px rgba(224,179,84,.1)}
+:host([book=fantasy]) .cover .face.f{overflow:visible}
+:host([book=fantasy]) .nb{font-family:var(--f-serif);font-variant:small-caps;letter-spacing:.04em;font-size:19px;color:var(--gold);background-color:var(--leather);
+background-image:linear-gradient(180deg,rgba(255,230,190,.14),rgba(0,0,0,.25));border:1.5px solid var(--gold);text-shadow:0 1px 0 rgba(0,0,0,.6);
+box-shadow:inset 0 0 0 1px rgba(0,0,0,.5),inset 0 0 10px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.45)}
+:host([book=fantasy]) .nb[disabled]{box-shadow:inset 0 0 0 1px rgba(0,0,0,.5)}
 :host([book=fantasy]) .fit{display:block;position:absolute;width:17%;aspect-ratio:1;z-index:1;background:linear-gradient(135deg,#f6e2a6,var(--gold) 38%,#7a5a1e 72%,#c9a14a);filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
 :host([book=fantasy]) .fit::after{content:"";position:absolute;width:14%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c8,#6b4d16 70%)}
-:host([book=fantasy]) .fit.tr{top:0;right:0;clip-path:polygon(0 0,100% 0,100% 100%,72% 72%,62% 28%,28% 38%);border-radius:0 10px 0 0}
-:host([book=fantasy]) .fit.br{bottom:0;right:0;clip-path:polygon(100% 0,100% 100%,0 100%,28% 62%,62% 72%,72% 28%);border-radius:0 0 10px 0}
-:host([book=fantasy]) .fit.tl{top:0;left:9%;clip-path:polygon(0 0,100% 0,72% 38%,38% 28%,28% 72%,0 100%)}
-:host([book=fantasy]) .fit.bl{bottom:0;left:9%;clip-path:polygon(0 0,28% 28%,38% 72%,72% 62%,100% 100%,0 100%)}
+:host([book=fantasy]) .fit.tr{top:-1%;right:-1%;clip-path:polygon(0 0,100% 0,100% 100%,72% 72%,62% 28%,28% 38%);border-radius:0 10px 0 0}
+:host([book=fantasy]) .fit.br{bottom:-1%;right:-1%;clip-path:polygon(100% 0,100% 100%,0 100%,28% 62%,62% 72%,72% 28%);border-radius:0 0 10px 0}
+:host([book=fantasy]) .fit.tl{top:-1%;left:9%;clip-path:polygon(0 0,100% 0,72% 38%,38% 28%,28% 72%,0 100%)}
+:host([book=fantasy]) .fit.bl{bottom:-1%;left:9%;clip-path:polygon(0 0,28% 28%,38% 72%,72% 62%,100% 100%,0 100%)}
 :host([book=fantasy]) .fit.tr::after{top:14%;right:14%}:host([book=fantasy]) .fit.br::after{bottom:14%;right:14%}
 :host([book=fantasy]) .fit.tl::after{top:14%;left:14%}:host([book=fantasy]) .fit.bl::after{bottom:14%;left:14%}
 :host([book=fantasy]) .sigil{display:block;width:34%;height:auto;overflow:visible;filter:drop-shadow(0 0 5px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,.7))}
@@ -4406,9 +4454,26 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
 <div class="cover"><div class="face f leather"><div class="spine"></div><div class="stitch"></div>${FITS}<div class="emb">${SIGIL}${ORN}<h1></h1><p></p>${ORN}</div><div class="wear"></div></div>
 <div class="face b inside"><div class="ded"></div></div><div class="hit" role="button" aria-label="Buch öffnen"></div></div>
 <button class="ribbon" aria-label="Buch schließen" title="Buch schließen"></button>
-</div></div><div class="form" hidden></div></div>`;
+</div></div><nav class="nav" aria-label="Blättern"><button class="nb prev" aria-label="Zurück"><ha-icon icon="mdi:chevron-left"></ha-icon><span>Zurück</span></button>
+<button class="nb toc"><ha-icon icon="mdi:format-list-bulleted"></ha-icon><span>Inhalt</span></button>
+<button class="nb next" aria-label="Weiter"><span>Weiter</span><ha-icon icon="mdi:chevron-right"></ha-icon></button></nav><div class="form" hidden></div></div>`;
       const q = (s) => r.querySelector(s);
-      this._e = { rb: q(".rb"), stage: q(".stage"), book: q(".book"), L: q(".pg.l"), R: q(".pg.r"), cover: q(".cover"), ded: q(".ded"), h1: q(".emb h1"), sub: q(".emb p"), form: q(".form") };
+      this._e = {
+        rb: q(".rb"),
+        stage: q(".stage"),
+        book: q(".book"),
+        L: q(".pg.l"),
+        R: q(".pg.r"),
+        cover: q(".cover"),
+        ded: q(".ded"),
+        h1: q(".emb h1"),
+        sub: q(".emb p"),
+        form: q(".form"),
+        nav: q(".nav"),
+        prev: q(".nb.prev"),
+        toc: q(".nb.toc"),
+        next: q(".nb.next")
+      };
       this._e.cover.style.setProperty("--st", stains(99));
       this._e.cover.querySelector(".inside").style.setProperty("--st", stains(98));
       this._e.rb.classList.toggle("live", !!this._vis && !this._quiet);
@@ -4418,6 +4483,9 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
       this._coverText();
       q(".hit").addEventListener("click", () => this._setOpen(true));
       q(".ribbon").addEventListener("click", () => this._setOpen(false));
+      this._e.prev.addEventListener("click", () => this._go(this._sp - 1));
+      this._e.next.addEventListener("click", () => this._go(this._sp + 1));
+      this._e.toc.addEventListener("click", () => this._go(0));
       this._gestures();
       this._ro = new ResizeObserver(() => this._resize());
       if (this.isConnected) this._ro.observe(this);
@@ -4440,11 +4508,15 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
       const dbl = c.layout === "double" || c.layout !== "single" && W >= 560 && (auto || W / Math.max(Hh, 1) > 1.05);
       const pad = Math.max(10, W * 0.025);
       let pw = dbl ? (W - 2 * pad) / 2 : W - 2 * pad;
-      if (!auto) pw = Math.min(pw, (Hh - 2 * pad) * PAGE_RATIO);
+      const tail = (p) => Math.round(Math.min(40, Math.max(22, p * 0.08)));
+      if (!auto) pw = Math.min(pw, (Hh - 2 * pad - NAV_H - tail(pw)) * PAGE_RATIO);
       pw = Math.max(120, Math.floor(pw));
+      const tl = tail(pw);
       const ph = Math.floor(pw / PAGE_RATIO), bw = dbl ? 2 * pw : pw;
-      if (auto) e.rb.style.height = `${ph + 2 * pad}px`;
+      if (auto) e.rb.style.height = `${ph + 2 * pad + NAV_H + tl}px`;
       else e.rb.style.removeProperty("height");
+      e.rb.style.setProperty("--tail", `${tl}px`);
+      e.nav.classList.toggle("tight", bw < 360);
       e.stage.style.width = `${bw}px`;
       e.stage.style.height = `${ph}px`;
       e.rb.style.setProperty("--pw", `${pw}px`);
@@ -4510,6 +4582,7 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
       const e = this._e;
       if (!e || this._dbl == null || this._turning) return;
       const s = this._spreads()[this._sp] || this._spreads()[0];
+      this._navState(this._sp);
       if (this._dbl) {
         this._fill(e.L, s.L);
         this._fill(e.R, s.R);
@@ -4663,6 +4736,7 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
       e.cover.classList.remove("gone");
       e.book.classList.toggle("open", open);
       e.book.classList.toggle("closed", !open);
+      e.rb.classList.toggle("isopen", open);
       clearTimeout(this._ct);
       if (open && !this._dbl) this._ct = setTimeout(() => e.cover.classList.add("gone"), anim ? OPEN_MS : 0);
       if (!open) {
@@ -4686,6 +4760,52 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
         else this._poke();
       }, s * 1e3);
     }
+    _navState(i) {
+      const e = this._e, n = this._spreads().length;
+      e.prev.disabled = i <= 0;
+      e.toc.disabled = i <= 0;
+      e.next.disabled = i >= n - 1;
+    }
+    // Einfaches Blättern? Option turn: auto (schwaches Gerät oder zu wenige Bilder pro Sekunde gemessen), 3d, simple
+    _lite() {
+      const t = this._c.turn;
+      if (t === "simple") return true;
+      if (t === "3d") return false;
+      if (Lite.slow == null) {
+        let v = null;
+        try {
+          v = localStorage.getItem("nova-book-lite");
+        } catch (_) {
+        }
+        Lite.slow = v === "1" || weakDevice();
+      }
+      return Lite.slow;
+    }
+    // Bilder pro Sekunde beim 3D-Blättern messen: zweimal unter ~35 fps → ab dann einfach blättern (merkt sich das Gerät)
+    _measure(leaf) {
+      let n = 0, t0 = 0;
+      const tick = (t) => {
+        if (!leaf.isConnected || leaf.classList.contains("prep")) return;
+        if (!t0) t0 = t;
+        n++;
+        if (t - t0 < TURN_MS - 40) requestAnimationFrame(tick);
+        else done(t);
+      };
+      const done = (t) => {
+        const fps = (n - 1) * 1e3 / Math.max(1, t - t0);
+        if (fps >= 35) {
+          Lite.bad = 0;
+          return;
+        }
+        if (++Lite.bad < 2) return;
+        Lite.slow = true;
+        try {
+          localStorage.setItem("nova-book-lite", "1");
+        } catch (_) {
+        }
+      };
+      requestAnimationFrame(tick);
+    }
     _go(i) {
       const n = this._spreads().length;
       i = Math.max(0, Math.min(n - 1, i));
@@ -4693,45 +4813,56 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
       const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
       const dir = i > this._sp ? 1 : -1, from = this._spreads()[this._sp], to = this._spreads()[i];
       this._poke();
+      this._navState(i);
       if (reduce) {
         this._sp = i;
         this._paint();
         return;
       }
-      const e = this._e, leaf = document.createElement("div");
-      leaf.className = "leaf";
+      const e = this._e, leaf = document.createElement("div"), lite = this._lite();
+      leaf.className = `leaf prep ${dir > 0 ? "fwd" : "bwd"}`;
       leaf.innerHTML = '<div class="face f paper"><div class="in"></div><div class="no"></div><div class="sh"></div></div><div class="face b paper"><div class="in"></div><div class="no"></div><div class="sh"></div></div>';
       const [ff, fb] = leaf.querySelectorAll(".face");
+      let under;
       if (this._dbl) {
         if (dir > 0) {
           this._fill(ff, from.R);
           this._fill(fb, to.L);
-          this._fill(e.R, to.R);
+          under = () => this._fill(e.R, to.R);
         } else {
           this._fill(ff, to.R);
           this._fill(fb, from.L);
-          this._fill(e.L, to.L);
-          e.L.style.visibility = to.L.k === "end" ? "hidden" : "";
+          under = () => {
+            this._fill(e.L, to.L);
+            e.L.style.visibility = to.L.k === "end" ? "hidden" : "";
+          };
         }
       } else {
         if (dir > 0) {
           this._fill(ff, from.P);
-          this._fill(e.R, to.P);
-        } else {
-          this._fill(ff, to.P);
-          this._fill(e.R, from.P);
-        }
+          under = () => this._fill(e.R, to.P);
+        } else this._fill(ff, to.P);
         fb.replaceChildren();
       }
       this._turning = true;
-      leaf.classList.add(dir > 0 ? "fwd" : "bwd");
+      e.book.classList.toggle("lite", lite);
       e.book.append(leaf);
-      this._tt = setTimeout(() => {
-        leaf.remove();
-        this._turning = false;
-        this._sp = i;
-        this._paint();
-      }, TURN_MS + 30);
+      const raf = (f) => requestAnimationFrame(() => requestAnimationFrame(f));
+      raf(() => {
+        if (!leaf.isConnected) return;
+        under?.();
+        requestAnimationFrame(() => {
+          if (!leaf.isConnected) return;
+          leaf.classList.remove("prep");
+          if (!lite && this._c.turn !== "3d") this._measure(leaf);
+          this._tt = setTimeout(() => {
+            this._turning = false;
+            this._sp = i;
+            this._paint();
+            raf(() => leaf.remove());
+          }, TURN_MS + 30);
+        });
+      });
     }
     _gestures() {
       const b = this._e.book;
@@ -4934,15 +5065,17 @@ filter:drop-shadow(0 0 6px rgba(224,179,84,.45)) drop-shadow(0 1px 0 rgba(0,0,0,
   ];
   var S_USE = [
     sel("layout", [["auto", "Automatisch"], ["double", "Doppelseite"], ["single", "Einzelseite"]]),
+    sel("turn", [["auto", "Automatisch"], ["3d", "3D"], ["simple", "Einfach (schwache Geräte)"]]),
     g2({ name: "start_open", selector: { boolean: {} } }, { name: "close_after", selector: { number: { min: 0, max: 3600, step: 10, mode: "box", unit_of_measurement: "s" } } })
   ];
-  var LABELS4 = { title: "Titel auf dem Einband", subtitle: "Untertitel (optional)", style: "Stil", cover_color: "Einband", layout: "Seiten", start_open: "Aufgeschlagen starten", close_after: "Zuklappen nach" };
+  var LABELS4 = { title: "Titel auf dem Einband", subtitle: "Untertitel (optional)", style: "Stil", cover_color: "Einband", layout: "Seiten", start_open: "Aufgeschlagen starten", close_after: "Zuklappen nach", turn: "Blättern" };
   var HELPERS4 = {
     layout: "Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.",
     close_after: "0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.",
     subtitle: "Steht unter dem Titel, z. B. „von Oma Erna“.",
     cover_color: "Der Farbton passt sich dem Stil an (Leder, Leinen grau getönt, dunkles Zauberbuch).",
-    style: "Alle Stile zeigen dieselben Rezepte – auch die Nova Rezeptliste."
+    style: "Alle Stile zeigen dieselben Rezepte – auch die Nova Rezeptliste.",
+    turn: "Automatisch: 3D-Blättern, auf schwachen Geräten (z. B. Echo Show) oder wenn es ruckelt flaches Blättern mit Schatten."
   };
   var NovaRecipeBookCardEditor = class extends NovaEditorBase {
     _build() {
