@@ -1,4 +1,4 @@
-/* Nova Cards v0.1.0b6 | MIT | https://github.com/Blackstar9119/nova-cards
+/* Nova Cards v0.1.0b7 | MIT | https://github.com/Blackstar9119/nova-cards
    Raum, Thermostat, Licht, Navi, Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezeptliste, Rezeptbuch – alle als custom:nova-*.
    Erzeugt mit „npm run build“ aus src/ – diese Datei nicht direkt bearbeiten. */
 (() => {
@@ -20047,7 +20047,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
       init_recipe();
       init_recipe_book();
       init_theme_switch();
-      console.info(`%c NOVA-CARDS %c v${"0.1.0b6"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
+      console.info(`%c NOVA-CARDS %c v${"0.1.0b7"} `, "color:#3a2a00;background:#f5b83d;font-weight:700;border-radius:4px 0 0 4px", "color:#fff;background:#1b2134;border-radius:0 4px 4px 0");
     }
   });
 
@@ -20058,10 +20058,10 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
   if (first) {
     const via = (src) => src === "integration" ? "die Nova-Integration" : "eine Dashboard-Ressource";
     console.warn(
-      `Nova Cards sind doppelt eingebunden: v${first.version} über ${via(first.source)} und v${"0.1.0b6"} über ${via(SOURCE)}. Es läuft nur die erste.` + ([first.source, SOURCE].includes("integration") ? " Die alte Ressource nova-cards.js kann weg: Marketplace → Nova Cards → Entfernen." : "")
+      `Nova Cards sind doppelt eingebunden: v${first.version} über ${via(first.source)} und v${"0.1.0b7"} über ${via(SOURCE)}. Es läuft nur die erste.` + ([first.source, SOURCE].includes("integration") ? " Die alte Ressource nova-cards.js kann weg: Marketplace → Nova Cards → Entfernen." : "")
     );
   } else {
-    window[KEY2] = { version: "0.1.0b6", source: SOURCE };
+    window[KEY2] = { version: "0.1.0b7", source: SOURCE };
     Promise.resolve().then(() => init_index());
   }
 })();
