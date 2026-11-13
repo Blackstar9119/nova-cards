@@ -15,6 +15,11 @@ Kompakte Rezeptliste, schnell durchsuchbar und auf allen Geräten gleich. Diesel
 - **Bearbeiten:** Stift oben rechts. Name, Portionen, Zeit, Schlagwörter, Bild (wird vor dem Speichern verkleinert),
   Zutaten (Menge, Einheit, Name) und die Zubereitung mit Formatierung. Gespeichert wird automatisch, sobald das Rezept
   einen Namen hat. Löschen: Mülleimer, zweimal tippen.
+- **Rezept importieren** (Kettensymbol oben): Link einfügen, z. B. von Chefkoch. Die Nova-Integration liest die Seite
+  (schema.org-Rezeptdaten) und füllt eine Vorschau mit Titel, Portionen, Zeit, Zutaten mit Menge und Einheit, Schritten
+  und Bild. Alles lässt sich ändern; gespeichert wird erst mit „Übernehmen“, das Kreuz verwirft die Vorschau. Gibt es das
+  Rezept schon (gleicher Link oder Titel), fragt die Karte: ersetzen oder trotzdem neu. Findet die Integration kein Rezept
+  auf der Seite, bietet die Karte an, es selbst anzulegen. Unter importierten Rezepten steht die Quelle als Link.
 
 ```yaml
 type: custom:nova-recipe-card

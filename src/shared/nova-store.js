@@ -69,6 +69,8 @@ export const recipes = {
   save: (hass, recipe) => ws(hass, 'nova/recipes/save', {recipe}).then(r => r.recipe),
   remove: (hass, id) => ws(hass, 'nova/recipes/delete', {recipe_id: id}),
   // Zutaten auf die Einkaufsliste; servings rechnet um, only = Positionen der Zutaten
+  // Rezeptseite lesen → {recipe: Entwurf (mit image_data, source), duplicates}; speichert nichts
+  importUrl: (hass, url) => ws(hass, 'nova/recipes/import', {url}),
   toShopping: (hass, id, servings, only) => ws(hass, 'nova/recipes/to_shopping', {recipe_id: id, ...(servings ? {servings} : {}), ...(only ? {only} : {})}).then(r => r.added),
 };
 

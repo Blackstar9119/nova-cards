@@ -64,6 +64,16 @@ export const novaCall = m => {
   else if (cmd === 'store_delete') { s.stores = s.stores.filter(x => x.id !== m.store_id); s.items.forEach(i => { if (i.store === m.store_id) i.store = null; }); }
   else if (cmd === 'set_sync') s.sync_entity = m.entity_id;
   else if (mod === 'recipes' && cmd === 'save') res = {recipe: upsert(db.recipes.recipes, m.recipe, {image: null, servings: 2, time: null, tags: [], ingredients: [], steps: '', favorite: false})};
+  else if (mod === 'recipes' && cmd === 'import') {
+    // Demo: „kein“ im Link = Seite ohne Rezept, „pfannkuchen“ = schon im Buch, sonst eine Lasagne
+    if (/kein/i.test(m.url)) throw {code: 'no_recipe', message: 'Mein Kochblog'};
+    const pk = /pfannkuchen/i.test(m.url);
+    const recipe = {title: pk ? 'Pfannkuchen' : 'Lasagne von Oma', servings: 4, time: 75, tags: ['Pasta', 'Auflauf'], source: m.url, image_data: null,
+      ingredients: [{qty: 500, unit: 'g', name: 'Hackfleisch'}, {qty: 1, unit: '', name: 'Zwiebel'}, {qty: 2, unit: 'EL', name: 'Olivenöl'}, {qty: 1.5, unit: 'Tasse', name: 'Milch'}, {qty: 1, unit: 'Packung', name: 'Lasagneplatten'}, {qty: null, unit: '', name: 'Salz und Pfeffer'}],
+      steps: '<ol><li>Zwiebel würfeln und anbraten.</li><li>Hack dazu und würzen.</li><li>Schichten und 45 Minuten backen.</li></ol>'};
+    const key = t => t.toLowerCase().replace(/[^a-z0-9äöüß]+/g, '');
+    res = {recipe, duplicates: db.recipes.recipes.filter(r => r.source === m.url || key(r.title) === key(recipe.title)).map(r => ({id: r.id, title: r.title}))};
+  }
   else if (mod === 'recipes' && cmd === 'delete') db.recipes.recipes = db.recipes.recipes.filter(r => r.id !== m.recipe_id);
   else if (cmd === 'to_shopping') {
     const r = db.recipes.recipes.find(x => x.id === m.recipe_id), k = (m.servings || r.servings) / r.servings;

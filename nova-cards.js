@@ -387,6 +387,8 @@
     save: (hass, recipe) => ws(hass, "nova/recipes/save", { recipe }).then((r) => r.recipe),
     remove: (hass, id) => ws(hass, "nova/recipes/delete", { recipe_id: id }),
     // Zutaten auf die Einkaufsliste; servings rechnet um, only = Positionen der Zutaten
+    // Rezeptseite lesen → {recipe: Entwurf (mit image_data, source), duplicates}; speichert nichts
+    importUrl: (hass, url) => ws(hass, "nova/recipes/import", { url }),
     toShopping: (hass, id, servings, only) => ws(hass, "nova/recipes/to_shopping", { recipe_id: id, ...servings ? { servings } : {}, ...only ? { only } : {} }).then((r) => r.added)
   };
   var theme = { set: (hass, key) => ws(hass, "nova/theme/set", { theme: key }) };
@@ -15362,20 +15364,21 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
     el2.innerHTML = `<div class="row1"><div class="pv"></div><div class="acts"></div></div><div class="srch"></div><div class="err" hidden></div><div class="grid"></div>
 <input type="file" accept="image/*">`;
     const pv = el2.querySelector(".pv"), acts = el2.querySelector(".acts"), grid2 = el2.querySelector(".grid"), err = el2.querySelector(".err"), file = el2.querySelector("input"), srch = el2.querySelector(".srch");
-    let cur2 = { icon: value.icon || null, image: value.image || null }, h = hass;
+    let cur2 = { icon: value.icon || null, image: value.image || null, data: value.data || null }, h = hass;
     const paint = (pop) => {
-      pv.innerHTML = cur2.image ? `<img alt="" src="${imageUrl(h, module, cur2.image)}">` : `<ha-icon icon="${cur2.icon || fallback}"></ha-icon>`;
+      const src = cur2.image ? imageUrl(h, module, cur2.image) : cur2.data && /^data:image\/(jpeg|png|webp);base64,/.test(cur2.data) ? cur2.data : "";
+      pv.innerHTML = src ? `<img alt="" src="${src}">` : `<ha-icon icon="${cur2.icon || fallback}"></ha-icon>`;
       if (pop) {
         pv.classList.remove("pop");
         void pv.offsetWidth;
         pv.classList.add("pop");
       }
       grid2.querySelectorAll("button").forEach((b) => b.classList.toggle("on", !cur2.image && b.dataset.icon === cur2.icon));
-      rm.hidden = !cur2.icon && !cur2.image;
+      rm.hidden = !cur2.icon && !cur2.image && !cur2.data;
       if (form) form.data = { icon: cur2.image ? "" : cur2.icon || "" };
     };
     const set = (v) => {
-      cur2 = { icon: null, image: null, ...v };
+      cur2 = { icon: null, image: null, data: null, ...v };
       paint(true);
       onChange?.(cur2);
     };
@@ -16815,6 +16818,22 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
     const unit = rest.length ? units.find((u) => u && u.toLowerCase() === first.toLowerCase()) : null;
     return { qty: parseFloat(m[1].replace(",", ".")), unit: unit || "", name: unit ? rest.join(" ") : m[2] };
   }
+  var sourceHost = (url) => {
+    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return "";
+    try {
+      return new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+      return "";
+    }
+  };
+  var IMPORT_ERR = {
+    invalid_url: "Das ist kein gültiger Link.",
+    fetch_failed: "Die Seite ist gerade nicht erreichbar.",
+    blocked: "Die Seite lässt sich nicht abrufen (gesperrt oder im eigenen Netz).",
+    too_large: "Die Seite ist zu groß zum Einlesen.",
+    module_disabled: "Das Rezept-Modul ist in Nova abgeschaltet."
+  };
+  var importError = (x) => IMPORT_ERR[x?.code] || (x?.code === "unknown_command" ? "Dafür braucht es eine neuere Nova-Integration." : "Das hat nicht geklappt. Später nochmal versuchen?");
 
   // src/recipe.js
   var RCSS2 = `
@@ -16892,6 +16911,16 @@ transition:background-color var(--nv-d3),border-color var(--nv-d3),transform var
 .ie select.fld{padding-right:var(--nv-s1)}
 .ie select option{color:initial}
 .addi{align-self:flex-start}
+.imp .hint{font-size:var(--nv-fs-3);opacity:.6}
+.imp .msg{font-size:var(--nv-fs-5);line-height:1.4}.imp .msg:empty{display:none}
+.imp .msg.err{color:var(--nv-text-warn)}
+.imp .acts{display:flex;flex-wrap:wrap;gap:var(--nv-s3)}
+.take{height:34px;margin-left:auto}
+.chip.tint{border-color:color-mix(in srgb,var(--nv-active) 60%,transparent);background:color-mix(in srgb,var(--nv-active) 24%,var(--nv-chip));font-weight:var(--nv-fw-bold);
+box-shadow:0 0 14px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 35%,transparent) var(--nv-glow),transparent)}
+.chip[disabled]{opacity:.4;cursor:default}
+.src{display:block;margin-top:var(--nv-s6);font-size:var(--nv-fs-3);opacity:.6;color:inherit;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src:hover{text-decoration:underline}
 .form .rte{min-height:120px;border-radius:var(--nv-r-md);padding:var(--nv-s5) var(--nv-s7);border:1px solid var(--nv-box-border);background:var(--nv-box);margin-top:var(--nv-s3);
 transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
 .form .rte:focus{border-color:color-mix(in srgb,var(--nv-active) 75%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,color-mix(in srgb,var(--nv-active) 22%,transparent) var(--nv-glow),transparent)}
@@ -16966,7 +16995,8 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       this._tag = null;
       this._favOnly = false;
       e.add = roundBtn("mdi:plus", "Neues Rezept", () => this._edit(null), "plus");
-      e.hd.append(e.add);
+      e.imp = roundBtn("mdi:link-variant", "Rezept importieren", () => this._import());
+      e.hd.append(e.imp, e.add);
       e.srch.addEventListener("input", () => this._render());
       e.srch.addEventListener("keydown", (ev) => ev.stopPropagation());
       e.back = roundBtn("mdi:arrow-left", "Zurück", () => this._back());
@@ -16976,7 +17006,12 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       e.edit = roundBtn("mdi:pencil-outline", "Bearbeiten", () => this._edit(this._cur));
       this._pb = printButton(() => this._print());
       this._del = armButton("mdi:delete-outline", "Rezept löschen", () => this._remove());
-      e.bar.append(e.back, e.state, e.fav, e.edit, this._pb, this._del);
+      e.take = document.createElement("button");
+      e.take.type = "button";
+      e.take.className = "chip tint take";
+      e.take.innerHTML = '<ha-icon icon="mdi:check"></ha-icon><span>Übernehmen</span>';
+      e.take.addEventListener("click", () => this._take());
+      e.bar.append(e.back, e.state, e.fav, e.edit, this._pb, this._del, e.take);
       this._apply();
     }
     _apply() {
@@ -17149,6 +17184,16 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         });
         body.append(lb, st);
       }
+      const host = sourceHost(x.source);
+      if (host) {
+        const a = document.createElement("a");
+        a.className = "src";
+        a.href = x.source;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = `Quelle: ${host}`;
+        body.append(a);
+      }
       e.body.replaceChildren(body);
       e.body.parentElement.scrollTop = 0;
       this._del.reset();
@@ -17219,6 +17264,22 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       recipes.save(this._h, { id: x.id, favorite: !x.favorite }).catch((err) => console.warn("[nova-cards] Rezept: Favorit nicht gespeichert", err));
     }
     _back() {
+      if (this._preview) {
+        this._preview = null;
+        this._draft = null;
+        this._mode = null;
+        this._cur = null;
+        this._e.g.classList.remove("detail");
+        this._render();
+        return;
+      }
+      if (this._mode === "imp") {
+        this._mode = null;
+        this._cur = null;
+        this._e.g.classList.remove("detail");
+        this._render();
+        return;
+      }
       if (this._mode === "edit") {
         this._flush();
         const saved2 = this._draft?.id && (this._data?.recipes.find((r) => r.id === this._draft.id) || this._draft);
@@ -17238,9 +17299,14 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       this._render();
     }
     /* ----- Rezept bearbeiten ----- */
-    _edit(x) {
+    // pre: Entwurf aus dem Import → Vorschau (speichert nicht von selbst, erst „Übernehmen“); pre.replace = ID des ersetzten Rezepts
+    _edit(x, pre = null) {
       if (!this._data) return;
-      const e = this._e, d = this._draft = x ? JSON.parse(JSON.stringify(x)) : { id: null, title: "", image: null, servings: 2, time: null, tags: [], ingredients: [], steps: "", favorite: false };
+      const e = this._e, blank = { id: null, title: "", image: null, servings: 2, time: null, tags: [], ingredients: [], steps: "", favorite: false };
+      const d = this._draft = pre ? { ...blank, ...JSON.parse(JSON.stringify(pre)), id: pre.replace || null, image: null } : x ? JSON.parse(JSON.stringify(x)) : blank;
+      this._preview = pre ? { data: pre.image_data || null } : null;
+      delete d.image_data;
+      delete d.replace;
       this._mode = "edit";
       this._cur = d;
       const f3 = document.createElement("div");
@@ -17352,10 +17418,19 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       add.className = "chip addi";
       add.innerHTML = '<ha-icon icon="mdi:plus"></ha-icon>Zutat';
       add.addEventListener("click", addIng);
-      this._picker = mediaPicker({ hass: this._h, module: "recipes", value: { image: d.image }, icons: [], search: false, fallback: "mdi:image-outline", onChange: (v) => {
-        d.image = v.image;
-        this._dirty();
-      } });
+      this._picker = mediaPicker({
+        hass: this._h,
+        module: "recipes",
+        value: { image: d.image, data: this._preview?.data },
+        icons: [],
+        search: false,
+        fallback: "mdi:image-outline",
+        onChange: (v) => {
+          d.image = v.image;
+          if (this._preview) this._preview.data = v.data || null;
+          this._dirty();
+        }
+      });
       this._rt = richEditor({ placeholder: "Schritt für Schritt …", onInput: () => {
         d.steps = this._rt.get();
         this._dirty();
@@ -17367,9 +17442,13 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       e.g.classList.add("detail");
       this._del.reset();
       this._paintBar();
-      if (!x) setTimeout(() => ti.focus({ preventScroll: true }), 320);
+      if (!x && !pre) setTimeout(() => ti.focus({ preventScroll: true }), 320);
     }
     _dirty() {
+      if (this._preview) {
+        this._paintBar();
+        return;
+      }
       this._pending = true;
       clearTimeout(this._st);
       this._st = setTimeout(() => this._flush(), SAVE_MS3);
@@ -17386,16 +17465,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       }
       this._pending = false;
       this._saving = (this._saving || 0) + 1;
-      const run = this._chain = (this._chain || Promise.resolve()).then(() => recipes.save(h, {
-        ...d.id ? { id: d.id } : {},
-        title: d.title.trim(),
-        image: d.image || null,
-        servings: d.servings,
-        time: d.time,
-        tags: d.tags,
-        ingredients: d.ingredients.filter((i) => i.name.trim()).map((i) => ({ name: i.name.trim(), qty: i.qty, unit: i.unit || "" })),
-        steps: d.steps
-      })).then((rec) => {
+      const run = this._chain = (this._chain || Promise.resolve()).then(() => recipes.save(h, this._payload(d))).then((rec) => {
         d.id = rec.id;
         d.updated = rec.updated;
         this._saved = "ok";
@@ -17414,6 +17484,127 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       });
       this._paintBar();
     }
+    // Was an die Integration geht (source nur, wenn es eine gibt – ältere Integrationen kennen das Feld nicht)
+    _payload(d) {
+      return {
+        ...d.id ? { id: d.id } : {},
+        ...d.source ? { source: d.source } : {},
+        title: d.title.trim(),
+        image: d.image || null,
+        servings: d.servings,
+        time: d.time,
+        tags: d.tags,
+        ingredients: d.ingredients.filter((i) => i.name.trim()).map((i) => ({ name: i.name.trim(), qty: i.qty, unit: i.unit || "" })),
+        steps: d.steps
+      };
+    }
+    // „Übernehmen“ in der Vorschau: Bild hochladen (kommt schon verkleinert von der Integration), dann speichern
+    async _take() {
+      const d = this._draft, p = this._preview, e = this._e;
+      if (!d || !p || this._saving) return;
+      if (!d.title.trim()) {
+        this._saved = "name";
+        this._paintBar();
+        return;
+      }
+      this._saving = 1;
+      this._saved = null;
+      this._paintBar();
+      try {
+        if (p.data && !d.image) d.image = (await uploadImage(this._h, "recipes", p.data)).image;
+        const rec = await recipes.save(this._h, this._payload(d));
+        this._preview = null;
+        this._draft = null;
+        this._saving = 0;
+        this._cur = rec;
+        this._mode = null;
+        this._servings = rec.servings;
+        this._pick = new Set((rec.ingredients || []).map((_, i) => i));
+        this._read();
+      } catch (err) {
+        console.warn("[nova-cards] Rezept: Übernehmen fehlgeschlagen", err);
+        this._saving = 0;
+        this._saved = "err";
+        this._paintBar();
+      }
+      e.take.disabled = false;
+    }
+    // Rezept per Link: Seite in der Karte (gleitet wie das Bearbeiten herein), Link → Vorschau bzw. Nachfrage
+    _import() {
+      if (!this._data) return;
+      const e = this._e;
+      this._mode = "imp";
+      this._cur = { title: "" };
+      this._preview = null;
+      this._draft = null;
+      const f3 = document.createElement("div");
+      f3.className = "form imp";
+      f3.innerHTML = `<div class="lb">Link zum Rezept</div><input class="fld" type="text" inputmode="url" autocomplete="off" placeholder="https://www.chefkoch.de/rezepte/…" enterkeyhint="go">
+<div class="hint">Klappt mit den meisten Rezeptseiten, z. B. Chefkoch. Gespeichert wird erst nach der Vorschau.</div><div class="msg" role="status"></div><div class="acts"></div>`;
+      const u = f3.querySelector("input"), msg = f3.querySelector(".msg"), acts = f3.querySelector(".acts");
+      const btns = (list2) => acts.replaceChildren(...list2.map(([label, icon2, fn, on]) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = `chip${on ? " tint" : ""}`;
+        b.innerHTML = `<ha-icon icon="${icon2}"></ha-icon><span></span>`;
+        b.lastChild.textContent = label;
+        b.addEventListener("click", fn);
+        return b;
+      }));
+      const load = async () => {
+        const url = u.value.trim();
+        if (!/^https?:\/\/\S+$/i.test(url)) {
+          msg.className = "msg err";
+          msg.textContent = "Bitte einen Link einfügen, der mit https:// beginnt.";
+          u.focus();
+          return;
+        }
+        u.disabled = true;
+        acts.replaceChildren();
+        msg.className = "msg";
+        msg.textContent = "Lese das Rezept …";
+        try {
+          const { recipe, duplicates } = await recipes.importUrl(this._h, url);
+          if (this._mode !== "imp") return;
+          const dup = duplicates?.[0];
+          if (!dup) {
+            this._edit(null, recipe);
+            return;
+          }
+          msg.textContent = `„${dup.title}“ gibt es schon. Was soll passieren?`;
+          btns([["Ersetzen", "mdi:swap-horizontal", () => this._edit(null, { ...recipe, replace: dup.id }), true], ["Trotzdem neu", "mdi:plus", () => this._edit(null, recipe)]]);
+        } catch (x) {
+          if (this._mode !== "imp") return;
+          u.disabled = false;
+          if (x?.code === "no_recipe") {
+            msg.textContent = "Auf der Seite steht kein Rezept, das ich lesen kann. Magst du es selbst anlegen?";
+            btns([["Selbst anlegen", "mdi:pencil-outline", () => this._edit(null, { title: x.message || "", source: url }), true], ["Anderer Link", "mdi:link-variant", () => {
+              msg.textContent = "";
+              btns([go]);
+              u.select();
+            }]]);
+            return;
+          }
+          msg.className = "msg err";
+          msg.textContent = importError(x);
+          btns([go]);
+        }
+      };
+      const go = ["Laden", "mdi:download", load, true];
+      u.addEventListener("keydown", (ev) => {
+        ev.stopPropagation();
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          load();
+        }
+      });
+      btns([go]);
+      e.body.replaceChildren(f3);
+      e.body.parentElement.scrollTop = 0;
+      e.g.classList.add("detail");
+      this._paintBar();
+      setTimeout(() => u.focus({ preventScroll: true }), 320);
+    }
     _remove() {
       const x = this._cur;
       if (!x?.id) return;
@@ -17429,8 +17620,8 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
     _paintBar() {
       const e = this._e, x = this._cur, c = this._c, h = this._h;
       if (!e || !x) return;
-      const edit = this._mode === "edit";
-      const st = !edit ? ["", "", ""] : this._pending && !x.title.trim() ? ["mdi:form-textbox", "Name fehlt noch", ""] : this._pending || this._saving ? ["mdi:cloud-sync-outline", "Speichert …", ""] : this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : this._saved === "ok" ? ["mdi:check-circle-outline", "Gespeichert", "ok"] : ["mdi:pencil-outline", x.id ? "Rezept bearbeiten" : "Neues Rezept", ""];
+      const edit = this._mode === "edit", imp = this._mode === "imp", pv = !!this._preview;
+      const st = imp ? ["mdi:link-variant", "Rezept importieren", ""] : !edit ? ["", "", ""] : pv ? this._saving ? ["mdi:cloud-sync-outline", "Speichert …", ""] : this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : this._saved === "name" && !x.title.trim() ? ["mdi:form-textbox", "Name fehlt noch", ""] : ["mdi:eye-outline", "Vorschau", ""] : this._pending && !x.title.trim() ? ["mdi:form-textbox", "Name fehlt noch", ""] : this._pending || this._saving ? ["mdi:cloud-sync-outline", "Speichert …", ""] : this._saved === "err" ? ["mdi:alert-circle-outline", "Nicht gespeichert", "err"] : this._saved === "ok" ? ["mdi:check-circle-outline", "Gespeichert", "ok"] : ["mdi:pencil-outline", x.id ? "Rezept bearbeiten" : "Neues Rezept", ""];
       const k = st.join("|");
       if (e.state._k !== k) {
         e.state._k = k;
@@ -17438,14 +17629,16 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         e.state.innerHTML = st[0] ? `<ha-icon icon="${st[0]}"></ha-icon><span></span>` : "";
         if (st[0]) e.state.lastChild.textContent = st[1];
       }
-      e.fav.hidden = edit;
-      e.edit.hidden = edit;
-      this._del.hidden = !edit || !x.id;
-      e.back.title = edit && x.id ? "Fertig" : "Zurück zur Liste";
-      setBtnIcon(e.back, edit && x.id ? "mdi:check" : "mdi:arrow-left");
+      e.fav.hidden = edit || imp;
+      e.edit.hidden = edit || imp;
+      this._del.hidden = !edit || !x.id || pv;
+      e.take.hidden = !pv;
+      e.take.disabled = !!this._saving;
+      e.back.title = pv ? "Verwerfen" : edit && x.id ? "Fertig" : "Zurück zur Liste";
+      setBtnIcon(e.back, pv ? "mdi:close" : edit && x.id ? "mdi:check" : "mdi:arrow-left");
       e.fav.classList.toggle("on", !!x.favorite);
       setBtnIcon(e.fav, x.favorite ? "mdi:heart" : "mdi:heart-outline");
-      this._pb.hidden = edit || !c.print_script;
+      this._pb.hidden = edit || imp || !c.print_script;
       paintBtn(
         this._pb,
         { icon: c.print_icon || PRINT_DEF.print_icon, label: c.print_label || PRINT_DEF.print_label, pill: false, busy: "Druckt …", ok: "Gedruckt", err: "Fehler" },
@@ -17724,6 +17917,10 @@ font-family:var(--f-hand);font-size:1.2em;font-weight:700;padding:.15em .8em .2e
 .btn:active{transform:scale(.95)}.btn.warn{border-color:rgba(150,30,20,.7);color:#8a1f12;background:rgba(200,60,40,.12)}
 .btn.ok{border-color:rgba(40,100,40,.6);color:#2e5e22}
 .btn[disabled]{opacity:.45;cursor:default}.btn.ok[disabled],.btn.warn[disabled]{opacity:1}
+.src{display:block;margin-top:1em;font-size:.8em;font-style:italic;opacity:.65;color:inherit;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src:hover{text-decoration:underline}
+.card .msg{margin:.6em 0 0;line-height:1.4}
+.card .msg b{font-weight:700}
 .tools{display:flex;gap:.4em;justify-content:flex-end;margin-top:1.2em}
 .tools .btn{font-size:1em;padding:.1em .6em}
 /* eingeklebtes Foto mit Fotoecken */
@@ -18219,7 +18416,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
         if (!this._quiet) {
           const act = document.createElement("div");
           act.className = "act";
-          act.append(this._btn("mdi:plus", "Neues Rezept", () => this._edit(null)));
+          act.append(this._btn("mdi:plus", "Neues Rezept", () => this._edit(null)), this._btn("mdi:link-variant", "Rezept importieren", () => this._import()));
           box.append(act);
         }
         return box;
@@ -18299,6 +18496,17 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
         act.className = "act";
         act.append(this._btn("mdi:cart-plus", "Zutaten auf die Einkaufsliste", (b) => this._toList(r, b)));
         w.append(act);
+      }
+      const src = sourceHost(r.source);
+      if (src) {
+        const a = document.createElement("a");
+        a.className = "src";
+        a.href = r.source;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = `Quelle: ${src}`;
+        a.addEventListener("click", (ev) => ev.stopPropagation());
+        w.append(a);
       }
       const t = document.createElement("div");
       t.className = "tools";
@@ -18538,10 +18746,14 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
       });
     }
     // Karteikarte über dem Buch: Titel, Portionen, Zeit, Schlagwörter, Bild, Zutaten (eine pro Zeile), Zubereitung mit Formatierung
-    _edit(r) {
+    // pre: Entwurf aus dem Import (Vorschau) – füllt das Formular, gespeichert wird erst mit „Ins Buch übernehmen“
+    _edit(r, pre = null) {
       if (this._err || !this._recipes) return;
-      const f3 = this._e.form, st = { image: r?.image || null, data: null };
-      f3.innerHTML = `<form class="card" novalidate><h2>${r ? "Rezept bearbeiten" : "Neues Rezept"}</h2>
+      const f3 = this._e.form, st = { image: pre ? null : r?.image || null, data: pre?.image_data || null }, source = pre ? pre.source || null : r?.source ?? null;
+      const head = pre ? r ? `Vorschau – ersetzt „${esc(r.title)}“` : "Vorschau" : r ? "Rezept bearbeiten" : "Neues Rezept";
+      if (pre) r = r ? { ...r, ...pre } : pre;
+      const id = pre ? pre.replace : r?.id;
+      f3.innerHTML = `<form class="card" novalidate><h2>${head}</h2>
 <label for="t">Titel</label><input id="t" type="text" maxlength="200" autocomplete="off" enterkeyhint="next">
 <div class="two"><div><label for="p">Portionen</label><input id="p" type="number" min="1" max="99" inputmode="numeric"></div>
 <div><label for="z">Zeit in Minuten</label><input id="z" type="number" min="0" max="6000" inputmode="numeric" placeholder="–"></div></div>
@@ -18551,7 +18763,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
 <label>Zutaten</label><div class="ings"></div><button type="button" class="btn" data-a="add"><ha-icon icon="mdi:plus"></ha-icon><span>Zutat</span></button>
 <small>Menge und Einheit getrennt – dann lassen sich die Portionen umrechnen. Mehrere Zeilen („250 g Mehl“) lassen sich auch einfügen.</small>
 <label>Zubereitung</label><div class="steps"></div><small>Ein Absatz oder Listenpunkt je Schritt</small>
-<div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>Speichern</span></button></div></form>`;
+<div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>${pre ? "Ins Buch übernehmen" : "Speichern"}</span></button></div></form>`;
       const q = (s) => f3.querySelector(s), img = q(".pic img"), file = q("input[type=file]"), clr = q("[data-a=clear]"), err = q(".err");
       const rt = richEditor({ placeholder: "Mehl und Eier verrühren …" });
       rt.set(r?.steps || "");
@@ -18605,7 +18817,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
         else img.removeAttribute("src");
         clr.hidden = !src;
       };
-      showPic(st.image ? imageUrl(this._h, "recipes", st.image) : null);
+      showPic(st.data || (st.image ? imageUrl(this._h, "recipes", st.image) : null));
       f3.addEventListener("keydown", (ev) => ev.stopPropagation());
       f3.addEventListener("pointerdown", (ev) => ev.stopPropagation());
       q("[data-a=pick]").addEventListener("click", () => file.click());
@@ -18643,7 +18855,8 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
           if (st.data) image = (await uploadImage(this._h, "recipes", st.data)).image;
           const z = q("#z").value.trim();
           const recipe = {
-            ...r ? { id: r.id } : {},
+            ...id ? { id } : {},
+            ...source ? { source } : {},
             title,
             image,
             servings: Math.max(1, Math.min(99, Math.round(+q("#p").value) || 2)),
@@ -18656,8 +18869,8 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
             steps: rt.get()
           };
           const res = await recipes.save(this._h, recipe);
-          if (!r && res?.id) this._jump = res.id;
-          if (r) this._serv.delete(r.id);
+          if (!id && res?.id) this._jump = res.id;
+          if (id) this._serv.delete(id);
           this._closeForm();
           if (this._jump) this._setRecipes(this._recipes);
         } catch (x) {
@@ -18669,6 +18882,76 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
       f3.hidden = false;
       this._poke();
       if (!r) setTimeout(() => q("#t").focus(), 50);
+    }
+    // Rezept per Link: Link eingeben → Integration liest die Seite → Vorschau im Formular (bzw. Nachfrage bei Doppelten)
+    _import() {
+      if (this._err || !this._recipes) return;
+      const f3 = this._e.form;
+      f3.innerHTML = `<form class="card" novalidate><h2>Rezept importieren</h2>
+<label for="u">Link zum Rezept</label><input id="u" type="text" inputmode="url" autocomplete="off" placeholder="https://www.chefkoch.de/rezepte/…" enterkeyhint="go">
+<small>Klappt mit den meisten Rezeptseiten, z. B. Chefkoch. Gespeichert wird erst nach der Vorschau.</small>
+<div class="msg" role="status"></div><div class="err"></div>
+<div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:download"></ha-icon><span>Laden</span></button></div></form>`;
+      const q = (s) => f3.querySelector(s), u = q("#u"), msg = q(".msg"), err = q(".err"), row = q(".row");
+      const go = q("button[type=submit]");
+      f3.addEventListener("keydown", (ev) => ev.stopPropagation());
+      f3.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+      const ask = (html, btns) => {
+        msg.innerHTML = html;
+        err.textContent = "";
+        row.replaceChildren(...btns.map(([label, fn, ok3]) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = ok3 ? "btn ok" : "btn";
+          b.textContent = label;
+          b.addEventListener("click", fn);
+          return b;
+        }));
+      };
+      q("[data-a=cancel]").addEventListener("click", () => this._closeForm());
+      q("form").addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const url = u.value.trim();
+        if (!/^https?:\/\/\S+$/i.test(url)) {
+          err.textContent = "Bitte einen Link einfügen, der mit https:// beginnt.";
+          u.focus();
+          return;
+        }
+        go.disabled = true;
+        u.disabled = true;
+        err.textContent = "";
+        msg.textContent = "Lese das Rezept …";
+        try {
+          const { recipe, duplicates } = await recipes.importUrl(this._h, url);
+          const dup = duplicates?.[0];
+          if (!dup) {
+            this._edit(null, recipe);
+            return;
+          }
+          const known = this._recipes.find((x) => x.id === dup.id);
+          ask(`<b>„${esc(dup.title)}“</b> steht schon im Buch. Was soll passieren?`, [
+            ["Abbrechen", () => this._closeForm()],
+            ["Trotzdem neu", () => this._edit(null, recipe)],
+            ["Ersetzen", () => this._edit(known || null, { ...recipe, replace: dup.id }), true]
+          ]);
+        } catch (x) {
+          const code = x?.code;
+          if (code === "no_recipe") {
+            ask("Auf der Seite steht kein Rezept, das ich lesen kann. Magst du es selbst anlegen?", [
+              ["Abbrechen", () => this._closeForm()],
+              ["Selbst anlegen", () => this._edit(null, { title: x.message || "", source: url, servings: 2, ingredients: [], steps: "", tags: [] }), true]
+            ]);
+            return;
+          }
+          msg.textContent = "";
+          err.textContent = importError(x);
+          go.disabled = false;
+          u.disabled = false;
+        }
+      });
+      f3.hidden = false;
+      this._poke();
+      setTimeout(() => u.focus(), 50);
     }
     _closeForm() {
       const f3 = this._e.form;

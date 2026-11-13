@@ -7,7 +7,7 @@ import {g2, T, sel} from './shared/editor-schema.js';
 import {watch, recipes as api, storeHint, imageUrl, uploadImage} from './shared/nova-store.js';
 import {RICH_CSS, richEditor, sanitize} from './shared/rich-text.js';
 import {compressImage} from './shared/media-picker.js';
-import {amount, mins, parseIngredient} from './shared/recipe-util.js';
+import {amount, mins, parseIngredient, sourceHost, importError} from './shared/recipe-util.js';
 
 /* ---------- Nova Rezeptbuch ----------
    Ein Kochbuch zum Blättern: zugeklappt der Einband, Tippen schlägt es auf, Wischen blättert. Drei Stile (Option style):
@@ -217,6 +217,10 @@ font-family:var(--f-hand);font-size:1.2em;font-weight:700;padding:.15em .8em .2e
 .btn:active{transform:scale(.95)}.btn.warn{border-color:rgba(150,30,20,.7);color:#8a1f12;background:rgba(200,60,40,.12)}
 .btn.ok{border-color:rgba(40,100,40,.6);color:#2e5e22}
 .btn[disabled]{opacity:.45;cursor:default}.btn.ok[disabled],.btn.warn[disabled]{opacity:1}
+.src{display:block;margin-top:1em;font-size:.8em;font-style:italic;opacity:.65;color:inherit;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src:hover{text-decoration:underline}
+.card .msg{margin:.6em 0 0;line-height:1.4}
+.card .msg b{font-weight:700}
 .tools{display:flex;gap:.4em;justify-content:flex-end;margin-top:1.2em}
 .tools .btn{font-size:1em;padding:.1em .6em}
 /* eingeklebtes Foto mit Fotoecken */
@@ -634,7 +638,7 @@ class NovaRecipeBookCard extends HTMLElement {
       if (!this._quiet) {
         const act = document.createElement('div');
         act.className = 'act';
-        act.append(this._btn('mdi:plus', 'Neues Rezept', () => this._edit(null)));
+        act.append(this._btn('mdi:plus', 'Neues Rezept', () => this._edit(null)), this._btn('mdi:link-variant', 'Rezept importieren', () => this._import()));
         box.append(act);
       }
       return box;
@@ -695,6 +699,13 @@ class NovaRecipeBookCard extends HTMLElement {
       act.className = 'act';
       act.append(this._btn('mdi:cart-plus', 'Zutaten auf die Einkaufsliste', b => this._toList(r, b)));
       w.append(act);
+    }
+    const src = sourceHost(r.source);
+    if (src) {
+      const a = document.createElement('a');
+      a.className = 'src'; a.href = r.source; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = `Quelle: ${src}`;
+      a.addEventListener('click', ev => ev.stopPropagation());
+      w.append(a);
     }
     const t = document.createElement('div');
     t.className = 'tools';
@@ -873,10 +884,14 @@ class NovaRecipeBookCard extends HTMLElement {
     });
   }
   // Karteikarte über dem Buch: Titel, Portionen, Zeit, Schlagwörter, Bild, Zutaten (eine pro Zeile), Zubereitung mit Formatierung
-  _edit(r) {
+  // pre: Entwurf aus dem Import (Vorschau) – füllt das Formular, gespeichert wird erst mit „Ins Buch übernehmen“
+  _edit(r, pre = null) {
     if (this._err || !this._recipes) return;
-    const f = this._e.form, st = {image: r?.image || null, data: null};
-    f.innerHTML = `<form class="card" novalidate><h2>${r ? 'Rezept bearbeiten' : 'Neues Rezept'}</h2>
+    const f = this._e.form, st = {image: pre ? null : r?.image || null, data: pre?.image_data || null}, source = pre ? pre.source || null : r?.source ?? null;
+    const head = pre ? (r ? `Vorschau – ersetzt „${esc(r.title)}“` : 'Vorschau') : r ? 'Rezept bearbeiten' : 'Neues Rezept';
+    if (pre) r = r ? {...r, ...pre} : pre;
+    const id = pre ? pre.replace : r?.id;
+    f.innerHTML = `<form class="card" novalidate><h2>${head}</h2>
 <label for="t">Titel</label><input id="t" type="text" maxlength="200" autocomplete="off" enterkeyhint="next">
 <div class="two"><div><label for="p">Portionen</label><input id="p" type="number" min="1" max="99" inputmode="numeric"></div>
 <div><label for="z">Zeit in Minuten</label><input id="z" type="number" min="0" max="6000" inputmode="numeric" placeholder="–"></div></div>
@@ -886,7 +901,7 @@ class NovaRecipeBookCard extends HTMLElement {
 <label>Zutaten</label><div class="ings"></div><button type="button" class="btn" data-a="add"><ha-icon icon="mdi:plus"></ha-icon><span>Zutat</span></button>
 <small>Menge und Einheit getrennt – dann lassen sich die Portionen umrechnen. Mehrere Zeilen („250 g Mehl“) lassen sich auch einfügen.</small>
 <label>Zubereitung</label><div class="steps"></div><small>Ein Absatz oder Listenpunkt je Schritt</small>
-<div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>Speichern</span></button></div></form>`;
+<div class="err"></div><div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:content-save-outline"></ha-icon><span>${pre ? 'Ins Buch übernehmen' : 'Speichern'}</span></button></div></form>`;
     const q = s => f.querySelector(s), img = q('.pic img'), file = q('input[type=file]'), clr = q('[data-a=clear]'), err = q('.err');
     const rt = richEditor({placeholder: 'Mehl und Eier verrühren …'});
     rt.set(r?.steps || '');
@@ -925,7 +940,7 @@ class NovaRecipeBookCard extends HTMLElement {
     (r?.ingredients?.length ? r.ingredients : [undefined]).forEach(x => row(x));
     q('[data-a=add]').addEventListener('click', () => row().querySelector('.qty').focus());
     const showPic = src => { img.hidden = !src; if (src) img.src = src; else img.removeAttribute('src'); clr.hidden = !src; };
-    showPic(st.image ? imageUrl(this._h, 'recipes', st.image) : null);
+    showPic(st.data || (st.image ? imageUrl(this._h, 'recipes', st.image) : null));
     // Tippen im Formular soll keine Tastenkürzel von HA oder das Blättern auslösen
     f.addEventListener('keydown', ev => ev.stopPropagation());
     f.addEventListener('pointerdown', ev => ev.stopPropagation());
@@ -948,15 +963,15 @@ class NovaRecipeBookCard extends HTMLElement {
         let image = st.image;
         if (st.data) image = (await uploadImage(this._h, 'recipes', st.data)).image;
         const z = q('#z').value.trim();
-        const recipe = {...(r ? {id: r.id} : {}), title, image, servings: Math.max(1, Math.min(99, Math.round(+q('#p').value) || 2)), time: z === '' ? null : Math.max(0, Math.round(+z) || 0),
+        const recipe = {...(id ? {id} : {}), ...(source ? {source} : {}), title, image, servings: Math.max(1, Math.min(99, Math.round(+q('#p').value) || 2)), time: z === '' ? null : Math.max(0, Math.round(+z) || 0),
           tags: q('#g').value.split(',').map(x => x.trim()).filter(Boolean),
           ingredients: [...ings.children].map(el => {
             const [qt, un, nm] = el.querySelectorAll('input,select'), v = parseFloat(qt.value.replace(',', '.'));
             return nm.value.trim() ? {name: nm.value.trim(), qty: Number.isFinite(v) ? v : null, unit: un.value} : null;
           }).filter(Boolean), steps: rt.get()};
         const res = await api.save(this._h, recipe);
-        if (!r && res?.id) this._jump = res.id;
-        if (r) this._serv.delete(r.id);
+        if (!id && res?.id) this._jump = res.id;
+        if (id) this._serv.delete(id);
         this._closeForm();
         if (this._jump) this._setRecipes(this._recipes);
       } catch (x) {
@@ -968,6 +983,61 @@ class NovaRecipeBookCard extends HTMLElement {
     f.hidden = false;
     this._poke();
     if (!r) setTimeout(() => q('#t').focus(), 50);
+  }
+  // Rezept per Link: Link eingeben → Integration liest die Seite → Vorschau im Formular (bzw. Nachfrage bei Doppelten)
+  _import() {
+    if (this._err || !this._recipes) return;
+    const f = this._e.form;
+    f.innerHTML = `<form class="card" novalidate><h2>Rezept importieren</h2>
+<label for="u">Link zum Rezept</label><input id="u" type="text" inputmode="url" autocomplete="off" placeholder="https://www.chefkoch.de/rezepte/…" enterkeyhint="go">
+<small>Klappt mit den meisten Rezeptseiten, z. B. Chefkoch. Gespeichert wird erst nach der Vorschau.</small>
+<div class="msg" role="status"></div><div class="err"></div>
+<div class="row"><button type="button" class="btn" data-a="cancel">Abbrechen</button><button type="submit" class="btn ok"><ha-icon icon="mdi:download"></ha-icon><span>Laden</span></button></div></form>`;
+    const q = s => f.querySelector(s), u = q('#u'), msg = q('.msg'), err = q('.err'), row = q('.row');
+    const go = q('button[type=submit]');
+    f.addEventListener('keydown', ev => ev.stopPropagation());
+    f.addEventListener('pointerdown', ev => ev.stopPropagation());
+    // Knöpfe der Nachfrage statt Abbrechen/Laden
+    const ask = (html, btns) => {
+      msg.innerHTML = html; err.textContent = '';
+      row.replaceChildren(...btns.map(([label, fn, ok]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = ok ? 'btn ok' : 'btn'; b.textContent = label;
+        b.addEventListener('click', fn); return b;
+      }));
+    };
+    q('[data-a=cancel]').addEventListener('click', () => this._closeForm());
+    q('form').addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const url = u.value.trim();
+      if (!/^https?:\/\/\S+$/i.test(url)) { err.textContent = 'Bitte einen Link einfügen, der mit https:// beginnt.'; u.focus(); return; }
+      go.disabled = true; u.disabled = true; err.textContent = ''; msg.textContent = 'Lese das Rezept …';
+      try {
+        const {recipe, duplicates} = await api.importUrl(this._h, url);
+        const dup = duplicates?.[0];
+        if (!dup) { this._edit(null, recipe); return; }
+        const known = this._recipes.find(x => x.id === dup.id);
+        ask(`<b>„${esc(dup.title)}“</b> steht schon im Buch. Was soll passieren?`, [
+          ['Abbrechen', () => this._closeForm()],
+          ['Trotzdem neu', () => this._edit(null, recipe)],
+          ['Ersetzen', () => this._edit(known || null, {...recipe, replace: dup.id}), true],
+        ]);
+      } catch (x) {
+        const code = x?.code;
+        if (code === 'no_recipe') {
+          ask('Auf der Seite steht kein Rezept, das ich lesen kann. Magst du es selbst anlegen?', [
+            ['Abbrechen', () => this._closeForm()],
+            ['Selbst anlegen', () => this._edit(null, {title: x.message || '', source: url, servings: 2, ingredients: [], steps: '', tags: []}), true],
+          ]);
+          return;
+        }
+        msg.textContent = '';
+        err.textContent = importError(x);
+        go.disabled = false; u.disabled = false;
+      }
+    });
+    f.hidden = false;
+    this._poke();
+    setTimeout(() => u.focus(), 50);
   }
   _closeForm() { const f = this._e.form; f.hidden = true; f.replaceChildren(); this._poke(); }
 }
