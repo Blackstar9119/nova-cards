@@ -1,6 +1,6 @@
 import {define, docUrl, tag} from './shared/define.js';
 import {dom, setIcon} from './shared/utils.js';
-import {isOn, TOGGLE, PRESS, SLIDE, fmtState, unitJoin, decOf, nameOf, iconOf, valueOf, alertHit, idleState} from './shared/state.js';
+import {isOn, TOGGLE, PRESS, SLIDE, fmtState, decOf, nameOf, iconOf, valueOf, alertHit, idleState, fmtNum, haUnitJoin} from './shared/state.js';
 import {runAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {NOVA_VARS, PANEL_CSS, SECTION_EDITOR_CSS} from './shared/styles.js';
@@ -104,7 +104,7 @@ export const BLOCKS = {
       const paint = () => {
         const mn = +inp.min, mx = +inp.max, n = +inp.value;
         inp.style.setProperty('--p', `${mx > mn ? (n - mn) / (mx - mn) * 100 : 0}%`);
-        v.textContent = o.format === 'duration' ? duration(n) : unitJoin(n.toFixed(decOf(inp.step)), el._u);
+        v.textContent = o.format === 'duration' ? duration(n) : haUnitJoin(this._h, fmtNum(this._h, n, decOf(inp.step)), el._u);
       };
       inp.addEventListener('pointerdown', () => { el._drag = true; });
       inp.addEventListener('input', () => { el._drag = true; paint(); });

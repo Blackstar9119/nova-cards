@@ -3,32 +3,44 @@ import {setIcon} from './shared/utils.js';
 import {hassAction} from './shared/actions.js';
 import {hassChanged, entityIds, inPicker} from './shared/lifecycle.js';
 import {MARQUEE_CSS, marquee, stopMarquee} from './shared/marquee.js';
-import {CARD_CSS, roleVars, SECTION_EDITOR_CSS} from './shared/styles.js';
+import {CARD_CSS, roleVars, SECTION_EDITOR_CSS, TONE_SCOPE} from './shared/styles.js';
 import {NovaEditorBase, names, merge} from './shared/editor-base.js';
-import {g2, T, A, ROLE, sel} from './shared/editor-schema.js';
+import {g2, T, A, ROLE} from './shared/editor-schema.js';
 import {normRows, PREV, EDIT, GRID_CSS, GridCard} from './shared/card-grid.js';
 import {GridEditor, GRID_ED_CSS, GRID_LABELS, GRID_HELPERS} from './shared/card-grid-editor.js';
 import {normChips, renderNovaChips, NOVA_CHIPS_CSS, chipSchema, chipView, CHIP_LABELS, CHIP_HELPERS} from './shared/chips.js';
 
 /* ---------- Nova Bereich Card ----------
    Raumansicht als Glasrahmen: Kopfzeile (Zurück, Icon, Name der Area, rechts Chips aus shared/chips.js) und darunter ein Raster aus beliebigen Karten wie in der Pop-up Card (rows). */
-const DEF = {stack_below: 500, chips_layout: 'wrap'};
+const DEF = {stack_below: 500};
+const MAX_CHIPS = 3; // höchstens so viele Chips direkt in der Kopfzeile
 
 const ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
-:host::before{background:var(--nv-area-bg)}
-:host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-area-bg)}
+:host::before{background:var(--nv-sheen),var(--nv-area-bg)}
+:host(.tint)::before{background:var(--nv-sheen),linear-gradient(160deg,color-mix(in srgb,var(--tt) 45%,transparent),transparent 75%),var(--nv-area-bg)}
+/* Unterkarten im selben Farbton, nur schwächer */
+:host(.tint) .body{${TONE_SCOPE}}
 .g{height:auto;display:flex;flex-direction:column;gap:var(--nv-s6);padding:var(--nv-s7)}
-.hd{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s3);border-radius:var(--nv-r-pill);background:var(--nv-chip)}
+.g{overflow:visible}
+/* Kopfzeile: feste Höhe, alles einzeilig. Höchstens 3 Chips, der Rest steckt hinter „+X“ (Klappliste unter der Leiste).
+   Der Name bekommt nur den Platz, der übrig bleibt, und läuft dort bei Bedarf durch. */
+.hd{position:relative;display:flex;flex-wrap:nowrap;align-items:center;gap:var(--nv-s5);height:calc(36px + 2 * var(--nv-s3));box-sizing:border-box;padding:var(--nv-s3);border-radius:var(--nv-r-pill);background:var(--nv-chip)}
 .hd.nb{padding-left:var(--nv-s7)}
-.hi{display:flex}.hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:min(35%,110px);font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9)}
+.hi{display:flex;flex:none}.hi:empty{display:none}
+.tt{flex:1 1 0;min-width:0;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9)}
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(var(--nv-press))}
 .x:focus-visible{outline:none;box-shadow:var(--nv-focus)}
 .x[hidden]{display:none}
-.hd .nchips{flex:0 1 auto;justify-content:flex-end}
+.hd .nchips{flex:none;flex-wrap:nowrap;overflow:visible;justify-content:flex-end}
 .hd .nchip{min-height:36px}
+.hd .nchip.plus{font-weight:var(--nv-fw-bold);padding:0 var(--nv-s5)}
+.hd .nchip.plus[aria-expanded=true]{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:var(--nv-fill-edge)}
+.more{position:absolute;top:calc(100% + var(--nv-s3));right:0;z-index:5;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;max-width:min(100%,420px);box-sizing:border-box;padding:var(--nv-s4);
+border-radius:var(--nv-r-lg);background:var(--nv-popup-base);border:1px solid var(--nv-border);box-shadow:var(--nv-shadow-popup);
+backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat));-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat))}
+.more:not(.open),.more:empty{display:none}
 .body{display:flex;flex-direction:column;gap:var(--nv-s6)}
 /* Ohne Karten nur die Kopfzeile (z. B. als Titelleiste mit Zurück); im Editor bleibt der Hinweis sichtbar */
 .g:not(.prev) .body:has(>.hint:only-child){display:none}
@@ -49,12 +61,21 @@ class NovaAreaCard extends GridCard(HTMLElement) {
     const r = this.attachShadow({mode: 'open'});
     r.innerHTML = `<style>${ACSS}</style>
 <div class="g"><div class="hd"><button type="button" class="x bk" aria-label="Zurück" title="Zurück"><ha-icon icon="mdi:arrow-left"></ha-icon></button>
-<span class="hi"></span><span class="tt"></span><div class="nchips"></div></div>
+<span class="hi"></span><span class="tt"></span><div class="nchips"></div><div class="more" role="group" aria-label="Weitere Chips"></div></div>
 <div class="body"></div></div>`;
     const q = s => r.querySelector(s);
-    this._g = q('.g'); this._hd = q('.hd'); this._bk = q('.bk'); this._body = q('.body'); this._chips = q('.nchips');
+    this._g = q('.g'); this._hd = q('.hd'); this._bk = q('.bk'); this._body = q('.body'); this._chips = q('.nchips'); this._more = q('.more');
     this._bk.addEventListener('click', () => this._back());
     this._ro = new ResizeObserver(() => this._stack());
+    // „+X“-Chip: zeigt die übrigen Chips in einer Klappliste unter der Kopfzeile
+    this._plus = document.createElement('div');
+    this._plus.className = 'nchip plus'; this._plus.tabIndex = 0; this._plus.setAttribute('role', 'button'); this._plus.setAttribute('aria-expanded', 'false');
+    const tog = e => { e.stopPropagation(); this._open(!this._more.classList.contains('open')); };
+    this._plus.addEventListener('click', tog);
+    this._plus.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tog(e); } });
+    this._more.addEventListener('click', () => this._open(false));
+    this._out = e => { if (!e.composedPath().includes(this._hd)) this._open(false); };
+    this._hro = new ResizeObserver(() => this._fit());
   }
   setConfig(c) {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
@@ -78,6 +99,7 @@ class NovaAreaCard extends GridCard(HTMLElement) {
 
   connectedCallback() {
     this._ro.observe(this._body);
+    this._hro.observe(this._hd);
     this._detect();
     requestAnimationFrame(() => this._detect());
     if (this._dirty && this._cfg) this._grid();
@@ -86,6 +108,8 @@ class NovaAreaCard extends GridCard(HTMLElement) {
   }
   disconnectedCallback() {
     this._ro.disconnect();
+    this._hro.disconnect();
+    this._open(false);
     stopMarquee(this.shadowRoot?.querySelector('.tt'));
     // Vorschau im Karteneditor: Zellen an die Nachfolgerin weitergeben
     if (this._prev) this._handOffCells();
@@ -118,9 +142,38 @@ class NovaAreaCard extends GridCard(HTMLElement) {
     setIcon(r.querySelector('.hi'), c.icon || ar?.icon || 'mdi:texture-box');
     const tint = c.tint;
     this.classList.toggle('tint', !!tint);
-    if (tint) this.style.setProperty('--tc', roleVars(tint).c); else this.style.removeProperty('--tc');
-    this._chips.classList.toggle('scroll', c.chips_layout === 'scroll');
+    if (tint) this.style.setProperty('--tt', roleVars(tint).tone); else this.style.removeProperty('--tt');
     renderNovaChips(this, this._chips, c.chips, h, {area: c.area});
+    this._fit();
+  }
+  _open(on) {
+    this._more.classList.toggle('open', on);
+    this._plus.setAttribute('aria-expanded', String(on));
+    if (on) document.addEventListener('pointerdown', this._out, true); else document.removeEventListener('pointerdown', this._out, true);
+  }
+  // Chips auf die Kopfzeile verteilen: höchstens MAX sichtbar und nur so viele, dass der Name noch Platz hat (nie halb
+  // abgeschnitten); der Rest wandert in die Klappliste hinter „+X“
+  _fit() {
+    const box = this._chips, els = box._els || [], hd = this._hd;
+    box.replaceChildren(...els);
+    this._more.replaceChildren();
+    const vis = els.filter(d => !d.hidden);
+    if (!vis.length || hd.clientWidth <= 0) { if (!vis.length) this._open(false); return; }
+    // Platz für Chips = Leiste minus Innenabstand, feste Teile, Lücken und Mindestbreite des Namens
+    const cs = getComputedStyle(hd), gap = parseFloat(cs.columnGap) || 0;
+    const fixed = [this._bk, this.shadowRoot.querySelector('.hi')].filter(el => el.offsetWidth).reduce((a, el) => a + el.offsetWidth + gap, 0);
+    const room = hd.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - fixed - gap - Math.min(110, hd.clientWidth * .3);
+    const cg = parseFloat(getComputedStyle(box).columnGap) || 0, ws = vis.map(d => d.offsetWidth);
+    this._plus.textContent = `+${vis.length}`;
+    box.append(this._plus);
+    const pw = this._plus.offsetWidth;
+    const widthOf = k => ws.slice(0, k).reduce((a, w) => a + w + cg, 0) + (k < vis.length ? pw + cg : 0) - cg;
+    let k = Math.min(MAX_CHIPS, vis.length);
+    while (k > 0 && widthOf(k) > room) k--;
+    if (k >= vis.length) { this._plus.remove(); this._open(false); return; }
+    this._plus.textContent = `+${vis.length - k}`;
+    this._plus.title = `${vis.length - k} weitere`;
+    this._more.append(...vis.slice(k));
   }
 }
 define('area-card', NovaAreaCard, {name: 'Nova Bereich Card', description: 'Raumansicht als Glasrahmen: Kopfzeile mit Zurück, Icon, Raumname und Chips, darunter beliebige Karten in Zeilen und Spalten.', documentationURL: docUrl('nova-bereich-card')});
@@ -132,11 +185,10 @@ const S_GEN = icon => [
   {name: 'back_action', selector: A},
   g2(ROLE('tint'), {name: 'stack_below', selector: {number: {min: 0, max: 1200, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
 ];
-const S_CHIPS = [sel('chips_layout', [['wrap', 'Umbrechen'], ['scroll', 'Waagrecht scrollen']])];
 const LABELS = {
   ...CHIP_LABELS, ...GRID_LABELS,
   area: 'Area', name: 'Name', icon: 'Icon', back_action: 'Zurück-Knopf: Aktion',
-  tint: 'Farbton (leer = Nova-Glas)', stack_below: 'Untereinander unter Breite', chips_layout: 'Bei vielen Chips',
+  tint: 'Farbton (leer = Nova-Glas)', stack_below: 'Untereinander unter Breite',
 };
 const HELPERS = {
   ...CHIP_HELPERS, ...GRID_HELPERS,
@@ -163,7 +215,6 @@ class NovaAreaCardEditor extends GridEditor(NovaEditorBase) {
     r.innerHTML = `<style>${SECTION_EDITOR_CSS}${GRID_ED_CSS}</style><div class="wrap"></div>`;
     this._gridReset();
     const data = {...DEF, ...c};
-    const form = sch => this._form(sch, data, v => this._emit(strip(merge(this._config, names(sch), v))));
     r.querySelector('.wrap').append(
       this._section('general', 'mdi:cog-outline', 'Allgemein', b => {
         const sch = S_GEN(h?.areas?.[c.area]?.icon);
@@ -172,9 +223,8 @@ class NovaAreaCardEditor extends GridEditor(NovaEditorBase) {
           this._hint('Name und Icon leer = wie in der Area.'));
       }),
       this._section('chips', 'mdi:label-multiple-outline', 'Chips in der Kopfzeile', b => {
-        b.append(this._hint('Rechts neben dem Raumnamen. Wert-Chips zeigen den Zustand einer Entität, Knopf-Chips führen eine Aktion aus (z. B. „Alle Lichter im Raum aus“, Szene, Skript). Auf dem Handy zeigen Chips mit Icon nur das Icon bzw. Icon und Wert.'));
+        b.append(this._hint('Rechts neben dem Raumnamen. Wert-Chips zeigen den Zustand einer Entität, Knopf-Chips führen eine Aktion aus (z. B. „Alle Lichter im Raum aus“, Szene, Skript). Höchstens 3 Chips stehen in der Leiste, weitere (oder wenn der Platz nicht reicht) zeigt ein „+X“-Chip beim Antippen. Auf dem Handy zeigen Chips mit Icon nur das Icon bzw. Icon und Wert.'));
         this._itemList(b, 'chips', o => chipSchema(o, {area: !!this._config.area}), {item: 'Chip', icon: 'mdi:label-outline'}, 'Chip hinzufügen', chipView);
-        b.append(form(S_CHIPS));
       }),
       this._section('layout', 'mdi:view-grid-outline', 'Layout & Vorlage', b => this._layoutBody(b)),
       this._section('content', 'mdi:view-dashboard-edit-outline', 'Inhalt', b => this._contentBody(b)));

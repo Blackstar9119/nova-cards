@@ -1,21 +1,25 @@
 // Farben & Maße: alle Design-Tokens stehen in theme.js und werden hier nur weitergereicht
-import {NOVA_VARS, NAVI_VARS} from './theme.js';
-export {NOVA_VARS, NAVI_VARS};
+import {NOVA_VARS, NAVI_VARS, SURFACE, HA_VARS, toneLayer} from './theme.js';
+export {NOVA_VARS, NAVI_VARS, SURFACE, HA_VARS};
 
 // Farbrollen: Karten wählen nur eine Rolle, die Farbe selbst kommt aus den Variablen oben (Theme-fähig)
 export const ROLES = {neutral: 'neutral', 'accent-1': 'a1', 'accent-2': 'a2', 'accent-3': 'a3', 'accent-4': 'a4', coffee: 'coffee'}; // coffee = Standard der Kaffeemaschine, nicht im Editor
-// Rolle → {c, fg, dev} als CSS-Variablen (dev = Farbe in Gerätezeichnungen); unbekannt/leer = neutral
-export const roleVars = r => { const k = ROLES[r] || ROLES.neutral; return {c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`, dev: `var(--nv-${k}-dev)`}; };
+// Rolle → {c, fg, dev, tone} als CSS-Variablen (dev = Farbe in Gerätezeichnungen, tone = Farbton von Flächen); unbekannt/leer = neutral
+export const roleVars = r => { const k = ROLES[r] || ROLES.neutral; const t = k === 'coffee' ? 'a3' : k; return {c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`, dev: `var(--nv-${k}-dev)`, tone: `var(--nv-${t}-tone)`}; };
 
 // Glas: Unschärfe und Hintergrund liegen auf einer eigenen, leeren Ebene (:host::before) hinter dem Kartenkasten .g.
 // So muss Safari/WebKit die Unschärfe nicht bei jeder Animation im Inhalt neu rechnen. Der Kasten selbst darf weder
 // opacity < 1, filter, transform, will-change noch isolation bekommen, sonst sieht ::before das Dashboard nicht mehr.
 // Karten ohne Glas (z. B. Info im Box-Stil) setzen die Klasse nv-flat auf ihr Element, ausgegraute Karten (.g.na) zusätzlich nv-na.
 const GLASS = `:host{position:relative}
-:host::before{content:'';position:absolute;inset:0;border-radius:var(--nv-radius);background:var(--nv-bg);pointer-events:none;
+:host::before{content:'';position:absolute;inset:0;border-radius:var(--nv-radius);background:${SURFACE};pointer-events:none;
 backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat));-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat))}
 :host(.nv-flat)::before{display:none}
 :host(.nv-na)::before{opacity:.4}`;
+
+// Farbton für alles in einem Container (Bereich, Pop-up): Nova-Karten darin erben --nova-tone-layer, fremde Karten bekommen
+// ihre Fläche hier neu berechnet (geerbte Variablen rechnen sich nicht neu). --tt = Farbton des Containers (roleVars().tone).
+export const TONE_SCOPE = `--nova-tone-layer:${toneLayer('var(--tt)')};--nv-tone-layer:${toneLayer('var(--tt)')};--ha-card-background:${SURFACE}`;
 
 // Glas-Hintergrund für Raum, Thermostat, Licht
 export const CARD_CSS = `${NOVA_VARS}

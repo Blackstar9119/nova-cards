@@ -1,6 +1,6 @@
 import {define, docUrl, tag} from './shared/define.js';
 import {esc, dom, setIcon} from './shared/utils.js';
-import {isOn, fmtState, areaOf} from './shared/state.js';
+import {isOn, fmtState, areaOf, fmtNum, haUnitJoin} from './shared/state.js';
 import {moreInfo, hassAction} from './shared/actions.js';
 import {press} from './shared/long-press.js';
 import {CARD_CSS, SECTION_EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
@@ -278,7 +278,7 @@ class NovaRoomCard extends HTMLElement {
       return (c.info_round && !isNaN(n) ? Math.round(n) : fmtState(h, s)) + (c.info_suffix || '');
     }
     const t = c.temperature && h.states[c.temperature], v = t ? t.attributes.current_temperature ?? t.state : null;
-    return v !== null && !isNaN(parseFloat(v)) ? `${parseFloat(v).toFixed(c.temperature_decimals)}°` : '';
+    return v !== null && !isNaN(parseFloat(v)) ? haUnitJoin(h, fmtNum(h, parseFloat(v), +c.temperature_decimals || 0), h.config?.unit_system?.temperature || '°C') : '';
   }
   _update() {
     if (!this._h || !this._btns) return;

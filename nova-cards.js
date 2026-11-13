@@ -16,7 +16,7 @@
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
   // src/shared/theme.js
-  var TOKENS, INK, MOKKA, THEMES, THEME_KEYS, BACKGROUNDS, NAVI, block, themed, SIZE_FACTOR, sized, MOTION, NOVA_VARS, NAVI_VARS;
+  var TOKENS, INK, sheen, SHEEN_LIGHT, SHEEN_WARM, SHEEN_DARK, MOKKA, THEMES, THEME_KEYS, BACKGROUNDS, NAVI, block, themed, SIZE_FACTOR, sized, MOTION, SURFACE, toneLayer, HA_VARS, HA, NOVA_VARS, NAVI_VARS;
   var init_theme = __esm({
     "src/shared/theme.js"() {
       TOKENS = [
@@ -46,6 +46,15 @@
         // Fläche hinter Vollbild-Video
         ["cut", "cutout-color", "rgba(20,24,38,.6)"],
         // Rand um Icons, die auf einer Farbfläche sitzen (Müllkalender)
+        // Glanz über jeder Kartenfläche (oberste Ebene, Bild oder none): weiches Licht von oben links und ein schräger Spiegelstreifen.
+        // Nova Blau hat ihn schon im Glas selbst, darum none.
+        ["sheen", "sheen", "none"],
+        // Farbton der Fläche als Bild-Ebene: setzen Bereich und Pop-up mit Farbton für alles darin (Nova-Karten und fremde Karten,
+        // siehe TONE_SCOPE in styles.js), sonst none. tone-mix = Anteil des Farbtons oben links, er läuft nach unten rechts aus
+        ["tone-layer", "tone-layer", "none"],
+        ["tone-mix", "tone-mix", "22%"],
+        // Fremde Karten (Home-Assistant-Karten in Bereich, Pop-up, Swipe): einfarbige Kartenfarbe, wo HA keine Verläufe nimmt
+        ["card-solid", "card-color", "#1e2638"],
         // Akzente und Farbrollen
         ["accent", "accent-color", "#f5b83d"],
         ["accent-fg", "accent-text-color", "#3a2a00"],
@@ -69,6 +78,13 @@
         ["a4-fg", "accent-4-text", "#fff"],
         ["neutral", "neutral", "#7b8794"],
         ["neutral-fg", "neutral-text", "#fff"],
+        // Farbtöne der Flächen (Farbton von Bereich und Pop-up, Unterkarten darin) – die zentrale Palette für Hintergründe.
+        // Standard = die Rolle selbst, ein Theme kann sie für Flächen weicher oder wärmer stimmen
+        ["a1-tone", "accent-1-tone", "var(--nv-a1)"],
+        ["a2-tone", "accent-2-tone", "var(--nv-a2)"],
+        ["a3-tone", "accent-3-tone", "var(--nv-a3)"],
+        ["a4-tone", "accent-4-tone", "var(--nv-a4)"],
+        ["neutral-tone", "neutral-tone", "var(--nv-neutral)"],
         // Farbrolle in Gerätezeichnungen (Leuchten auf dunklem Gehäuse) – Standard = die Rolle selbst, ein Theme kann sie aufhellen
         ["a1-dev", "accent-1-device", "var(--nv-a1)"],
         ["a2-dev", "accent-2-device", "var(--nv-a2)"],
@@ -178,12 +194,19 @@
         ["sweep", "sweep-dur", ".9s"]
       ];
       INK = "20,28,45";
+      sheen = (rgb, a, b) => `linear-gradient(165deg,rgba(${rgb},${a}),rgba(${rgb},0) 42%),linear-gradient(118deg,rgba(${rgb},0) 30%,rgba(${rgb},${b}) 46%,rgba(${rgb},0) 62%)`;
+      SHEEN_LIGHT = sheen("255,255,255", 0.6, 0.22);
+      SHEEN_WARM = sheen("255,250,240", 0.55, 0.2);
+      SHEEN_DARK = sheen("255,255,255", 0.07, 0.025);
       MOKKA = "74,48,28";
       THEMES = {
         blau: { name: "Nova Blau", vars: {} },
         hell: { name: "Nova Hell", vars: {
-          page: "linear-gradient(160deg,#d6dbe3,#c7cdd7)",
-          bg: "linear-gradient(160deg,rgba(236,238,242,.94),rgba(225,228,233,.94))",
+          page: "linear-gradient(160deg,#dde2ea,#c4cbd6)",
+          bg: "linear-gradient(160deg,rgba(246,248,251,.95),rgba(222,227,234,.94))",
+          sheen: SHEEN_LIGHT,
+          "card-solid": "#eceef2",
+          "area-bg": "linear-gradient(160deg,rgba(231,235,241,.94),rgba(207,214,224,.94))",
           border: `rgba(${INK},.1)`,
           fg: "#0e121a",
           chip: `rgba(${INK},.07)`,
@@ -208,10 +231,13 @@
           a3: "#9a5f33",
           a4: "#2a7a46",
           neutral: "#5b6673",
+          "a1-tone": "#4f8fe0",
+          "a4-tone": "#4f9a68",
+          // Flächen hell und klar statt dunkler Schriftfarben
           "clock-night": "#2f4fd6",
           "clock-morning": "#c4621a",
           "clock-noon": "#0e121a",
-          "popup-bg": "linear-gradient(160deg,rgba(243,245,248,.97),rgba(232,235,240,.97))",
+          "popup-bg": "linear-gradient(160deg,rgba(246,248,251,.97),rgba(224,229,236,.97))",
           "popup-base": "rgba(236,239,243,.97)",
           "popup-head": "rgba(226,230,236,.97)",
           "popup-backdrop": "rgba(30,38,55,.28)",
@@ -227,10 +253,13 @@
           "sat-2": "120%"
         }, navi: { border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: "14px", warn: "#8a5a00" } },
         midnight: { name: "Nova Midnight", vars: {
-          page: "#000",
-          // Wie der Dark Mode von Apple: Seite schwarz, Karten #1c1c1e, Kacheln #2c2c2e, feine Linien, kein Glow, kein Blur.
-          // Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante), Schrift darauf hell.
-          bg: "#1c1c1e",
+          page: "linear-gradient(180deg,#0e0e10,#000 70%)",
+          // Wie der Dark Mode von Apple: Seite schwarz, Karten um #1c1c1e (weicher Verlauf mit feinem Glanz), Kacheln #2c2c2e,
+          // feine Linien, kein Glow, kein Blur. Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante).
+          bg: "linear-gradient(160deg,#252528,#19191b)",
+          sheen: SHEEN_DARK,
+          "card-solid": "#1c1c1e",
+          "tone-mix": "26%",
           border: "rgba(255,255,255,.06)",
           fg: "#e5e5ea",
           chip: "#2c2c2e",
@@ -259,12 +288,12 @@
           "clock-night": "#5a6fb8",
           "clock-morning": "#c98a4e",
           "clock-noon": "#c7ccd6",
-          "area-bg": "#000",
-          "popup-bg": "#000",
+          "area-bg": "linear-gradient(160deg,#141416,#030303 70%)",
+          "popup-bg": "linear-gradient(160deg,#141416,#030303 70%)",
           "popup-base": "#1c1c1e",
           "popup-head": "#2c2c2e",
           "popup-backdrop": "rgba(0,0,0,.72)",
-          "navi-popup-bg": "#1c1c1e",
+          "navi-popup-bg": "linear-gradient(160deg,#252528,#19191b)",
           shadow: "0 0 0 transparent",
           edge: "inset 0 1px 0 rgba(255,255,255,.05)",
           "shadow-popup": "0 0 0 1px rgba(255,255,255,.08)",
@@ -279,9 +308,12 @@
           "fill-edge": "inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.1)"
         }, navi: { border: "rgba(255,255,255,.08)", chip: "#2c2c2e", blur: "0px", warn: "#b08d57" } },
         velvet: { name: "Nova Velvet", vars: {
-          page: "linear-gradient(160deg,#d8c9ad,#c4b393)",
+          page: "linear-gradient(160deg,#e0d2b6,#bfac88)",
           // Warm und edel: cremiges Beige, Espresso-Schrift, Gold und Cognac, weiche warme Schatten statt Glow
-          bg: `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))`,
+          bg: "linear-gradient(160deg,rgba(247,240,228,.95),rgba(226,212,189,.94))",
+          sheen: SHEEN_WARM,
+          "card-solid": "#efe6d6",
+          "area-bg": "linear-gradient(160deg,rgba(236,226,207,.94),rgba(212,195,166,.94))",
           border: "rgba(90,62,40,.14)",
           fg: "#1a0f09",
           chip: `rgba(${MOKKA},.08)`,
@@ -316,10 +348,15 @@
           "a4-fg": "#fbf6ec",
           neutral: "#62554c",
           "neutral-fg": "#fbf6ec",
+          "a1-tone": "#8a5a33",
+          "a2-tone": "#b8935a",
+          "a3-tone": "#8a3a45",
+          "a4-tone": "#6b7a3a",
+          // Flächen: Cognac, Gold, Bordeaux, Oliv
           "clock-night": "#6b3a2a",
           "clock-morning": "#9a5a1e",
           "clock-noon": "#1a0f09",
-          "popup-bg": "linear-gradient(160deg,rgba(243,236,223,.97),rgba(233,223,205,.97))",
+          "popup-bg": "linear-gradient(160deg,rgba(247,240,228,.97),rgba(228,215,192,.97))",
           "popup-base": "rgba(243,236,223,.97)",
           "popup-head": "rgba(233,223,205,.97)",
           "popup-backdrop": "rgba(40,26,16,.32)",
@@ -350,8 +387,15 @@
       MOTION = `:host([nova-motion]) *,:host([nova-motion]) *::before,:host([nova-motion]) *::after{animation:none!important}
 :host([nova-motion=off]) *,:host([nova-motion=off]) *::before,:host([nova-motion=off]) *::after{transition:none!important}
 :host([nova-motion=off]){${TOKENS.filter(([n]) => /^d\d$|^sweep$/.test(n)).map(([n]) => `--nv-${n}:0s`).join(";")}}`;
-      NOVA_VARS = block(":host") + themed(false) + sized + MOTION;
-      NAVI_VARS = block(":host", { ...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI }) + themed(true) + sized + MOTION;
+      SURFACE = "var(--nv-sheen),var(--nv-tone-layer),var(--nv-bg)";
+      toneLayer = (c) => `linear-gradient(160deg,color-mix(in srgb,${c} var(--nv-tone-mix),transparent),transparent 85%)`;
+      HA_VARS = `--ha-card-background:${SURFACE};--card-background-color:var(--nv-card-solid);--ha-card-border-radius:var(--nv-radius);
+--ha-card-border-color:var(--nv-border);--ha-card-border-width:1px;--ha-card-box-shadow:var(--nv-shadow),var(--nv-edge);
+--primary-text-color:var(--nv-fg);--secondary-text-color:color-mix(in srgb,var(--nv-fg) 62%,transparent);
+--divider-color:rgba(var(--nv-tint),.12);--error-color:var(--nv-error)`;
+      HA = `:host{${HA_VARS}}`;
+      NOVA_VARS = block(":host") + themed(false) + HA + sized + MOTION;
+      NAVI_VARS = block(":host", { ...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI }) + themed(true) + HA + sized + MOTION;
     }
   });
 
@@ -939,20 +983,22 @@
   });
 
   // src/shared/styles.js
-  var ROLES, roleVars, GLASS, CARD_CSS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, MAPROW_CSS, EDITOR_LIST_CSS, SECTION_EDITOR_CSS, FIELD_CSS;
+  var ROLES, roleVars, GLASS, TONE_SCOPE, CARD_CSS, PANEL_CSS, EDITOR_CSS, EDITOR_ICON_CSS, MAPROW_CSS, EDITOR_LIST_CSS, SECTION_EDITOR_CSS, FIELD_CSS;
   var init_styles = __esm({
     "src/shared/styles.js"() {
       init_theme();
       ROLES = { neutral: "neutral", "accent-1": "a1", "accent-2": "a2", "accent-3": "a3", "accent-4": "a4", coffee: "coffee" };
       roleVars = (r) => {
         const k = ROLES[r] || ROLES.neutral;
-        return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`, dev: `var(--nv-${k}-dev)` };
+        const t = k === "coffee" ? "a3" : k;
+        return { c: `var(--nv-${k})`, fg: `var(--nv-${k}-fg)`, dev: `var(--nv-${k}-dev)`, tone: `var(--nv-${t}-tone)` };
       };
       GLASS = `:host{position:relative}
-:host::before{content:'';position:absolute;inset:0;border-radius:var(--nv-radius);background:var(--nv-bg);pointer-events:none;
+:host::before{content:'';position:absolute;inset:0;border-radius:var(--nv-radius);background:${SURFACE};pointer-events:none;
 backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat));-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat))}
 :host(.nv-flat)::before{display:none}
 :host(.nv-na)::before{opacity:.4}`;
+      TONE_SCOPE = `--nova-tone-layer:${toneLayer("var(--tt)")};--nv-tone-layer:${toneLayer("var(--tt)")};--ha-card-background:${SURFACE}`;
       CARD_CSS = `${NOVA_VARS}
 :host{display:block;height:100%}
 ${GLASS}
@@ -1912,7 +1958,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
             return (c.info_round && !isNaN(n) ? Math.round(n) : fmtState(h, s)) + (c.info_suffix || "");
           }
           const t = c.temperature && h.states[c.temperature], v = t ? t.attributes.current_temperature ?? t.state : null;
-          return v !== null && !isNaN(parseFloat(v)) ? `${parseFloat(v).toFixed(c.temperature_decimals)}°` : "";
+          return v !== null && !isNaN(parseFloat(v)) ? haUnitJoin(h, fmtNum(h, parseFloat(v), +c.temperature_decimals || 0), h.config?.unit_system?.temperature || "°C") : "";
         }
         _update() {
           if (!this._h || !this._btns) return;
@@ -1977,6 +2023,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
     "src/thermostat.js"() {
       init_define();
       init_utils();
+      init_state();
       init_actions();
       init_styles();
       init_lifecycle();
@@ -2169,6 +2216,11 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
             if (p) this._h.callService("climate", "set_preset_mode", { entity_id: this._c.entity, preset_mode: p });
           });
         }
+        // Temperatur im Zahlenformat des HA-Profils mit Einheit (21,0 °C)
+        _deg(v) {
+          const h = this._h;
+          return haUnitJoin(h, fmtNum(h, v, 1), h?.config?.unit_system?.temperature || "°C");
+        }
         _stepSize(a) {
           return this._c.step || a.target_temp_step || 0.5;
         }
@@ -2179,7 +2231,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
           const a = s.attributes, st = this._stepSize(a), from = this._pend ?? (parseFloat(a.temperature) || 20);
           const t = Math.min(a.max_temp ?? 35, Math.max(a.min_temp ?? 5, Math.round((from + dir * st) / st) * st));
           this._pend = t;
-          this._e.tgt.textContent = `${t.toFixed(1)}°`;
+          this._e.tgt.textContent = this._deg(t);
           this._e.stp.classList.add("pend");
           clearTimeout(this._tm);
           this._tm = setTimeout(() => {
@@ -2210,12 +2262,12 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
           const sensor = c.sensor && h.states[c.sensor];
           let cur2 = sensor ? parseFloat(sensor.state) : NaN;
           if (isNaN(cur2)) cur2 = parseFloat(a.current_temperature);
-          e.cur.textContent = isNaN(cur2) ? "–" : `${cur2.toFixed(1)}°`;
+          e.cur.textContent = isNaN(cur2) ? "–" : this._deg(cur2);
           const hum = c.humidity ? parseFloat(h.states[c.humidity]?.state) : parseFloat(a.current_humidity);
           e.hum.textContent = isNaN(hum) ? "" : `${Math.round(hum)} % Luftfeuchte`;
           const noTarget = s.state === "off" || a.temperature == null;
           e.stp.style.display = noTarget && this._pend == null ? "none" : "";
-          if (this._pend == null) e.tgt.textContent = a.temperature != null ? `${Number(a.temperature).toFixed(1)}°` : "–";
+          if (this._pend == null) e.tgt.textContent = a.temperature != null ? this._deg(Number(a.temperature)) : "–";
           if (c.show_graph) {
             const id = c.sensor || c.graph_entity, pts = id ? history2(h, id, c.graph_hours, () => this._update()) : null;
             const sig = pts ? `${pts.length}|${pts[pts.length - 1]?.[1]}` : "";
@@ -2555,6 +2607,8 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
 .hd .all{margin-left:auto;padding:var(--nv-s2) var(--nv-s5);border-radius:var(--nv-r-pill);background:var(--nv-chip);font-size:var(--nv-fs-3);font-weight:var(--nv-fw-medium);cursor:pointer;display:none}
 .hd .all.show{display:block}.hd .all:active{transform:scale(.94)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--nova-light-min-width,150px),1fr));gap:var(--nv-s4)}
+/* Spalten gleichmäßig verteilt (setzt _cols): 4 Lampen bei Platz für 3 = 2 × 2 statt 3 + 1 mit leerem Rest */
+.grid.bal{grid-template-columns:repeat(var(--lcols),minmax(0,1fr))}
 .t{position:relative;border-radius:var(--nv-r-md);background:var(--nv-chip);border:1px solid rgba(var(--nv-tint),.08);padding:var(--nv-s5);display:flex;flex-direction:column;gap:var(--nv-s4);overflow:hidden;transition:background var(--nv-d4),box-shadow var(--nv-d4);min-width:0}
 .t.on{background:color-mix(in srgb,var(--lc,var(--nv-accent)) 22%,rgba(var(--nv-tint),.08));box-shadow:0 0 18px color-mix(in srgb,color-mix(in srgb,var(--lc,var(--nv-accent)) 30%,transparent) var(--nv-glow),transparent);border-color:color-mix(in srgb,var(--lc,var(--nv-accent)) 45%,transparent)}
 .t.na{opacity:.35}
@@ -2563,7 +2617,7 @@ ha-icon{--mdc-icon-size:18px;display:flex}`;
 .ic ha-icon{--mdc-icon-size:var(--nv-icon-md)}
 .t.on .ic{background:var(--lc,var(--nv-accent));color:var(--nv-accent-fg);box-shadow:0 0 12px color-mix(in srgb,color-mix(in srgb,var(--lc,var(--nv-accent)) 60%,transparent) var(--nv-glow),transparent)}
 .top:active .ic{transform:scale(.9)}
-.nm{flex:1;min-width:0}.nm b{display:block;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-medium);overflow-wrap:anywhere;hyphens:auto;line-height:1.25}.nm small{display:block;font-size:var(--nv-fs-2);opacity:.6}
+.nm{flex:1;min-width:0}.nm b{display:block;font-size:var(--nv-fs-6);font-weight:var(--nv-fw-medium);overflow-wrap:break-word;word-break:normal;hyphens:manual;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.nm small{display:block;font-size:var(--nv-fs-2);opacity:.6}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;border-radius:11px;margin:0;outline:none;
 background:linear-gradient(90deg,var(--lc,var(--nv-accent)) 0 var(--p,0%),rgba(var(--nv-tint),.14) var(--p,0%) 100%)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--nv-knob);box-shadow:var(--nv-shadow-knob)}
@@ -2607,6 +2661,25 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
         }
         getCardSize() {
           return 1 + Math.ceil((this._list?.length || 2) / 2) * 2;
+        }
+        connectedCallback() {
+          this._ro ||= new ResizeObserver(() => this._cols());
+          this._ro.observe(this);
+        }
+        disconnectedCallback() {
+          this._ro?.disconnect();
+        }
+        // Lampen gleichmäßig auf die Reihen verteilen: so viele Reihen wie nötig, dann so wenige Spalten wie möglich –
+        // kein Loch rechts neben der letzten Lampe
+        _cols() {
+          const g = this.shadowRoot?.querySelector(".grid"), n = g?.children.length || 0;
+          if (!g || this._single || !n) return;
+          const w = g.clientWidth, cs = getComputedStyle(g), min = parseFloat(cs.getPropertyValue("--nova-light-min-width")) || 150, gap = parseFloat(cs.columnGap) || 8;
+          if (w <= 0) return;
+          const max = w <= 300 ? 1 : Math.max(1, Math.floor((w + gap) / (min + gap)));
+          const cols = Math.ceil(n / Math.ceil(n / max));
+          g.style.setProperty("--lcols", cols);
+          g.classList.add("bal");
         }
         // Genau eine Lampe ohne Bereich = Einzelkachel
         get _single() {
@@ -2677,6 +2750,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
             grid2.appendChild(tile);
             return { id, o, t: tile, ic: tile.querySelector("ha-icon"), nm: tile.querySelector("b"), st: tile.querySelector("small"), sl: slider, dots };
           });
+          this._cols();
         }
         _update() {
           if (!this._h || !this._tiles) return;
@@ -2744,7 +2818,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
       PCSS = `
 :host{position:fixed;inset:0 var(--nv-pop-r,0px) 0 var(--nv-pop-l,0px);z-index:6;display:flex;align-items:center;justify-content:center;background:var(--nv-popup-backdrop);backdrop-filter:blur(var(--nv-blur-xs));-webkit-backdrop-filter:blur(var(--nv-blur-xs));animation:fi .2s}
 .root{width:min(var(--nova-popup-width,1180px),96%);max-height:84vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;padding:var(--nv-s7);border-radius:28px;
-background:var(--nv-navi-popup-bg);border:1px solid var(--nv-border);box-shadow:var(--nv-shadow-popup);color:var(--nv-fg);font-family:var(--nv-font);animation:up .28s var(--nv-ease)}
+background:var(--nv-sheen),var(--nv-navi-popup-bg);border:1px solid var(--nv-border);box-shadow:var(--nv-shadow-popup);color:var(--nv-fg);font-family:var(--nv-font);animation:up .28s var(--nv-ease)}
 .hd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:var(--nv-s5);margin-bottom:var(--nv-s7);padding:var(--nv-s3) var(--nv-s3) var(--nv-s3) var(--nv-s7);border-radius:var(--nv-r-pill);background:var(--nv-popup-head);backdrop-filter:blur(var(--nv-blur-lg));-webkit-backdrop-filter:blur(var(--nv-blur-lg))}
 .tt{flex:1;min-width:0;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .x{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(var(--nv-tint),.14);cursor:pointer;flex:none}
@@ -2811,7 +2885,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
 .wrap.side{top:50%;bottom:auto;left:14px;right:auto;transform:translateY(-50%);max-width:none;max-height:calc(100vh - 28px);flex-direction:column}
 .wrap.side.right{left:auto;right:14px}
 .wrap.inline{position:static;transform:none;margin:0 auto;width:max-content;max-width:100%}
-.glass{background:var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat-2));-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat-2));border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(var(--nv-shade),.4)}
+.glass{background:var(--nv-sheen),var(--nv-bg);backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat-2));-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat-2));border:1px solid var(--nv-border);box-shadow:0 12px 36px rgba(var(--nv-shade),.4)}
 .dk{position:relative;display:flex;border-radius:var(--nv-r-pill);max-width:100%;min-width:0;min-height:0}
 .side .dk{flex-direction:column}
 .dock{--g:8px;--o:6px;position:relative;z-index:1;flex:1 1 auto;min-width:0;min-height:0;margin:calc(-1 * var(--o));display:flex;align-items:center;gap:var(--g);padding:calc(8px + var(--o));border-radius:var(--nv-r-pill);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-sizing:border-box;--a1:1;--a2:1;--md:to right}
@@ -4048,7 +4122,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
             const paint = () => {
               const mn = +inp.min, mx = +inp.max, n = +inp.value;
               inp.style.setProperty("--p", `${mx > mn ? (n - mn) / (mx - mn) * 100 : 0}%`);
-              v.textContent = o.format === "duration" ? duration(n) : unitJoin(n.toFixed(decOf(inp.step)), el2._u);
+              v.textContent = o.format === "duration" ? duration(n) : haUnitJoin(this._h, fmtNum(this._h, n, decOf(inp.step)), el2._u);
             };
             inp.addEventListener("pointerdown", () => {
               el2._drag = true;
@@ -8457,9 +8531,9 @@ ha-icon{--mdc-icon-size:var(--nv-icon-lg);display:flex}
 .pop[hidden]{display:none}
 .ov{position:absolute;inset:0;background:var(--nv-popup-backdrop);backdrop-filter:blur(var(--nv-blur-xs));-webkit-backdrop-filter:blur(var(--nv-blur-xs));opacity:0;transition:opacity .22s}
 .sh{position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:min(var(--pw,1180px),96%);max-height:88vh;
-background:var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
+background:var(--nv-sheen),var(--nv-popup-bg);color:var(--nv-fg);border-radius:var(--nv-popup-r);border:1px solid var(--nv-border);
 box-shadow:var(--nv-shadow-popup);overflow:hidden;opacity:0;transform:translateY(40px);transition:transform .26s var(--nv-ease),opacity var(--nv-d2)}
-.sh.tint{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,var(--nv-popup-base)),var(--nv-popup-base))}
+.sh.tint{background:var(--nv-sheen),linear-gradient(160deg,color-mix(in srgb,var(--tt) 55%,var(--nv-popup-base)),var(--nv-popup-base));${TONE_SCOPE}}
 .pop.in .ov{opacity:1}.pop.in .sh{opacity:1;transform:none}
 .grip{display:none;justify-content:center;padding:var(--nv-s4) 0 0;flex:none;touch-action:none}.grip i{width:40px;height:5px;border-radius:3px;background:currentColor;opacity:.35}
 .hd{display:flex;align-items:center;gap:var(--nv-s5);margin:var(--nv-s7) var(--nv-s7) var(--nv-s5);padding:var(--nv-s3) var(--nv-s3) var(--nv-s3) var(--nv-s7);border-radius:var(--nv-r-pill);flex:none;touch-action:pan-x;
@@ -8716,7 +8790,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
           this._sh.style.setProperty("--pw", `${+c.width || DEF.width}px`);
           const tint = c.tint || c.color;
           this._sh.classList.toggle("tint", !!tint);
-          if (tint) this._sh.style.setProperty("--tc", roleVars(tint).c);
+          if (tint) this._sh.style.setProperty("--tt", roleVars(tint).tone);
           if (c.title || c.hash) this._sh.setAttribute("aria-label", c.title || c.hash);
           else this._sh.removeAttribute("aria-label");
           const inHead = (c.info_position || DEF.info_position) !== "below", x = r.querySelector(".hd .x");
@@ -9032,7 +9106,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
   });
 
   // src/area.js
-  var DEF2, ACSS, NovaAreaCard, S_GEN3, S_CHIPS, LABELS3, HELPERS3, strip, NovaAreaCardEditor;
+  var DEF2, MAX_CHIPS, ACSS, NovaAreaCard, S_GEN3, LABELS3, HELPERS3, strip, NovaAreaCardEditor;
   var init_area = __esm({
     "src/area.js"() {
       init_define();
@@ -9046,22 +9120,34 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
       init_card_grid();
       init_card_grid_editor();
       init_chips();
-      DEF2 = { stack_below: 500, chips_layout: "wrap" };
+      DEF2 = { stack_below: 500 };
+      MAX_CHIPS = 3;
       ACSS = `${CARD_CSS}${GRID_CSS}${NOVA_CHIPS_CSS}${MARQUEE_CSS}
 :host{height:auto}
-:host::before{background:var(--nv-area-bg)}
-:host(.tint)::before{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 45%,transparent),transparent 75%),var(--nv-area-bg)}
+:host::before{background:var(--nv-sheen),var(--nv-area-bg)}
+:host(.tint)::before{background:var(--nv-sheen),linear-gradient(160deg,color-mix(in srgb,var(--tt) 45%,transparent),transparent 75%),var(--nv-area-bg)}
+/* Unterkarten im selben Farbton, nur schwächer */
+:host(.tint) .body{${TONE_SCOPE}}
 .g{height:auto;display:flex;flex-direction:column;gap:var(--nv-s6);padding:var(--nv-s7)}
-.hd{display:flex;align-items:center;gap:var(--nv-s5);padding:var(--nv-s3);border-radius:var(--nv-r-pill);background:var(--nv-chip)}
+.g{overflow:visible}
+/* Kopfzeile: feste Höhe, alles einzeilig. Höchstens 3 Chips, der Rest steckt hinter „+X“ (Klappliste unter der Leiste).
+   Der Name bekommt nur den Platz, der übrig bleibt, und läuft dort bei Bedarf durch. */
+.hd{position:relative;display:flex;flex-wrap:nowrap;align-items:center;gap:var(--nv-s5);height:calc(36px + 2 * var(--nv-s3));box-sizing:border-box;padding:var(--nv-s3);border-radius:var(--nv-r-pill);background:var(--nv-chip)}
 .hd.nb{padding-left:var(--nv-s7)}
-.hi{display:flex}.hi:empty{display:none}
-.tt{flex:1 1 auto;min-width:min(35%,110px);font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9)}
+.hi{display:flex;flex:none}.hi:empty{display:none}
+.tt{flex:1 1 0;min-width:0;font-weight:var(--nv-fw-bold);font-size:var(--nv-fs-9)}
 .x{width:36px;height:36px;border-radius:50%;border:none;flex:none;display:flex;align-items:center;justify-content:center;background:var(--nv-chip);color:inherit;cursor:pointer;padding:0}
 .x:active{transform:scale(var(--nv-press))}
 .x:focus-visible{outline:none;box-shadow:var(--nv-focus)}
 .x[hidden]{display:none}
-.hd .nchips{flex:0 1 auto;justify-content:flex-end}
+.hd .nchips{flex:none;flex-wrap:nowrap;overflow:visible;justify-content:flex-end}
 .hd .nchip{min-height:36px}
+.hd .nchip.plus{font-weight:var(--nv-fw-bold);padding:0 var(--nv-s5)}
+.hd .nchip.plus[aria-expanded=true]{background:color-mix(in srgb,var(--nv-active) var(--nv-fill),var(--nv-chip));color:color-mix(in srgb,var(--nv-active-fg) var(--nv-fill-ink),var(--nv-fg));border-color:transparent;box-shadow:var(--nv-fill-edge)}
+.more{position:absolute;top:calc(100% + var(--nv-s3));right:0;z-index:5;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;max-width:min(100%,420px);box-sizing:border-box;padding:var(--nv-s4);
+border-radius:var(--nv-r-lg);background:var(--nv-popup-base);border:1px solid var(--nv-border);box-shadow:var(--nv-shadow-popup);
+backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat));-webkit-backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat))}
+.more:not(.open),.more:empty{display:none}
 .body{display:flex;flex-direction:column;gap:var(--nv-s6)}
 /* Ohne Karten nur die Kopfzeile (z. B. als Titelleiste mit Zurück); im Editor bleibt der Hinweis sichtbar */
 .g:not(.prev) .body:has(>.hint:only-child){display:none}
@@ -9082,7 +9168,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
           const r = this.attachShadow({ mode: "open" });
           r.innerHTML = `<style>${ACSS}</style>
 <div class="g"><div class="hd"><button type="button" class="x bk" aria-label="Zurück" title="Zurück"><ha-icon icon="mdi:arrow-left"></ha-icon></button>
-<span class="hi"></span><span class="tt"></span><div class="nchips"></div></div>
+<span class="hi"></span><span class="tt"></span><div class="nchips"></div><div class="more" role="group" aria-label="Weitere Chips"></div></div>
 <div class="body"></div></div>`;
           const q = (s) => r.querySelector(s);
           this._g = q(".g");
@@ -9090,8 +9176,30 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
           this._bk = q(".bk");
           this._body = q(".body");
           this._chips = q(".nchips");
+          this._more = q(".more");
           this._bk.addEventListener("click", () => this._back());
           this._ro = new ResizeObserver(() => this._stack());
+          this._plus = document.createElement("div");
+          this._plus.className = "nchip plus";
+          this._plus.tabIndex = 0;
+          this._plus.setAttribute("role", "button");
+          this._plus.setAttribute("aria-expanded", "false");
+          const tog = (e) => {
+            e.stopPropagation();
+            this._open(!this._more.classList.contains("open"));
+          };
+          this._plus.addEventListener("click", tog);
+          this._plus.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              tog(e);
+            }
+          });
+          this._more.addEventListener("click", () => this._open(false));
+          this._out = (e) => {
+            if (!e.composedPath().includes(this._hd)) this._open(false);
+          };
+          this._hro = new ResizeObserver(() => this._fit());
         }
         setConfig(c) {
           if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
@@ -9118,6 +9226,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
         }
         connectedCallback() {
           this._ro.observe(this._body);
+          this._hro.observe(this._hd);
           this._detect();
           requestAnimationFrame(() => this._detect());
           if (this._dirty && this._cfg) this._grid();
@@ -9126,6 +9235,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
         }
         disconnectedCallback() {
           this._ro.disconnect();
+          this._hro.disconnect();
+          this._open(false);
           stopMarquee(this.shadowRoot?.querySelector(".tt"));
           if (this._prev) this._handOffCells();
         }
@@ -9160,10 +9271,46 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
           setIcon(r.querySelector(".hi"), c.icon || ar?.icon || "mdi:texture-box");
           const tint = c.tint;
           this.classList.toggle("tint", !!tint);
-          if (tint) this.style.setProperty("--tc", roleVars(tint).c);
-          else this.style.removeProperty("--tc");
-          this._chips.classList.toggle("scroll", c.chips_layout === "scroll");
+          if (tint) this.style.setProperty("--tt", roleVars(tint).tone);
+          else this.style.removeProperty("--tt");
           renderNovaChips(this, this._chips, c.chips, h, { area: c.area });
+          this._fit();
+        }
+        _open(on) {
+          this._more.classList.toggle("open", on);
+          this._plus.setAttribute("aria-expanded", String(on));
+          if (on) document.addEventListener("pointerdown", this._out, true);
+          else document.removeEventListener("pointerdown", this._out, true);
+        }
+        // Chips auf die Kopfzeile verteilen: höchstens MAX sichtbar und nur so viele, dass der Name noch Platz hat (nie halb
+        // abgeschnitten); der Rest wandert in die Klappliste hinter „+X“
+        _fit() {
+          const box = this._chips, els = box._els || [], hd = this._hd;
+          box.replaceChildren(...els);
+          this._more.replaceChildren();
+          const vis3 = els.filter((d) => !d.hidden);
+          if (!vis3.length || hd.clientWidth <= 0) {
+            if (!vis3.length) this._open(false);
+            return;
+          }
+          const cs = getComputedStyle(hd), gap = parseFloat(cs.columnGap) || 0;
+          const fixed = [this._bk, this.shadowRoot.querySelector(".hi")].filter((el2) => el2.offsetWidth).reduce((a, el2) => a + el2.offsetWidth + gap, 0);
+          const room = hd.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - fixed - gap - Math.min(110, hd.clientWidth * 0.3);
+          const cg = parseFloat(getComputedStyle(box).columnGap) || 0, ws2 = vis3.map((d) => d.offsetWidth);
+          this._plus.textContent = `+${vis3.length}`;
+          box.append(this._plus);
+          const pw = this._plus.offsetWidth;
+          const widthOf = (k2) => ws2.slice(0, k2).reduce((a, w) => a + w + cg, 0) + (k2 < vis3.length ? pw + cg : 0) - cg;
+          let k = Math.min(MAX_CHIPS, vis3.length);
+          while (k > 0 && widthOf(k) > room) k--;
+          if (k >= vis3.length) {
+            this._plus.remove();
+            this._open(false);
+            return;
+          }
+          this._plus.textContent = `+${vis3.length - k}`;
+          this._plus.title = `${vis3.length - k} weitere`;
+          this._more.append(...vis3.slice(k));
         }
       };
       __publicField(NovaAreaCard, "gridKind", "area");
@@ -9174,7 +9321,6 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
         { name: "back_action", selector: A },
         g2(ROLE("tint"), { name: "stack_below", selector: { number: { min: 0, max: 1200, step: 10, mode: "box", unit_of_measurement: "px" } } })
       ];
-      S_CHIPS = [sel("chips_layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]])];
       LABELS3 = {
         ...CHIP_LABELS,
         ...GRID_LABELS,
@@ -9183,8 +9329,7 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
         icon: "Icon",
         back_action: "Zurück-Knopf: Aktion",
         tint: "Farbton (leer = Nova-Glas)",
-        stack_below: "Untereinander unter Breite",
-        chips_layout: "Bei vielen Chips"
+        stack_below: "Untereinander unter Breite"
       };
       HELPERS3 = {
         ...CHIP_HELPERS,
@@ -9213,7 +9358,6 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
           r.innerHTML = `<style>${SECTION_EDITOR_CSS}${GRID_ED_CSS}</style><div class="wrap"></div>`;
           this._gridReset();
           const data = { ...DEF2, ...c };
-          const form = (sch) => this._form(sch, data, (v) => this._emit(strip(merge(this._config, names(sch), v))));
           r.querySelector(".wrap").append(
             this._section("general", "mdi:cog-outline", "Allgemein", (b) => {
               const sch = S_GEN3(h?.areas?.[c.area]?.icon);
@@ -9228,9 +9372,8 @@ cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;user-select:
               );
             }),
             this._section("chips", "mdi:label-multiple-outline", "Chips in der Kopfzeile", (b) => {
-              b.append(this._hint("Rechts neben dem Raumnamen. Wert-Chips zeigen den Zustand einer Entität, Knopf-Chips führen eine Aktion aus (z. B. „Alle Lichter im Raum aus“, Szene, Skript). Auf dem Handy zeigen Chips mit Icon nur das Icon bzw. Icon und Wert."));
+              b.append(this._hint("Rechts neben dem Raumnamen. Wert-Chips zeigen den Zustand einer Entität, Knopf-Chips führen eine Aktion aus (z. B. „Alle Lichter im Raum aus“, Szene, Skript). Höchstens 3 Chips stehen in der Leiste, weitere (oder wenn der Platz nicht reicht) zeigt ein „+X“-Chip beim Antippen. Auf dem Handy zeigen Chips mit Icon nur das Icon bzw. Icon und Wert."));
               this._itemList(b, "chips", (o) => chipSchema(o, { area: !!this._config.area }), { item: "Chip", icon: "mdi:label-outline" }, "Chip hinzufügen", chipView);
-              b.append(form(S_CHIPS));
             }),
             this._section("layout", "mdi:view-grid-outline", "Layout & Vorlage", (b) => this._layoutBody(b)),
             this._section("content", "mdi:view-dashboard-edit-outline", "Inhalt", (b) => this._contentBody(b))

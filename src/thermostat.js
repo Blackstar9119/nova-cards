@@ -1,5 +1,6 @@
 import {define, docUrl, tag} from './shared/define.js';
 import {esc} from './shared/utils.js';
+import {fmtNum, haUnitJoin} from './shared/state.js';
 import {moreInfo, hassAction} from './shared/actions.js';
 import {CARD_CSS, SECTION_EDITOR_CSS, MAPROW_CSS} from './shared/styles.js';
 import {hassChanged, entityIds} from './shared/lifecycle.js';
@@ -184,6 +185,8 @@ class NovaThermostatCard extends HTMLElement {
       if (p) this._h.callService('climate', 'set_preset_mode', {entity_id: this._c.entity, preset_mode: p});
     });
   }
+  // Temperatur im Zahlenformat des HA-Profils mit Einheit (21,0 °C)
+  _deg(v) { const h = this._h; return haUnitJoin(h, fmtNum(h, v, 1), h?.config?.unit_system?.temperature || '°C'); }
   _stepSize(a) { return this._c.step || a.target_temp_step || 0.5; }
   // ± sammelt Klicks und sendet erst nach kurzer Pause (debounce)
   _step(dir) {
@@ -192,7 +195,7 @@ class NovaThermostatCard extends HTMLElement {
     const a = s.attributes, st = this._stepSize(a), from = this._pend ?? (parseFloat(a.temperature) || 20);
     const t = Math.min(a.max_temp ?? 35, Math.max(a.min_temp ?? 5, Math.round((from + dir * st) / st) * st));
     this._pend = t;
-    this._e.tgt.textContent = `${t.toFixed(1)}°`;
+    this._e.tgt.textContent = this._deg(t);
     this._e.stp.classList.add('pend');
     clearTimeout(this._tm);
     this._tm = setTimeout(() => {
@@ -219,14 +222,14 @@ class NovaThermostatCard extends HTMLElement {
     const sensor = c.sensor && h.states[c.sensor];
     let cur = sensor ? parseFloat(sensor.state) : NaN;
     if (isNaN(cur)) cur = parseFloat(a.current_temperature);
-    e.cur.textContent = isNaN(cur) ? '–' : `${cur.toFixed(1)}°`;
+    e.cur.textContent = isNaN(cur) ? '–' : this._deg(cur);
     const hum = c.humidity ? parseFloat(h.states[c.humidity]?.state) : parseFloat(a.current_humidity);
     e.hum.textContent = isNaN(hum) ? '' : `${Math.round(hum)} % Luftfeuchte`;
 
     // Stepper aus, wenn das Thermostat aus ist bzw. keine Solltemperatur hat
     const noTarget = s.state === 'off' || a.temperature == null;
     e.stp.style.display = noTarget && this._pend == null ? 'none' : '';
-    if (this._pend == null) e.tgt.textContent = a.temperature != null ? `${Number(a.temperature).toFixed(1)}°` : '–';
+    if (this._pend == null) e.tgt.textContent = a.temperature != null ? this._deg(Number(a.temperature)) : '–';
 
     if (c.show_graph) {
       const id = c.sensor || c.graph_entity, pts = id ? history(h, id, c.graph_hours, () => this._update()) : null;

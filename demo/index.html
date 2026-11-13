@@ -31,6 +31,16 @@ if (q.get('theme') === 'midnight') document.documentElement.classList.add('black
 if (q.get('theme') === 'velvet') document.documentElement.classList.add('velvet');
 // Platzhalter für Elemente, die sonst Home Assistant mitbringt
 for (const t of ['ha-icon', 'ha-state-icon', 'ha-svg-icon', 'ha-card']) customElements.get(t) || customElements.define(t, class extends HTMLElement {});
+// Nachbau einer HA-Karte (Hintergrund, Rahmen, Schrift wie ha-card; error = Fehlerkarte mit 12 % --error-color darüber)
+customElements.define('demo-ha-card', class extends HTMLElement {
+  setConfig(c) { this._c = c; }
+  set hass(h) { if (this.shadowRoot) return; this.attachShadow({mode: 'open'}).innerHTML = `<style>:host{display:block}
+.c{position:relative;padding:16px;background:var(--ha-card-background,var(--card-background-color,#fff));border-radius:var(--ha-card-border-radius,12px);
+border:var(--ha-card-border-width,1px) solid var(--ha-card-border-color,#e0e0e0);box-shadow:var(--ha-card-box-shadow,none);color:var(--primary-text-color,#212121);font:14px Roboto,sans-serif}
+.c.err{border-width:0}.c.err::after{content:'';position:absolute;inset:0;border-radius:inherit;background:var(--error-color,#db4437);opacity:.12}
+small{display:block;color:var(--secondary-text-color,#727272)}b{color:var(--c)}.err b{--c:var(--error-color,#db4437)}</style>
+<div class="c ${this._c.error ? 'err' : ''}"><b>${this._c.error ? '⚠ ' : ''}</b>${this._c.title}<small>${this._c.text || ''}</small></div>`; }
+});
 window.loadCardHelpers = async () => ({createCardElement: c => { const el = document.createElement(String(c.type).replace(/^custom:/, '')); try { el.setConfig?.(c); } catch (e) { el.textContent = e.message; } return el; }});
 await new Promise((ok, no) => { const s = document.createElement('script'); s.src = q.get('src') || '../nova-cards.js'; s.onload = ok; s.onerror = no; document.head.append(s); });
 const pre = (window.customCards || []).some(c => c.type.startsWith('nova-dev-')) ? 'nova-dev-' : 'nova-';
