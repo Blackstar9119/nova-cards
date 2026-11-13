@@ -10,6 +10,7 @@ import {watch, shop as api, storeHint, imageUrl} from './shared/nova-store.js';
 import {RICH_CSS, richEditor, toPlain, firstLine} from './shared/rich-text.js';
 import {VIEW_CSS, roundBtn, armButton} from './shared/stack-view.js';
 import {PICK_MEDIA_CSS, mediaPicker, STORE_ICONS} from './shared/media-picker.js';
+import {fromSettings, onSettings} from './shared/settings-store.js';
 
 /* ---------- Nova Einkauf Card ---------- */
 // Einkaufsliste aus der Nova-Integration (auf allen Geräten gleich): Artikel mit Menge, Einheit, Geschäft, Icon oder Bild
@@ -125,7 +126,8 @@ class NovaShoppingCard extends HTMLElement {
   }
   setConfig(c) {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
-    this._c = {...SDEF, ...c};
+    this._raw = c;
+    this._c = this._merge();
     this._ids = [this._c.print_script].filter(Boolean);
     this._doneOpen = !!this._c.show_completed;
     if (this._e) this._apply();
@@ -142,9 +144,21 @@ class NovaShoppingCard extends HTMLElement {
   getCardSize() { return 7; }
   getGridOptions() { return {columns: 6, rows: 'auto', min_columns: 3}; }
   connectedCallback() { this._watch(); }
+  // Option der Karte → Nova-Einstellung (einkauf.*) → Standard
+  _merge() {
+    return {...SDEF, ...fromSettings(this._h, {group: ['einkauf', 'gruppierung', v => v !== 'keine'], show_images: ['einkauf', 'bilder'],
+      default_store: ['einkauf', 'standard_geschaeft', v => v || '']}), ...this._raw};
+  }
+  _settings() {
+    const n = this._merge();
+    if (JSON.stringify(n) === JSON.stringify(this._c)) return;
+    this._c = n;
+    if (this._e) this._apply();
+  }
   disconnectedCallback() {
     this._flush(); this._flushQty();
     this._off?.(); this._off = null;
+    this._offS?.(); this._offS = null;
     stopFeedback(this);
     clearTimeout(this._st); clearTimeout(this._okT); clearTimeout(this._ft);
     this._hold?.forEach(t => clearTimeout(t)); this._hold = new Map();
@@ -153,6 +167,8 @@ class NovaShoppingCard extends HTMLElement {
   _watch() {
     if (this._off || !this._h || !this.isConnected) return;
     this._off = watch(this._h, 'shopping', this, (d, err) => { this._data = d; this._err = err; this._onData(); });
+    this._offS = onSettings(() => this._settings());
+    this._settings();
   }
 
   _build() {

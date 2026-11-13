@@ -26,6 +26,7 @@ Die Gestaltungsregeln (Glas-Karte, Bewegung, Stil der Zeichnungen) stehen in [DE
 
 | Token | Kurzform | Wert | Wofür |
 | --- | --- | --- | --- |
+| `--nova-page-background` | `--nv-page` | `linear-gradient(160deg,#2b3650,#111624 70%)` | Seite hinter den Karten, nur im Nova-Panel |
 | `--nova-background` | `--nv-bg` | `linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62))` | Kartenfläche |
 | `--nova-border-color` | `--nv-border` | `rgba(255,255,255,.14)` | Kartenrand (Navi: Weiß 16 %) |
 | `--nova-text-color` | `--nv-fg` | `#fff` | Text und Icons |

@@ -7,6 +7,7 @@
 export const TOKENS = [
   // Flächen und Text
   ['bg', 'background', 'linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62))'],
+  ['page', 'page-background', 'linear-gradient(160deg,#2b3650,#111624 70%)'], // Seite hinter den Karten – nur im Nova-Panel
   ['border', 'border-color', 'rgba(255,255,255,.14)'],
   ['fg', 'text-color', '#fff'],
   ['chip', 'chip-color', 'rgba(255,255,255,.13)'],
@@ -99,6 +100,7 @@ const MOKKA = '74,48,28'; // Grundton von Nova Velvet: Mokka
 export const THEMES = {
   blau: {name: 'Nova Blau', vars: {}},
   hell: {name: 'Nova Hell', vars: {
+    page: 'linear-gradient(160deg,#d6dbe3,#c7cdd7)',
     bg: 'linear-gradient(160deg,rgba(236,238,242,.94),rgba(225,228,233,.94))',
     border: `rgba(${INK},.1)`, fg: '#0e121a', chip: `rgba(${INK},.07)`,
     box: `rgba(${INK},.04)`, 'box-border': `rgba(${INK},.08)`,
@@ -115,6 +117,7 @@ export const THEMES = {
     glow: '0%', 'text-shadow': '0%', blur: '12px', sat: '120%', 'sat-2': '120%',
   }, navi: {border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: '14px', warn: '#8a5a00'}},
   midnight: {name: 'Nova Midnight', vars: {
+    page: '#000',
     // Wie der Dark Mode von Apple: Seite schwarz, Karten #1c1c1e, Kacheln #2c2c2e, feine Linien, kein Glow, kein Blur.
     // Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante), Schrift darauf hell.
     bg: '#1c1c1e', border: 'rgba(255,255,255,.06)', fg: '#e5e5ea', chip: '#2c2c2e',
@@ -130,6 +133,7 @@ export const THEMES = {
     fill: '22%', 'fill-ink': '0%', 'tint-ink': '0%', 'fill-edge': 'inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.1)',
   }, navi: {border: 'rgba(255,255,255,.08)', chip: '#2c2c2e', blur: '0px', warn: '#b08d57'}},
   velvet: {name: 'Nova Velvet', vars: {
+    page: 'linear-gradient(160deg,#d8c9ad,#c4b393)',
     // Warm und edel: cremiges Beige, Espresso-Schrift, Gold und Cognac, weiche warme Schatten statt Glow
     bg: `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))`,
     border: 'rgba(90,62,40,.14)', fg: '#1a0f09', chip: `rgba(${MOKKA},.08)`, box: `rgba(${MOKKA},.05)`, 'box-border': `rgba(${MOKKA},.1)`,
@@ -160,6 +164,16 @@ const block = (sel, over) => `${sel}{${TOKENS.filter(([k]) => !over || k in over
 const themed = navi => Object.entries(THEMES).filter(([, t]) => Object.keys(t.vars).length)
   .map(([k, t]) => block(`:host([nova-theme=${k}])`, navi ? {...t.vars, ...t.navi} : t.vars)).join('');
 
+// Nova-Einstellungen (Attribute setzt theme-apply.js, „normal“ = kein Attribut, also keine Änderung):
+// Schriftgröße klein/groß skaliert alle Schrift-Tokens; Animationen „vereinfacht“ stoppt Animationen (Lauftitel, Leuchten,
+// Lichtstreifen), „aus“ zusätzlich alle Übergänge.
+const SIZE_FACTOR = {klein: .9, gross: 1.12};
+const sized = Object.entries(SIZE_FACTOR).map(([k, f]) => `:host([nova-size=${k}]){${TOKENS.filter(([n]) => /^f[sd]-\d/.test(n))
+  .map(([n, pub, v]) => `--nv-${n}:calc(var(--nova-${pub},${v}) * ${f})`).join(';')}}`).join('');
+const MOTION = `:host([nova-motion]) *,:host([nova-motion]) *::before,:host([nova-motion]) *::after{animation:none!important}
+:host([nova-motion=off]) *,:host([nova-motion=off]) *::before,:host([nova-motion=off]) *::after{transition:none!important}
+:host([nova-motion=off]){${TOKENS.filter(([n]) => /^d\d$|^sweep$/.test(n)).map(([n]) => `--nv-${n}:0s`).join(';')}}`;
+
 // Variablen-Block für das Stylesheet einer Karte
-export const NOVA_VARS = block(':host') + themed(false);
-export const NAVI_VARS = block(':host', {...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI}) + themed(true);
+export const NOVA_VARS = block(':host') + themed(false) + sized + MOTION;
+export const NAVI_VARS = block(':host', {...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI}) + themed(true) + sized + MOTION;

@@ -35,11 +35,11 @@ print_script: script.einkaufsliste_drucken
 | `name`, `icon` | `Einkaufsliste`, `mdi:cart-outline` | Kopfzeile |
 | `show_header` | `true` | Kopfzeile mit „N offen · N erledigt“ |
 | `placeholder` | `Artikel hinzufügen …` | Platzhalter im Textfeld |
-| `group` | `true` | Nach Geschäft gruppieren (aus = eine Liste, Geschäft steht klein unter dem Namen) |
-| `show_images` | `true` | Eigene Bilder anzeigen (aus = nur Icons) |
+| `group` | `true` | Nach Geschäft gruppieren (aus = eine Liste, Geschäft steht klein unter dem Namen). Ohne Angabe gilt die Nova-Einstellung „Gruppierung“ |
+| `show_images` | `true` | Eigene Bilder anzeigen (aus = nur Icons). Ohne Angabe gilt die Nova-Einstellung „Bilder zeigen“ |
 | `show_completed` | `false` | Gruppe „Erledigt“ anfangs aufgeklappt |
 | `show_suggestions` | `true` | Schnellauswahl unter dem Textfeld |
-| `default_store` | – | Geschäft für neue Artikel, die noch nie gekauft wurden (Auswahl im Editor) |
+| `default_store` | – | Geschäft für neue Artikel, die noch nie gekauft wurden (Auswahl im Editor). Ohne Angabe gilt das Standard-Geschäft aus den Nova-Einstellungen |
 | `height` | `420` | Mindesthöhe in px; im Raster füllt die Karte den Platz aus |
 | `entity` | – | `todo.*`-Liste zum Abgleichen, siehe unten |
 | `print_script` | – | Skript für den Druck-Knopf (leer = kein Knopf) |

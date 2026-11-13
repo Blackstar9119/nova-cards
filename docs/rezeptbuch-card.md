@@ -47,7 +47,7 @@ subtitle: Tränke & Speisen
 |---|---|---|
 | `title` | `Rezepte` | Titel auf dem Einband und im Vorsatz |
 | `subtitle` | – | Untertitel, z. B. „von Oma Erna“ |
-| `style` | `old` | `old`, `modern` oder `fantasy` |
+| `style` | `old` | `old`, `modern` oder `fantasy`. Ohne Angabe gilt der Buch-Stil aus den Nova-Einstellungen |
 | `cover_color` | `brown` | `brown`, `red`, `green`, `blue` |
 | `layout` | `auto` | `auto`, `double` (immer Doppelseite) oder `single` (immer Einzelseite) |
 | `start_open` | `false` | Buch beim Laden gleich aufschlagen |

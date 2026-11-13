@@ -40,6 +40,9 @@ src/
   recipe-book.js      Nova Rezeptbuch + Editor (Buch zum Blättern, Stile old/modern/fantasy, dieselben Rezepte wie die Rezeptliste;
                       Papier/Leder/Gold sind Materialfarben, Schriften von der Integration unter /nova/static/fonts)
   theme-switch.js     Nova Themes Schalter + Editor (globales Theme wählen: Chip, Button oder Dropdown)
+  panel.js            Nova-Panel (Einstellungsseite der Integration, Seitenleiste „Nova“) – NICHT in nova-cards.js, sondern
+                      „npm run panel“ → panel/nova-panel.js (gitignored); die Datei nach nova-integration
+                      custom_components/nova/static/nova-panel.js kopieren und dort committen
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
                       tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
@@ -51,9 +54,14 @@ src/
     theme.js          Design-Tokens und Themes: EINZIGE Stelle für Farben, Radien, Schatten, Blur, Schrift, Abstände, Zeiten
                       (TOKENS, THEMES, NOVA_VARS, NAVI_VARS) – siehe docs/design-system.md
     theme-apply.js    Theme am Kartenelement setzen (Attribut nova-theme): Option theme → Theme-Variable nova-theme → global → Blau;
-                      läuft zentral über define(), Karten müssen nichts tun
+                      läuft zentral über define(), Karten müssen nichts tun. Setzt auch nova-motion/nova-size aus den
+                      Nova-Einstellungen (Animationen, Schriftgröße; CSS dazu in theme.js)
     theme-store.js    Speicher des globalen Themes – EINZIGE Stelle: Nova-Integration (Modul Theme), ohne sie der Helfer
                       input_select.nova_theme (legt ihn selbst an)
+    settings-store.js Nova-Einstellungen (nova/settings/subscribe): ein Abo je Verbindung, fromSettings() für Karten-Optionen.
+                      Reihenfolge immer: Option der Karte → Einstellung → Standard der Karte. Auswahlfelder, die von einer
+                      Einstellung kommen, nicht ins DEF-Objekt des Editors (sonst entfernt er den Standardwert und man kann die
+                      Einstellung nicht zurück übersteuern), Standard erst beim Zusammenführen in der Karte
     nova-store.js     Zugriff auf die Nova-Integration (Repo nova-integration) – EINZIGE Stelle, die ihre WebSocket-API kennt:
                       Abo je Modul (watch), Notizen, Einkauf, Rezepte, Theme, Bilder
     rich-text.js      Formatierter Text: Leiste + Eingabefeld (richEditor), Anzeige (richView), Bereinigung (sanitize – dieselbe

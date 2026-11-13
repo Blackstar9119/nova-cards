@@ -10,6 +10,8 @@
   var TOKENS = [
     // Flächen und Text
     ["bg", "background", "linear-gradient(160deg,rgba(80,96,128,.55),rgba(22,27,42,.62))"],
+    ["page", "page-background", "linear-gradient(160deg,#2b3650,#111624 70%)"],
+    // Seite hinter den Karten – nur im Nova-Panel
     ["border", "border-color", "rgba(255,255,255,.14)"],
     ["fg", "text-color", "#fff"],
     ["chip", "chip-color", "rgba(255,255,255,.13)"],
@@ -168,6 +170,7 @@
   var THEMES = {
     blau: { name: "Nova Blau", vars: {} },
     hell: { name: "Nova Hell", vars: {
+      page: "linear-gradient(160deg,#d6dbe3,#c7cdd7)",
       bg: "linear-gradient(160deg,rgba(236,238,242,.94),rgba(225,228,233,.94))",
       border: `rgba(${INK},.1)`,
       fg: "#0e121a",
@@ -212,6 +215,7 @@
       "sat-2": "120%"
     }, navi: { border: `rgba(${INK},.12)`, chip: `rgba(${INK},.06)`, blur: "14px", warn: "#8a5a00" } },
     midnight: { name: "Nova Midnight", vars: {
+      page: "#000",
       // Wie der Dark Mode von Apple: Seite schwarz, Karten #1c1c1e, Kacheln #2c2c2e, feine Linien, kein Glow, kein Blur.
       // Aktive Knöpfe sind getöntes Glas (Farbe 22 % über der Kachel, Rand und Lichtkante), Schrift darauf hell.
       bg: "#1c1c1e",
@@ -263,6 +267,7 @@
       "fill-edge": "inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.1)"
     }, navi: { border: "rgba(255,255,255,.08)", chip: "#2c2c2e", blur: "0px", warn: "#b08d57" } },
     velvet: { name: "Nova Velvet", vars: {
+      page: "linear-gradient(160deg,#d8c9ad,#c4b393)",
       // Warm und edel: cremiges Beige, Espresso-Schrift, Gold und Cognac, weiche warme Schatten statt Glow
       bg: `linear-gradient(160deg,rgba(239,230,214,.94),rgba(230,218,198,.94))`,
       border: "rgba(90,62,40,.14)",
@@ -322,8 +327,13 @@
   var NAVI = { border: "rgba(255,255,255,.16)", chip: "rgba(255,255,255,.1)", blur: "22px", warn: "#f5b83d" };
   var block = (sel2, over) => `${sel2}{${TOKENS.filter(([k]) => !over || k in over).map(([k, pub, v]) => `--nv-${k}:var(--nova-${pub},${over?.[k] ?? v})`).join(";")}}`;
   var themed = (navi) => Object.entries(THEMES).filter(([, t]) => Object.keys(t.vars).length).map(([k, t]) => block(`:host([nova-theme=${k}])`, navi ? { ...t.vars, ...t.navi } : t.vars)).join("");
-  var NOVA_VARS = block(":host") + themed(false);
-  var NAVI_VARS = block(":host", { ...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI }) + themed(true);
+  var SIZE_FACTOR = { klein: 0.9, gross: 1.12 };
+  var sized = Object.entries(SIZE_FACTOR).map(([k, f3]) => `:host([nova-size=${k}]){${TOKENS.filter(([n]) => /^f[sd]-\d/.test(n)).map(([n, pub, v]) => `--nv-${n}:calc(var(--nova-${pub},${v}) * ${f3})`).join(";")}}`).join("");
+  var MOTION = `:host([nova-motion]) *,:host([nova-motion]) *::before,:host([nova-motion]) *::after{animation:none!important}
+:host([nova-motion=off]) *,:host([nova-motion=off]) *::before,:host([nova-motion=off]) *::after{transition:none!important}
+:host([nova-motion=off]){${TOKENS.filter(([n]) => /^d\d$|^sweep$/.test(n)).map(([n]) => `--nv-${n}:0s`).join(";")}}`;
+  var NOVA_VARS = block(":host") + themed(false) + sized + MOTION;
+  var NAVI_VARS = block(":host", { ...Object.fromEntries(TOKENS.map(([k, , v]) => [k, v])), ...NAVI }) + themed(true) + sized + MOTION;
 
   // src/shared/nova-store.js
   var subs = /* @__PURE__ */ new WeakMap();
@@ -464,9 +474,49 @@
     }
   }
 
+  // src/shared/settings-store.js
+  var live2 = /* @__PURE__ */ new WeakMap();
+  var SETTINGS_EVENT = "nova-settings";
+  function settingsOf(h) {
+    const conn = h?.connection;
+    if (!conn?.subscribeMessage) return null;
+    let s = live2.get(conn);
+    if (!s) {
+      live2.set(conn, s = { data: null });
+      conn.subscribeMessage((d) => {
+        s.data = d && typeof d === "object" ? d : null;
+        window.dispatchEvent(new CustomEvent(SETTINGS_EVENT));
+      }, { type: "nova/settings/subscribe" }).catch(() => {
+      });
+    }
+    return s.data;
+  }
+  var setting = (h, sec, key) => settingsOf(h)?.[sec]?.[key];
+  function onSettings(fn) {
+    window.addEventListener(SETTINGS_EVENT, fn);
+    return () => window.removeEventListener(SETTINGS_EVENT, fn);
+  }
+  function fromSettings(h, map) {
+    const s = settingsOf(h), out = {};
+    if (!s) return out;
+    for (const [opt, [sec, key, fn]] of Object.entries(map)) {
+      const v = s[sec]?.[key];
+      if (v !== void 0) out[opt] = fn ? fn(v) : v;
+    }
+    return out;
+  }
+
   // src/shared/theme-apply.js
   var cards = /* @__PURE__ */ new Set();
   window.addEventListener(THEME_EVENT, () => cards.forEach(apply));
+  window.addEventListener(SETTINGS_EVENT, () => cards.forEach(apply));
+  var MOTION2 = { vereinfacht: "reduced", aus: "off" };
+  var SIZE = { klein: "klein", gross: "gross" };
+  var attr = (el2, name, v) => {
+    if (!v) {
+      if (el2.hasAttribute(name)) el2.removeAttribute(name);
+    } else if (el2.getAttribute(name) !== v) el2.setAttribute(name, v);
+  };
   var valid = (v) => {
     const k = String(v || "").trim().toLowerCase();
     return k && k !== "global" && THEMES[k] ? k : void 0;
@@ -475,6 +525,9 @@
     const own = valid(el2._nvTheme);
     if (own) el2.style.setProperty("--nova-theme", own);
     else el2.style.removeProperty("--nova-theme");
+    const g = settingsOf(el2._nvHass)?.allgemein;
+    attr(el2, "nova-motion", MOTION2[g?.animationen]);
+    attr(el2, "nova-size", SIZE[g?.schriftgroesse]);
     const t = own || el2._nvInh || readTheme(el2._nvHass) || "blau";
     if (t === "blau") {
       if (el2.hasAttribute("nova-theme")) el2.removeAttribute("nova-theme");
@@ -502,7 +555,7 @@
     if (hd?.set) Object.defineProperty(p, "hass", { ...hd, set(h) {
       const o = this._nvHass;
       this._nvHass = h;
-      if (o?.states?.[STORE_ENTITY] !== h?.states?.[STORE_ENTITY]) apply(this);
+      if (!o || o.states?.[STORE_ENTITY] !== h?.states?.[STORE_ENTITY]) apply(this);
       if (o && (o.themes !== h?.themes || o.selectedTheme !== h?.selectedTheme)) inherit(this);
       hd.set.call(this, h);
     } });
@@ -3135,16 +3188,16 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       const mb = this._mb;
       if (!mb || !this._h) return;
       const ps = this._players, h = this._h, key = ps.map((p) => p.entity).join("|");
-      const live2 = ps.map((p) => ({ ...p, s: h.states[p.entity] })).map((p) => ({ ...p, l: this._live(p.s) })).filter((p) => p.l);
+      const live3 = ps.map((p) => ({ ...p, s: h.states[p.entity] })).map((p) => ({ ...p, l: this._live(p.s) })).filter((p) => p.l);
       const t = (p) => Date.parse(p.s.last_changed) || 0;
-      const playing = live2.filter((p) => p.l === true).sort((x, y) => t(y) - t(x));
+      const playing = live3.filter((p) => p.l === true).sort((x, y) => t(y) - t(x));
       const pick = SEL.get(key);
-      const manual = pick && ps.find((p) => p.entity === pick.id) && !playing.some((p) => p.entity !== pick.id && t(p) > pick.at) && (live2.some((p) => p.entity === pick.id) || Date.now() - pick.at < this._pauseMs);
-      let cur2 = manual ? ps.find((p) => p.entity === pick.id) : playing[0] || live2.sort((x, y) => t(y) - t(x))[0] || null;
-      const show = !!live2.length || !!this._opt("media_always") && !!ps.length;
+      const manual = pick && ps.find((p) => p.entity === pick.id) && !playing.some((p) => p.entity !== pick.id && t(p) > pick.at) && (live3.some((p) => p.entity === pick.id) || Date.now() - pick.at < this._pauseMs);
+      let cur2 = manual ? ps.find((p) => p.entity === pick.id) : playing[0] || live3.sort((x, y) => t(y) - t(x))[0] || null;
+      const show = !!live3.length || !!this._opt("media_always") && !!ps.length;
       if (!cur2 && show) cur2 = ps[0];
       clearTimeout(this._mpt);
-      const next = Math.min(...live2.filter((p) => p.l !== true).map((p) => p.l));
+      const next = Math.min(...live3.filter((p) => p.l !== true).map((p) => p.l));
       if (Number.isFinite(next)) this._mpt = setTimeout(() => this._media(), next - Date.now() + 50);
       this._mbw.classList.toggle("on", show);
       if (!show) this._mbw.classList.remove("open");
@@ -4519,9 +4572,9 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
     _sync() {
       if (!this._e || !this._h) return;
       const show = this._vis && !document.hidden && this.isConnected;
-      const live2 = show && !this._quiet && dom(this._c.entity) === "camera" && this._c.stream !== "snapshot";
-      if (live2 && !this._mode && !this._starting) this._startLive();
-      if (!live2) this._stopLive();
+      const live3 = show && !this._quiet && dom(this._c.entity) === "camera" && this._c.stream !== "snapshot";
+      if (live3 && !this._mode && !this._starting) this._startLive();
+      if (!live3) this._stopLive();
       clearInterval(this._tm);
       this._tm = null;
       if (show && dom(this._c.entity) === "camera" && !this._mode) {
@@ -6903,10 +6956,10 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);tr
       }
     }
     // Temperatur: eigener Sensor (optional), sonst Attribut der Wetter-Entität
-    _temp(ent, s, attr) {
+    _temp(ent, s, attr2) {
       const h = this._h, c = this._c, dec = c.decimals ?? 1, fx = c.decimals != null, o = ent && h.states[ent];
       if (ent) return o && isNum(o.state) ? unitJoin(this._num(o.state, dec, fx), o.attributes.unit_of_measurement || s?.attributes.temperature_unit) : null;
-      const v = s?.attributes[attr];
+      const v = s?.attributes[attr2];
       return isNum(v) ? unitJoin(this._num(v, dec, fx), s.attributes.temperature_unit) : null;
     }
     _deg(v) {
@@ -11992,20 +12045,20 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
     _cam(cls) {
       const c = this._c, e = this._e, s = this._S(c.camera), pic = s?.attributes.entity_picture;
       const want = !!c.camera && !c.demo && ok2(s) && !!pic && (c.camera_mode !== "printing" || ["print", "prep", "heat", "pause"].includes(cls));
-      const live2 = want && dom(c.camera) === "camera";
+      const live3 = want && dom(c.camera) === "camera";
       if (!want) {
         e.cam.hidden = true;
         e.img.removeAttribute("src");
         this._camSrc = null;
       } else {
-        const src = `${pic}${pic.includes("?") ? "&" : "?"}_=${live2 ? this._camT || 0 : encodeURIComponent(s.state)}`;
+        const src = `${pic}${pic.includes("?") ? "&" : "?"}_=${live3 ? this._camT || 0 : encodeURIComponent(s.state)}`;
         if (src !== this._camSrc) {
           this._camSrc = src;
           e.img.src = src;
         }
         if (this._camErr === src) e.cam.hidden = true;
       }
-      this._camLive = live2;
+      this._camLive = live3;
     }
     _amsList(m, ams) {
       const c = this._c, us = [...ams ? m.units : [], ...m.ext ? [{ name: "Extern", slots: [m.ext], x: true }] : []];
@@ -15591,7 +15644,8 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      this._c = { ...SDEF, ...c };
+      this._raw = c;
+      this._c = this._merge();
       this._ids = [this._c.print_script].filter(Boolean);
       this._doneOpen = !!this._c.show_completed;
       if (this._e) this._apply();
@@ -15615,11 +15669,27 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
     connectedCallback() {
       this._watch();
     }
+    // Option der Karte → Nova-Einstellung (einkauf.*) → Standard
+    _merge() {
+      return { ...SDEF, ...fromSettings(this._h, {
+        group: ["einkauf", "gruppierung", (v) => v !== "keine"],
+        show_images: ["einkauf", "bilder"],
+        default_store: ["einkauf", "standard_geschaeft", (v) => v || ""]
+      }), ...this._raw };
+    }
+    _settings() {
+      const n = this._merge();
+      if (JSON.stringify(n) === JSON.stringify(this._c)) return;
+      this._c = n;
+      if (this._e) this._apply();
+    }
     disconnectedCallback() {
       this._flush();
       this._flushQty();
       this._off?.();
       this._off = null;
+      this._offS?.();
+      this._offS = null;
       stopFeedback(this);
       clearTimeout(this._st);
       clearTimeout(this._okT);
@@ -15635,6 +15705,8 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         this._err = err;
         this._onData();
       });
+      this._offS = onSettings(() => this._settings());
+      this._settings();
     }
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
@@ -16469,6 +16541,7 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);tr
 .nr .pi{--mdc-icon-size:16px;color:var(--nv-accent-ink);flex:none;transform:rotate(35deg)}
 .nt.compact .nr{padding-top:var(--nv-s4);padding-bottom:var(--nv-s4)}
 .nt.compact .nr .pv{display:none}
+.nt.ts-klein .rt{font-size:var(--nv-fs-6)}.nt.ts-gross .rt{font-size:var(--nv-fs-10)}
 .more{align-self:center;border:0;background:transparent;color:inherit;font:inherit;font-size:var(--nv-fs-5);opacity:.7;padding:var(--nv-s4) var(--nv-s6);cursor:pointer;border-radius:var(--nv-r-pill);
 display:inline-flex;align-items:center;gap:var(--nv-s2);-webkit-tap-highlight-color:transparent}
 .more ha-icon{--mdc-icon-size:18px}
@@ -16482,7 +16555,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
 .bar .pb{width:44px;padding:0}
 .rb.pinb.on ha-icon{transform:rotate(35deg)}
 @media (prefers-reduced-motion:reduce){.nr.new{animation:none}}`;
-  var NDEF = { name: "Notizen", icon: "mdi:note-multiple-outline", show_header: true, view: "full", max_notes: 0, height: 380, print_field: "text", ...PRINT_DEF };
+  var NDEF = { name: "Notizen", icon: "mdi:note-multiple-outline", show_header: true, max_notes: 0, height: 380, print_field: "text", ...PRINT_DEF };
   var SAVE_MS2 = 800;
   var NovaNoteCard = class extends HTMLElement {
     static getConfigElement() {
@@ -16494,7 +16567,8 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
-      this._c = { ...NDEF, ...c };
+      this._raw = c;
+      this._c = this._merge();
       this._ids = [this._c.print_script].filter(Boolean);
       if (this._e) this._apply();
     }
@@ -16515,10 +16589,22 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
     connectedCallback() {
       this._watch();
     }
+    // Option der Karte → Nova-Einstellung (notizen.*) → Standard
+    _merge() {
+      return { ...NDEF, view: "full", ...fromSettings(this._h, { view: ["notizen", "kompakt", (v) => v ? "compact" : "full"], text_size: ["notizen", "standard_schriftgroesse"] }), ...this._raw };
+    }
+    _settings() {
+      const n = this._merge();
+      if (JSON.stringify(n) === JSON.stringify(this._c)) return;
+      this._c = n;
+      if (this._e) this._apply();
+    }
     disconnectedCallback() {
       this._flush();
       this._off?.();
       this._off = null;
+      this._offS?.();
+      this._offS = null;
       stopFeedback(this);
       clearTimeout(this._st);
       clearTimeout(this._okT);
@@ -16531,6 +16617,8 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
         this._err = err;
         this._onData();
       });
+      this._offS = onSettings(() => this._settings());
+      this._settings();
     }
     _build() {
       const r = this.shadowRoot || this.attachShadow({ mode: "open" });
@@ -16568,6 +16656,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
       const c = this._c, e = this._e;
       e.hd.hidden = c.show_header === false;
       e.g.classList.toggle("compact", c.view === "compact");
+      for (const t of ["klein", "gross"]) e.g.classList.toggle(`ts-${t}`, c.text_size === t);
       e.g.style.setProperty("--vh", `${Math.max(160, +c.height || NDEF.height)}px`);
       this._key = null;
       this._render();
@@ -16759,7 +16848,10 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
     { name: "show_header", selector: { boolean: {} } }
   ];
   var VIEW = [
-    sel("view", [["full", "Voll (Titel, Vorschau, Datum)"], ["compact", "Kompakt (nur Titel und Datum)"]]),
+    g2(
+      sel("view", [["full", "Voll (Titel, Vorschau, Datum)"], ["compact", "Kompakt (nur Titel und Datum)"]]),
+      sel("text_size", [["klein", "Klein"], ["normal", "Normal"], ["gross", "Groß"]])
+    ),
     g2(
       { name: "max_notes", selector: { number: { min: 0, max: 50, step: 1, mode: "box" } } },
       { name: "height", selector: { number: { min: 160, max: 1e3, step: 10, mode: "box", unit_of_measurement: "px" } } }
@@ -16772,12 +16864,15 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
     name: "Titel der Karte",
     show_header: "Kopfzeile anzeigen",
     view: "Ansicht der Liste",
+    text_size: "Schriftgröße der Notiz",
     max_notes: "Max. sichtbare Notizen",
     height: "Mindesthöhe",
     print_field: "Feldname im Skript"
   };
   var HELPERS9 = {
     ...PRINT_HELPERS,
+    view: "Leer = wie in den Nova-Einstellungen.",
+    text_size: "Leer = wie in den Nova-Einstellungen.",
     max_notes: "0 = alle. Weitere Notizen lassen sich in der Karte aufklappen.",
     height: "Im Raster füllt die Karte den Platz aus.",
     print_field: "Unter diesem Namen bekommt das Skript Titel und Text als Klartext (Standard: text).",
@@ -17302,7 +17397,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
     // pre: Entwurf aus dem Import → Vorschau (speichert nicht von selbst, erst „Übernehmen“); pre.replace = ID des ersetzten Rezepts
     _edit(x, pre = null) {
       if (!this._data) return;
-      const e = this._e, blank = { id: null, title: "", image: null, servings: 2, time: null, tags: [], ingredients: [], steps: "", favorite: false };
+      const e = this._e, blank = { id: null, title: "", image: null, servings: setting(this._h, "rezepte", "standard_portionen") || 2, time: null, tags: [], ingredients: [], steps: "", favorite: false };
       const d = this._draft = pre ? { ...blank, ...JSON.parse(JSON.stringify(pre)), id: pre.replace || null, image: null } : x ? JSON.parse(JSON.stringify(x)) : blank;
       this._preview = pre ? { data: pre.image_data || null } : null;
       delete d.image_data;
@@ -17709,7 +17804,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
   define("recipe-card-editor", NovaRecipeCardEditor);
 
   // src/recipe-book.js
-  var DEF7 = { title: "Rezepte", subtitle: "", style: "old", layout: "auto", cover_color: "brown", start_open: false, close_after: 0, turn: "auto" };
+  var DEF7 = { title: "Rezepte", subtitle: "", layout: "auto", cover_color: "brown", start_open: false, close_after: 0, turn: "auto" };
   var NAV_H = 48;
   var Lite = { slow: null, bad: 0 };
   var COVERS = ["brown", "red", "green", "blue"];
@@ -18142,8 +18237,14 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
     }
     setConfig(c) {
       if (!c || typeof c !== "object") throw new Error("Ungültige Konfiguration");
+      this._raw = c;
+      this._conf();
+    }
+    // Option der Karte → Nova-Einstellung (rezepte.buch_variante) → „old“
+    _conf() {
       const was = this._c;
-      this._c = { ...DEF7, ...c };
+      this._c = { ...DEF7, style: "old", ...fromSettings(this._h, { style: ["rezepte", "buch_variante"] }), ...this._raw };
+      if (was && JSON.stringify(was) === JSON.stringify(this._c)) return;
       this.setAttribute("cover", COVERS.includes(this._c.cover_color) ? this._c.cover_color : "brown");
       this.setAttribute("book", STYLES2.includes(this._c.style) ? this._c.style : "old");
       if (this._e) {
@@ -18184,6 +18285,8 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
       this._stopVis = null;
       this._off?.();
       this._off = null;
+      this._offS?.();
+      this._offS = null;
       clearTimeout(this._idle);
       clearTimeout(this._tt);
       clearTimeout(this._delT);
@@ -18301,6 +18404,8 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
         return;
       }
       if (this._off) return;
+      this._offS = onSettings(() => this._conf());
+      this._conf();
       this._off = watch(this._h, "recipes", this, (d, err) => {
         this._units = d?.units || this._units;
         this._setRecipes(d?.recipes, err);
@@ -18769,7 +18874,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
       rt.set(r?.steps || "");
       q(".steps").append(rt.el);
       q("#t").value = r?.title || "";
-      q("#p").value = r?.servings || 2;
+      q("#p").value = r?.servings || setting(this._h, "rezepte", "standard_portionen") || 2;
       q("#z").value = r?.time ?? "";
       q("#g").value = (r?.tags || []).join(", ");
       const ings = q(".ings"), units = this._units?.length ? this._units : [""];
@@ -18939,7 +19044,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
           if (code === "no_recipe") {
             ask("Auf der Seite steht kein Rezept, das ich lesen kann. Magst du es selbst anlegen?", [
               ["Abbrechen", () => this._closeForm()],
-              ["Selbst anlegen", () => this._edit(null, { title: x.message || "", source: url, servings: 2, ingredients: [], steps: "", tags: [] }), true]
+              ["Selbst anlegen", () => this._edit(null, { title: x.message || "", source: url, servings: setting(this._h, "rezepte", "standard_portionen") || 2, ingredients: [], steps: "", tags: [] }), true]
             ]);
             return;
           }
@@ -18997,6 +19102,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
   ];
   var LABELS11 = { title: "Titel auf dem Einband", subtitle: "Untertitel (optional)", style: "Stil", cover_color: "Einband", layout: "Seiten", start_open: "Aufgeschlagen starten", close_after: "Zuklappen nach", turn: "Blättern" };
   var HELPERS11 = {
+    style: "Leer = wie in den Nova-Einstellungen (sonst Old Book).",
     layout: "Automatisch: ab 560 px Breite als Doppelseite, schmaler als Einzelseite.",
     close_after: "0 = bleibt offen. Sonst klappt das Buch nach so vielen Sekunden ohne Bedienung zu.",
     subtitle: "Steht unter dem Titel, z. B. „von Oma Erna“.",

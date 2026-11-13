@@ -9,6 +9,7 @@ import {PRINT_CSS, PRINT_DEF, printButton, paintBtn, runPrint, stopFeedback, pri
 import {watch, notes as api, storeHint} from './shared/nova-store.js';
 import {RICH_CSS, richEditor, toPlain, isEmpty} from './shared/rich-text.js';
 import {VIEW_CSS, roundBtn, armButton, setBtnIcon, ago} from './shared/stack-view.js';
+import {fromSettings, onSettings} from './shared/settings-store.js';
 
 /* ---------- Nova Notiz Card ---------- */
 // Mehrere Notizen mit Titel und formatiertem Text. Liste (angepinnte oben) ↔ Detail zum Schreiben; gespeichert wird
@@ -30,6 +31,7 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);tr
 .nr .pi{--mdc-icon-size:16px;color:var(--nv-accent-ink);flex:none;transform:rotate(35deg)}
 .nt.compact .nr{padding-top:var(--nv-s4);padding-bottom:var(--nv-s4)}
 .nt.compact .nr .pv{display:none}
+.nt.ts-klein .rt{font-size:var(--nv-fs-6)}.nt.ts-gross .rt{font-size:var(--nv-fs-10)}
 .more{align-self:center;border:0;background:transparent;color:inherit;font:inherit;font-size:var(--nv-fs-5);opacity:.7;padding:var(--nv-s4) var(--nv-s6);cursor:pointer;border-radius:var(--nv-r-pill);
 display:inline-flex;align-items:center;gap:var(--nv-s2);-webkit-tap-highlight-color:transparent}
 .more ha-icon{--mdc-icon-size:18px}
@@ -44,7 +46,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
 .rb.pinb.on ha-icon{transform:rotate(35deg)}
 @media (prefers-reduced-motion:reduce){.nr.new{animation:none}}`;
 
-const NDEF = {name: 'Notizen', icon: 'mdi:note-multiple-outline', show_header: true, view: 'full', max_notes: 0, height: 380, print_field: 'text', ...PRINT_DEF};
+const NDEF = {name: 'Notizen', icon: 'mdi:note-multiple-outline', show_header: true, max_notes: 0, height: 380, print_field: 'text', ...PRINT_DEF};
 const SAVE_MS = 800;
 
 class NovaNoteCard extends HTMLElement {
@@ -55,7 +57,8 @@ class NovaNoteCard extends HTMLElement {
   }
   setConfig(c) {
     if (!c || typeof c !== 'object') throw new Error('Ungültige Konfiguration');
-    this._c = {...NDEF, ...c};
+    this._raw = c;
+    this._c = this._merge();
     this._ids = [this._c.print_script].filter(Boolean);
     if (this._e) this._apply();
   }
@@ -70,11 +73,23 @@ class NovaNoteCard extends HTMLElement {
   getCardSize() { return 6; }
   getGridOptions() { return {columns: 6, rows: 'auto', min_columns: 3}; }
   connectedCallback() { this._watch(); }
-  disconnectedCallback() { this._flush(); this._off?.(); this._off = null; stopFeedback(this); clearTimeout(this._st); clearTimeout(this._okT); this._del?.reset(); }
+  // Option der Karte → Nova-Einstellung (notizen.*) → Standard
+  _merge() {
+    return {...NDEF, view: 'full', ...fromSettings(this._h, {view: ['notizen', 'kompakt', v => v ? 'compact' : 'full'], text_size: ['notizen', 'standard_schriftgroesse']}), ...this._raw};
+  }
+  _settings() {
+    const n = this._merge();
+    if (JSON.stringify(n) === JSON.stringify(this._c)) return;
+    this._c = n;
+    if (this._e) this._apply();
+  }
+  disconnectedCallback() { this._flush(); this._off?.(); this._off = null; this._offS?.(); this._offS = null; stopFeedback(this); clearTimeout(this._st); clearTimeout(this._okT); this._del?.reset(); }
 
   _watch() {
     if (this._off || !this._h || !this.isConnected) return;
     this._off = watch(this._h, 'notes', this, (d, err) => { this._data = d; this._err = err; this._onData(); });
+    this._offS = onSettings(() => this._settings());
+    this._settings();
   }
 
   _build() {
@@ -105,6 +120,7 @@ class NovaNoteCard extends HTMLElement {
     const c = this._c, e = this._e;
     e.hd.hidden = c.show_header === false;
     e.g.classList.toggle('compact', c.view === 'compact');
+    for (const t of ['klein', 'gross']) e.g.classList.toggle(`ts-${t}`, c.text_size === t);
     e.g.style.setProperty('--vh', `${Math.max(160, +c.height || NDEF.height)}px`);
     this._key = null;
     this._render();
@@ -277,14 +293,15 @@ const GEN = [
   {name: 'show_header', selector: {boolean: {}}},
 ];
 const VIEW = [
-  sel('view', [['full', 'Voll (Titel, Vorschau, Datum)'], ['compact', 'Kompakt (nur Titel und Datum)']]),
+  g2(sel('view', [['full', 'Voll (Titel, Vorschau, Datum)'], ['compact', 'Kompakt (nur Titel und Datum)']]),
+    sel('text_size', [['klein', 'Klein'], ['normal', 'Normal'], ['gross', 'Groß']])),
   g2({name: 'max_notes', selector: {number: {min: 0, max: 50, step: 1, mode: 'box'}}},
     {name: 'height', selector: {number: {min: 160, max: 1000, step: 10, mode: 'box', unit_of_measurement: 'px'}}}),
 ];
 const PRINT = printSchema([{name: 'print_field', selector: T}]).filter(f => f.name !== 'print_style');
-const LABELS = {...BASE_LABELS, ...PRINT_LABELS, name: 'Titel der Karte', show_header: 'Kopfzeile anzeigen', view: 'Ansicht der Liste',
+const LABELS = {...BASE_LABELS, ...PRINT_LABELS, name: 'Titel der Karte', show_header: 'Kopfzeile anzeigen', view: 'Ansicht der Liste', text_size: 'Schriftgröße der Notiz',
   max_notes: 'Max. sichtbare Notizen', height: 'Mindesthöhe', print_field: 'Feldname im Skript'};
-const HELPERS = {...PRINT_HELPERS, max_notes: '0 = alle. Weitere Notizen lassen sich in der Karte aufklappen.',
+const HELPERS = {...PRINT_HELPERS, view: 'Leer = wie in den Nova-Einstellungen.', text_size: 'Leer = wie in den Nova-Einstellungen.', max_notes: '0 = alle. Weitere Notizen lassen sich in der Karte aufklappen.',
   height: 'Im Raster füllt die Karte den Platz aus.', print_field: 'Unter diesem Namen bekommt das Skript Titel und Text als Klartext (Standard: text).',
   print_script: 'Leer = kein Druck-Knopf. Der Knopf sitzt in der geöffneten Notiz.'};
 
