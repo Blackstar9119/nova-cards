@@ -4,6 +4,7 @@
 import {THEMES} from './theme.js';
 import {readTheme, STORE_ENTITY, THEME_EVENT} from './theme-store.js';
 import {settingsOf, SETTINGS_EVENT} from './settings-store.js';
+import {applyBackdrop} from './backdrop.js';
 
 // Eingehängte Karten – wechselt das Theme in der Nova-Integration, bekommen alle das neue
 const cards = new Set();
@@ -25,6 +26,7 @@ function apply(el) {
   const g = settingsOf(el._nvHass)?.allgemein;
   attr(el, 'nova-motion', MOTION[g?.animationen]);
   attr(el, 'nova-size', SIZE[g?.schriftgroesse]);
+  applyBackdrop(el._nvHass, cards.size);
   const t = own || el._nvInh || readTheme(el._nvHass) || 'blau';
   if (t === 'blau') { if (el.hasAttribute('nova-theme')) el.removeAttribute('nova-theme'); }
   else if (el.getAttribute('nova-theme') !== t) el.setAttribute('nova-theme', t);
@@ -58,5 +60,5 @@ export function themeable(cls) {
   const cc = p.connectedCallback;
   p.connectedCallback = function () { cards.add(this); inherit(this); return cc?.call(this); };
   const dc = p.disconnectedCallback;
-  p.disconnectedCallback = function () { cards.delete(this); return dc?.call(this); };
+  p.disconnectedCallback = function () { cards.delete(this); if (!cards.size) applyBackdrop(null, 0); return dc?.call(this); };
 }

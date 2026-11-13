@@ -324,6 +324,12 @@
     }, navi: { border: "rgba(90,62,40,.16)", chip: `rgba(${MOKKA},.06)`, blur: "14px", warn: "#7a5a1e" } }
   };
   var THEME_KEYS = Object.keys(THEMES);
+  var BACKGROUNDS = {
+    blau: "radial-gradient(90vmax 70vmax at 12% -10%,rgba(92,128,204,.38),transparent 60%) fixed,radial-gradient(80vmax 60vmax at 110% 110%,rgba(56,84,150,.32),transparent 60%) fixed,linear-gradient(160deg,#26324c,#0f1422 75%) fixed",
+    hell: "radial-gradient(90vmax 70vmax at 10% -10%,rgba(255,255,255,.85),transparent 60%) fixed,radial-gradient(80vmax 60vmax at 110% 110%,rgba(170,186,214,.45),transparent 60%) fixed,linear-gradient(160deg,#e3e7ee,#c9d0db) fixed",
+    midnight: "radial-gradient(90vmax 70vmax at 50% -20%,rgba(255,255,255,.07),transparent 60%) fixed,radial-gradient(70vmax 50vmax at 100% 120%,rgba(120,124,132,.12),transparent 60%) fixed,linear-gradient(180deg,#0b0b0d,#000 70%) fixed",
+    velvet: "radial-gradient(90vmax 70vmax at 12% -10%,rgba(255,244,222,.75),transparent 60%) fixed,radial-gradient(80vmax 60vmax at 110% 110%,rgba(184,147,90,.35),transparent 60%) fixed,linear-gradient(160deg,#e2d4b8,#c2ae8a) fixed"
+  };
   var NAVI = { border: "rgba(255,255,255,.16)", chip: "rgba(255,255,255,.1)", blur: "22px", warn: "#f5b83d" };
   var block = (sel2, over) => `${sel2}{${TOKENS.filter(([k]) => !over || k in over).map(([k, pub, v]) => `--nv-${k}:var(--nova-${pub},${over?.[k] ?? v})`).join(";")}}`;
   var themed = (navi) => Object.entries(THEMES).filter(([, t]) => Object.keys(t.vars).length).map(([k, t]) => block(`:host([nova-theme=${k}])`, navi ? { ...t.vars, ...t.navi } : t.vars)).join("");
@@ -506,6 +512,45 @@
     return out;
   }
 
+  // src/shared/backdrop.js
+  var VAR = "--lovelace-background";
+  var mine = null;
+  var before = null;
+  var offT = 0;
+  var root = () => document.documentElement;
+  function set(v) {
+    const st = root().style;
+    if (v === mine && st.getPropertyValue(VAR) === v) return;
+    if (mine === null) before = st.getPropertyValue(VAR) || null;
+    st.setProperty(VAR, v);
+    mine = v;
+  }
+  function clear() {
+    if (mine === null) return;
+    const st = root().style;
+    if (st.getPropertyValue(VAR) === mine) {
+      if (before) st.setProperty(VAR, before);
+      else st.removeProperty(VAR);
+    }
+    mine = before = null;
+  }
+  function backdropFor(hass) {
+    const k = settingsOf(hass)?.allgemein?.hintergrund;
+    if (!k || k === "keiner") return null;
+    const t = k === "passend" ? readTheme(hass) || "blau" : k;
+    return BACKGROUNDS[t] || null;
+  }
+  function applyBackdrop(hass, active) {
+    clearTimeout(offT);
+    if (!active) {
+      offT = setTimeout(clear, 1500);
+      return;
+    }
+    const v = backdropFor(hass);
+    if (v) set(v);
+    else clear();
+  }
+
   // src/shared/theme-apply.js
   var cards = /* @__PURE__ */ new Set();
   window.addEventListener(THEME_EVENT, () => cards.forEach(apply));
@@ -528,6 +573,7 @@
     const g = settingsOf(el2._nvHass)?.allgemein;
     attr(el2, "nova-motion", MOTION2[g?.animationen]);
     attr(el2, "nova-size", SIZE[g?.schriftgroesse]);
+    applyBackdrop(el2._nvHass, cards.size);
     const t = own || el2._nvInh || readTheme(el2._nvHass) || "blau";
     if (t === "blau") {
       if (el2.hasAttribute("nova-theme")) el2.removeAttribute("nova-theme");
@@ -568,6 +614,7 @@
     const dc = p.disconnectedCallback;
     p.disconnectedCallback = function() {
       cards.delete(this);
+      if (!cards.size) applyBackdrop(null, 0);
       return dc?.call(this);
     };
   }
@@ -615,7 +662,7 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
   }
-  var fitLabels = (root, sel2, collapse) => root?.querySelectorAll(sel2).forEach((k) => {
+  var fitLabels = (root2, sel2, collapse) => root2?.querySelectorAll(sel2).forEach((k) => {
     if (collapse) k.style.display = "";
     const cut = k.offsetParent !== null && k.scrollWidth > k.clientWidth + 1;
     if (collapse) k.style.display = cut ? "none" : "";
@@ -1377,19 +1424,19 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
   var panelEl = () => document.querySelector("home-assistant")?.shadowRoot?.querySelector("home-assistant-main")?.shadowRoot?.querySelector("partial-panel-resolver");
   var followContent = (el2) => {
     const p = panelEl();
-    const set = () => {
+    const set2 = () => {
       const b = p?.isConnected ? p.getBoundingClientRect() : null;
       const l = b ? Math.max(0, Math.round(b.left)) : 0, r = b ? Math.max(0, Math.round(innerWidth - b.right)) : 0;
       el2.style.setProperty("--nv-pop-l", `${l}px`);
       el2.style.setProperty("--nv-pop-r", `${r}px`);
     };
-    set();
-    const ro = p ? new ResizeObserver(set) : null;
+    set2();
+    const ro = p ? new ResizeObserver(set2) : null;
     ro?.observe(p);
-    addEventListener("resize", set);
+    addEventListener("resize", set2);
     return () => {
       ro?.disconnect();
-      removeEventListener("resize", set);
+      removeEventListener("resize", set2);
     };
   };
   var findPopups = (o, out = []) => {
@@ -2428,9 +2475,9 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
           return !e || !e.hidden && !e.entity_category;
         }).sort((a, b) => (h.states[a].attributes.friendly_name || a).localeCompare(h.states[b].attributes.friendly_name || b)).forEach((id) => ids.push(id));
         if (c.hide_group_members !== false) {
-          const mine = new Set(c.entities.map((l) => l.entity));
+          const mine2 = new Set(c.entities.map((l) => l.entity));
           const inGroup = new Set(ids.flatMap((id) => [].concat(h.states[id]?.attributes.entity_id || [])));
-          return ids.filter((id) => mine.has(id) || !inGroup.has(id));
+          return ids.filter((id) => mine2.has(id) || !inGroup.has(id));
         }
       }
       return ids;
@@ -3609,7 +3656,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
       return `${i + 1}. ${it.label || it.popup_title || (it.popup_hash ? this._popName(it.popup_hash) : "") || (it.menu?.length ? "Untermenü" : "") || (Array.isArray(it.cards) ? "Einfaches Pop-up" : pathOf(it)) || "Neuer Button"}`;
     }
     // Formular für einen Teil eines Eintrags; ändert sich dadurch das Schema (Felder ein-/ausblenden), wird neu aufgebaut
-    _part(get, set, schema, onChange) {
+    _part(get, set2, schema, onChange) {
       const cur2 = get();
       return this._form(schema(cur2), cur2, (v) => {
         const old = get(), was = JSON.stringify(schema(old));
@@ -3618,7 +3665,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
         if (!nx.popup_hash) delete nx.popup_hash;
         if (nx.cards && !Array.isArray(nx.cards)) nx.cards = [nx.cards];
         if (!nx.badge_show_number) delete nx.badge_show_number;
-        set(nx);
+        set2(nx);
         onChange?.(nx);
         if (JSON.stringify(schema(nx)) !== was) this._rebuild();
       });
@@ -3630,8 +3677,8 @@ ha-icon{--mdc-icon-size:22px;display:flex}
     }
     _item(it, i, n) {
       const [d, s] = this._details(i, it.icon || "mdi:circle-outline", this._label(it, i), this._itemBtns(i, n, (dir) => this._move(i, dir), () => this._remove(i)), (b) => {
-        const get = () => this._config.items[i], set = (nx) => this._setItem(i, nx);
-        const part = (sch) => this._part(get, set, typeof sch === "function" ? sch : () => sch, (nx) => {
+        const get = () => this._config.items[i], set2 = (nx) => this._setItem(i, nx);
+        const part = (sch) => this._part(get, set2, typeof sch === "function" ? sch : () => sch, (nx) => {
           s.querySelector(".lbl").textContent = this._label(nx, i);
           s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
         });
@@ -3677,12 +3724,12 @@ ha-icon{--mdc-icon-size:22px;display:flex}
           this._rebuild();
         }), (b, s) => {
           const get = () => this._config.items[i].menu[j];
-          const set = (nx) => {
+          const set2 = (nx) => {
             const arr = [...this._config.items[i].menu];
             arr[j] = nx;
             setSubs(arr);
           };
-          const part = (sch) => this._part(get, set, sch, (nx) => {
+          const part = (sch) => this._part(get, set2, sch, (nx) => {
             s.querySelector(".lbl").textContent = lbl(nx);
             s.querySelector("ha-icon").setAttribute("icon", nx.icon || "mdi:circle-outline");
           });
@@ -5100,10 +5147,10 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
         setIcon(e.mu, a.is_volume_muted ? "mdi:volume-off" : "mdi:volume-high");
       }
       if (e.vol) {
-        const set = hasF(s, MF.VOL_SET) && a.volume_level != null;
-        e.vol.hidden = e.vv.hidden = !set;
-        e.step.hidden = set || !hasF(s, MF.VOL_STEP);
-        if (set && !this._drag) {
+        const set2 = hasF(s, MF.VOL_SET) && a.volume_level != null;
+        e.vol.hidden = e.vv.hidden = !set2;
+        e.step.hidden = set2 || !hasF(s, MF.VOL_STEP);
+        if (set2 && !this._drag) {
           const v = Math.round(a.volume_level * 100);
           e.vol.value = v;
           e.vol.style.setProperty("--p", `${v}%`);
@@ -5655,8 +5702,8 @@ position:relative;order:0;height:var(--nova-vacuum-scene-height,100px)}
     if (!dev) return [];
     if (!me) return [dev];
     const idf = (d) => (d.identifiers || []).map((x) => String(Array.isArray(x) ? x[1] : x));
-    const mine = idf(me), ce = me.config_entries || [];
-    return Object.values(D).filter((d) => d.id === dev || d.via_device_id === dev || me.via_device_id === d.id || (d.config_entries || []).some((e) => ce.includes(e)) && (idf(d).some((x) => mine.some((m) => x !== m && x.startsWith(m))) || !!d.name && !!me.name && d.name.startsWith(me.name) && /^\s*(dock|station|base|ladestation|basis)\b/i.test(d.name.slice(me.name.length)))).map((d) => d.id);
+    const mine2 = idf(me), ce = me.config_entries || [];
+    return Object.values(D).filter((d) => d.id === dev || d.via_device_id === dev || me.via_device_id === d.id || (d.config_entries || []).some((e) => ce.includes(e)) && (idf(d).some((x) => mine2.some((m) => x !== m && x.startsWith(m))) || !!d.name && !!me.name && d.name.startsWith(me.name) && /^\s*(dock|station|base|ladestation|basis)\b/i.test(d.name.slice(me.name.length)))).map((d) => d.id);
   }
   var vents = (h, id) => {
     const ds = vdevs(h, id);
@@ -7782,7 +7829,7 @@ hui-card-picker{flex:1;min-height:0}`;
     /* --- Einstellungen des gewählten Blocks --- */
     _panel(rows) {
       const [ri, ci] = this._sel, cell = rows[ri].cells[ci], n = rows[ri].cells.length, p = el("div", "panel");
-      const set = (fn) => {
+      const set2 = (fn) => {
         const rs = this._rows(), x = rs[ri].cells[ci];
         fn(rs, x);
       };
@@ -7795,7 +7842,7 @@ hui-card-picker{flex:1;min-height:0}`;
         bt.title = v === "auto" ? "Teilt sich den freien Platz mit den anderen Spalten" : v === "1" ? "Ganze Zeilenbreite" : `${l} der Zeilenbreite`;
         bt.addEventListener("click", (e) => {
           e.preventDefault();
-          set((rs, x) => {
+          set2((rs, x) => {
             x.width = v;
             this._emitRows(rs, x);
             this._rebuild();
@@ -7805,7 +7852,7 @@ hui-card-picker{flex:1;min-height:0}`;
       });
       p.append(wd);
       const tools = el("div", "tools");
-      const mv = (dir) => set((rs, x) => {
+      const mv = (dir) => set2((rs, x) => {
         rs[ri].cells.splice(ci, 1);
         rs[ri].cells.splice(ci + dir, 0, x);
         this._emitRows(rs, x);
@@ -7828,7 +7875,7 @@ hui-card-picker{flex:1;min-height:0}`;
             this._rebuild();
           }
         }),
-        this._btn("mdi:content-copy", "Duplizieren", () => set((rs, x) => {
+        this._btn("mdi:content-copy", "Duplizieren", () => set2((rs, x) => {
           const k = { width: x.width, card: clone(x.card) };
           rs[ri].cells.splice(ci + 1, 0, k);
           this._emitRows(rs, k);
@@ -7836,7 +7883,7 @@ hui-card-picker{flex:1;min-height:0}`;
         }))
       );
       tools.append(
-        this._btn("mdi:delete-outline", "Löschen", () => set((rs) => {
+        this._btn("mdi:delete-outline", "Löschen", () => set2((rs) => {
           rs[ri].cells.splice(ci, 1);
           this._sel = null;
           this._emitRows(rs);
@@ -14809,10 +14856,10 @@ box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--ok) 45%,transparen
     ok: "Gedruckt",
     err: "Fehler"
   }, state, enabled);
-  async function runFeedback(card, key, fn, set) {
+  async function runFeedback(card, key, fn, set2) {
     const t = card._pbTs ||= {};
     clearTimeout(t[key]);
-    set("busy");
+    set2("busy");
     let ok3 = true;
     try {
       await fn();
@@ -14820,15 +14867,15 @@ box-shadow:0 0 16px color-mix(in srgb,color-mix(in srgb,var(--ok) 45%,transparen
       ok3 = false;
       console.warn("[nova-cards] Aktion fehlgeschlagen", key, e);
     }
-    set(ok3 ? "ok" : "err");
-    t[key] = setTimeout(() => set("idle"), FEEDBACK);
+    set2(ok3 ? "ok" : "err");
+    t[key] = setTimeout(() => set2("idle"), FEEDBACK);
     return ok3;
   }
   var stopFeedback = (card) => Object.values(card._pbTs || {}).forEach(clearTimeout);
-  async function runPrint(card, hass, script, data, set, key = "") {
+  async function runPrint(card, hass, script, data, set2, key = "") {
     const name = String(script || "").replace(/^script\./, "");
     if (!name || !hass) return false;
-    return runFeedback(card, `print:${name}:${key}`, () => hass.callService("script", name, data || {}), set);
+    return runFeedback(card, `print:${name}:${key}`, () => hass.callService("script", name, data || {}), set2);
   }
   var printSchema = (extra) => [
     { name: "print_script", selector: { entity: { domain: "script" } } },
@@ -14962,19 +15009,19 @@ cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:back
 @media (prefers-reduced-motion:reduce){.rt ul.check li,.rt ul.check li::before,.rt ul.check li::after{transition:none}}`;
   var SIZES2 = [["fs-s", "mdi:format-font-size-decrease", "Klein"], ["", "mdi:format-text", "Normal"], ["fs-l", "mdi:format-font-size-increase", "Groß"], ["h3", "mdi:format-header-1", "Überschrift"]];
   var COLORS2 = [["c-accent", "Akzent"], ["c-warn", "Wichtig"], ["c-muted", "Gedämpft"], ["", "Normal"]];
-  function getRange(root) {
+  function getRange(root2) {
     try {
-      if (root.getSelection) {
-        const x = root.getSelection();
+      if (root2.getSelection) {
+        const x = root2.getSelection();
         return x?.rangeCount ? x.getRangeAt(0) : null;
       }
       const s = document.getSelection();
       if (s?.getComposedRanges) {
         let st;
         try {
-          st = s.getComposedRanges({ shadowRoots: [root] })[0];
+          st = s.getComposedRanges({ shadowRoots: [root2] })[0];
         } catch {
-          st = s.getComposedRanges(root)[0];
+          st = s.getComposedRanges(root2)[0];
         }
         if (!st) return null;
         const r = document.createRange();
@@ -14987,14 +15034,14 @@ cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:back
       return null;
     }
   }
-  var anchor = (root) => getRange(root)?.startContainer;
+  var anchor = (root2) => getRange(root2)?.startContainer;
   var within = (rte, n) => n && (n === rte || rte.contains(n));
   var closest = (n, s, stop) => {
     for (let x = n?.nodeType === 1 ? n : n?.parentElement; x && x !== stop; x = x.parentElement) if (x.matches(s)) return x;
     return null;
   };
-  function wrap(rte, root, group, cls) {
-    const r = getRange(root);
+  function wrap(rte, root2, group, cls) {
+    const r = getRange(root2);
     if (!r || !within(rte, r.commonAncestorContainer)) return;
     if (r.collapsed) {
       const n = r.startContainer;
@@ -15043,7 +15090,7 @@ cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:back
     el2.innerHTML = '<div class="tb" role="toolbar" aria-label="Formatierung"></div><div class="rt rte" contenteditable="true" spellcheck="true"></div>';
     const tb = el2.firstChild, rte = el2.lastChild;
     rte.dataset.ph = placeholder;
-    const root = () => el2.getRootNode();
+    const root2 = () => el2.getRootNode();
     const btns = {};
     const btn = (key, icon2, title, fn, inner) => {
       const b = document.createElement("button");
@@ -15056,7 +15103,7 @@ cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:back
       b.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!within(rte, anchor(root()))) rte.focus();
+        if (!within(rte, anchor(root2()))) rte.focus();
         fn();
         changed();
       });
@@ -15076,17 +15123,17 @@ cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:back
     btn("strikeThrough", "mdi:format-strikethrough-variant", "Durchgestrichen", () => exec("strikeThrough"));
     sep();
     SIZES2.forEach(([k, icon2, title]) => btn(`size:${k}`, icon2, title, () => {
-      const blk = closest(anchor(root()), "h3,p,li", rte);
+      const blk = closest(anchor(root2()), "h3,p,li", rte);
       if (k === "h3") {
         exec("formatBlock", blk?.nodeName === "H3" ? "p" : "h3");
         return;
       }
       if (blk?.nodeName === "H3") exec("formatBlock", "p");
-      wrap(rte, root(), ["fs-s", "fs-l"], k);
+      wrap(rte, root2(), ["fs-s", "fs-l"], k);
     }));
     sep();
     btn("list", "mdi:format-list-bulleted", "Aufzählung", () => {
-      const ul = closest(anchor(root()), "ul", rte);
+      const ul = closest(anchor(root2()), "ul", rte);
       if (ul?.classList.contains("check")) {
         ul.classList.remove("check");
         return;
@@ -15094,23 +15141,23 @@ cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:back
       exec("insertUnorderedList");
     });
     btn("check", "mdi:format-list-checks", "Checkliste", () => {
-      let ul = closest(anchor(root()), "ul", rte);
+      let ul = closest(anchor(root2()), "ul", rte);
       if (ul?.classList.contains("check")) {
         exec("insertUnorderedList");
         return;
       }
       if (!ul) {
         exec("insertUnorderedList");
-        ul = closest(anchor(root()), "ul", rte);
+        ul = closest(anchor(root2()), "ul", rte);
       }
       ul?.classList.add("check");
     });
     if (colors) {
       sep();
-      COLORS2.forEach(([k, title]) => btn(`color:${k}`, "", `Farbe: ${title}`, () => wrap(rte, root(), COLORS2.map((c) => c[0]), k), `<span class="dot ${k || "c-none"}"></span>`));
+      COLORS2.forEach(([k, title]) => btn(`color:${k}`, "", `Farbe: ${title}`, () => wrap(rte, root2(), COLORS2.map((c) => c[0]), k), `<span class="dot ${k || "c-none"}"></span>`));
     }
     const paint = () => {
-      const n = anchor(root());
+      const n = anchor(root2());
       if (!within(rte, n)) return;
       ["bold", "italic", "underline", "strikeThrough"].forEach((k) => btns[k].classList.toggle("on", document.queryCommandState(k)));
       const h3 = !!closest(n, "h3", rte), sz = closest(n, "span.fs-s,span.fs-l", rte), ul = closest(n, "ul", rte), col = closest(n, "span.c-accent,span.c-warn,span.c-muted", rte);
@@ -15149,7 +15196,7 @@ cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:back
       }
     });
     const get = () => sanitize(rte.innerHTML);
-    const set = (html) => {
+    const set2 = (html) => {
       rte.innerHTML = sanitize(html);
       paint();
     };
@@ -15157,7 +15204,7 @@ cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;transition:back
       document.execCommand("defaultParagraphSeparator", false, "p");
     } catch {
     }
-    return { el: el2, rte, tb, get, set, focus: () => rte.focus() };
+    return { el: el2, rte, tb, get, set: set2, focus: () => rte.focus() };
   }
   function richView(el2, html, onToggle) {
     const clean = sanitize(html);
@@ -15430,7 +15477,7 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
       rm.hidden = !cur2.icon && !cur2.image && !cur2.data;
       if (form) form.data = { icon: cur2.image ? "" : cur2.icon || "" };
     };
-    const set = (v) => {
+    const set2 = (v) => {
       cur2 = { icon: null, image: null, data: null, ...v };
       paint(true);
       onChange?.(cur2);
@@ -15449,7 +15496,7 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
       return b;
     };
     if (upload) act("mdi:camera-plus-outline", "Eigenes Bild", () => file.click());
-    const rm = act("mdi:close", "Entfernen", () => set({}));
+    const rm = act("mdi:close", "Entfernen", () => set2({}));
     file.addEventListener("change", async () => {
       const f3 = file.files?.[0];
       file.value = "";
@@ -15460,7 +15507,7 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
       err.hidden = true;
       try {
         const { image } = await uploadImage(h, module, await compressImage(f3, module === "recipes" ? 960 : MAX));
-        set({ image });
+        set2({ image });
       } catch (e) {
         err.textContent = `Bild konnte nicht gespeichert werden: ${e?.message || e}`;
         err.hidden = false;
@@ -15477,7 +15524,7 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
       b.innerHTML = `<ha-icon icon="${ic}"></ha-icon>`;
       b.addEventListener("click", (e) => {
         e.stopPropagation();
-        set({ icon: ic });
+        set2({ icon: ic });
       });
       grid2.append(b);
     });
@@ -15491,7 +15538,7 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
         form.addEventListener("value-changed", (e) => {
           e.stopPropagation();
           const ic = e.detail.value?.icon;
-          if (ic && ic !== cur2.icon) set({ icon: ic });
+          if (ic && ic !== cur2.icon) set2({ icon: ic });
         });
       } else {
         form = document.createElement("input");
@@ -15500,7 +15547,7 @@ justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:tran
         form.style.cssText = "height:44px;border-radius:var(--nv-r-pill);padding:0 var(--nv-s8)";
         form.addEventListener("change", () => {
           const v = form.value.trim();
-          if (/^[a-z0-9-]+:[a-z0-9-]+$/.test(v)) set({ icon: v });
+          if (/^[a-z0-9-]+:[a-z0-9-]+$/.test(v)) set2({ icon: v });
         });
         Object.defineProperty(form, "data", { set: (d) => {
           form.value = d.icon || "";

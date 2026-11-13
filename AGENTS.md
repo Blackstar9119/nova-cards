@@ -56,6 +56,8 @@ src/
     theme-apply.js    Theme am Kartenelement setzen (Attribut nova-theme): Option theme → Theme-Variable nova-theme → global → Blau;
                       läuft zentral über define(), Karten müssen nichts tun. Setzt auch nova-motion/nova-size aus den
                       Nova-Einstellungen (Animationen, Schriftgröße; CSS dazu in theme.js)
+    backdrop.js       Hintergrund der Dashboards aus der Nova-Einstellung allgemein.hintergrund (Verläufe BACKGROUNDS in theme.js),
+                      nur solange Nova Cards eingehängt sind; aufgerufen von theme-apply.js
     theme-store.js    Speicher des globalen Themes – EINZIGE Stelle: Nova-Integration (Modul Theme), ohne sie der Helfer
                       input_select.nova_theme (legt ihn selbst an)
     settings-store.js Nova-Einstellungen (nova/settings/subscribe): ein Abo je Verbindung, fromSettings() für Karten-Optionen.
@@ -176,6 +178,7 @@ vorher, ob es das Element bzw. die Funktion gibt, und hat einen Fallback. Nach H
 | WebSocket `todo/item/subscribe` (Einträge einer todo-Liste) | `shopping.js` | Dienst `todo.get_items` bei jeder Zustandsänderung der Liste |
 | `ha-form` mit Icon-Auswahl außerhalb eines Editors (MDI-Suche in der Karte) | `media-picker.js` | Textfeld für `mdi:…` |
 | `shadowRoot.getSelection()` bzw. `Selection.getComposedRanges()` (Auswahl im Schattenbaum) und `document.execCommand` | `rich-text.js` | Größe/Farbe wirken nicht, Tippen und Speichern gehen weiter |
+| CSS-Variable `--lovelace-background` am Dokument (liest `hui-view-background`) | `backdrop.js` (Hintergrund aus den Nova-Einstellungen) | HA-Hintergrund bleibt |
 | `home-assistant` → `home-assistant-main` → `partial-panel-resolver` (Inhaltsbereich neben der Seitenleiste) | `popup-hub.js` (`followContent`, Pop-up Card und Navi-Pop-up) | Pop-up deckt das ganze Fenster ab |
 
 ## Dev-Workflow
