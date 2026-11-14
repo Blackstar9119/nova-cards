@@ -660,7 +660,7 @@ class NovaShoppingCard extends HTMLElement {
     st => { this._pstate = st; this._render(); });
   }
 }
-define('shopping-card', NovaShoppingCard, {name: 'Nova Einkauf Card', description: 'Einkaufsliste mit Menge, Einheit, Geschäft, Icon oder eigenem Bild und Notiz: nach Geschäft gruppiert, abhaken, zuletzt Gekauftes als Schnellauswahl, auf allen Geräten gleich (Nova-Integration), optional mit todo-Liste für Assist und Druck-Knopf.', documentationURL: docUrl('nova-einkauf-card')});
+define('shopping-card', NovaShoppingCard, {name: 'Nova Einkauf Card', description: 'Einkaufsliste mit Menge, Einheit, Geschäft, Icon oder eigenem Bild und Notiz: nach Geschäft gruppiert, abhaken, zuletzt Gekauftes als Schnellauswahl, auf allen Geräten gleich (Nova Homeverse), optional mit todo-Liste für Assist und Druck-Knopf.', documentationURL: docUrl('einkauf')});
 
 /* ---------- Editor Einkauf Card ---------- */
 const GEN = [
@@ -682,7 +682,7 @@ const LABELS = {...BASE_LABELS, ...PRINT_LABELS, name: 'Titel der Karte', show_h
 const HELPERS = {...PRINT_HELPERS, show_images: 'Aus = statt eigener Bilder nur Icons.', show_completed: 'Erledigte stehen unten und lassen sich in der Karte auf- und zuklappen.',
   show_suggestions: 'Zuletzt gekaufte Artikel als Chips unter dem Eingabefeld.', default_store: 'Für neue Artikel, die noch nie gekauft wurden.',
   height: 'Im Raster füllt die Karte den Platz aus.',
-  entity: 'Optional, z. B. todo.shopping_list. Die Nova-Integration hält beide Listen gleich – so funktioniert „Setz Milch auf die Einkaufsliste“ weiter. Gilt für alle Einkauf-Karten.',
+  entity: 'Optional, z. B. todo.shopping_list. Nova Homeverse hält beide Listen gleich – so funktioniert „Setz Milch auf die Einkaufsliste“ weiter. Gilt für alle Einkauf-Karten.',
   print_field: 'Unter diesem Namen bekommt das Skript die offene Liste als Klartext (Standard: text), zusätzlich „items“ als Liste.'};
 
 class NovaShoppingCardEditor extends NovaEditorBase {

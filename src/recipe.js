@@ -558,7 +558,7 @@ class NovaRecipeCard extends HTMLElement {
     runPrint(this, this._h, c.print_script, {[c.print_field || 'text']: out.join('\n')}, st => { this._pstate = st; this._paintBar(); });
   }
 }
-define('recipe-card', NovaRecipeCard, {name: 'Nova Rezeptliste', description: 'Kompakte Rezeptliste mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf.', documentationURL: docUrl('nova-rezeptliste')});
+define('recipe-card', NovaRecipeCard, {name: 'Nova Rezeptliste', description: 'Kompakte Rezeptliste mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova Homeverse), mit Druck-Knopf.', documentationURL: docUrl('rezeptliste')});
 
 /* ---------- Editor Rezept Card ---------- */
 const GEN = [

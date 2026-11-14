@@ -246,4 +246,4 @@ class NovaThermostatCard extends HTMLElement {
     if (this._sig.p !== presets) { this._sig.p = presets; e.presets.innerHTML = presets; }
   }
 }
-define(TAG, NovaThermostatCard, {name: 'Nova Thermostat Card', description: 'Thermostat mit Ist-/Solltemperatur, ± Stepper, Verlauf und Modi.', documentationURL: docUrl('nova-thermostat-card')});
+define(TAG, NovaThermostatCard, {name: 'Nova Thermostat Card', description: 'Thermostat mit Ist-/Solltemperatur, ± Stepper, Verlauf und Modi.', documentationURL: docUrl('thermostat')});

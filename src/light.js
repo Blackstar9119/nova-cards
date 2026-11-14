@@ -458,4 +458,4 @@ class NovaLightCard extends HTMLElement {
     return name;
   }
 }
-define(TAG, NovaLightCard, {name: 'Nova Licht Card', description: 'Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.', documentationURL: docUrl('nova-licht-card')});
+define(TAG, NovaLightCard, {name: 'Nova Licht Card', description: 'Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.', documentationURL: docUrl('licht')});

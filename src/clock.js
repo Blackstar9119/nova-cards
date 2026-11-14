@@ -352,7 +352,7 @@ class NovaClockCard extends HTMLElement {
     this._t = setTimeout(() => { this._t = null; this._draw(); this._plan(); }, step - (now % step) + 15);
   }
 }
-define('clock-card', NovaClockCard, {name: 'Nova Uhr Card', description: 'Uhrzeit im Nova-Stil: digital, Klappzahlen, analog, Leuchtziffern oder Radiowecker, wahlweise mit Sekunden, Wochentag und Datum.', documentationURL: docUrl('nova-uhr-card')});
+define('clock-card', NovaClockCard, {name: 'Nova Uhr Card', description: 'Uhrzeit im Nova-Stil: digital, Klappzahlen, analog, Leuchtziffern oder Radiowecker, wahlweise mit Sekunden, Wochentag und Datum.', documentationURL: docUrl('uhr')});
 
 /* ---------- Editor ---------- */
 const S_GEN = [

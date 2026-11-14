@@ -222,7 +222,7 @@ class NovaSwipeCard extends HTMLElement {
     this._rt = setTimeout(() => { this._rt = null; if (this.matches(':focus-within')) this._poke(); else this.go(0); }, s * 1000);
   }
 }
-define('swipe-card', NovaSwipeCard, {name: 'Nova Swipe Card', description: 'Mehrere Seiten mit beliebigen Karten in einer Karte – zum Wischen, mit Seiten-Punkten. Ideal für kleine Displays.', documentationURL: docUrl('nova-swipe-card')});
+define('swipe-card', NovaSwipeCard, {name: 'Nova Swipe Card', description: 'Mehrere Seiten mit beliebigen Karten in einer Karte – zum Wischen, mit Seiten-Punkten. Ideal für kleine Displays.', documentationURL: docUrl('swipe')});
 
 /* ---------- Editor ---------- */
 const S_PAGE = [g2({name: 'name', selector: T}, {name: 'icon', selector: I})];

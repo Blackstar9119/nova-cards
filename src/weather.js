@@ -350,7 +350,7 @@ class NovaWeatherCard extends HTMLElement {
     return `<div class="sec">${title}${graph}<div class="hcols" style="--n:${v.hours.length}">${cols}</div></div>`;
   }
 }
-define('weather-card', NovaWeatherCard, {name: 'Nova Wetter Card', description: 'Aktuelles Wetter einer weather.*-Entität mit Tages- und Stundenvorhersage – Icon, Temperatur, Zustand, Max/Min, Regen und Werte wie Luftfeuchte, Wind und Luftdruck.', documentationURL: docUrl('nova-wetter-card')});
+define('weather-card', NovaWeatherCard, {name: 'Nova Wetter Card', description: 'Aktuelles Wetter einer weather.*-Entität mit Tages- und Stundenvorhersage – Icon, Temperatur, Zustand, Max/Min, Regen und Werte wie Luftfeuchte, Wind und Luftdruck.', documentationURL: docUrl('wetter')});
 
 /* ---------- Editor Wetter Card ---------- */
 const TSENS = {entity: {domain: 'sensor', device_class: 'temperature'}};

@@ -1312,7 +1312,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('geraet-card', NovaApplianceCard, {name: 'Nova Gerät Card', description: 'Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.', documentationURL: docUrl('nova-gerät-card')});
+define('geraet-card', NovaApplianceCard, {name: 'Nova Gerät Card', description: 'Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.', documentationURL: docUrl('geraet')});
 
 /* ---------- Editor Gerät Card ---------- */
 const ST = {entity: {}};

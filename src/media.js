@@ -261,7 +261,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ''}</div>`;
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('media-card', NovaMediaCard, {name: 'Nova Media Card', description: 'Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.', documentationURL: docUrl('nova-media-card')});
+define('media-card', NovaMediaCard, {name: 'Nova Media Card', description: 'Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.', documentationURL: docUrl('media')});
 
 /* ---------- Editor Media Card ---------- */
 const MP = {domain: ['media_player']};

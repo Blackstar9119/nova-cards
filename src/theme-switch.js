@@ -89,7 +89,7 @@ class NovaThemeSwitchCard extends HTMLElement {
     r.querySelector('.nchip, .g').classList.toggle('busy', !!this._busy);
   }
 }
-define('theme-card', NovaThemeSwitchCard, {name: 'Nova Themes Schalter', description: 'Wählt das Nova-Theme (Blau, Hell …) für alle Nova Cards auf allen Geräten – als Chip, Button oder Dropdown. Richtet sich beim ersten Umschalten selbst ein.', documentationURL: docUrl('nova-themes-schalter')});
+define('theme-card', NovaThemeSwitchCard, {name: 'Nova Themes Schalter', description: 'Wählt das Nova-Theme (Blau, Hell …) für alle Nova Cards auf allen Geräten – als Chip, Button oder Dropdown. Richtet sich beim ersten Umschalten selbst ein.', documentationURL: docUrl('themes-schalter')});
 
 /* ---------- Editor ---------- */
 const S_GEN = [

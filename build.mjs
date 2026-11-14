@@ -3,19 +3,19 @@
 // Mit Karte (Dateiname in src/ ohne .js, z. B. waste) wird nur diese Karte gebaut – nötig, wenn der Build über 128 KB liegt.
 // Mehrere Karten mit Komma, z. B. „npm run dev -- popup,navi“.
 // Integration: „npm run integration [-- <pfad>]“ baut alle Karten (verkleinert) für die Nova-Integration, Version aus deren
-// manifest.json. Standard-Pfad ist ../nova-integration; gibt es ihn, landet die Datei direkt in custom_components/nova/static/,
+// manifest.json. Standard-Pfad ist ../nova-integration; gibt es ihn, landet die Datei direkt in custom_components/nova_homeverse/static/,
 // sonst in integration/nova-cards.js (gitignored) zum Kopieren.
 import {build} from 'esbuild';
 import {readFileSync, statSync, existsSync, mkdirSync} from 'node:fs';
 
 const [mode, card] = process.argv.slice(2);
 const dev = mode === '--dev';
-// Nova-Panel: eigene Datei für die Integration (nova-integration: custom_components/nova/static/nova-panel.js)
+// Nova-Panel: eigene Datei für die Integration (nova-integration: custom_components/nova_homeverse/static/nova-panel.js)
 const panel = mode === '--panel';
 // Karten für die Nova-Integration: gemeinsame Version mit ihr, ausgeliefert unter /nova/static/nova-cards.js
 const integration = mode === '--integration';
 const intDir = integration ? (card || '../nova-integration') : '';
-const manifest = `${intDir}/custom_components/nova/manifest.json`;
+const manifest = `${intDir}/custom_components/nova_homeverse/manifest.json`;
 if (integration && !existsSync(manifest)) {
   console.error(`Nova-Integration nicht gefunden – erwartet wird ${manifest} (Pfad angeben: npm run integration -- <pfad>)`);
   process.exit(1);
@@ -30,8 +30,8 @@ for (const k of cards) if (!existsSync(`src/${k}.js`)) {
 }
 
 const outfile = panel ? 'panel/nova-panel.js' : dev ? 'dev/nova-dev-cards.js'
-  : integration ? `${intDir}/custom_components/nova/static/nova-cards.js` : 'nova-cards.js';
-if (integration) mkdirSync(`${intDir}/custom_components/nova/static`, {recursive: true});
+  : integration ? `${intDir}/custom_components/nova_homeverse/static/nova-cards.js` : 'nova-cards.js';
+if (integration) mkdirSync(`${intDir}/custom_components/nova_homeverse/static`, {recursive: true});
 
 await build({
   ...(cards.length > 1

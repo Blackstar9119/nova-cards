@@ -17,5 +17,6 @@ export const define = (name, cls, meta) => {
   }
 };
 
-const REPO = 'https://github.com/Blackstar9119/nova-cards';
-export const docUrl = anchor => `${REPO}#${anchor}`;
+// Hilfe-Link im Karteneditor („?“): Seite der Karte im Nova-Handbuch (nova-integration/docs)
+const HANDBUCH = 'https://github.com/Blackstar9119/nova-integration/blob/main/docs/de/karten';
+export const docUrl = page => `${HANDBUCH}/${page}.md`;

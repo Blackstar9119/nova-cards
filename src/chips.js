@@ -46,7 +46,7 @@ class NovaChipsCard extends HTMLElement {
   getGridOptions() { return {columns: 'full', rows: 'auto'}; }
   _render() { renderNovaChips(this, this._box, this._cfg.chips, this._h, {area: this._cfg.area}); }
 }
-define('chips-card', NovaChipsCard, {name: 'Nova Chips Card', description: 'Eine Reihe frei belegbarer Chips: Werte von Entitäten oder Knöpfe mit Aktion, z. B. „Alle Lichter im Raum aus“.', documentationURL: docUrl('nova-chips-card')});
+define('chips-card', NovaChipsCard, {name: 'Nova Chips Card', description: 'Eine Reihe frei belegbarer Chips: Werte von Entitäten oder Knöpfe mit Aktion, z. B. „Alle Lichter im Raum aus“.', documentationURL: docUrl('chips')});
 
 /* ---------- Editor ---------- */
 const S_GEN = [

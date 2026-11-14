@@ -2,3 +2,7 @@ node_modules/
 dev/
 panel/
 integration/
+.env
+scripts/.screenshots-*
+screenshots/
+.DS_Store

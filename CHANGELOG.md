@@ -3,6 +3,20 @@
 Alle nennenswerten Änderungen an Nova Cards. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Behoben
+- Saugroboter (und alle Karten, die Zustände formatieren): Fehlt die eingetragene Entität, stürzt die Karte nicht mehr mit „Cannot read properties of undefined (reading 'state')“ ab, sondern zeigt „nicht gefunden“. Damit verschwindet auch der Folgefehler „setting 'layout'“ im Dashboard.
+
+### Geändert
+- Die Integration heißt jetzt **Nova Homeverse** (Domain `nova_homeverse`): Panel-Titel, Versionsanzeige und Hinweise der Karten („Die Integration Nova Homeverse fehlt …“) nennen den neuen Namen. `npm run integration` schreibt nach `custom_components/nova_homeverse/static`. Kartentypen und Kartennamen bleiben.
+- Der Hilfe-Link („?“) im Karteneditor führt jetzt zur Seite der Karte im Nova-Handbuch (nova-integration) statt ins README.
+
+### Doku
+- Echte Screenshots aus HA Dev (`npm run screenshots`, neu `npm run screenshots:ui` für die HA-Oberfläche).
+- Die Doku für Nutzer ist ins Handbuch von nova-integration umgezogen (`docs/`, mit Bildern). Das README hier ist nur noch
+  ein Hinweis aufs Entwicklungs-Repo; `docs/*-card.md` und `docs/images` sind entfernt.
+
 ## [0.1.0b7] – 2026-11-14
 
 ### Geändert

@@ -285,7 +285,7 @@ class NovaNoteCard extends HTMLElement {
     runPrint(this, this._h, c.print_script, {[c.print_field || 'text']: txt}, st => { this._pstate = st; this._paintBar(); });
   }
 }
-define('note-card', NovaNoteCard, {name: 'Nova Notiz Card', description: 'Notizen mit Titel und formatiertem Text (Fett, Listen, Checklisten): Liste und Detailansicht, anpinnen, auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf z. B. für einen Bondrucker.', documentationURL: docUrl('nova-notiz-card')});
+define('note-card', NovaNoteCard, {name: 'Nova Notiz Card', description: 'Notizen mit Titel und formatiertem Text (Fett, Listen, Checklisten): Liste und Detailansicht, anpinnen, auf allen Geräten gleich (Nova Homeverse), mit Druck-Knopf z. B. für einen Bondrucker.', documentationURL: docUrl('notiz')});
 
 /* ---------- Editor Notiz Card ---------- */
 const GEN = [
