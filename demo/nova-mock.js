@@ -4,7 +4,7 @@ const id = () => Math.random().toString(16).slice(2).padEnd(12, '0');
 const now = () => Date.now() / 1000;
 const T0 = now();
 const stores = [{id: 's1', name: 'Lidl', icon: 'mdi:cart-outline'}, {id: 's2', name: 'dm', icon: 'mdi:lipstick'}];
-// Einstellungen wie nova/settings/get; in der Demo per ?settings={"allgemein":{"animationen":"aus"}} vorbelegbar
+// Einstellungen wie nova_homeverse/settings/get; in der Demo per ?settings={"allgemein":{"animationen":"aus"}} vorbelegbar
 const SETTINGS = {allgemein: {theme: null, animationen: 'normal', schriftgroesse: 'normal', hintergrund: 'keiner'}, module: {theme: true, notes: true, shopping: true, recipes: true},
   einkauf: {standard_geschaeft: null, gruppierung: 'geschaeft', todo_entity: null, bilder: true}, notizen: {standard_schriftgroesse: 'normal', kompakt: false, todo_entity: null},
   rezepte: {buch_variante: 'old', standard_portionen: 2}, mealie: {url: null, token_gesetzt: false}};
@@ -44,14 +44,14 @@ const upsert = (arr, data, fresh) => {
 };
 
 export const novaSubscribe = (cb, m) => {
-  const k = /^nova\/(\w+)\/subscribe$/.exec(m.type)?.[1];
+  const k = /^nova_homeverse\/(\w+)\/subscribe$/.exec(m.type)?.[1];
   if (!subs[k]) return null;
   subs[k].add(cb);
   queueMicrotask(() => cb(JSON.parse(JSON.stringify(db[k]))));
   return () => subs[k].delete(cb);
 };
 export const novaCall = m => {
-  const [, mod, cmd] = /^nova\/(\w+)\/(\w+)$/.exec(m.type) || [];
+  const [, mod, cmd] = /^nova_homeverse\/(\w+)\/(\w+)$/.exec(m.type) || [];
   if (!mod) return undefined;
   const s = db.shopping;
   let res = {};
@@ -87,7 +87,7 @@ export const novaCall = m => {
     r.ingredients.forEach((g, i) => { if (!m.only || m.only.includes(i)) upsert(s.items, {name: g.name, qty: g.qty == null ? 1 : Math.round(g.qty * k * 100) / 100, unit: s.units.includes(g.unit) ? g.unit : 'Stk'}, {store: null, icon: null, image: null, note: '', done: false}); });
     push('shopping'); res = {added: r.ingredients.length};
   } else if (mod === 'image') {
-    // Demo: Bild bleibt als data-URL im Speicher (echte Integration: Datei in /config/www/nova/)
+    // Demo: Bild bleibt als data-URL im Speicher (echte Integration: Datei in /config/www/nova_homeverse/)
     const name = `${id()}${id()}${id().slice(0, 8)}.webp`;
     (window.__novaImages ||= {})[name] = m.data;
     res = {image: name, url: m.data};

@@ -16,7 +16,7 @@ function integration(h) {
     conn.subscribeMessage(m => {
       s.ok = true; s.key = THEMES[m?.theme] ? m.theme : undefined;
       window.dispatchEvent(new CustomEvent(THEME_EVENT));
-    }, {type: 'nova/theme/subscribe'}).catch(() => { /* Integration fehlt oder Modul aus → Helfer */ });
+    }, {type: 'nova_homeverse/theme/subscribe'}).catch(() => { /* Integration fehlt oder Modul aus → Helfer */ });
   }
   return s;
 }

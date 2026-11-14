@@ -49,9 +49,9 @@ export const hass = {
   localize: k => k.split('.').pop(), formatEntityState: s => s.state, formatEntityAttributeValue: (s, a) => String(s.attributes[a] ?? ''),
   formatEntityAttributeName: (s, a) => a, hassUrl: p => window.__novaImages?.[p.split('/').pop()] || p, callService: async () => ({response: {'todo.einkauf': {items: todo}, 'todo.notizen': {items: todo.slice(0, 1)}}}),
   callApi: async (m, p) => /calendars/.test(p) ? events : [],
-  callWS: async m => m.type.startsWith('nova/') ? novaCall(m) : m.type === 'todo/item/list' ? {items: todo} : m.type === 'lovelace/config' ? {views: []} : m.type === 'config/auth/list' ? [] : m.type === 'history/history_during_period'
+  callWS: async m => m.type.startsWith('nova_homeverse/') ? novaCall(m) : m.type === 'todo/item/list' ? {items: todo} : m.type === 'lovelace/config' ? {views: []} : m.type === 'config/auth/list' ? [] : m.type === 'history/history_during_period'
     ? Object.fromEntries((m.entity_ids || []).map(id => [id, Array.from({length: 24}, (_, i) => ({s: String(20 + Math.sin(i / 3) * 1.5), lu: 1762848000 + i * 3600}))])) : {},
-  connection: {subscribeMessage: async (cb, m) => { if (m.type.startsWith('nova/')) return novaSubscribe(cb, m); if (m.type === 'weather/subscribe_forecast') cb(forecast(m.forecast_type)); if (m.type === 'todo/item/subscribe') cb({items: todo}); return () => {}; },
+  connection: {subscribeMessage: async (cb, m) => { if (m.type.startsWith('nova_homeverse/')) return novaSubscribe(cb, m); if (m.type === 'weather/subscribe_forecast') cb(forecast(m.forecast_type)); if (m.type === 'todo/item/subscribe') cb({items: todo}); return () => {}; },
     subscribeEvents: async () => () => {}, sendMessagePromise: async () => ({})},
 };
 

@@ -6,7 +6,7 @@ Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): 
 Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezeptliste, Rezeptbuch und Themes Schalter – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
 `nova-cards.js` aus dem Repo-Root. Die Doku für Nutzer (Handbuch mit Bildern) steht in
-[nova-integration](https://github.com/Blackstar9119/nova-integration) unter `docs/`, das README hier ist nur ein Hinweis darauf.
+[nova-homeverse](https://github.com/Blackstar9119/nova-homeverse) unter `docs/`, das README hier ist nur ein Hinweis darauf.
 
 ## Ordnerstruktur
 
@@ -41,10 +41,10 @@ src/
   note.js             Nova Notiz Card + Editor (Nova-Integration: mehrere Notizen mit formatiertem Text, Liste ↔ Detail, Druck-Knopf)
   recipe.js           Nova Rezeptliste + Editor (Nova-Integration: kompakte Liste, Portionen umrechnen, Zutaten auf die Einkaufsliste)
   recipe-book.js      Nova Rezeptbuch + Editor (Buch zum Blättern, Stile old/modern/fantasy, dieselben Rezepte wie die Rezeptliste;
-                      Papier/Leder/Gold sind Materialfarben, Schriften von der Integration unter /nova/static/fonts)
+                      Papier/Leder/Gold sind Materialfarben, Schriften von der Integration unter /nova_homeverse/static/fonts)
   theme-switch.js     Nova Themes Schalter + Editor (globales Theme wählen: Chip, Button oder Dropdown)
   panel.js            Nova-Panel (Einstellungsseite der Integration, Seitenleiste „Nova“) – NICHT in nova-cards.js, sondern
-                      „npm run panel“ → panel/nova-panel.js (gitignored); die Datei nach nova-integration
+                      „npm run panel“ → panel/nova-panel.js (gitignored); die Datei nach nova-homeverse
                       custom_components/nova_homeverse/static/nova-panel.js kopieren und dort committen
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
@@ -63,11 +63,11 @@ src/
                       nur solange Nova Cards eingehängt sind; aufgerufen von theme-apply.js
     theme-store.js    Speicher des globalen Themes – EINZIGE Stelle: Nova-Integration (Modul Theme), ohne sie der Helfer
                       input_select.nova_theme (legt ihn selbst an)
-    settings-store.js Nova-Einstellungen (nova/settings/subscribe): ein Abo je Verbindung, fromSettings() für Karten-Optionen.
+    settings-store.js Nova-Einstellungen (nova_homeverse/settings/subscribe): ein Abo je Verbindung, fromSettings() für Karten-Optionen.
                       Reihenfolge immer: Option der Karte → Einstellung → Standard der Karte. Auswahlfelder, die von einer
                       Einstellung kommen, nicht ins DEF-Objekt des Editors (sonst entfernt er den Standardwert und man kann die
                       Einstellung nicht zurück übersteuern), Standard erst beim Zusammenführen in der Karte
-    nova-store.js     Zugriff auf die Nova-Integration (Repo nova-integration) – EINZIGE Stelle, die ihre WebSocket-API kennt:
+    nova-store.js     Zugriff auf die Nova-Integration (Repo nova-homeverse) – EINZIGE Stelle, die ihre WebSocket-API kennt:
                       Abo je Modul (watch), Notizen, Einkauf, Rezepte, Theme, Bilder
     rich-text.js      Formatierter Text: Leiste + Eingabefeld (richEditor), Anzeige (richView), Bereinigung (sanitize – dieselbe
                       Liste wie sanitize.py der Integration, beide zusammen ändern), Klartext für den Bondrucker (toPlain)
@@ -102,7 +102,7 @@ tools/
   check-tokens.mjs    „npm run check“: keine festen Farben im Karten-CSS
 scripts/
   screenshots.mjs     „npm run screenshots“: echte Bilder aller Karten aus HA Dev (Showcase), WebP fürs Handbuch nach
-                      ../nova-integration/docs/images (Konfiguration: screenshots.config.mjs, .env mit HA_URL/HA_TOKEN)
+                      ../nova-homeverse/docs/images (Konfiguration: screenshots.config.mjs, .env mit HA_URL/HA_TOKEN)
   handbook.mjs        „npm run screenshots:handbook“: Editor-Bilder mit roten Rahmen für die Rezepte im Handbuch
                       (docs/images/<karte>/<karte>-blue-howto-<id>.webp, Konfiguration: handbook.config.mjs; --only seite,…
                       für einzelne Seiten, --list kartentyp,… zeigt Bereiche und Felder des Editors)
@@ -114,7 +114,7 @@ build.mjs             esbuild-Build → nova-cards.js („npm run dev“ → dev
                       die Nova-Integration)
 package.json          Versionsnummer (einzige Stelle), „npm run build“ und „npm run dev [-- <karte>]“
 nova-cards.js         ERZEUGT – nicht von Hand bearbeiten
-README.md             Kurzer Hinweis: Entwicklungs-Repo, Doku und Installation über nova-integration
+README.md             Kurzer Hinweis: Entwicklungs-Repo, Doku und Installation über nova-homeverse
 CHANGELOG.md          Änderungen je Version (Keep a Changelog, SemVer)
 hacs.json             HACS-Metadaten
 ```
@@ -124,7 +124,7 @@ hacs.json             HACS-Metadaten
 - **Nur in `src/` arbeiten.** Danach `npm install` (einmalig) und `npm run build`. Die erzeugte `nova-cards.js`
   wird mit committet, weil HACS sie im Repo-Root braucht.
 - **Ausgeliefert wird über die Nova-Integration:** `npm run integration [-- <pfad>]` baut alle Karten verkleinert mit der Version
-  aus deren `manifest.json` und schreibt sie nach `../nova-integration/custom_components/nova_homeverse/static/nova-cards.js` (ohne das
+  aus deren `manifest.json` und schreibt sie nach `../nova-homeverse/custom_components/nova_homeverse/static/nova-cards.js` (ohne das
   Repo nach `integration/`, gitignored). Dort committen. Die Integration meldet die Datei selbst an (keine Dashboard-Ressource)
   und zeigt einen Hinweis, wenn die alte Ressource `nova-cards.js` noch eingetragen ist. `nova-cards.js` im Repo-Root bleibt
   für bestehende Marketplace-Installationen, bis der Eintrag eingestellt wird.
@@ -132,7 +132,7 @@ hacs.json             HACS-Metadaten
 - **Version** nur in `package.json` ändern; der Build setzt sie in Banner und Konsolen-Ausgabe ein. Jede Änderung kommt in `CHANGELOG.md`.
 - **Neue Karte** = neue Datei in `src/` (Karte + Editor), Import in `src/index.js`, Registrierung über
   `define()` aus `src/shared/define.js` (mit Name, Beschreibung, `documentationURL: docUrl(...)`) und ein
-  eigene Seite im Handbuch (nova-integration `docs/de/karten/<seite>.md`, `docUrl('<seite>')`).
+  eigene Seite im Handbuch (nova-homeverse `docs/de/karten/<seite>.md`, `docUrl('<seite>')`).
 - **Elementnamen nie hart als `'nova-…'` schreiben**, sonst kollidiert der Dev-Build mit der HACS-Version.
   Immer ohne Präfix: `define('x-card', …)` und `document.createElement(tag('x-card-editor'))` mit `tag()` aus
   `src/shared/define.js`.

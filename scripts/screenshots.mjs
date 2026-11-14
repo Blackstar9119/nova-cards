@@ -3,7 +3,7 @@
            [-- --no-hero] [-- --hero] [-- --optimize] [-- --publish-only]
    Zwei Stufen:
      1. Aufnahme: alles (alle Themes, Zustände, Editoren, GIFs, Hero) als PNG/GIF nach screenshots/ (gitignored).
-     2. Veröffentlichen: nur der schlanke Satz als WebP nach ../nova-integration/docs/images/ (Handbuch) – je Karte alle Zustände in
+     2. Veröffentlichen: nur der schlanke Satz als WebP nach ../nova-homeverse/docs/images/ (Handbuch) – je Karte alle Zustände in
         Nova Blau, das Editor-Bild und bei animierten Karten ein animiertes WebP; dazu Hero (Blau) und Theme-Vergleich.
         „--publish-only“ macht nur diesen Schritt aus dem vorhandenen screenshots/.
    Braucht .env im Repo-Root (gitignored):
@@ -21,8 +21,8 @@ import {CARDS, DASHBOARD, HERO, THEMES} from './screenshots.config.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'screenshots');       // kompletter Satz, gitignored
-// Schlanker Satz (WebP) fürs Handbuch in nova-integration (Repo daneben), anders per NOVA_DOCS in der .env
-let DOCS = join(ROOT, '../nova-integration/docs/images');
+// Schlanker Satz (WebP) fürs Handbuch in nova-homeverse (Repo daneben), anders per NOVA_DOCS in der .env
+let DOCS = join(ROOT, '../nova-homeverse/docs/images');
 const WEBP_Q = 85;
 const TMP = join(ROOT, 'scripts/.screenshots-tmp');
 const WIDTH = 1280, HEIGHT = 900, PAD = 12;   // einheitliche Breite: Sections-Ansicht bei 1280 px
@@ -140,7 +140,7 @@ async function snapshot() {
     const c = document.querySelector('home-assistant')?.hass?.connection;
     if (!c) return res(undefined);
     let unsub; const t = setTimeout(() => res(undefined), 3000);
-    c.subscribeMessage(m => { clearTimeout(t); res(m?.theme); unsub?.then(u => u()); }, {type: 'nova/theme/subscribe'})
+    c.subscribeMessage(m => { clearTimeout(t); res(m?.theme); unsub?.then(u => u()); }, {type: 'nova_homeverse/theme/subscribe'})
       .then(u => { unsub = Promise.resolve(u); }).catch(() => { clearTimeout(t); res(undefined); });
   }));
   log('Gesichert: Theme', saved.__novaTheme || saved.__theme, '+', Object.keys(saved).length - 2, 'Entitäten');
@@ -163,7 +163,7 @@ async function restore() {
 
 async function setTheme(key) {
   await hass(async (h, k) => {
-    try { await h.callWS({type: 'nova/theme/set', theme: k}); return; } catch { /* ohne Integration: Helfer */ }
+    try { await h.callWS({type: 'nova_homeverse/theme/set', theme: k}); return; } catch { /* ohne Integration: Helfer */ }
     const names = {blau: 'Nova Blau', hell: 'Nova Hell', midnight: 'Nova Midnight', velvet: 'Nova Velvet'};
     await h.callService('input_select', 'select_option', {option: names[k]}, {entity_id: 'input_select.nova_theme'});
   }, key);

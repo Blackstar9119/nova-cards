@@ -1,8 +1,8 @@
-/* Echte Screenshots der Home-Assistant-Oberfläche für das Nova-Handbuch (nova-integration/docs):
+/* Echte Screenshots der Home-Assistant-Oberfläche für das Nova-Handbuch (nova-homeverse/docs):
    Marketplace, Integration hinzufügen, Nova-Panel, erstes Dashboard, erste Karte.
    Aufruf: npm run screenshots:ui [-- --only marketplace,panel] [-- --publish-only]
    Wie screenshots.mjs: .env mit HA_URL und HA_TOKEN im Repo-Root, Aufnahme als PNG nach screenshots/ui (gitignored),
-   veröffentlicht als WebP nach <NOVA_DOCS>/ui (Standard: ../nova-integration/docs/images).
+   veröffentlicht als WebP nach <NOVA_DOCS>/ui (Standard: ../nova-homeverse/docs/images).
    Nichts wird dauerhaft verändert: Dialoge werden nur geöffnet und wieder geschlossen, nichts wird heruntergeladen
    oder eingerichtet. Ausnahme: das Beispiel-Dashboard „Mein Zuhause“ wird angelegt und am Ende wieder gelöscht,
    das globale Nova-Theme wird zurückgestellt. Die Entwicklungs-Ressource (nova-dev-cards.js) wird blockiert, damit
@@ -37,7 +37,7 @@ function env() {
   return {url: vars.HA_URL.replace(/\/$/, ''), token: vars.HA_TOKEN, docs: vars.NOVA_DOCS};
 }
 const {url: HA, token: TOKEN, docs} = env();
-const DOCS = join(resolve(ROOT, docs || '../nova-integration/docs/images'), 'ui');
+const DOCS = join(resolve(ROOT, docs || '../nova-homeverse/docs/images'), 'ui');
 
 const problems = [];
 const shots = [];
@@ -127,10 +127,10 @@ async function themeNow() {
   return page.evaluate(() => new Promise(res => {
     const c = document.querySelector('home-assistant').hass.connection;
     const t = setTimeout(() => res(undefined), 4000);
-    c.subscribeMessage(m => { clearTimeout(t); res(m?.theme); }, {type: 'nova/theme/subscribe'}).catch(() => res(undefined));
+    c.subscribeMessage(m => { clearTimeout(t); res(m?.theme); }, {type: 'nova_homeverse/theme/subscribe'}).catch(() => res(undefined));
   }));
 }
-const setTheme = k => hass((h, t) => h.callWS({type: 'nova/theme/set', theme: t}), k);
+const setTheme = k => hass((h, t) => h.callWS({type: 'nova_homeverse/theme/set', theme: t}), k);
 async function deleteDashboard() {
   await hass(async (h, u) => {
     const list = await h.callWS({type: 'lovelace/dashboards/list'});
@@ -161,7 +161,7 @@ if (want('marketplace')) {
   await step('link', async () => {
     await page.getByRole('button', {name: /Über Link hinzufügen/}).click();
     await sleep(1500);
-    await page.getByRole('textbox', {name: /GitHub-Link/}).fill('https://github.com/Blackstar9119/nova-integration');
+    await page.getByRole('textbox', {name: /GitHub-Link/}).fill('https://github.com/Blackstar9119/nova-homeverse');
     await sleep(500);
     await mark(page.getByRole('button', {name: 'Hinzufügen', exact: true}));
     await shot('install-03-link');
@@ -212,10 +212,10 @@ if (want('integration')) {
     await shot('install-09-nova-suchen');
     await page.keyboard.press('Escape');   // Nova ist hier schon eingerichtet
   });
-  await step('nova-integration', async () => {
+  await step('nova-homeverse', async () => {
     await go('/config/integrations/integration/nova');
     await mark(page.getByRole('button', {name: /Konfigurieren|Optionen/}).first());
-    await shot('install-10-nova-integration');
+    await shot('install-10-nova-homeverse');
   });
   await step('module', async () => {
     await page.getByRole('button', {name: /Konfigurieren|Optionen/}).first().click();
