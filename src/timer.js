@@ -657,7 +657,7 @@ class NovaTimerCard extends HTMLElement {
     if (!run && this._tm) { clearInterval(this._tm); this._tm = null; }
   }
 }
-define('timer-card', NovaTimerCard, {name: 'Nova Timer Card', description: 'Küchen-Timer über einen Timer-Helfer: Schnellwahl, eigene Zeit, Pause, +1 Minute, Abbrechen – auf allen Geräten synchron, mit Hinweis beim Ablauf.', documentationURL: docUrl('nova-timer-card')});
+define('timer-card', NovaTimerCard, {name: 'Nova Timer Card', description: 'Küchen-Timer über einen Timer-Helfer: Schnellwahl, eigene Zeit, Pause, +1 Minute, Abbrechen – auf allen Geräten synchron, mit Hinweis beim Ablauf.', documentationURL: docUrl('timer')});
 
 /* ---------- Editor ---------- */
 const S_GEN = [

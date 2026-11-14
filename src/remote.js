@@ -340,7 +340,7 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ''}</div>`;
     }
   }
 }
-define('remote-card', NovaRemoteCard, {name: 'Nova Fernbedienung', description: 'Fernbedienung für Fernseher und Streaming-Boxen (Android TV/Google TV, Fire TV, Philips, Apple TV, Roku, Samsung): Steuerkreuz oder Touchpad, Medien, Lautstärke und Apps.', documentationURL: docUrl('nova-fernbedienung')});
+define('remote-card', NovaRemoteCard, {name: 'Nova Fernbedienung', description: 'Fernbedienung für Fernseher und Streaming-Boxen (Android TV/Google TV, Fire TV, Philips, Apple TV, Roku, Samsung): Steuerkreuz oder Touchpad, Medien, Lautstärke und Apps.', documentationURL: docUrl('fernbedienung')});
 
 /* ---------- Editor Fernbedienung ---------- */
 const RGEN = [

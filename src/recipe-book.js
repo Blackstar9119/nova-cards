@@ -1061,7 +1061,7 @@ const DEMO = [
     steps: '<p>Kartoffeln würfeln</p><p>Alles 20 Minuten kochen</p><p>Pürieren</p>'},
 ];
 
-define('recipe-book-card', NovaRecipeBookCard, {name: 'Nova Rezeptbuch', description: 'Rezeptbuch zum Blättern in drei Stilen (altes Kochbuch, modern, Fantasy): Inhaltsverzeichnis, Rezepte mit Foto, Zutaten und Zubereitung, Portionen umrechnen, Zutaten auf die Einkaufsliste. Dieselben Rezepte wie in der Nova Rezeptliste (Nova-Integration).', documentationURL: docUrl('nova-rezeptbuch')});
+define('recipe-book-card', NovaRecipeBookCard, {name: 'Nova Rezeptbuch', description: 'Rezeptbuch zum Blättern in drei Stilen (altes Kochbuch, modern, Fantasy): Inhaltsverzeichnis, Rezepte mit Foto, Zutaten und Zubereitung, Portionen umrechnen, Zutaten auf die Einkaufsliste. Dieselben Rezepte wie in der Nova Rezeptliste (Nova Homeverse).', documentationURL: docUrl('rezeptbuch')});
 
 /* ---------- Editor ---------- */
 const S_BOOK = [

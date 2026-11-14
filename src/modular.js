@@ -231,7 +231,7 @@ class NovaModularCard extends HTMLElement {
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('modular-card', NovaModularCard, {name: 'Nova Modular Card', description: 'Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.', documentationURL: docUrl('nova-modular-card')});
+define('modular-card', NovaModularCard, {name: 'Nova Modular Card', description: 'Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.', documentationURL: docUrl('modular')});
 
 /* ---------- Editor Modular Card ---------- */
 

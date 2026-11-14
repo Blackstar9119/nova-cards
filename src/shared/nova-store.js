@@ -1,4 +1,4 @@
-// Zugriff auf die Nova-Integration (custom_components/nova) – die EINZIGE Stelle, die ihre WebSocket-API kennt.
+// Zugriff auf die Nova-Integration (custom_components/nova_homeverse) – die EINZIGE Stelle, die ihre WebSocket-API kennt.
 // Daten (Notizen, Einkaufsliste, Bilder) liegen in Home Assistant, damit alle Geräte dasselbe sehen.
 // Ein Abo je Modul (theme, notes, shopping, recipes) und Verbindung, egal wie viele Karten es nutzen.
 
@@ -10,8 +10,8 @@ const reason = err => err?.code === 'unknown_command' || err?.code === 'not_read
 const MODULE_NAMES = {notes: 'Notizen', shopping: 'Einkauf', recipes: 'Rezeptbuch', theme: 'Theme'};
 // Hinweistext zu einem Fehlercode: [icon, text]
 export const storeHint = (err, kind) => err === 'missing'
-  ? ['mdi:puzzle-plus-outline', 'Die Nova-Integration fehlt. Im Marketplace „Nova“ installieren und unter Einstellungen → Geräte & Dienste hinzufügen.']
-  : err === 'disabled' ? ['mdi:toggle-switch-off-outline', `Das Modul „${MODULE_NAMES[kind] || kind}“ ist in den Optionen der Nova-Integration abgeschaltet.`]
+  ? ['mdi:puzzle-plus-outline', 'Die Integration Nova Homeverse fehlt. Im Marketplace „Nova Homeverse“ installieren und unter Einstellungen → Geräte & Dienste hinzufügen.']
+  : err === 'disabled' ? ['mdi:toggle-switch-off-outline', `Das Modul „${MODULE_NAMES[kind] || kind}“ ist in den Optionen von Nova Homeverse abgeschaltet.`]
     : ['mdi:alert-circle-outline', 'Die Daten konnten nicht geladen werden.'];
 
 // Karte meldet sich an: onChange(data, err) bei jeder Änderung. Liefert eine Abmeldefunktion.

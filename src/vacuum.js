@@ -642,7 +642,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ''}<div
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('vacuum-card', NovaVacuumCard, {name: 'Nova Saugroboter Card', description: 'Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.', documentationURL: docUrl('nova-saugroboter-card')});
+define('vacuum-card', NovaVacuumCard, {name: 'Nova Saugroboter Card', description: 'Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.', documentationURL: docUrl('saugroboter')});
 
 /* ---------- Editor Saugroboter Card ---------- */
 const VGEN = [

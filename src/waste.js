@@ -265,7 +265,7 @@ class NovaWasteCard extends HTMLElement {
     return el;
   }
 }
-define('waste-card', NovaWasteCard, {name: 'Nova Müllkalender Card', description: 'Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.', documentationURL: docUrl('nova-müllkalender-card')});
+define('waste-card', NovaWasteCard, {name: 'Nova Müllkalender Card', description: 'Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.', documentationURL: docUrl('muellkalender')});
 
 /* ---------- Editor Müllkalender Card ---------- */
 const WGEN = [

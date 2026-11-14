@@ -441,7 +441,7 @@
       STOP_DELAY = 5e3;
       reason = (err) => err?.code === "unknown_command" || err?.code === "not_ready" ? "missing" : err?.code === "module_disabled" ? "disabled" : "failed";
       MODULE_NAMES = { notes: "Notizen", shopping: "Einkauf", recipes: "Rezeptbuch", theme: "Theme" };
-      storeHint = (err, kind) => err === "missing" ? ["mdi:puzzle-plus-outline", "Die Nova-Integration fehlt. Im Marketplace „Nova“ installieren und unter Einstellungen → Geräte & Dienste hinzufügen."] : err === "disabled" ? ["mdi:toggle-switch-off-outline", `Das Modul „${MODULE_NAMES[kind] || kind}“ ist in den Optionen der Nova-Integration abgeschaltet.`] : ["mdi:alert-circle-outline", "Die Daten konnten nicht geladen werden."];
+      storeHint = (err, kind) => err === "missing" ? ["mdi:puzzle-plus-outline", "Die Integration Nova Homeverse fehlt. Im Marketplace „Nova Homeverse“ installieren und unter Einstellungen → Geräte & Dienste hinzufügen."] : err === "disabled" ? ["mdi:toggle-switch-off-outline", `Das Modul „${MODULE_NAMES[kind] || kind}“ ist in den Optionen von Nova Homeverse abgeschaltet.`] : ["mdi:alert-circle-outline", "Die Daten konnten nicht geladen werden."];
       ws = (hass, type, data = {}) => hass.callWS({ type, ...data });
       notes = {
         save: (hass, note) => ws(hass, "nova/notes/save", { note }).then((r) => r.note),
@@ -709,7 +709,7 @@
   });
 
   // src/shared/define.js
-  var DEV, tag, define, REPO, docUrl;
+  var DEV, tag, define, HANDBUCH, docUrl;
   var init_define = __esm({
     "src/shared/define.js"() {
       init_theme_apply();
@@ -725,8 +725,8 @@
           if (!window.customCards.some((c) => c.type === t)) window.customCards.push({ type: t, preview: true, ...meta });
         }
       };
-      REPO = "https://github.com/Blackstar9119/nova-cards";
-      docUrl = (anchor2) => `${REPO}#${anchor2}`;
+      HANDBUCH = "https://github.com/Blackstar9119/nova-integration/blob/main/docs/de/karten";
+      docUrl = (page) => `${HANDBUCH}/${page}.md`;
     }
   });
 
@@ -1976,7 +1976,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
           this._room.classList.toggle("lit", lit);
         }
       };
-      define(TAG, NovaRoomCard, { name: "Nova Raum Card", description: "Raumkachel mit Temperatur, Fenster-Warnung und frei belegbaren Buttons.", documentationURL: docUrl("nova-raum-card") });
+      define(TAG, NovaRoomCard, { name: "Nova Raum Card", description: "Raumkachel mit Temperatur, Fenster-Warnung und frei belegbaren Buttons.", documentationURL: docUrl("raum") });
     }
   });
 
@@ -2285,7 +2285,7 @@ font:inherit;font-size:var(--nv-fs-10);outline:none;-webkit-appearance:none;appe
           }
         }
       };
-      define(TAG2, NovaThermostatCard, { name: "Nova Thermostat Card", description: "Thermostat mit Ist-/Solltemperatur, ± Stepper, Verlauf und Modi.", documentationURL: docUrl("nova-thermostat-card") });
+      define(TAG2, NovaThermostatCard, { name: "Nova Thermostat Card", description: "Thermostat mit Ist-/Solltemperatur, ± Stepper, Verlauf und Modi.", documentationURL: docUrl("thermostat") });
     }
   });
 
@@ -2794,7 +2794,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
           return name;
         }
       };
-      define(TAG3, NovaLightCard, { name: "Nova Licht Card", description: "Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.", documentationURL: docUrl("nova-licht-card") });
+      define(TAG3, NovaLightCard, { name: "Nova Licht Card", description: "Lampen als Kacheln: Antippen schaltet, Regler dimmt, leuchtet in der Lichtfarbe.", documentationURL: docUrl("licht") });
     }
   });
 
@@ -3726,7 +3726,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
           this._update();
         }
       };
-      define("navi-card", NovaNaviCard, { name: "Nova Navi", description: "Navigationsleiste unten, oben oder als Seitenleiste: navigieren, Aktionen, Untermenüs, Pop-ups, Badges und eine kleine Media-Leiste.", documentationURL: docUrl("nova-navi") });
+      define("navi-card", NovaNaviCard, { name: "Nova Navi", description: "Navigationsleiste unten, oben oder als Seitenleiste: navigieren, Aktionen, Untermenüs, Pop-ups, Badges und eine kleine Media-Leiste.", documentationURL: docUrl("navi") });
       define("dock-card", class NovaDockCard extends NovaNaviCard {
       });
       GEN3 = [{ name: "source", selector: { text: {} } }];
@@ -4295,7 +4295,7 @@ ha-icon{--mdc-icon-size:22px;display:flex}
           return runAction(this, o, kind, info);
         }
       };
-      define("modular-card", NovaModularCard, { name: "Nova Modular Card", description: "Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.", documentationURL: docUrl("nova-modular-card") });
+      define("modular-card", NovaModularCard, { name: "Nova Modular Card", description: "Frei zusammensetzbare Gerätekarte: Kopfzeile, Infos, Schalter, Regler, Aktionsbuttons und Warnungen.", documentationURL: docUrl("modular") });
       BM = {
         // parts: Einstellungen in Gruppen mit Zwischenüberschrift (sonst ein Formular aus schema)
         header: { label: "Kopfzeile", icon: "mdi:page-layout-header", parts: [
@@ -4995,7 +4995,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ""}${!ov && c.buttons.le
           return runAction(this, o, kind, info);
         }
       };
-      define("camera-card", NovaCameraCard, { name: "Nova Kamera Card", description: "Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.", documentationURL: docUrl("nova-kamera-card") });
+      define("camera-card", NovaCameraCard, { name: "Nova Kamera Card", description: "Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.", documentationURL: docUrl("kamera") });
       C_GEN = [
         { name: "entity", required: true, selector: { entity: { domain: ["camera", "image"] } } },
         g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
@@ -5514,7 +5514,7 @@ ${c.show_source ? '<div class="pills src"></div>' : ""}</div>`;
           return runAction(this, o, kind, info);
         }
       };
-      define("media-card", NovaMediaCard, { name: "Nova Media Card", description: "Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.", documentationURL: docUrl("nova-media-card") });
+      define("media-card", NovaMediaCard, { name: "Nova Media Card", description: "Media-Player mit Cover als Hintergrund, Titel, Interpret, App-Logo, Play/Pause, Vor/Zurück, Lautstärke, Stumm, Ein/Aus, Quellen und mehreren umschaltbaren Playern.", documentationURL: docUrl("media") });
       MP = { domain: ["media_player"] };
       MPGEN = [
         { name: "entity", required: true, selector: { entity: MP } },
@@ -6476,7 +6476,7 @@ ${c.map ? `<div class="mpnl">${mt ? `<div class="bt">${esc(mt)}</div>` : ""}<div
           return runAction(this, o, kind, info);
         }
       };
-      define("vacuum-card", NovaVacuumCard, { name: "Nova Saugroboter Card", description: "Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.", documentationURL: docUrl("nova-saugroboter-card") });
+      define("vacuum-card", NovaVacuumCard, { name: "Nova Saugroboter Card", description: "Saugroboter mit Status, Akku, Start/Pause/Stopp/Zur Station, Saugstärke, Karte daneben, Raumreinigung, Schaltern und Verbrauchsteilen.", documentationURL: docUrl("saugroboter") });
       VGEN = [
         { name: "entity", required: true, selector: { entity: { domain: ["vacuum"] } } },
         g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
@@ -6987,7 +6987,7 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);tr
           return el2;
         }
       };
-      define("waste-card", NovaWasteCard, { name: "Nova Müllkalender Card", description: "Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.", documentationURL: docUrl("nova-müllkalender-card") });
+      define("waste-card", NovaWasteCard, { name: "Nova Müllkalender Card", description: "Nächste Müllabholungen aus einem oder mehreren Kalendern – mit Müllart, Icon, Farbe, Datum und „heute / morgen / in X Tagen“.", documentationURL: docUrl("muellkalender") });
       WGEN = [
         { name: "entities", required: true, selector: { entity: { domain: "calendar", multiple: true } } },
         g2({ name: "title", selector: T }, { name: "icon", selector: I })
@@ -7529,7 +7529,7 @@ background:rgba(var(--nv-tint),.05);border:1px solid rgba(var(--nv-tint),.07);tr
           return `<div class="sec">${title}${graph}<div class="hcols" style="--n:${v.hours.length}">${cols}</div></div>`;
         }
       };
-      define("weather-card", NovaWeatherCard, { name: "Nova Wetter Card", description: "Aktuelles Wetter einer weather.*-Entität mit Tages- und Stundenvorhersage – Icon, Temperatur, Zustand, Max/Min, Regen und Werte wie Luftfeuchte, Wind und Luftdruck.", documentationURL: docUrl("nova-wetter-card") });
+      define("weather-card", NovaWeatherCard, { name: "Nova Wetter Card", description: "Aktuelles Wetter einer weather.*-Entität mit Tages- und Stundenvorhersage – Icon, Temperatur, Zustand, Max/Min, Regen und Werte wie Luftfeuchte, Wind und Luftdruck.", documentationURL: docUrl("wetter") });
       TSENS = { entity: { domain: "sensor", device_class: "temperature" } };
       BOOL = (n) => ({ name: n, selector: { boolean: {} } });
       NUMB = (n, min, max, unit) => ({ name: n, selector: { number: { min, max, mode: "box", ...unit ? { unit_of_measurement: unit } : {} } } });
@@ -8870,7 +8870,7 @@ padding:0 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direct
         }
       };
       __publicField(NovaPopupCard, "gridKind", "popup");
-      define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – von Nova Navi oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("nova-pop-up-card") });
+      define("popup-card", NovaPopupCard, { name: "Nova Pop-up Card", description: "Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – von Nova Navi oder jeder Karte mit Navigations-Aktion.", documentationURL: docUrl("popup") });
       GENERAL = [
         { name: "hash", required: true, selector: T },
         g2({ name: "title", selector: T }, { name: "icon", selector: I }),
@@ -9331,7 +9331,7 @@ backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat));-webkit-backdrop-fi
         }
       };
       __publicField(NovaAreaCard, "gridKind", "area");
-      define("area-card", NovaAreaCard, { name: "Nova Bereich Card", description: "Raumansicht als Glasrahmen: Kopfzeile mit Zurück, Icon, Raumname und Chips, darunter beliebige Karten in Zeilen und Spalten.", documentationURL: docUrl("nova-bereich-card") });
+      define("area-card", NovaAreaCard, { name: "Nova Bereich Card", description: "Raumansicht als Glasrahmen: Kopfzeile mit Zurück, Icon, Raumname und Chips, darunter beliebige Karten in Zeilen und Spalten.", documentationURL: docUrl("bereich") });
       S_GEN3 = (icon2) => [
         { name: "area", selector: { area: {} } },
         g2({ name: "name", selector: T }, { name: "icon", selector: { icon: icon2 ? { placeholder: icon2 } : {} } }),
@@ -9678,7 +9678,7 @@ backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat));-webkit-backdrop-fi
           }, s * 1e3);
         }
       };
-      define("swipe-card", NovaSwipeCard, { name: "Nova Swipe Card", description: "Mehrere Seiten mit beliebigen Karten in einer Karte – zum Wischen, mit Seiten-Punkten. Ideal für kleine Displays.", documentationURL: docUrl("nova-swipe-card") });
+      define("swipe-card", NovaSwipeCard, { name: "Nova Swipe Card", description: "Mehrere Seiten mit beliebigen Karten in einer Karte – zum Wischen, mit Seiten-Punkten. Ideal für kleine Displays.", documentationURL: docUrl("swipe") });
       S_PAGE = [g2({ name: "name", selector: T }, { name: "icon", selector: I })];
       S_SWIPE = [
         g2({ name: "dots", selector: { boolean: {} } }, { name: "fill", selector: { boolean: {} } }),
@@ -9972,7 +9972,7 @@ backdrop-filter:blur(var(--nv-blur)) saturate(var(--nv-sat));-webkit-backdrop-fi
           renderNovaChips(this, this._box, this._cfg.chips, this._h, { area: this._cfg.area });
         }
       };
-      define("chips-card", NovaChipsCard, { name: "Nova Chips Card", description: "Eine Reihe frei belegbarer Chips: Werte von Entitäten oder Knöpfe mit Aktion, z. B. „Alle Lichter im Raum aus“.", documentationURL: docUrl("nova-chips-card") });
+      define("chips-card", NovaChipsCard, { name: "Nova Chips Card", description: "Eine Reihe frei belegbarer Chips: Werte von Entitäten oder Knöpfe mit Aktion, z. B. „Alle Lichter im Raum aus“.", documentationURL: docUrl("chips") });
       S_GEN4 = [
         { name: "area", selector: { area: {} } },
         sel("layout", [["wrap", "Umbrechen"], ["scroll", "Waagrecht scrollen"]]),
@@ -11468,7 +11468,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           return runAction(this, o, kind, info);
         }
       };
-      define("geraet-card", NovaApplianceCard, { name: "Nova Gerät Card", description: "Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.", documentationURL: docUrl("nova-gerät-card") });
+      define("geraet-card", NovaApplianceCard, { name: "Nova Gerät Card", description: "Haushaltsgerät (Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen …) mit Status, Programm, Fortschritt, Restzeit, Reglern und Start/Pause/Stopp.", documentationURL: docUrl("geraet") });
       ST = { entity: {} };
       BTN = { entity: { domain: ["button", "input_button", "script", "scene", "switch", "input_boolean"] } };
       GGEN = [
@@ -12813,7 +12813,7 @@ ${cmp ? '<div class="bar" hidden><i></i></div>' : `<div class="mid"><div class="
           return runAction(this, o, kind, info);
         }
       };
-      define("drucker-card", NovaPrinterCard, { name: "Nova 3D-Drucker Card", description: "3D-Drucker (Bambu Lab) mit animierter Druckerzeichnung, AMS, Fortschritt, Temperaturen, Meldungen und Pause/Fortsetzen/Stopp.", documentationURL: docUrl("nova-3d-drucker-card") });
+      define("drucker-card", NovaPrinterCard, { name: "Nova 3D-Drucker Card", description: "3D-Drucker (Bambu Lab) mit animierter Druckerzeichnung, AMS, Fortschritt, Temperaturen, Meldungen und Pause/Fortsetzen/Stopp.", documentationURL: docUrl("drucker") });
       SE = (d) => ({ entity: { domain: d } });
       PGEN = [{ name: "device", selector: { device: { filter: { integration: "bambu_lab" } } } }, g2({ name: "name", selector: T }, { name: "icon", selector: I })];
       PENT = [
@@ -13548,7 +13548,7 @@ ${this._apps.length ? '<div class="pills grid apps"></div>' : ""}</div>`;
           }
         }
       };
-      define("remote-card", NovaRemoteCard, { name: "Nova Fernbedienung", description: "Fernbedienung für Fernseher und Streaming-Boxen (Android TV/Google TV, Fire TV, Philips, Apple TV, Roku, Samsung): Steuerkreuz oder Touchpad, Medien, Lautstärke und Apps.", documentationURL: docUrl("nova-fernbedienung") });
+      define("remote-card", NovaRemoteCard, { name: "Nova Fernbedienung", description: "Fernbedienung für Fernseher und Streaming-Boxen (Android TV/Google TV, Fire TV, Philips, Apple TV, Roku, Samsung): Steuerkreuz oder Touchpad, Medien, Lautstärke und Apps.", documentationURL: docUrl("fernbedienung") });
       RGEN = [
         { name: "entity", required: true, selector: { entity: { domain: ["remote", "media_player"] } } },
         g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } }),
@@ -14639,7 +14639,7 @@ ${dialGlass("t", CX, CY, R)}</g>${bellBadge(CX + R, CY + R)}</svg>`;
           }
         }
       };
-      define("timer-card", NovaTimerCard, { name: "Nova Timer Card", description: "Küchen-Timer über einen Timer-Helfer: Schnellwahl, eigene Zeit, Pause, +1 Minute, Abbrechen – auf allen Geräten synchron, mit Hinweis beim Ablauf.", documentationURL: docUrl("nova-timer-card") });
+      define("timer-card", NovaTimerCard, { name: "Nova Timer Card", description: "Küchen-Timer über einen Timer-Helfer: Schnellwahl, eigene Zeit, Pause, +1 Minute, Abbrechen – auf allen Geräten synchron, mit Hinweis beim Ablauf.", documentationURL: docUrl("timer") });
       S_GEN5 = [
         { name: "entity", required: true, selector: { entity: { domain: "timer" } } },
         g2({ name: "name", selector: T }, { name: "icon", selector: I, context: { icon_entity: "entity" } })
@@ -15305,7 +15305,7 @@ ${dialGlass("k", C, C, R2)}</svg>`;
           }, step - now % step + 15);
         }
       };
-      define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit im Nova-Stil: digital, Klappzahlen, analog, Leuchtziffern oder Radiowecker, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("nova-uhr-card") });
+      define("clock-card", NovaClockCard, { name: "Nova Uhr Card", description: "Uhrzeit im Nova-Stil: digital, Klappzahlen, analog, Leuchtziffern oder Radiowecker, wahlweise mit Sekunden, Wochentag und Datum.", documentationURL: docUrl("uhr") });
       S_GEN6 = [
         sel("style", [["default", "Standard (digital)"], ["flip", "Klappzahlen"], ["analog", "Analog (Zifferblatt)"], ["glow", "Leuchtziffern (Farbe nach Sonnenstand)"], ["retro", "Radiowecker (Sieben-Segment)"]]),
         { name: "name", selector: T }
@@ -17125,7 +17125,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
           );
         }
       };
-      define("shopping-card", NovaShoppingCard, { name: "Nova Einkauf Card", description: "Einkaufsliste mit Menge, Einheit, Geschäft, Icon oder eigenem Bild und Notiz: nach Geschäft gruppiert, abhaken, zuletzt Gekauftes als Schnellauswahl, auf allen Geräten gleich (Nova-Integration), optional mit todo-Liste für Assist und Druck-Knopf.", documentationURL: docUrl("nova-einkauf-card") });
+      define("shopping-card", NovaShoppingCard, { name: "Nova Einkauf Card", description: "Einkaufsliste mit Menge, Einheit, Geschäft, Icon oder eigenem Bild und Notiz: nach Geschäft gruppiert, abhaken, zuletzt Gekauftes als Schnellauswahl, auf allen Geräten gleich (Nova Homeverse), optional mit todo-Liste für Assist und Druck-Knopf.", documentationURL: docUrl("einkauf") });
       GEN4 = [
         g2({ name: "name", selector: T }, { name: "icon", selector: I }),
         { name: "show_header", selector: { boolean: {} } },
@@ -17161,7 +17161,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         show_suggestions: "Zuletzt gekaufte Artikel als Chips unter dem Eingabefeld.",
         default_store: "Für neue Artikel, die noch nie gekauft wurden.",
         height: "Im Raster füllt die Karte den Platz aus.",
-        entity: "Optional, z. B. todo.shopping_list. Die Nova-Integration hält beide Listen gleich – so funktioniert „Setz Milch auf die Einkaufsliste“ weiter. Gilt für alle Einkauf-Karten.",
+        entity: "Optional, z. B. todo.shopping_list. Nova Homeverse hält beide Listen gleich – so funktioniert „Setz Milch auf die Einkaufsliste“ weiter. Gilt für alle Einkauf-Karten.",
         print_field: "Unter diesem Namen bekommt das Skript die offene Liste als Klartext (Standard: text), zusätzlich „items“ als Liste."
       };
       NovaShoppingCardEditor = class extends NovaEditorBase {
@@ -17544,7 +17544,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
           });
         }
       };
-      define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Notizen mit Titel und formatiertem Text (Fett, Listen, Checklisten): Liste und Detailansicht, anpinnen, auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf z. B. für einen Bondrucker.", documentationURL: docUrl("nova-notiz-card") });
+      define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Notizen mit Titel und formatiertem Text (Fett, Listen, Checklisten): Liste und Detailansicht, anpinnen, auf allen Geräten gleich (Nova Homeverse), mit Druck-Knopf z. B. für einen Bondrucker.", documentationURL: docUrl("notiz") });
       GEN5 = [
         g2({ name: "name", selector: T }, { name: "icon", selector: I }),
         { name: "show_header", selector: { boolean: {} } }
@@ -17635,7 +17635,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
         too_large: "Die Seite ist zu groß zum Einlesen.",
         module_disabled: "Das Rezept-Modul ist in Nova abgeschaltet."
       };
-      importError = (x) => IMPORT_ERR[x?.code] || (x?.code === "unknown_command" ? "Dafür braucht es eine neuere Nova-Integration." : "Das hat nicht geklappt. Später nochmal versuchen?");
+      importError = (x) => IMPORT_ERR[x?.code] || (x?.code === "unknown_command" ? "Dafür braucht es eine neuere Version von Nova Homeverse." : "Das hat nicht geklappt. Später nochmal versuchen?");
     }
   });
 
@@ -18481,7 +18481,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
           });
         }
       };
-      define("recipe-card", NovaRecipeCard, { name: "Nova Rezeptliste", description: "Kompakte Rezeptliste mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf.", documentationURL: docUrl("nova-rezeptliste") });
+      define("recipe-card", NovaRecipeCard, { name: "Nova Rezeptliste", description: "Kompakte Rezeptliste mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova Homeverse), mit Druck-Knopf.", documentationURL: docUrl("rezeptliste") });
       GEN6 = [
         g2({ name: "name", selector: T }, { name: "icon", selector: I }),
         { name: "show_header", selector: { boolean: {} } }
@@ -19829,7 +19829,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
           steps: "<p>Kartoffeln würfeln</p><p>Alles 20 Minuten kochen</p><p>Pürieren</p>"
         }
       ];
-      define("recipe-book-card", NovaRecipeBookCard, { name: "Nova Rezeptbuch", description: "Rezeptbuch zum Blättern in drei Stilen (altes Kochbuch, modern, Fantasy): Inhaltsverzeichnis, Rezepte mit Foto, Zutaten und Zubereitung, Portionen umrechnen, Zutaten auf die Einkaufsliste. Dieselben Rezepte wie in der Nova Rezeptliste (Nova-Integration).", documentationURL: docUrl("nova-rezeptbuch") });
+      define("recipe-book-card", NovaRecipeBookCard, { name: "Nova Rezeptbuch", description: "Rezeptbuch zum Blättern in drei Stilen (altes Kochbuch, modern, Fantasy): Inhaltsverzeichnis, Rezepte mit Foto, Zutaten und Zubereitung, Portionen umrechnen, Zutaten auf die Einkaufsliste. Dieselben Rezepte wie in der Nova Rezeptliste (Nova Homeverse).", documentationURL: docUrl("rezeptbuch") });
       S_BOOK = [
         g2({ name: "title", selector: T }, { name: "subtitle", selector: T }),
         g2(
@@ -19988,7 +19988,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
           r.querySelector(".nchip, .g").classList.toggle("busy", !!this._busy);
         }
       };
-      define("theme-card", NovaThemeSwitchCard, { name: "Nova Themes Schalter", description: "Wählt das Nova-Theme (Blau, Hell …) für alle Nova Cards auf allen Geräten – als Chip, Button oder Dropdown. Richtet sich beim ersten Umschalten selbst ein.", documentationURL: docUrl("nova-themes-schalter") });
+      define("theme-card", NovaThemeSwitchCard, { name: "Nova Themes Schalter", description: "Wählt das Nova-Theme (Blau, Hell …) für alle Nova Cards auf allen Geräten – als Chip, Button oder Dropdown. Richtet sich beim ersten Umschalten selbst ein.", documentationURL: docUrl("themes-schalter") });
       S_GEN7 = [
         sel("display", [["button", "Button (Antippen schaltet weiter)"], ["chip", "Chip (wie die Chips Card)"], ["dropdown", "Dropdown (Liste)"]]),
         g2({ name: "name", selector: T }, { name: "icon", selector: I })
@@ -20057,7 +20057,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
   var SOURCE = "resource";
   var first = window[KEY2];
   if (first) {
-    const via = (src) => src === "integration" ? "die Nova-Integration" : "eine Dashboard-Ressource";
+    const via = (src) => src === "integration" ? "Nova Homeverse" : "eine Dashboard-Ressource";
     console.warn(
       `Nova Cards sind doppelt eingebunden: v${first.version} über ${via(first.source)} und v${"0.1.0b7"} über ${via(SOURCE)}. Es läuft nur die erste.` + ([first.source, SOURCE].includes("integration") ? " Die alte Ressource nova-cards.js kann weg: Marketplace → Nova Cards → Entfernen." : "")
     );

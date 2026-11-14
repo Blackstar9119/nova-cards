@@ -746,7 +746,7 @@ class NovaNaviCard extends HTMLElement {
     this._update();
   }
 }
-define('navi-card', NovaNaviCard, {name: 'Nova Navi', description: 'Navigationsleiste unten, oben oder als Seitenleiste: navigieren, Aktionen, Untermenüs, Pop-ups, Badges und eine kleine Media-Leiste.', documentationURL: docUrl('nova-navi')});
+define('navi-card', NovaNaviCard, {name: 'Nova Navi', description: 'Navigationsleiste unten, oben oder als Seitenleiste: navigieren, Aktionen, Untermenüs, Pop-ups, Badges und eine kleine Media-Leiste.', documentationURL: docUrl('navi')});
 // Alter Kartentyp custom:nova-dock-card läuft weiter (nicht mehr in der Kartenauswahl)
 define('dock-card', class NovaDockCard extends NovaNaviCard {});
 
