@@ -45,7 +45,7 @@ src/
   theme-switch.js     Nova Themes Schalter + Editor (globales Theme wählen: Chip, Button oder Dropdown)
   panel.js            Nova-Panel (Einstellungsseite der Integration, Seitenleiste „Nova“) – NICHT in nova-cards.js, sondern
                       „npm run panel“ → panel/nova-panel.js (gitignored); die Datei nach nova-integration
-                      custom_components/nova/static/nova-panel.js kopieren und dort committen
+                      custom_components/nova_homeverse/static/nova-panel.js kopieren und dort committen
   shared/
     define.js         define() – EINZIGE Stelle für customElements.define + Kartenauswahl, docUrl(),
                       tag() für Elementnamen (nova- bzw. im Dev-Build nova-dev-), DEV
@@ -121,7 +121,7 @@ hacs.json             HACS-Metadaten
 - **Nur in `src/` arbeiten.** Danach `npm install` (einmalig) und `npm run build`. Die erzeugte `nova-cards.js`
   wird mit committet, weil HACS sie im Repo-Root braucht.
 - **Ausgeliefert wird über die Nova-Integration:** `npm run integration [-- <pfad>]` baut alle Karten verkleinert mit der Version
-  aus deren `manifest.json` und schreibt sie nach `../nova-integration/custom_components/nova/static/nova-cards.js` (ohne das
+  aus deren `manifest.json` und schreibt sie nach `../nova-integration/custom_components/nova_homeverse/static/nova-cards.js` (ohne das
   Repo nach `integration/`, gitignored). Dort committen. Die Integration meldet die Datei selbst an (keine Dashboard-Ressource)
   und zeigt einen Hinweis, wenn die alte Ressource `nova-cards.js` noch eingetragen ist. `nova-cards.js` im Repo-Root bleibt
   für bestehende Marketplace-Installationen, bis der Eintrag eingestellt wird.

@@ -7,7 +7,7 @@ const SOURCE = __SOURCE__;
 const first = window[KEY];
 
 if (first) {
-  const via = src => (src === 'integration' ? 'die Nova-Integration' : 'eine Dashboard-Ressource');
+  const via = src => (src === 'integration' ? 'Nova Homeverse' : 'eine Dashboard-Ressource');
   console.warn(
     `Nova Cards sind doppelt eingebunden: v${first.version} über ${via(first.source)} und v${__VERSION__} über ${via(SOURCE)}. ` +
     'Es läuft nur die erste.' +

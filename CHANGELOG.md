@@ -9,6 +9,7 @@ Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 - Saugroboter (und alle Karten, die Zustände formatieren): Fehlt die eingetragene Entität, stürzt die Karte nicht mehr mit „Cannot read properties of undefined (reading 'state')“ ab, sondern zeigt „nicht gefunden“. Damit verschwindet auch der Folgefehler „setting 'layout'“ im Dashboard.
 
 ### Geändert
+- Die Integration heißt jetzt **Nova Homeverse** (Domain `nova_homeverse`): Panel-Titel, Versionsanzeige und Hinweise der Karten („Die Integration Nova Homeverse fehlt …“) nennen den neuen Namen. `npm run integration` schreibt nach `custom_components/nova_homeverse/static`. Kartentypen und Kartennamen bleiben.
 - Der Hilfe-Link („?“) im Karteneditor führt jetzt zur Seite der Karte im Nova-Handbuch (nova-integration) statt ins README.
 
 ### Doku

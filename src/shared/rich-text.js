@@ -1,7 +1,7 @@
 // Formatierter Text für Notiz und Einkauf: Leiste (Fett, Kursiv, Unterstrichen, Durchgestrichen, Größe, Aufzählung,
 // Checkliste, Textfarbe aus dem Theme), Eingabefeld, Anzeige und Klartext für den Bondrucker.
 // Gespeichert wird bereinigtes HTML aus einer festen Liste (siehe ALLOW). Dieselbe Liste filtert die Nova-Integration
-// (custom_components/nova/sanitize.py) – beide Seiten bereinigen, nichts anderes kommt durch.
+// (custom_components/nova_homeverse/sanitize.py) – beide Seiten bereinigen, nichts anderes kommt durch.
 import {esc} from './utils.js';
 
 const TAGS = {B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', BR: 'br', P: 'p', DIV: 'p', H3: 'h3',
