@@ -128,10 +128,12 @@ export const CARDS = [
 ];
 
 // Gesamtansicht je Theme (Hero im README)
-export const HERO = {view: 'raum'};
-// Theme-Vergleich: gleiche Karten mit festem Theme je Karte (Ansicht „Themes Schalter“, Abschnitte 5–8)
-export const COMPARE = {view: 'theme', sections: {blau: 5, hell: 6, midnight: 7, velvet: 8},
-  lights: ['light.nova_demo_wohnzimmer_decke', 'light.nova_demo_wohnzimmer_stehlampe']};
+// README-Ansicht „readme“: Abschnitt 0 = Hero (vier Raumkarten 2 × 2), 1–4 = Theme-Vergleich (Bereich-Karte mit
+// Licht, Heizung und Uhr, festes Theme je Karte)
+export const HERO = {view: 'readme', sec: 0, vw: 820, w: 700, h: 400};
+export const COMPARE = {view: 'readme', sections: {blau: 1, hell: 2, midnight: 3, velvet: 4},
+  // Lichter für die Aufnahme neutralweiß: warmweiße Lampen färben Midnight sonst bräunlich
+  lights: ['light.nova_demo_wohnzimmer_decke', 'light.nova_demo_wohnzimmer_stehlampe'], kelvin: 5200};
 
 /* README-Galerie (npm run screenshots:gallery): jede Karte genau einmal, Reihenfolge = Gruppen im README.
    state: Zustand aus CARDS; mode: 'fit' (mittig, ganz) oder 'top' (hohe Karte, oben angeschnitten);

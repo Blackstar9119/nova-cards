@@ -1,5 +1,5 @@
 /* README-Galerie von nova-integration: jede Karte genau einmal als Kachel 600 × 450, Theme-Vergleich und Hero.
-   Aufruf: npm run screenshots:gallery [-- --only room,chips] [-- --no-compare] [-- --no-hero] [-- --keep]
+   Aufruf: npm run screenshots:gallery [-- --only room,chips] [-- --no-compare] [-- --no-hero] [-- --no-gallery] [-- --keep]
    Aufnahme aus HA Dev (Dashboard „Nova Showcase“, Konfiguration GALLERY in screenshots.config.mjs) mit:
      - fester Uhrzeit 18:30 (Uhr, Datum, Theme-Vergleich),
      - ruhigem, einfarbigem Dashboard-Hintergrund (statt Verlauf), damit die Kachel nahtlos ist,
@@ -123,7 +123,8 @@ async function themeNow() {
   }));
 }
 const call = (service, entity, data = {}) => hass((h, [s, e, d]) => {
-  const [dom, svc] = s.split('.'); return h.callService(dom, svc, {...d, entity_id: e});
+  const [dom, svc] = s.split(".");
+  return h.callService(dom, svc, e ? {...d, entity_id: e} : d);
 }, [service, entity, data]);
 
 // ---------- Aufnahme ----------
@@ -254,7 +255,7 @@ try {
   await setTheme('blau');
   bg = BG.blau;
 
-  for (const g of GALLERY.filter(x => !only || only.includes(x.card))) {
+  for (const g of flag("no-gallery") ? [] : GALLERY.filter(x => !only || only.includes(x.card))) {
     const c = byCard[g.card];
     const shots = [];
     const demo = g.demoItems ? await addItems(g.demoItems) : [];
@@ -271,26 +272,24 @@ try {
   }
 
   if (!flag('no-hero') && !only) {
-    await page.setViewportSize({width: WIDTH, height: HEIGHT});
+    await page.setViewportSize({width: HERO.vw, height: HEIGHT});
     await open(HERO.view);
-    const r = await page.evaluate(() => {
-      const ppr = document.querySelector('home-assistant')?.shadowRoot?.querySelector('home-assistant-main')?.shadowRoot
-        ?.querySelector('partial-panel-resolver');
-      const b = ppr.getBoundingClientRect(); return {x: b.left, y: 56, width: b.width, height: window.innerHeight - 56};
-    });
+    const loc = page.locator('hui-sections-view hui-section').nth(HERO.sec);
+    const clip = await clipOf(loc, 12);
     const f = join(RAW, 'hero.png');
-    await page.screenshot({path: f, clip: r});
-    execFileSync('cwebp', ['-quiet', '-q', '85', '-m', '6', '-resize', '1600', '0', '-metadata', 'none', f, '-o',
-      join(DOCS, 'themes', 'hero-blue.webp')]);
+    await page.screenshot({path: f, clip});
+    await tile([f], 'fit', join(DOCS, 'themes', 'hero-blue.webp'), {w: HERO.w, h: HERO.h});
+    await page.setViewportSize({width: WIDTH, height: HEIGHT});
     log('  ✓ themes/hero-blue.webp');
   }
 
   if (!flag('no-compare') && !only) {
-    // Theme-Vergleich: Lichter aus (sonst färben warme „An“-Farben Midnight bräunlich), Chips ohne Farbrolle,
-    // je Theme auf seinem eigenen ruhigen Hintergrund
+    // Theme-Vergleich: Lichter neutralweiß (warmweiß färbt Midnight bräunlich), Zustand vorher sichern und danach
+    // wiederherstellen; je Theme auf seinem eigenen ruhigen Hintergrund
     const lights = COMPARE.lights || [];
-    const wasOn = [];
-    for (const l of lights) if (await hass((h, e) => h.states[e]?.state, l) === 'on') { wasOn.push(l); await call('light.turn_off', l); }
+    await call('scene.create', null, {scene_id: 'nova_galerie_vorher', snapshot_entities: lights});
+    for (const l of lights) await call('light.turn_on', l, {color_temp_kelvin: COMPARE.kelvin, brightness_pct: 70});
+    await sleep(800);
     try {
       for (const [k, sec] of Object.entries(COMPARE.sections)) {
         await setTheme(k);
@@ -299,16 +298,13 @@ try {
         const loc = page.locator('hui-sections-view hui-section').nth(sec);
         const clip = await clipOf(loc, 16);
         if (!clip) { problems.push(`Theme-Vergleich ${k}: Abschnitt leer`); continue; }
-        // Überschrift des Abschnitts weglassen
-        const head = await loc.locator('hui-heading-card').first().boundingBox().catch(() => null);
-        if (head) { const cut = head.y + head.height - clip.y; clip.y += cut; clip.height -= cut; }
         const f = join(RAW, `compare-${k}.png`);
         await page.screenshot({path: f, clip});
-        await tile([f], 'fit', join(DOCS, 'themes', `compare-${THEMES[k]}.webp`), {w: 480, h: 480, color: BG[k]});
+        await tile([f], 'fit', join(DOCS, 'themes', `compare-${THEMES[k]}.webp`), {w: 600, h: 380, color: BG[k]});
         log(`  ✓ themes/compare-${THEMES[k]}.webp`);
       }
     } finally {
-      for (const l of wasOn) await call('light.turn_on', l);
+      await call('scene.turn_on', 'scene.nova_galerie_vorher');
     }
   }
 } finally {
