@@ -130,4 +130,35 @@ export const CARDS = [
 // Gesamtansicht je Theme (Hero im README)
 export const HERO = {view: 'raum'};
 // Theme-Vergleich: gleiche Karten mit festem Theme je Karte (Ansicht „Themes Schalter“, Abschnitte 5–8)
-export const COMPARE = {view: 'theme', sections: {blau: 5, hell: 6, midnight: 7, velvet: 8}};
+export const COMPARE = {view: 'theme', sections: {blau: 5, hell: 6, midnight: 7, velvet: 8},
+  lights: ['light.nova_demo_wohnzimmer_decke', 'light.nova_demo_wohnzimmer_stehlampe']};
+
+/* README-Galerie (npm run screenshots:gallery): jede Karte genau einmal, Reihenfolge = Gruppen im README.
+   state: Zustand aus CARDS; mode: 'fit' (mittig, ganz) oder 'top' (hohe Karte, oben angeschnitten);
+   parts: mehrere Aufnahmen untereinander (flache Karten mit Nachbarkarten als Kontext). */
+export const GALLERY_GROUPS = [
+  ['Räume & Navigation', ['room', 'area', 'popup', 'navi', 'swipe', 'chips']],
+  ['Licht & Klima', ['light', 'thermostat', 'weather']],
+  ['Geräte', ['appliance', 'vacuum', 'printer', 'modular']],
+  ['Medien', ['media', 'remote', 'camera']],
+  ['Alltag', ['clock', 'timer', 'waste', 'note', 'theme-switch']],
+  ['Küche', ['shopping', 'recipe', 'recipe-book']],
+];
+const G = {
+  popup: {state: 'open'},
+  navi: {state: 'default'},
+  chips: {state: 'default', vw: 640, over: {inner: '.nchip'}},
+  vacuum: {state: 'cleaning', over: {sec: 4}},
+  shopping: {state: 'default', demoItems: [
+    {name: 'Milch', qty: 2, unit: 'l', icon: 'mdi:cup'}, {name: 'Äpfel', qty: 1, unit: 'kg', icon: 'mdi:food-apple'},
+    {name: 'Vollkornbrot', icon: 'mdi:baguette'}, {name: 'Kaffeebohnen', qty: 500, unit: 'g', icon: 'mdi:coffee'},
+    {name: 'Tomaten', qty: 6, unit: 'Stk', icon: 'mdi:fruit-cherries'}, {name: 'Butter', icon: 'mdi:cheese', done: true}]},
+  weather: {state: 'default', mode: 'top'},
+  modular: {state: 'default', mode: 'top'},
+  remote: {state: 'default', mode: 'top'},
+  'theme-switch': {parts: [{state: 'button'}, {state: 'chip'}, {state: 'dropdown'}]},
+};
+export const GALLERY = GALLERY_GROUPS.flatMap(([, cards]) => cards).map(card => {
+  const first = CARDS.find(c => c.card === card).states[0].state;
+  return {card, state: first, ...G[card]};
+});
