@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen an Nova Cards. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.1.0b9] – 2026-11-14
+
+### Geändert
+- Logo von Nova Homeverse: eine Fassung für hellen und dunklen Hintergrund („Nova“ blau, „Homeverse“ und „by“ schiefergrau-blau),
+  damit es auch im Dark Mode des Marketplace lesbar ist. Nur in nova-homeverse, Karten unverändert.
+
 ## [0.1.0b8] – 2026-11-14
 
 ### Behoben
