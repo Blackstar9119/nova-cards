@@ -11,7 +11,8 @@
     "panel": "node build.mjs --panel",
     "integration": "node build.mjs --integration",
     "check": "node tools/check-tokens.mjs",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "screenshots:ui": "node scripts/screenshots-ui.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

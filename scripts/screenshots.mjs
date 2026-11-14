@@ -3,7 +3,7 @@
            [-- --no-hero] [-- --hero] [-- --optimize] [-- --publish-only]
    Zwei Stufen:
      1. Aufnahme: alles (alle Themes, Zustände, Editoren, GIFs, Hero) als PNG/GIF nach screenshots/ (gitignored).
-     2. Veröffentlichen: nur der schlanke Satz als WebP nach docs/images/ (im Repo) – je Karte alle Zustände in
+     2. Veröffentlichen: nur der schlanke Satz als WebP nach ../nova-integration/docs/images/ (Handbuch) – je Karte alle Zustände in
         Nova Blau, das Editor-Bild und bei animierten Karten ein animiertes WebP; dazu Hero (Blau) und Theme-Vergleich.
         „--publish-only“ macht nur diesen Schritt aus dem vorhandenen screenshots/.
    Braucht .env im Repo-Root (gitignored):
@@ -21,7 +21,8 @@ import {CARDS, COMPARE, DASHBOARD, HERO, THEMES} from './screenshots.config.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'screenshots');       // kompletter Satz, gitignored
-const DOCS = join(ROOT, 'docs/images');       // schlanker Satz (WebP) im Repo
+// Schlanker Satz (WebP) fürs Handbuch in nova-integration (Repo daneben), anders per NOVA_DOCS in der .env
+let DOCS = join(ROOT, '../nova-integration/docs/images');
 const WEBP_Q = 85;
 const TMP = join(ROOT, 'scripts/.screenshots-tmp');
 const WIDTH = 1280, HEIGHT = 900, PAD = 12;   // einheitliche Breite: Sections-Ansicht bei 1280 px
@@ -43,6 +44,7 @@ function env() {
     if (m) vars[m[1]] = m[2].replace(/^["']|["']$/g, '');
   }
   if (!vars.HA_URL || !vars.HA_TOKEN) { console.error('HA_URL und HA_TOKEN fehlen (.env im Repo-Root).'); process.exit(1); }
+  if (vars.NOVA_DOCS) DOCS = resolve(ROOT, vars.NOVA_DOCS);
   return {url: vars.HA_URL.replace(/\/$/, ''), token: vars.HA_TOKEN};
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -51,9 +53,10 @@ const problems = [];      // fehlende Karten, kaputte Seiten → am Ende melden,
 const written = [];
 
 const problems0 = [];
-// ---------- Veröffentlichen: schlanker Satz als WebP nach docs/images ----------
+// ---------- Veröffentlichen: schlanker Satz als WebP fürs Handbuch ----------
 function publish(problems) {
-  rmSync(DOCS, {recursive: true, force: true});
+  // Nur die eigenen Ordner leeren – ui/ gehört screenshots-ui.mjs
+  for (const d of [...CARDS.map(c => c.card), 'themes']) rmSync(join(DOCS, d), {recursive: true, force: true});
   const done = [];
   const webp = (src, dst) => {
     if (!existsSync(src)) { problems.push(`Veröffentlichen: ${src.replace(ROOT + '/', '')} fehlt`); return; }
@@ -74,15 +77,15 @@ function publish(problems) {
   for (const k of Object.keys(COMPARE.sections))
     webp(join(OUT, 'themes', `compare-${THEMES[k]}.png`), join(DOCS, 'themes', `compare-${THEMES[k]}.webp`));
   const bytes = done.reduce((n, f) => n + readFileSync(f).length, 0);
-  log(`\nVeröffentlicht: ${done.length} WebP in docs/images (${(bytes / 1024 / 1024).toFixed(1)} MB).`);
+  log(`\nVeröffentlicht: ${done.length} WebP in ${DOCS} (${(bytes / 1024 / 1024).toFixed(1)} MB).`);
 }
 
+const {url: HA, token: TOKEN} = env();   // liest auch NOVA_DOCS
 if (flag('publish-only')) {
   publish(problems0);
   for (const p of problems0) log('  -', p);
   process.exit(problems0.length ? 2 : 0);
 }
-const {url: HA, token: TOKEN} = env();
 
 // ---------- Browser ----------
 const browser = await chromium.launch();

@@ -295,7 +295,7 @@ class NovaPopupCard extends GridCard(HTMLElement) {
   /* --- Raster (GridCard) --- */
   _handoff() { return this._mode === 'preview'; }
 }
-define('popup-card', NovaPopupCard, {name: 'Nova Pop-up Card', description: 'Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – von Nova Navi oder jeder Karte mit Navigations-Aktion.', documentationURL: docUrl('nova-pop-up-card')});
+define('popup-card', NovaPopupCard, {name: 'Nova Pop-up Card', description: 'Pop-up mit beliebigen Karten, geöffnet per URL-Hash (z. B. #wohnzimmer) – von Nova Navi oder jeder Karte mit Navigations-Aktion.', documentationURL: docUrl('popup')});
 
 /* ---------- Editor ---------- */
 const GENERAL = [

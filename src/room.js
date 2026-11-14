@@ -300,4 +300,4 @@ class NovaRoomCard extends HTMLElement {
     this._room.classList.toggle('lit', lit);
   }
 }
-define(TAG, NovaRoomCard, {name: 'Nova Raum Card', description: 'Raumkachel mit Temperatur, Fenster-Warnung und frei belegbaren Buttons.', documentationURL: docUrl('nova-raum-card')});
+define(TAG, NovaRoomCard, {name: 'Nova Raum Card', description: 'Raumkachel mit Temperatur, Fenster-Warnung und frei belegbaren Buttons.', documentationURL: docUrl('raum')});

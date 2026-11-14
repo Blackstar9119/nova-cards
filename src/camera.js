@@ -353,7 +353,7 @@ ${pk.length && !pov ? '<div class="ptz below"></div>' : ''}${!ov && c.buttons.le
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('camera-card', NovaCameraCard, {name: 'Nova Kamera Card', description: 'Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.', documentationURL: docUrl('nova-kamera-card')});
+define('camera-card', NovaCameraCard, {name: 'Nova Kamera Card', description: 'Live-Bild von camera.* oder image.* mit Kopfzeile, rundem PTZ-Steuerkreuz, Splitscreen, frei belegbaren Buttons (Licht, Sirene …), Info-Chips und Warnungen.', documentationURL: docUrl('kamera')});
 
 /* ---------- Editor Kamera Card ---------- */
 const C_GEN = [

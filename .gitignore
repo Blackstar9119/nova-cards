@@ -5,3 +5,4 @@ integration/
 .env
 scripts/.screenshots-*
 screenshots/
+.DS_Store

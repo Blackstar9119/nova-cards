@@ -174,7 +174,7 @@ class NovaAreaCard extends GridCard(HTMLElement) {
     this._more.append(...vis.slice(k));
   }
 }
-define('area-card', NovaAreaCard, {name: 'Nova Bereich Card', description: 'Raumansicht als Glasrahmen: Kopfzeile mit Zurück, Icon, Raumname und Chips, darunter beliebige Karten in Zeilen und Spalten.', documentationURL: docUrl('nova-bereich-card')});
+define('area-card', NovaAreaCard, {name: 'Nova Bereich Card', description: 'Raumansicht als Glasrahmen: Kopfzeile mit Zurück, Icon, Raumname und Chips, darunter beliebige Karten in Zeilen und Spalten.', documentationURL: docUrl('bereich')});
 
 /* ---------- Editor ---------- */
 const S_GEN = icon => [

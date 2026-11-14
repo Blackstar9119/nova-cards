@@ -660,7 +660,7 @@ class NovaShoppingCard extends HTMLElement {
     st => { this._pstate = st; this._render(); });
   }
 }
-define('shopping-card', NovaShoppingCard, {name: 'Nova Einkauf Card', description: 'Einkaufsliste mit Menge, Einheit, Geschäft, Icon oder eigenem Bild und Notiz: nach Geschäft gruppiert, abhaken, zuletzt Gekauftes als Schnellauswahl, auf allen Geräten gleich (Nova-Integration), optional mit todo-Liste für Assist und Druck-Knopf.', documentationURL: docUrl('nova-einkauf-card')});
+define('shopping-card', NovaShoppingCard, {name: 'Nova Einkauf Card', description: 'Einkaufsliste mit Menge, Einheit, Geschäft, Icon oder eigenem Bild und Notiz: nach Geschäft gruppiert, abhaken, zuletzt Gekauftes als Schnellauswahl, auf allen Geräten gleich (Nova-Integration), optional mit todo-Liste für Assist und Druck-Knopf.', documentationURL: docUrl('einkauf')});
 
 /* ---------- Editor Einkauf Card ---------- */
 const GEN = [

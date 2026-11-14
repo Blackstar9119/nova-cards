@@ -5,7 +5,8 @@
 Nova Cards ist eine Kartenfamilie für das Home-Assistant-Dashboard (Lovelace): Raum, Thermostat, Licht, Navi,
 Modular, Kamera, Media, Saugroboter, Müllkalender, Wetter, Pop-up, Bereich, Swipe, Chips, Gerät, 3D-Drucker, Fernbedienung, Timer, Uhr, Einkauf, Notiz, Rezeptliste, Rezeptbuch und Themes Schalter – alle als `custom:nova-*`, jede mit grafischem Editor.
 Installiert wird per **HACS** (Benutzerdefiniertes Repository, Typ „Dashboard“). HACS lädt die fertige Datei
-`nova-cards.js` aus dem Repo-Root; die Doku für Nutzer steht in `README.md`.
+`nova-cards.js` aus dem Repo-Root. Die Doku für Nutzer (Handbuch mit Bildern) steht in
+[nova-integration](https://github.com/Blackstar9119/nova-integration) unter `docs/`, das README hier ist nur ein Hinweis darauf.
 
 ## Ordnerstruktur
 
@@ -92,7 +93,6 @@ src/
     popup-hub.js      Gemeinsamer Stand der Pop-ups (Hash, Verlauf, Scroll-Sperre, Pop-ups im Dashboard finden),
                       Pop-up öffnen/Auswahllisten – genutzt von Pop-up Card, Nova Navi und Raum-Karte
 docs/
-  <karte>.md          Alle Optionen je Karte (z. B. room-card.md, popup-card.md)
   DESIGN.md           Design-Referenz: Grundlagen, Stil der Zeichnungen
   design-system.md    Alle Design-Tokens (--nova-…) mit Wert und Zweck, Themes
 demo/
@@ -100,6 +100,10 @@ demo/
   nova-mock.js        Nova-Integration für die Demo (Notizen, Einkauf, Rezepte im Speicher des Browsers)
 tools/
   check-tokens.mjs    „npm run check“: keine festen Farben im Karten-CSS
+scripts/
+  screenshots.mjs     „npm run screenshots“: echte Bilder aller Karten aus HA Dev (Showcase), WebP fürs Handbuch nach
+                      ../nova-integration/docs/images (Konfiguration: screenshots.config.mjs, .env mit HA_URL/HA_TOKEN)
+  screenshots-ui.mjs  „npm run screenshots:ui“: Bilder der HA-Oberfläche für Installation und erste Schritte (docs/images/ui)
 dev/
   nova-dev-cards.js   ERZEUGT von „npm run dev“ – gitignored, nur Zwischenablage
 nova-dev-cards.js     Kopie des Dev-Builds für jsDelivr – nur auf Feature-Branches, nie nach main mergen
@@ -107,7 +111,7 @@ build.mjs             esbuild-Build → nova-cards.js („npm run dev“ → dev
                       die Nova-Integration)
 package.json          Versionsnummer (einzige Stelle), „npm run build“ und „npm run dev [-- <karte>]“
 nova-cards.js         ERZEUGT – nicht von Hand bearbeiten
-README.md             Doku für Nutzer (ein Abschnitt pro Karte)
+README.md             Kurzer Hinweis: Entwicklungs-Repo, Doku und Installation über nova-integration
 CHANGELOG.md          Änderungen je Version (Keep a Changelog, SemVer)
 hacs.json             HACS-Metadaten
 ```
@@ -125,7 +129,7 @@ hacs.json             HACS-Metadaten
 - **Version** nur in `package.json` ändern; der Build setzt sie in Banner und Konsolen-Ausgabe ein. Jede Änderung kommt in `CHANGELOG.md`.
 - **Neue Karte** = neue Datei in `src/` (Karte + Editor), Import in `src/index.js`, Registrierung über
   `define()` aus `src/shared/define.js` (mit Name, Beschreibung, `documentationURL: docUrl(...)`) und ein
-  eigener Abschnitt in `README.md`.
+  eigene Seite im Handbuch (nova-integration `docs/de/karten/<seite>.md`, `docUrl('<seite>')`).
 - **Elementnamen nie hart als `'nova-…'` schreiben**, sonst kollidiert der Dev-Build mit der HACS-Version.
   Immer ohne Präfix: `define('x-card', …)` und `document.createElement(tag('x-card-editor'))` mit `tag()` aus
   `src/shared/define.js`.

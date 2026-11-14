@@ -757,7 +757,7 @@ export class NovaPrinterCard extends HTMLElement {
   }
   _act(o, kind, info) { return runAction(this, o, kind, info); }
 }
-define('drucker-card', NovaPrinterCard, {name: 'Nova 3D-Drucker Card', description: '3D-Drucker (Bambu Lab) mit animierter Druckerzeichnung, AMS, Fortschritt, Temperaturen, Meldungen und Pause/Fortsetzen/Stopp.', documentationURL: docUrl('nova-3d-drucker-card')});
+define('drucker-card', NovaPrinterCard, {name: 'Nova 3D-Drucker Card', description: '3D-Drucker (Bambu Lab) mit animierter Druckerzeichnung, AMS, Fortschritt, Temperaturen, Meldungen und Pause/Fortsetzen/Stopp.', documentationURL: docUrl('drucker')});
 
 /* ---------- Editor 3D-Drucker Card ---------- */
 const SE = d => ({entity: {domain: d}});
