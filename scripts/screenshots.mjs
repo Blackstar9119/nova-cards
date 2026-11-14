@@ -17,7 +17,7 @@ import {execFileSync} from 'node:child_process';
 import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync} from 'node:fs';
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {CARDS, COMPARE, DASHBOARD, HERO, THEMES} from './screenshots.config.mjs';
+import {CARDS, DASHBOARD, HERO, THEMES} from './screenshots.config.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'screenshots');       // kompletter Satz, gitignored
@@ -73,9 +73,6 @@ function publish(problems) {
     for (const g of [c.gif || []].flat())
       webp(join(OUT, c.card, name(g.state) + '-anim.webp'), join(DOCS, c.card, name(g.state) + '-anim.webp'));
   }
-  webp(join(OUT, 'themes', `hero-${blue}.png`), join(DOCS, 'themes', `hero-${blue}.webp`));
-  for (const k of Object.keys(COMPARE.sections))
-    webp(join(OUT, 'themes', `compare-${THEMES[k]}.png`), join(DOCS, 'themes', `compare-${THEMES[k]}.webp`));
   const bytes = done.reduce((n, f) => n + readFileSync(f).length, 0);
   log(`\nVeröffentlicht: ${done.length} WebP in ${DOCS} (${(bytes / 1024 / 1024).toFixed(1)} MB).`);
 }
@@ -349,22 +346,7 @@ try {
   for (const theme of themeKeys) {
     log(`\n=== Theme ${theme} ===`);
     await setTheme(theme);
-    if (!flag('no-hero') && (!only || flag('hero'))) {
-      await page.setViewportSize({width: WIDTH, height: HEIGHT});
-      await open(HERO.view);
-      mkdirSync(join(OUT, 'themes'), {recursive: true});
-      await shoot(join(OUT, 'themes', `hero-${THEMES[theme]}.png`), await contentClip());
-      // Theme-Vergleich: Abschnitt mit fest eingestelltem Theme (unabhängig vom globalen) – nur einmal nötig
-      if (theme === themeKeys[0]) {
-        await open(COMPARE.view);
-        for (const [k, sec] of Object.entries(COMPARE.sections)) {
-          const loc = page.locator('hui-sections-view hui-section').nth(sec);
-          const clip = await clipOf(loc);
-          if (clip) await shoot(join(OUT, 'themes', `compare-${THEMES[k]}.png`), clip);
-          else problems.push(`Theme-Vergleich ${k}: Abschnitt ${sec} leer`);
-        }
-      }
-    }
+    // Hero und Theme-Vergleich der README entstehen mit „npm run screenshots:gallery“ (scripts/gallery.mjs)
     for (const c of cards) {
       log(`- ${c.card}`);
       for (const s of c.states) {

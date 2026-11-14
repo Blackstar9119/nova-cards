@@ -13,6 +13,7 @@
     "check": "node tools/check-tokens.mjs",
     "screenshots": "node scripts/screenshots.mjs",
     "screenshots:ui": "node scripts/screenshots-ui.mjs",
+    "screenshots:gallery": "node scripts/gallery.mjs",
     "screenshots:handbook": "node scripts/handbook.mjs"
   },
   "devDependencies": {
