@@ -103,6 +103,9 @@ tools/
 scripts/
   screenshots.mjs     „npm run screenshots“: echte Bilder aller Karten aus HA Dev (Showcase), WebP fürs Handbuch nach
                       ../nova-integration/docs/images (Konfiguration: screenshots.config.mjs, .env mit HA_URL/HA_TOKEN)
+  handbook.mjs        „npm run screenshots:handbook“: Editor-Bilder mit roten Rahmen für die Rezepte im Handbuch
+                      (docs/images/<karte>/<karte>-blue-howto-<id>.webp, Konfiguration: handbook.config.mjs; --only seite,…
+                      für einzelne Seiten, --list kartentyp,… zeigt Bereiche und Felder des Editors)
   screenshots-ui.mjs  „npm run screenshots:ui“: Bilder der HA-Oberfläche für Installation und erste Schritte (docs/images/ui)
 dev/
   nova-dev-cards.js   ERZEUGT von „npm run dev“ – gitignored, nur Zwischenablage

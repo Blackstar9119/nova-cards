@@ -78,6 +78,7 @@ export const CARDS = [
   {card: 'appliance', type: 'geraet-card', doc: 'geraet-card.md', view: 'geraet', states: [
     {state: 'washer-running', sec: 1, set: [sel('input_select.nova_demo_waschmaschine_status', 'run')]},
     {state: 'washer-finished', sec: 1, set: [sel('input_select.nova_demo_waschmaschine_status', 'finished')]},
+    {state: 'dryer', sec: 2, set: [sel('input_select.nova_demo_trockner_status', 'trocknet')]},
     {state: 'dishwasher', sec: 3, set: [sel('input_select.nova_demo_spuelmaschine_status', 'running')]},
     {state: 'airfryer', sec: 4, set: [sel('input_select.nova_demo_airfryer_status', 'cooking')]},
     {state: 'coffee', sec: 5, set: [sel('input_select.nova_demo_kaffee_status', 'brewing')]},
