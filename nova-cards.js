@@ -441,7 +441,7 @@
       STOP_DELAY = 5e3;
       reason = (err) => err?.code === "unknown_command" || err?.code === "not_ready" ? "missing" : err?.code === "module_disabled" ? "disabled" : "failed";
       MODULE_NAMES = { notes: "Notizen", shopping: "Einkauf", recipes: "Rezeptbuch", theme: "Theme" };
-      storeHint = (err, kind) => err === "missing" ? ["mdi:puzzle-plus-outline", "Die Nova-Integration fehlt. Im Marketplace „Nova“ installieren und unter Einstellungen → Geräte & Dienste hinzufügen."] : err === "disabled" ? ["mdi:toggle-switch-off-outline", `Das Modul „${MODULE_NAMES[kind] || kind}“ ist in den Optionen der Nova-Integration abgeschaltet.`] : ["mdi:alert-circle-outline", "Die Daten konnten nicht geladen werden."];
+      storeHint = (err, kind) => err === "missing" ? ["mdi:puzzle-plus-outline", "Die Integration Nova Homeverse fehlt. Im Marketplace „Nova Homeverse“ installieren und unter Einstellungen → Geräte & Dienste hinzufügen."] : err === "disabled" ? ["mdi:toggle-switch-off-outline", `Das Modul „${MODULE_NAMES[kind] || kind}“ ist in den Optionen von Nova Homeverse abgeschaltet.`] : ["mdi:alert-circle-outline", "Die Daten konnten nicht geladen werden."];
       ws = (hass, type, data = {}) => hass.callWS({ type, ...data });
       notes = {
         save: (hass, note) => ws(hass, "nova/notes/save", { note }).then((r) => r.note),
@@ -17125,7 +17125,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
           );
         }
       };
-      define("shopping-card", NovaShoppingCard, { name: "Nova Einkauf Card", description: "Einkaufsliste mit Menge, Einheit, Geschäft, Icon oder eigenem Bild und Notiz: nach Geschäft gruppiert, abhaken, zuletzt Gekauftes als Schnellauswahl, auf allen Geräten gleich (Nova-Integration), optional mit todo-Liste für Assist und Druck-Knopf.", documentationURL: docUrl("einkauf") });
+      define("shopping-card", NovaShoppingCard, { name: "Nova Einkauf Card", description: "Einkaufsliste mit Menge, Einheit, Geschäft, Icon oder eigenem Bild und Notiz: nach Geschäft gruppiert, abhaken, zuletzt Gekauftes als Schnellauswahl, auf allen Geräten gleich (Nova Homeverse), optional mit todo-Liste für Assist und Druck-Knopf.", documentationURL: docUrl("einkauf") });
       GEN4 = [
         g2({ name: "name", selector: T }, { name: "icon", selector: I }),
         { name: "show_header", selector: { boolean: {} } },
@@ -17161,7 +17161,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
         show_suggestions: "Zuletzt gekaufte Artikel als Chips unter dem Eingabefeld.",
         default_store: "Für neue Artikel, die noch nie gekauft wurden.",
         height: "Im Raster füllt die Karte den Platz aus.",
-        entity: "Optional, z. B. todo.shopping_list. Die Nova-Integration hält beide Listen gleich – so funktioniert „Setz Milch auf die Einkaufsliste“ weiter. Gilt für alle Einkauf-Karten.",
+        entity: "Optional, z. B. todo.shopping_list. Nova Homeverse hält beide Listen gleich – so funktioniert „Setz Milch auf die Einkaufsliste“ weiter. Gilt für alle Einkauf-Karten.",
         print_field: "Unter diesem Namen bekommt das Skript die offene Liste als Klartext (Standard: text), zusätzlich „items“ als Liste."
       };
       NovaShoppingCardEditor = class extends NovaEditorBase {
@@ -17544,7 +17544,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
           });
         }
       };
-      define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Notizen mit Titel und formatiertem Text (Fett, Listen, Checklisten): Liste und Detailansicht, anpinnen, auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf z. B. für einen Bondrucker.", documentationURL: docUrl("notiz") });
+      define("note-card", NovaNoteCard, { name: "Nova Notiz Card", description: "Notizen mit Titel und formatiertem Text (Fett, Listen, Checklisten): Liste und Detailansicht, anpinnen, auf allen Geräten gleich (Nova Homeverse), mit Druck-Knopf z. B. für einen Bondrucker.", documentationURL: docUrl("notiz") });
       GEN5 = [
         g2({ name: "name", selector: T }, { name: "icon", selector: I }),
         { name: "show_header", selector: { boolean: {} } }
@@ -17635,7 +17635,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-box);transition:border
         too_large: "Die Seite ist zu groß zum Einlesen.",
         module_disabled: "Das Rezept-Modul ist in Nova abgeschaltet."
       };
-      importError = (x) => IMPORT_ERR[x?.code] || (x?.code === "unknown_command" ? "Dafür braucht es eine neuere Nova-Integration." : "Das hat nicht geklappt. Später nochmal versuchen?");
+      importError = (x) => IMPORT_ERR[x?.code] || (x?.code === "unknown_command" ? "Dafür braucht es eine neuere Version von Nova Homeverse." : "Das hat nicht geklappt. Später nochmal versuchen?");
     }
   });
 
@@ -18481,7 +18481,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
           });
         }
       };
-      define("recipe-card", NovaRecipeCard, { name: "Nova Rezeptliste", description: "Kompakte Rezeptliste mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova-Integration), mit Druck-Knopf.", documentationURL: docUrl("rezeptliste") });
+      define("recipe-card", NovaRecipeCard, { name: "Nova Rezeptliste", description: "Kompakte Rezeptliste mit Bild, Zutaten und Zubereitung: suchen, Schlagwörter, Favoriten, Portionen umrechnen und Zutaten mit einem Tipp auf die Einkaufsliste setzen. Auf allen Geräten gleich (Nova Homeverse), mit Druck-Knopf.", documentationURL: docUrl("rezeptliste") });
       GEN6 = [
         g2({ name: "name", selector: T }, { name: "icon", selector: I }),
         { name: "show_header", selector: { boolean: {} } }
@@ -19829,7 +19829,7 @@ border:1px solid var(--gold);box-shadow:0 2px 6px rgba(0,0,0,.35)}
           steps: "<p>Kartoffeln würfeln</p><p>Alles 20 Minuten kochen</p><p>Pürieren</p>"
         }
       ];
-      define("recipe-book-card", NovaRecipeBookCard, { name: "Nova Rezeptbuch", description: "Rezeptbuch zum Blättern in drei Stilen (altes Kochbuch, modern, Fantasy): Inhaltsverzeichnis, Rezepte mit Foto, Zutaten und Zubereitung, Portionen umrechnen, Zutaten auf die Einkaufsliste. Dieselben Rezepte wie in der Nova Rezeptliste (Nova-Integration).", documentationURL: docUrl("rezeptbuch") });
+      define("recipe-book-card", NovaRecipeBookCard, { name: "Nova Rezeptbuch", description: "Rezeptbuch zum Blättern in drei Stilen (altes Kochbuch, modern, Fantasy): Inhaltsverzeichnis, Rezepte mit Foto, Zutaten und Zubereitung, Portionen umrechnen, Zutaten auf die Einkaufsliste. Dieselben Rezepte wie in der Nova Rezeptliste (Nova Homeverse).", documentationURL: docUrl("rezeptbuch") });
       S_BOOK = [
         g2({ name: "title", selector: T }, { name: "subtitle", selector: T }),
         g2(
@@ -20057,7 +20057,7 @@ border:1px solid var(--nv-box-border);background:var(--nv-chip);color:var(--nv-f
   var SOURCE = "resource";
   var first = window[KEY2];
   if (first) {
-    const via = (src) => src === "integration" ? "die Nova-Integration" : "eine Dashboard-Ressource";
+    const via = (src) => src === "integration" ? "Nova Homeverse" : "eine Dashboard-Ressource";
     console.warn(
       `Nova Cards sind doppelt eingebunden: v${first.version} über ${via(first.source)} und v${"0.1.0b7"} über ${via(SOURCE)}. Es läuft nur die erste.` + ([first.source, SOURCE].includes("integration") ? " Die alte Ressource nova-cards.js kann weg: Marketplace → Nova Cards → Entfernen." : "")
     );

@@ -1,6 +1,6 @@
-/* Nova-Panel – Einstellungen der Nova-Integration in der Seitenleiste von Home Assistant.
+/* Nova-Panel – Einstellungen von Nova Homeverse in der Seitenleiste von Home Assistant.
    Wird NICHT in nova-cards.js gebaut, sondern mit „npm run panel“ zu panel/nova-panel.js. Diese Datei kommt in die
-   Integration (custom_components/nova/static/nova-panel.js), die sie als Panel „Nova“ anmeldet (nur Admins).
+   Integration (custom_components/nova_homeverse/static/nova-panel.js), die sie als Panel „Nova Homeverse“ anmeldet (nur Admins).
    Aufbau: links eine schmale Navigation, rechts immer genau ein Abschnitt in einer ruhigen Spalte. Optik wie die Karten
    (Tokens aus theme.js, gewähltes globales Theme und Hintergrund). Jede Änderung speichert sofort; das Abo
    nova/settings/subscribe hält die Seite auf allen Geräten aktuell. Das Mealie-Token kommt nie hierher, nur token_gesetzt. */
@@ -176,7 +176,7 @@ class NovaPanel extends HTMLElement {
     // Version der Integration (ältere kennen das Feld nicht → keine Angabe)
     conn.sendMessagePromise({type: 'nova/info'}).then(i => { this._ver = i?.version || ''; this._render(); }).catch(() => {});
     this._unsub = conn.subscribeMessage(s => { this._s = s; this._err = ''; this._shop(); this._render(); }, {type: 'nova/settings/subscribe'})
-      .catch(e => { this._err = e?.code === 'unknown_command' ? 'Diese Version der Nova-Integration kennt noch keine Einstellungen.' : (e?.message || 'Einstellungen konnten nicht geladen werden.'); this._render(); return null; });
+      .catch(e => { this._err = e?.code === 'unknown_command' ? 'Diese Version von Nova Homeverse kennt noch keine Einstellungen.' : (e?.message || 'Einstellungen konnten nicht geladen werden.'); this._render(); return null; });
   }
 
   // Geschäfte nur bei aktivem Einkauf abonnieren
@@ -321,7 +321,7 @@ data-set="allgemein.hintergrund" data-v="${esc(JSON.stringify(k))}" aria-pressed
         this._field('Standard-Geschäft', this._select('einkauf', 'standard_geschaeft', this._stores.map(x => [x.id, x.name]), 'Keins'), 'Neue Artikel ohne Geschäft landen hier.'),
         this._field('Gruppierung', this._seg('einkauf', 'gruppierung', [['geschaeft', 'Nach Geschäft', 'mdi:store-outline'], ['keine', 'Keine', 'mdi:format-list-bulleted']])),
         this._field(voice, this._select('einkauf', 'todo_entity', todos, 'Keine'),
-          'Nova hält diese todo-Liste mit der Einkaufsliste gleich. So klappt „Setz Milch auf die Einkaufsliste“ mit Assist, Alexa oder Google, und was dort landet, steht auch in Nova. Am besten eine eigene Liste nehmen.'),
+          'Nova Homeverse hält diese todo-Liste mit der Einkaufsliste gleich. So klappt „Setz Milch auf die Einkaufsliste“ mit Assist, Alexa oder Google, und was dort landet, steht auch in Nova Homeverse. Am besten eine eigene Liste nehmen.'),
         `<div class="tgs" style="margin-top:var(--nv-s6)">${this._toggle('einkauf', 'bilder', 'mdi:image-outline', 'Bilder zeigen', 'Icons und eigene Bilder der Artikel')}</div>`,
       ].join('');
       case 'notizen': return [
@@ -356,7 +356,7 @@ data-set="allgemein.hintergrund" data-v="${esc(JSON.stringify(k))}" aria-pressed
     const r = this.shadowRoot;
     if (!r.firstChild) {
       r.innerHTML = `<style>${STYLE}</style><div class="top"><button class="menu" aria-label="Seitenleiste"><ha-icon icon="mdi:menu"></ha-icon></button>
-<h1>Nova</h1><div class="st" aria-live="polite"></div></div><div class="wrap"><nav></nav><main></main></div>`;
+<h1>Nova Homeverse</h1><div class="st" aria-live="polite"></div></div><div class="wrap"><nav></nav><main></main></div>`;
       r.querySelector('.menu').addEventListener('click', () => this.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})));
       r.addEventListener('click', e => this._click(e));
       r.addEventListener('change', e => this._change(e));
@@ -378,7 +378,7 @@ data-set="allgemein.hintergrund" data-v="${esc(JSON.stringify(k))}" aria-pressed
       const off = s && NEEDS[k] && !s.module[NEEDS[k][0]];
       return `<button class="${k === this._tab ? 'on' : ''}" data-tab="${k}" aria-current="${k === this._tab ? 'page' : 'false'}"><ha-icon icon="${ic}"></ha-icon>${esc(name)}${off ? '<span class="off">aus</span>' : ''}</button>`;
     }).join('')}${s ? `<button class="rs ${this._arm === 'reset:*' ? 'arm' : ''}" data-reset="*">${this._arm === 'reset:*' ? 'Wirklich alles zurücksetzen?' : 'Alles zurücksetzen'}</button>` : ''}
-${this._ver ? `<div class="ver">Nova ${esc(this._ver)}</div>` : ''}`;
+${this._ver ? `<div class="ver">Nova Homeverse ${esc(this._ver)}</div>` : ''}`;
     if (this._err) { main.innerHTML = `<section class="pane msg"><ha-icon icon="mdi:alert-circle-outline"></ha-icon><span>${esc(this._err)}</span></section>`; return; }
     if (!s) { main.innerHTML = '<section class="pane msg"><span>Lade Einstellungen …</span></section>'; return; }
     const [, icon, name] = SECTIONS.find(([k]) => k === this._tab);

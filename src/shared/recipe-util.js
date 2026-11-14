@@ -29,4 +29,4 @@ export const IMPORT_ERR = {
   too_large: 'Die Seite ist zu groß zum Einlesen.',
   module_disabled: 'Das Rezept-Modul ist in Nova abgeschaltet.',
 };
-export const importError = x => IMPORT_ERR[x?.code] || (x?.code === 'unknown_command' ? 'Dafür braucht es eine neuere Nova-Integration.' : 'Das hat nicht geklappt. Später nochmal versuchen?');
+export const importError = x => IMPORT_ERR[x?.code] || (x?.code === 'unknown_command' ? 'Dafür braucht es eine neuere Version von Nova Homeverse.' : 'Das hat nicht geklappt. Später nochmal versuchen?');
