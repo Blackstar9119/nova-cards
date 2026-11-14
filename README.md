@@ -9,7 +9,28 @@ YAML zu pflegen.
 > **Alles über den grafischen Editor.** Jede Karte hat einen eigenen Editor mit aufklappbaren Bereichen und Live-Vorschau.
 > Entitäten, Texte, Icons und Farben stellst du dort ein, vieles erkennt die Karte auch selbst. YAML ist nicht nötig.
 
-<!-- Screenshot: Übersicht aller Karten -->
+<p align="center"><img src="docs/images/themes/hero-blue.webp" alt="Nova Cards im Theme Nova Blau"></p>
+
+### Vier Themes, ein Klick
+
+Alle Nova Cards wechseln gemeinsam das Theme – global über den Themes Schalter oder je Karte.
+
+<table>
+<tr><td align="center" width="25%"><img src="docs/images/themes/compare-blue.webp" alt="Nova Blau"><br><sub>Nova Blau</sub></td><td align="center" width="25%"><img src="docs/images/themes/compare-midnight.webp" alt="Nova Midnight"><br><sub>Nova Midnight</sub></td><td align="center" width="25%"><img src="docs/images/themes/compare-light.webp" alt="Nova Hell"><br><sub>Nova Hell</sub></td><td align="center" width="25%"><img src="docs/images/themes/compare-velvet.webp" alt="Nova Velvet"><br><sub>Nova Velvet</sub></td></tr>
+</table>
+
+## Galerie
+
+<table>
+<tr><td align="center" width="33%"><a href="docs/room-card.md"><img src="docs/images/room/room-blue-default.webp" alt="Nova Raum"></a><br><sub><b>Raum</b></sub></td><td align="center" width="33%"><a href="docs/thermostat-card.md"><img src="docs/images/thermostat/thermostat-blue-compact.webp" alt="Nova Thermostat"></a><br><sub><b>Thermostat</b></sub></td><td align="center" width="33%"><a href="docs/light-card.md"><img src="docs/images/light/light-blue-group.webp" alt="Nova Licht"></a><br><sub><b>Licht</b></sub></td></tr>
+<tr><td align="center" width="33%"><a href="docs/navi-card.md"><img src="docs/images/navi/navi-blue-default.webp" alt="Nova Navi"></a><br><sub><b>Navi</b></sub></td><td align="center" width="33%"><a href="docs/modular-card.md"><img src="docs/images/modular/modular-blue-default.webp" alt="Nova Modular"></a><br><sub><b>Modular</b></sub></td><td align="center" width="33%"><a href="docs/camera-card.md"><img src="docs/images/camera/camera-blue-default.webp" alt="Nova Kamera"></a><br><sub><b>Kamera</b></sub></td></tr>
+<tr><td align="center" width="33%"><a href="docs/media-card.md"><img src="docs/images/media/media-blue-playing.webp" alt="Nova Media"></a><br><sub><b>Media</b></sub></td><td align="center" width="33%"><a href="docs/vacuum-card.md"><img src="docs/images/vacuum/vacuum-blue-cleaning.webp" alt="Nova Saugroboter"></a><br><sub><b>Saugroboter</b></sub></td><td align="center" width="33%"><a href="docs/waste-card.md"><img src="docs/images/waste/waste-blue-default.webp" alt="Nova Müllkalender"></a><br><sub><b>Müllkalender</b></sub></td></tr>
+<tr><td align="center" width="33%"><a href="docs/weather-card.md"><img src="docs/images/weather/weather-blue-default.webp" alt="Nova Wetter"></a><br><sub><b>Wetter</b></sub></td><td align="center" width="33%"><a href="docs/popup-card.md"><img src="docs/images/popup/popup-blue-open.webp" alt="Nova Pop-up"></a><br><sub><b>Pop-up</b></sub></td><td align="center" width="33%"><a href="docs/area-card.md"><img src="docs/images/area/area-blue-default.webp" alt="Nova Bereich"></a><br><sub><b>Bereich</b></sub></td></tr>
+<tr><td align="center" width="33%"><a href="docs/swipe-card.md"><img src="docs/images/swipe/swipe-blue-default.webp" alt="Nova Swipe"></a><br><sub><b>Swipe</b></sub></td><td align="center" width="33%"><a href="docs/chips-card.md"><img src="docs/images/chips/chips-blue-default.webp" alt="Nova Chips"></a><br><sub><b>Chips</b></sub></td><td align="center" width="33%"><a href="docs/geraet-card.md"><img src="docs/images/appliance/appliance-blue-washer-running.webp" alt="Nova Gerät"></a><br><sub><b>Gerät</b></sub></td></tr>
+<tr><td align="center" width="33%"><a href="docs/drucker-card.md"><img src="docs/images/printer/printer-blue-printing.webp" alt="Nova 3D-Drucker"></a><br><sub><b>3D-Drucker</b></sub></td><td align="center" width="33%"><a href="docs/remote-card.md"><img src="docs/images/remote/remote-blue-default.webp" alt="Nova Fernbedienung"></a><br><sub><b>Fernbedienung</b></sub></td><td align="center" width="33%"><a href="docs/timer-card.md"><img src="docs/images/timer/timer-blue-idle.webp" alt="Nova Timer"></a><br><sub><b>Timer</b></sub></td></tr>
+<tr><td align="center" width="33%"><a href="docs/clock-card.md"><img src="docs/images/clock/clock-blue-digital.webp" alt="Nova Uhr"></a><br><sub><b>Uhr</b></sub></td><td align="center" width="33%"><a href="docs/einkauf-card.md"><img src="docs/images/shopping/shopping-blue-default.webp" alt="Nova Einkauf"></a><br><sub><b>Einkauf</b></sub></td><td align="center" width="33%"><a href="docs/notiz-card.md"><img src="docs/images/note/note-blue-default.webp" alt="Nova Notiz"></a><br><sub><b>Notiz</b></sub></td></tr>
+<tr><td align="center" width="33%"><a href="docs/rezept-card.md"><img src="docs/images/recipe/recipe-blue-list.webp" alt="Nova Rezeptliste"></a><br><sub><b>Rezeptliste</b></sub></td><td align="center" width="33%"><a href="docs/rezeptbuch-card.md"><img src="docs/images/recipe-book/recipe-book-blue-old.webp" alt="Nova Rezeptbuch"></a><br><sub><b>Rezeptbuch</b></sub></td><td align="center" width="33%"><a href="docs/theme-card.md"><img src="docs/images/theme-switch/theme-switch-blue-button.webp" alt="Nova Themes Schalter"></a><br><sub><b>Themes Schalter</b></sub></td></tr>
+</table>
 
 ---
 
@@ -38,7 +59,7 @@ Temperatursensor lassen sich dazuschalten.
 
 ➜ [Alle Optionen der Wetter Card](docs/weather-card.md)
 
-<!-- Screenshot/GIF: Wetter Card -->
+<p align="center"><img src="docs/images/weather/weather-blue-default.webp" alt="Nova Wetter" width="480"></p>
 
 ### Nova Müllkalender Card
 Liest die nächsten Abholtermine aus einem oder mehreren Kalendern und zeigt sie mit Müllart, Icon, Farbe und „heute“,
@@ -47,7 +68,7 @@ Klick einfügen.
 
 ➜ [Alle Optionen der Müllkalender Card](docs/waste-card.md)
 
-<!-- Screenshot: Müllkalender Card -->
+<p align="center"><img src="docs/images/waste/waste-blue-default.webp" alt="Nova Müllkalender" width="480"></p>
 
 ### Nova Thermostat Card
 Ist- und Solltemperatur mit Plus/Minus, Heizmodi und Presets als Tasten und einem Verlauf der letzten Stunden. Ein eigener
@@ -55,7 +76,7 @@ Raumsensor und ein Luftfeuchte-Sensor lassen sich einbinden. Ist ein Fenster off
 
 ➜ [Alle Optionen der Thermostat Card](docs/thermostat-card.md)
 
-<!-- Screenshot/GIF: Thermostat Card -->
+<p align="center"><img src="docs/images/thermostat/thermostat-blue-compact.webp" alt="Nova Thermostat" width="480"></p>
 
 ### Nova Raum Card
 Eine Raumkachel mit Temperatur oder einem anderen Wert, Fenster-Warnung und frei belegbaren runden Buttons für Licht, TV und
@@ -63,7 +84,7 @@ mehr. Sie leuchtet, wenn im Raum etwas an ist, und öffnet auf Wunsch direkt ein
 
 ➜ [Alle Optionen der Raum Card](docs/room-card.md)
 
-<!-- Screenshot/GIF: Raum Card -->
+<p align="center"><img src="docs/images/room/room-blue-default.webp" alt="Nova Raum" width="480"></p>
 
 ### Nova Licht Card
 Alle Lampen eines Bereichs oder eine eigene Auswahl als Kacheln. Antippen schaltet, Schieben dimmt, und jede Kachel leuchtet
@@ -71,7 +92,7 @@ in der Farbe ihrer Lampe. Farbknöpfe für Lieblingsfarben und ein „Alle aus�
 
 ➜ [Alle Optionen der Licht Card](docs/light-card.md)
 
-<!-- Screenshot/GIF: Licht Card -->
+<p align="center"><img src="docs/images/light/light-blue-group.webp" alt="Nova Licht" width="480"></p>
 
 ### Nova Navi
 Eine schwebende Navigationsleiste am unteren oder oberen Rand, auf breiten Bildschirmen auf Wunsch als Seitenleiste.
@@ -100,7 +121,7 @@ items:
 
 ➜ [Alle Optionen von Nova Navi](docs/navi-card.md)
 
-<!-- Screenshot/GIF: Nova Navi -->
+<p align="center"><img src="docs/images/navi/navi-blue-default-anim.webp" alt="Nova Navi" width="480"></p>
 
 ### Nova Modular Card
 Eine Gerätekarte zum Selbst-Zusammenbauen aus Bausteinen: Kopfzeile mit Fortschritt, Infos, Schalter, Schieberegler,
@@ -108,7 +129,7 @@ Aktionsbuttons und Warnungen. Passt für fast jedes Gerät, vom 3D-Drucker bis z
 
 ➜ [Alle Optionen der Modular Card](docs/modular-card.md)
 
-<!-- Screenshot: Modular Card -->
+<p align="center"><img src="docs/images/modular/modular-blue-default.webp" alt="Nova Modular" width="480"></p>
 
 ### Nova Kamera Card
 Live-Bild einer Kamera oder eines Bildes mit Kopfzeile, rundem Steuerkreuz für schwenkbare Kameras und Splitscreen für
@@ -116,7 +137,7 @@ weitere Kameras. Dazu kommen frei belegbare Buttons, Info-Chips und Warnungen di
 
 ➜ [Alle Optionen der Kamera Card](docs/camera-card.md)
 
-<!-- Screenshot/GIF: Kamera Card -->
+<p align="center"><img src="docs/images/camera/camera-blue-default.webp" alt="Nova Kamera" width="480"></p>
 
 ### Nova Media Card
 Ein Media-Player mit dem Cover als Hintergrund, Titel, Interpret und App-Logo. Play/Pause, Vor/Zurück, Lautstärke, Stumm,
@@ -125,7 +146,7 @@ der gerade spielt.
 
 ➜ [Alle Optionen der Media Card](docs/media-card.md)
 
-<!-- Screenshot/GIF: Media Card -->
+<p align="center"><img src="docs/images/media/media-blue-playing.webp" alt="Nova Media" width="480"></p>
 
 ### Nova Saugroboter Card
 Status, Akku und Steuerung deines Saugroboters mit einer kleinen Animation von Roboter und Station. Daneben die Raumkarte,
@@ -134,7 +155,7 @@ z. B. „Hauptbürste blockiert“, auch für die Station. Vieles findet die Kar
 
 ➜ [Alle Optionen der Saugroboter Card](docs/vacuum-card.md)
 
-<!-- Screenshot/GIF: Saugroboter Card -->
+<p align="center"><img src="docs/images/vacuum/vacuum-blue-cleaning-anim.webp" alt="Nova Saugroboter" width="480"></p>
 
 ### Nova Pop-up Card
 Ein Pop-up mit beliebigen Karten in Zeilen und Spalten, geöffnet über eine Adresse wie `#wohnzimmer`, zum Beispiel von Nova Navi
@@ -156,7 +177,7 @@ info:
 
 ➜ [Alle Optionen der Pop-up Card](docs/popup-card.md)
 
-<!-- Screenshot/GIF: Pop-up Card -->
+<p align="center"><img src="docs/images/popup/popup-blue-open-anim.webp" alt="Nova Pop-up" width="480"></p>
 
 ### Nova Bereich Card
 Eine Raumansicht als großer Glasrahmen, fest im Dashboard: Kopfzeile mit Zurück-Knopf, Icon und Raumname aus der Area,
@@ -165,7 +186,7 @@ untereinander. Ideal für Raum-Unteransichten.
 
 ➜ [Alle Optionen der Bereich Card](docs/area-card.md)
 
-<!-- Screenshot: Bereich Card -->
+<p align="center"><img src="docs/images/area/area-blue-default.webp" alt="Nova Bereich" width="480"></p>
 
 ### Nova Chips Card
 Eine Reihe frei belegbarer Chips: Wert-Chips zeigen den Zustand einer Entität, Knopf-Chips führen eine Aktion aus, zum
@@ -174,7 +195,7 @@ pro Chip ein.
 
 ➜ [Alle Optionen der Chips Card](docs/chips-card.md)
 
-<!-- Screenshot: Chips Card -->
+<p align="center"><img src="docs/images/chips/chips-blue-default.webp" alt="Nova Chips" width="480"></p>
 
 ### Nova Gerät Card
 Eine Karte für Haushaltsgeräte: Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen oder ein
@@ -184,7 +205,7 @@ solange etwas läuft.
 
 ➜ [Alle Optionen der Gerät Card](docs/geraet-card.md)
 
-<!-- Screenshot/GIF: Gerät Card -->
+<p align="center"><img src="docs/images/appliance/appliance-blue-washer-running-anim.webp" alt="Nova Gerät" width="480"></p>
 
 ### Nova 3D-Drucker Card
 Dein Bambu-Lab-Drucker als animierte Zeichnung mit AMS, Kamerabild, Fortschritt, Restzeit, Temperaturen, Druckphase und
@@ -192,7 +213,7 @@ Meldungen, dazu Pause, Fortsetzen, Stopp und Kammerlicht. Gerät auswählen, den
 
 ➜ [Alle Optionen der 3D-Drucker Card](docs/drucker-card.md)
 
-<!-- Screenshot/GIF: 3D-Drucker Card -->
+<p align="center"><img src="docs/images/printer/printer-blue-printing-anim.webp" alt="Nova 3D-Drucker" width="480"></p>
 
 ### Nova Fernbedienung
 Eine Fernbedienung für Fernseher und Streaming-Boxen: Steuerkreuz oder Touchpad, Zurück/Home/Menü, Medientasten,
@@ -201,7 +222,7 @@ Google TV (z. B. Xiaomi TV Box, Chromecast), Fire TV per ADB, Philips, Apple TV,
 
 ➜ [Alle Optionen der Fernbedienung](docs/remote-card.md)
 
-<!-- Screenshot: Fernbedienung -->
+<p align="center"><img src="docs/images/remote/remote-blue-default.webp" alt="Nova Fernbedienung" width="480"></p>
 
 ### Nova Uhr Card
 Die Uhrzeit in fünf Stilen: schlicht digital, als Klappzahl-Uhr wie am Bahnhof, als Zifferblatt mit gleitendem oder
@@ -211,22 +232,28 @@ Temperatur stehen auf Wunsch darunter.
 
 ➜ [Alle Optionen der Uhr Card](docs/clock-card.md)
 
-<!-- Screenshot: Uhr Card in allen Stilen -->
+<p align="center"><img src="docs/images/clock/clock-blue-digital.webp" alt="Nova Uhr" width="480"></p>
 
 ### Nova Timer Card
 Ein Küchen-Timer als Stoppuhr im Nova-Stil: antippen, Zeit wählen, läuft – gesteuert über einen `timer.*`-Helfer.
 
 ➜ [Alle Optionen der Timer Card](docs/timer-card.md)
 
+<p align="center"><img src="docs/images/timer/timer-blue-idle.webp" alt="Nova Timer" width="480"></p>
+
 ### Nova Swipe Card
 Mehrere Seiten in einer Karte zum Wischen, auf jeder Seite beliebige Karten – ideal für Wandtablets.
 
 ➜ [Alle Optionen der Swipe Card](docs/swipe-card.md)
 
+<p align="center"><img src="docs/images/swipe/swipe-blue-default.webp" alt="Nova Swipe" width="480"></p>
+
 ### Nova Einkauf Card
 Einkaufsliste aus einer `todo.*`-Entität: eintippen, abhaken, auf Wunsch per Knopf drucken.
 
 ➜ [Alle Optionen der Einkauf Card](docs/einkauf-card.md)
+
+<p align="center"><img src="docs/images/shopping/shopping-blue-default.webp" alt="Nova Einkauf" width="480"></p>
 
 ### Nova Notiz Card
 Ein großes Notizfeld mit Druck-Knopf, Notizen werden in einer todo-Liste gespeichert.
@@ -234,6 +261,8 @@ Ein großes Notizfeld mit Druck-Knopf, Notizen werden in einer todo-Liste gespei
 ➜ [Alle Optionen der Notiz Card](docs/notiz-card.md)
 
 ---
+
+<p align="center"><img src="docs/images/note/note-blue-default.webp" alt="Nova Notiz" width="480"></p>
 
 ## Lizenz
 

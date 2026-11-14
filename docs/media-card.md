@@ -2,8 +2,16 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/media/media-blue-playing.webp" alt="Nova Media – Spielt" width="520"></p>
+
 Media-Player-Karte im Look der Modular Card: Cover als Hintergrund, Titel, Interpret, App-Logo – leuchtet beim Abspielen.
 Buttons erscheinen nur, wenn der Player sie kann (`supported_features`). Music Assistant wird automatisch erkannt.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/media/media-blue-editor.webp" alt="Grafischer Editor der Nova Media" width="720"></p>
 
 ```yaml
 type: custom:nova-media-card
@@ -38,3 +46,10 @@ icon_map:                   # App/Quelle → Logo (Groß/Klein egal)
 | `auto_switch` | `true` | Wechselt zum Player, der gerade spielt – bis man selbst umschaltet |
 | `music_assistant` | automatisch | Findet den Music-Assistant-Player mit gleichem Namen. Spielt der, kommen Titel, Cover und Vor/Zurück von dort (das nackte Gerät, z. B. ESPHome, kennt die nicht). Fest: Entität angeben, `false` = aus. Auch je Eintrag in `players[]` |
 | `icon_map` + `icon_entity` | – | Logo statt Icon: Schlüssel = App-Name, Quelle oder Kanal des Players; mit `icon_entity` zählt deren Zustand (wie bei der Raum Card). Gilt auch für die Quellen-Pillen |
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/media/media-blue-playing.webp" alt="Spielt"><br><sub>Spielt</sub></td><td align="center" width="50%"><img src="images/media/media-blue-paused.webp" alt="Pausiert"><br><sub>Pausiert</sub></td></tr>
+</table>
+

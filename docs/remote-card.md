@@ -2,6 +2,8 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/remote/remote-blue-default.webp" alt="Nova Fernbedienung – Standard" width="520"></p>
+
 Fernbedienung für Fernseher und Streaming-Boxen. Die Tastenbefehle passen sich der Integration der Entität an, Tasten,
 die das Gerät nicht kennt, werden ausgeblendet. Pfeile, Lautstärke, Kanäle und Spulen wiederholen sich beim Festhalten.
 
@@ -13,6 +15,12 @@ die das Gerät nicht kennt, werden ausgeblendet. Pfeile, Lautstärke, Kanäle un
 | `apple_tv` | Apple TV | `remote.*` | Quelle des Players |
 | `roku` | Roku | `remote.*` | Quelle des Players |
 | `samsungtv` | Samsung Smart TV | `remote.*` | Quelle des Players |
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/remote/remote-blue-editor.webp" alt="Grafischer Editor der Nova Fernbedienung" width="720"></p>
 
 ```yaml
 type: custom:nova-remote-card
@@ -69,3 +77,10 @@ keys:                        # optional: eigene Belegung
 Den Paketnamen einer App muss man nicht suchen: App am Gerät öffnen, dann im Editor unter **Apps** auf
 **Laufende App übernehmen** tippen. Startet die App über die Karte danach nicht, braucht sie zusätzlich einen App-Link
 (meist die Webadresse des Anbieters).
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/remote/remote-blue-default.webp" alt="Standard"><br><sub>Standard</sub></td><td align="center" width="50%"><img src="images/remote/remote-blue-touchpad.webp" alt="Touchpad"><br><sub>Touchpad</sub></td></tr>
+</table>
+

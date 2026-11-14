@@ -2,6 +2,8 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/recipe/recipe-blue-list.webp" alt="Nova Rezeptliste – Liste" width="520"></p>
+
 Kompakte Rezeptliste, schnell durchsuchbar und auf allen Geräten gleich. Dieselben Rezepte zeigt das
 [Nova Rezeptbuch](rezeptbuch-card.md) zum Blättern. Die Daten liegen in der
 [Nova-Integration](https://github.com/Blackstar9119/nova-integration) (Modul „Rezeptbuch“) – ohne sie zeigt die Karte nur einen Hinweis.
@@ -20,6 +22,12 @@ Kompakte Rezeptliste, schnell durchsuchbar und auf allen Geräten gleich. Diesel
   und Bild. Alles lässt sich ändern; gespeichert wird erst mit „Übernehmen“, das Kreuz verwirft die Vorschau. Gibt es das
   Rezept schon (gleicher Link oder Titel), fragt die Karte: ersetzen oder trotzdem neu. Findet die Integration kein Rezept
   auf der Seite, bietet die Karte an, es selbst anzulegen. Unter importierten Rezepten steht die Quelle als Link.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/recipe/recipe-blue-editor.webp" alt="Grafischer Editor der Nova Rezeptliste" width="720"></p>
 
 ```yaml
 type: custom:nova-recipe-card
@@ -55,3 +63,10 @@ ZUBEREITUNG
 ```
 
 Das Druck-Skript der [Notiz Card](notiz-card.md#drucken) passt unverändert.
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/recipe/recipe-blue-list.webp" alt="Liste"><br><sub>Liste</sub></td><td align="center" width="50%"><img src="images/recipe/recipe-blue-tiles.webp" alt="Kacheln"><br><sub>Kacheln</sub></td></tr>
+</table>
+

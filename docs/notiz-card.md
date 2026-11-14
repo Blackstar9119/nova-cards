@@ -2,6 +2,8 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/note/note-blue-default.webp" alt="Nova Notiz – Standard" width="520"></p>
+
 Notizen, die auf allen Geräten gleich sind. Die Daten liegen in der
 [Nova-Integration](https://github.com/Blackstar9119/nova-integration) (Modul „Notizen“) – ohne sie zeigt die Karte nur einen Hinweis.
 
@@ -14,6 +16,12 @@ Notizen, die auf allen Geräten gleich sind. Die Daten liegen in der
 - **Neue Notiz:** Plus oben rechts. Leere Notizen werden nicht angelegt.
 
 Die Karte ist in allen Zuständen gleich hoch; Liste und Notiz scrollen in sich.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/note/note-blue-editor.webp" alt="Grafischer Editor der Nova Notiz" width="720"></p>
 
 ```yaml
 type: custom:nova-note-card

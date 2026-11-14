@@ -2,6 +2,8 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/shopping/shopping-blue-default.webp" alt="Nova Einkauf – Standard" width="520"></p>
+
 Einkaufsliste, die auf allen Geräten gleich ist. Die Daten liegen in der
 [Nova-Integration](https://github.com/Blackstar9119/nova-integration) (Modul „Einkauf“) – ohne sie zeigt die Karte nur einen Hinweis.
 
@@ -23,6 +25,12 @@ Einkaufsliste, die auf allen Geräten gleich ist. Die Daten liegen in der
   verkleinert) und die Notiz. Gespeichert wird automatisch.
 
 Die Karte ist in allen Zuständen gleich hoch; Liste und Detailansicht scrollen in sich.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/shopping/shopping-blue-editor.webp" alt="Grafischer Editor der Nova Einkauf" width="720"></p>
 
 ```yaml
 type: custom:nova-shopping-card

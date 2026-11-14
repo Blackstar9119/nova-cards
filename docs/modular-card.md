@@ -2,7 +2,15 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/modular/modular-blue-default.webp" alt="Nova Modular – Standard" width="520"></p>
+
 Gerätekarte aus frei kombinierbaren Bausteinen – z. B. Futterautomat, Airfryer, Katzenklo. Im Editor Bausteine hinzufügen, sortieren und löschen.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/modular/modular-blue-editor.webp" alt="Grafischer Editor der Nova Modular" width="720"></p>
 
 ```yaml
 type: custom:nova-modular-card
@@ -66,3 +74,10 @@ blocks:
 Für die ganze Karte: `size` (Größe in Prozent, Standard `100`, z. B. `150` für Wandpanels) – skaliert Schrift, Icons und Abstände.
 
 Alle Bausteine außer `header` haben optional `title`. Einträge dürfen auch als Kurzform `- sensor.xyz` angegeben werden.
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/modular/modular-blue-default.webp" alt="Standard"><br><sub>Standard</sub></td><td align="center" width="50%"><img src="images/modular/modular-blue-info.webp" alt="Info"><br><sub>Info</sub></td></tr>
+</table>
+

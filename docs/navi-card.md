@@ -2,6 +2,8 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/navi/navi-blue-default-anim.webp" alt="Nova Navi – Animation" width="480"></p>
+
 Navigationsleiste mit runden Buttons, schwebend am unteren oder oberen Rand, auf breiten Bildschirmen auf Wunsch als
 Seitenleiste. Ein Button kann navigieren, eine Aktion auslösen, ein kleines Untermenü oder ein Pop-up öffnen. Badges
 zeigen Punkte oder Zahlen, eine Media-Leiste über der Navigation den laufenden Player. Alles ist im grafischen Editor
@@ -9,6 +11,12 @@ einstellbar.
 
 > Früher hieß die Karte **Nova Dock Card** (`custom:nova-dock-card`). Der alte Typ funktioniert weiter, im Editor steht
 > sie jetzt als **Nova Navi**. Zum Umstellen in der Konfiguration nur `type` ändern.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/navi/navi-blue-editor.webp" alt="Grafischer Editor der Nova Navi" width="720"></p>
 
 ```yaml
 type: custom:nova-navi-card
@@ -140,3 +148,10 @@ Passt die Leiste nicht auf den Bildschirm (z. B. am Handy), lässt sie sich wisc
 weich in die Mitte gescrollt, Pille und Schatten werden am Rand nicht abgeschnitten, und wo es weitergeht, blendet der Rand weich aus.
 Jeder Button behält immer seine Inaktiv-Farbe als Grundfarbe; das Gelb liegt als eigene Ebene darüber und blendet
 beim Wechsel direkt zwischen Gelb und Inaktiv-Farbe über (gleiche Dauer und Kurve wie die Markierung).
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/navi/navi-blue-default.webp" alt="Standard"><br><sub>Standard</sub></td><td align="center" width="50%"><img src="images/navi/navi-blue-compact.webp" alt="Kompakt"><br><sub>Kompakt</sub></td></tr>
+</table>
+

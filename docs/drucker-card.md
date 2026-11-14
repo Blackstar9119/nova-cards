@@ -2,9 +2,17 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/printer/printer-blue-printing-anim.webp" alt="Nova 3D-Drucker – Animation" width="480"></p>
+
 3D-Drucker der [Bambu-Lab-Integration](https://github.com/greghesp/ha-bambulab) mit animierter Druckerzeichnung (geschlossener
 CoreXY-Drucker mit Glastür, Touch-Display und AMS), Kamerabild, Fortschritt, Restzeit, Endzeit, Schicht, Temperaturen, Dateiname, Druckphase,
 Meldungen, AMS-Slots und den Knöpfen Pause, Fortsetzen, Stopp und Kammerlicht. Alles ist im grafischen Editor einstellbar.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/printer/printer-blue-editor.webp" alt="Grafischer Editor der Nova 3D-Drucker" width="720"></p>
 
 ## Wenn du einfach nur deinen Drucker zeigen willst, dann so
 
@@ -173,3 +181,12 @@ nova-printer-color-light: "#3a4252"   # Gehäuse oben
 | `tap_action`, `hold_action` | more-info | Icon antippen / lange drücken |
 
 Animationen laufen nur, solange die Karte zu sehen ist, und stehen bei „Bewegung reduzieren“ im System still.
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/printer/printer-blue-printing.webp" alt="Druckt"><br><sub>Druckt</sub></td><td align="center" width="50%"><img src="images/printer/printer-blue-heating.webp" alt="Heizt auf"><br><sub>Heizt auf</sub></td></tr>
+<tr><td align="center" width="50%"><img src="images/printer/printer-blue-error.webp" alt="Fehler"><br><sub>Fehler</sub></td><td align="center" width="50%"><img src="images/printer/printer-blue-finished.webp" alt="Fertig"><br><sub>Fertig</sub></td></tr>
+<tr><td align="center" width="50%"><img src="images/printer/printer-blue-off.webp" alt="Aus"><br><sub>Aus</sub></td></tr>
+</table>
+

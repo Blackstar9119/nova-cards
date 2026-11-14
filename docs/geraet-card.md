@@ -2,10 +2,18 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/appliance/appliance-blue-washer-running-anim.webp" alt="Nova Gerät – Animation" width="480"></p>
+
 Eine Karte für Haushaltsgeräte: Waschmaschine, Spülmaschine, Airfryer, Kaffeemaschine, Futterautomat, Trinkbrunnen oder ein
 beliebiges anderes Gerät. Sie zeigt Status, Programm, Fortschritt, Restzeit und Endzeit, dazu Regler (Programm, Temperatur …),
 Start/Pause/Stopp und ein animiertes Gerätebild. Der Gerätetyp schaltet nur Symbol, Texte, Standardfarbe und Animation um, die
 Optionen sind für alle Geräte gleich. Alles ist im grafischen Editor einstellbar.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/appliance/appliance-blue-editor.webp" alt="Grafischer Editor der Nova Gerät" width="720"></p>
 
 ## Wenn du einfach nur ein Gerät zeigen willst, dann so
 
@@ -158,3 +166,13 @@ Liste von Entitäten (`select`, `number`, `switch`, `sensor` …), je mit `entit
 | `glow` | Rahmen leuchtet beim Laufen |
 | `window`, `heat_color` | Nur Airfryer: Sichtfenster an/aus und Glühfarbe der Heizspirale |
 | `tap_action`, `hold_action` | Aktionen beim Antippen und langen Drücken |
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/appliance/appliance-blue-washer-running.webp" alt="Waschmaschine läuft"><br><sub>Waschmaschine läuft</sub></td><td align="center" width="50%"><img src="images/appliance/appliance-blue-washer-finished.webp" alt="Waschmaschine fertig"><br><sub>Waschmaschine fertig</sub></td></tr>
+<tr><td align="center" width="50%"><img src="images/appliance/appliance-blue-dishwasher.webp" alt="Spülmaschine"><br><sub>Spülmaschine</sub></td><td align="center" width="50%"><img src="images/appliance/appliance-blue-airfryer.webp" alt="Airfryer"><br><sub>Airfryer</sub></td></tr>
+<tr><td align="center" width="50%"><img src="images/appliance/appliance-blue-coffee.webp" alt="Kaffeemaschine"><br><sub>Kaffeemaschine</sub></td><td align="center" width="50%"><img src="images/appliance/appliance-blue-feeder.webp" alt="Futterautomat"><br><sub>Futterautomat</sub></td></tr>
+<tr><td align="center" width="50%"><img src="images/appliance/appliance-blue-fountain.webp" alt="Trinkbrunnen"><br><sub>Trinkbrunnen</sub></td></tr>
+</table>
+

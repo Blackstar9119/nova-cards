@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen an Nova Cards. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Behoben
+- Saugroboter (und alle Karten, die Zustände formatieren): Fehlt die eingetragene Entität, stürzt die Karte nicht mehr mit „Cannot read properties of undefined (reading 'state')“ ab, sondern zeigt „nicht gefunden“. Damit verschwindet auch der Folgefehler „setting 'layout'“ im Dashboard.
+
+### Doku
+- Echte Screenshots aus HA Dev in README und docs/ (`npm run screenshots`).
+
 ## [0.1.0b7] – 2026-11-14
 
 ### Geändert

@@ -2,9 +2,17 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/clock/clock-blue-digital.webp" alt="Nova Uhr – Digital" width="520"></p>
+
 Uhrzeit im Nova-Stil in fünf Stilen: digital mit großen, schlanken Ziffern wie die Uhr der Wetter Card, als Klappzahl-Uhr,
 analog als Zifferblatt mit Chromring und Glas, als Leuchtziffern mit Farbe nach Sonnenstand oder als Radiowecker. Wochentag,
 Datum und Werte auf Wunsch darunter. Die Größe passt sich der Karte an und läuft nie über. Sprache und 12/24 Stunden kommen aus deinem Home-Assistant-Profil, die Zeitzone ist immer die von Home Assistant.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/clock/clock-blue-editor.webp" alt="Grafischer Editor der Nova Uhr" width="720"></p>
 
 ## Wenn du einfach nur eine Uhr willst, dann so
 
@@ -164,3 +172,11 @@ Theme-Variablen: `--nova-clock-morning`, `--nova-clock-noon`, `--nova-clock-nigh
   solange die Karte zu sehen ist. Wird die Karte entfernt oder der Tab versteckt, läuft nichts weiter.
 - Der gleitende Sekundenzeiger läuft als Animation ohne Zeitgeber. Ist „Bewegung reduzieren“ eingestellt, springt er stattdessen.
 - Die Zeit kommt vom Gerät, auf dem das Dashboard läuft, angezeigt in der Zeitzone von Home Assistant. Geht die Uhr des Geräts falsch, geht auch die Karte falsch.
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/clock/clock-blue-digital.webp" alt="Digital"><br><sub>Digital</sub></td><td align="center" width="50%"><img src="images/clock/clock-blue-flip.webp" alt="Klappzahlen"><br><sub>Klappzahlen</sub></td></tr>
+<tr><td align="center" width="50%"><img src="images/clock/clock-blue-analog.webp" alt="Analog"><br><sub>Analog</sub></td><td align="center" width="50%"><img src="images/clock/clock-blue-glow.webp" alt="Leuchtziffern"><br><sub>Leuchtziffern</sub></td></tr>
+</table>
+

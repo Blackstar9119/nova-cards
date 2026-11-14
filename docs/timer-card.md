@@ -2,12 +2,20 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/timer/timer-blue-idle.webp" alt="Nova Timer – Bereit" width="520"></p>
+
 Ein Küchen-Timer fürs Dashboard: antippen, Zeit wählen, läuft. Gezeichnet als Stoppuhr im Nova-Stil, der leuchtende Ring
 zeigt die Restzeit. Ist die Zeit um, klingelt die Karte sichtbar (Rahmen pulsiert, Stoppuhr wackelt, Glocke), bis jemand
 „OK“ drückt.
 
 Die Karte zählt nicht selbst, sondern steuert einen **Timer-Helfer** in Home Assistant. Darum zeigen alle Geräte
 (Echo Show, Handy, Tablet) dieselbe Zeit, und ein Neuladen der Seite ändert nichts.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/timer/timer-blue-editor.webp" alt="Grafischer Editor der Nova Timer" width="720"></p>
 
 ## Wenn du zum ersten Mal einen Timer willst, dann so
 
@@ -97,3 +105,10 @@ Theme-Variablen: `--nova-timer-size` (größte Breite der Stoppuhr, Standard 240
 - „+1 Min“ nutzt den Dienst `timer.change`. Klappt das nicht (z. B. weil der Timer dann länger liefe als seine eingestellte
   Dauer), startet die Karte den Timer mit der neuen Restzeit neu.
 - Läuft der Timer, tickt die Karte einmal pro Sekunde – aber nur, solange sie zu sehen ist. In der Kartenauswahl steht sie still.
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/timer/timer-blue-idle.webp" alt="Bereit"><br><sub>Bereit</sub></td><td align="center" width="50%"><img src="images/timer/timer-blue-running.webp" alt="Läuft"><br><sub>Läuft</sub></td></tr>
+</table>
+

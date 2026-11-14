@@ -2,10 +2,18 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/waste/waste-blue-default.webp" alt="Nova Müllkalender – Standard" width="520"></p>
+
 Nächste Müllabholungen aus einem oder mehreren Kalendern (z. B. iCal-Abfallkalender) – mit Müllart, Icon, Farbe, Datum und
 „heute / morgen / in X Tagen“. Abholungen heute und morgen werden hervorgehoben, der Rahmen leuchtet in der Farbe der Müllart.
 Farben werden nicht frei gewählt, sondern als Farbrolle – so färbt ein Theme alle Karten einheitlich um.
 Die Termine kommen über die Kalender-API von Home Assistant: beim Laden der Karte, danach stündlich und direkt nach Mitternacht.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/waste/waste-blue-editor.webp" alt="Grafischer Editor der Nova Müllkalender" width="720"></p>
 
 ```yaml
 type: custom:nova-waste-card
@@ -42,3 +50,10 @@ Ganztägige Termine zählen für ihren Kalendertag, mehrtägige ab heute bis zu 
 Uhrzeit mit an und richten sich nach der Zeitzone aus dem HA-Profil (Browser oder Server). Die gleiche Müllart am gleichen Tag
 aus mehreren Kalendern erscheint nur einmal. Antippen öffnet die Details des Kalenders.
 Im Editor fügt **„Standard-Müllarten einfügen“** Restmüll, Papier, Gelber Sack, Bio und Glas als Vorlage ein.
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/waste/waste-blue-default.webp" alt="Standard"><br><sub>Standard</sub></td><td align="center" width="50%"><img src="images/waste/waste-blue-compact.webp" alt="Kompakt"><br><sub>Kompakt</sub></td></tr>
+</table>
+

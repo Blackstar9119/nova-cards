@@ -10,9 +10,11 @@
     "dev": "node build.mjs --dev",
     "panel": "node build.mjs --panel",
     "integration": "node build.mjs --integration",
-    "check": "node tools/check-tokens.mjs"
+    "check": "node tools/check-tokens.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "playwright": "^1.65.0"
   }
 }

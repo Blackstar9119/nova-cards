@@ -2,7 +2,15 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/camera/camera-blue-default.webp" alt="Nova Kamera – Standard" width="520"></p>
+
 Live-Bild von `camera.*` (Stream) oder `image.*` (z. B. 3D-Drucker) mit Kopfzeile, rundem Steuerkreuz zum Schwenken/Neigen, Splitscreen, frei belegbaren Buttons, Info-Chips und Warn-Badges. Der Stream läuft nur, solange die Karte sichtbar ist – sonst Standbild (schont das Wandpanel).
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/camera/camera-blue-editor.webp" alt="Grafischer Editor der Nova Kamera" width="720"></p>
 
 ```yaml
 type: custom:nova-camera-card
@@ -51,3 +59,10 @@ split_layout: grid          # grid | row | column
 | `split[]` | – | Splitscreen: weitere Kameras als Kacheln, je `entity`, `name`, `ptz` (`auto`/`onvif`/`off`), `image_action`. Jede Kachel streamt nur, wenn sichtbar |
 | `split_layout` | `grid` | `grid` (2 Spalten), `row` (nebeneinander), `column` (untereinander); schmale Karten stapeln automatisch |
 | `alerts[]` | – | wie bei der Modular Card; Badge oben rechts, `glow: false` = Rahmen nicht einfärben |
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/camera/camera-blue-default.webp" alt="Standard"><br><sub>Standard</sub></td><td align="center" width="50%"><img src="images/camera/camera-blue-split.webp" alt="Splitscreen"><br><sub>Splitscreen</sub></td></tr>
+</table>
+

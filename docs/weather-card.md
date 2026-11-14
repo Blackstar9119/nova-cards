@@ -2,8 +2,16 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/weather/weather-blue-default.webp" alt="Nova Wetter – Standard" width="520"></p>
+
 Aktuelles Wetter einer `weather.*`-Entität mit Tages- und Stundenvorhersage: Icon, Temperatur, Zustand, Max/Min, Regen und
 Zusatzwerte wie Luftfeuchte, Wind und Luftdruck. Die Vorhersage kommt direkt von der Wetter-Entität.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/weather/weather-blue-editor.webp" alt="Grafischer Editor der Nova Wetter" width="720"></p>
 
 ```yaml
 type: custom:nova-weather-card
@@ -45,3 +53,10 @@ hour_step: 3
 | `hourly_first` | `false` | Stunden vor Tagen zeigen |
 | `color` | `auto` | Farbrolle der Icons: `auto` (nach Wetter), `neutral`, `accent-1` … `accent-4` |
 | `tap_action`, `hold_action` | Details der Wetter-Entität | Aktionen beim Antippen / langen Drücken |
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/weather/weather-blue-default.webp" alt="Standard"><br><sub>Standard</sub></td><td align="center" width="50%"><img src="images/weather/weather-blue-current.webp" alt="Nur aktuell"><br><sub>Nur aktuell</sub></td></tr>
+</table>
+

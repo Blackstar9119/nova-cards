@@ -2,10 +2,18 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/vacuum/vacuum-blue-cleaning-anim.webp" alt="Nova Saugroboter – Animation" width="480"></p>
+
 Saugroboter mit Status, Akku und Steuer-Pillen (Start, Pause, Stopp, Zur Station) – leuchtet beim Reinigen. Buttons erscheinen nur, wenn der Roboter sie kann (`supported_features`).
 Mit Animation von Roboter und Station: fährt beim Reinigen, wischt (nasse Spur), fährt zurück, lädt, saugt ab, wäscht und trocknet den Mopp, zeigt Frisch-/Schmutzwassertank. Die nötigen Entitäten sucht die Karte selbst am Gerät des Roboters und seiner Station (auch wenn die Station ein eigenes Gerät ist, wie bei Roborock) – ohne sie läuft die Animation nur mit dem `vacuum`-Zustand, den jeder Roboter hat.
 Bei einer Störung zeigt die Karte den konkreten Fehler, z. B. „Hauptbürste blockiert“ statt nur „Fehler“, auch Fehler der Station. Die Fehler-Sensoren findet sie am Gerät selbst (Roborock: „Staubsauger-Fehler“ und „Ladestation-Fehler“).
 Optional: Karte/Kamera-Bild (bei breiter Karte, z. B. im Popup, automatisch daneben), Saugstärke, Raumreinigung per Segment, Schalter (Staubentleerung, Moppwäsche …) sowie Infos und Verbrauchsteile. Alles im grafischen Editor einstellbar.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/vacuum/vacuum-blue-editor.webp" alt="Grafischer Editor der Nova Saugroboter" width="720"></p>
 
 ```yaml
 type: custom:nova-vacuum-card
@@ -94,3 +102,10 @@ consumables:                   # Infos & Verbrauchsteile
 | `switches[]` / `switches_columns` | – / `1` | Schalter wie bei der Modular Card: `entity`, `name`, `icon`, `tap_action`, `confirm`. Antippen schaltet, Buttons/Skripte werden ausgelöst |
 | `consumables[]` | – | Infos & Verbrauchsteile (z. B. Modus, Wassertank, Filter): `entity`, `name`, `icon`, `unit`, `decimals`, `below` (darunter Warnung + Rahmen), `max` (Balken; bei `%` automatisch 100) |
 | `consumables_layout` | `rows` | `rows` = Liste mit Balken, `chips` |
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/vacuum/vacuum-blue-cleaning.webp" alt="Reinigt"><br><sub>Reinigt</sub></td><td align="center" width="50%"><img src="images/vacuum/vacuum-blue-docked.webp" alt="In der Station"><br><sub>In der Station</sub></td></tr>
+</table>
+

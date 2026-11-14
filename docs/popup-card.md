@@ -2,8 +2,16 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/popup/popup-blue-open-anim.webp" alt="Nova Pop-up – Animation" width="480"></p>
+
 Ein Pop-up mit beliebigen Karten (Nova-Karten, HA-Karten, andere Custom Cards). Es öffnet sich, wenn die Adresse auf
 `#hash` endet, z. B. `#wohnzimmer`. Alles lässt sich im grafischen Editor einstellen.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/popup/popup-blue-editor.webp" alt="Grafischer Editor der Nova Pop-up" width="720"></p>
 
 ## Pop-up anlegen
 
@@ -85,3 +93,10 @@ rows:
 Standard ist der bläuliche Nova-Glas-Look. Unter **Allgemein** → **Farbton** lässt er sich mit einer Nova-Farbrolle
 einfärben. Per Theme-Variablen anpassbar: `nova-popup-background`, `nova-popup-base-color`, `nova-popup-header-color`,
 `nova-popup-backdrop`, `nova-popup-radius`, `nova-popup-z-index`, Textfarbe über `nova-text-color`.
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/popup/popup-blue-open.webp" alt="Geöffnet"><br><sub>Geöffnet</sub></td><td align="center" width="50%"><img src="images/popup/popup-blue-minimal.webp" alt="Minimal"><br><sub>Minimal</sub></td></tr>
+</table>
+

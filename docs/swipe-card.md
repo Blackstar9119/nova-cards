@@ -2,11 +2,19 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/swipe/swipe-blue-default.webp" alt="Nova Swipe – Standard" width="520"></p>
+
 Mehrere Seiten in einer Karte – zum Wischen nach links und rechts. Auf jeder Seite liegen beliebige Karten (Nova Cards oder
 Karten von Home Assistant) in Zeilen und Spalten, genau wie in der Pop-up Card. Unten zeigen kleine Punkte, auf welcher Seite
 du bist; antippen springt direkt hin.
 
 Gedacht für kleine Displays wie den Echo Show 5: statt alles auf eine Seite zu quetschen, verteilst du es auf zwei oder drei.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/swipe/swipe-blue-editor.webp" alt="Grafischer Editor der Nova Swipe" width="720"></p>
 
 ## Wenn du zum ersten Mal Seiten zum Wischen willst, dann so
 

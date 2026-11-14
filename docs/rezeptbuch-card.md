@@ -2,6 +2,8 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/recipe-book/recipe-book-blue-old.webp" alt="Nova Rezeptbuch – Old Book" width="520"></p>
+
 Ein Kochbuch zum Blättern. Zugeklappt sieht man den Einband, Antippen schlägt das Buch auf, gewischt wird wie in einem echten
 Buch – nach links blättert vor, nach rechts zurück (oder Pfeiltasten). Unter dem Buch liegen große Knöpfe **Zurück**, **Inhalt** und **Weiter** im Stil des Buchs (gut zum Antippen am Wandpanel). Das Lesebändchen unten klappt es wieder zu.
 Die Rezepte kommen aus der [Nova-Integration](https://github.com/Blackstar9119/nova-integration) (Modul „Rezeptbuch“) –
@@ -23,6 +25,12 @@ dieselben wie in der [Nova Rezeptliste](rezept-card.md).
 
 Auf breitem Platz (ab 560 px) zeigt das Buch Doppelseiten: links Titel, Foto und Zutaten, rechts die Zubereitung.
 Schmaler gibt es eine Seite pro Rezept.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/recipe-book/recipe-book-blue-editor.webp" alt="Grafischer Editor der Nova Rezeptbuch" width="720"></p>
 
 ## Stile
 
@@ -66,3 +74,11 @@ Bildschirmrand“ und `close_after: 300`.
   `--nova-book-red`, `--nova-book-green`, `--nova-book-blue`.
 - Umstieg vom ersten Rezeptbuch (`shopping_list` mit todo-Liste): die Option entfällt, die Zutaten gehen jetzt in die
   Nova-Einkaufsliste. Rezepte aus der alten Integration werden nicht übernommen.
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/recipe-book/recipe-book-blue-old.webp" alt="Old Book"><br><sub>Old Book</sub></td><td align="center" width="50%"><img src="images/recipe-book/recipe-book-blue-modern.webp" alt="Modern Book"><br><sub>Modern Book</sub></td></tr>
+<tr><td align="center" width="50%"><img src="images/recipe-book/recipe-book-blue-fantasy.webp" alt="Fantasy Book"><br><sub>Fantasy Book</sub></td></tr>
+</table>
+

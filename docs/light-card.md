@@ -2,7 +2,15 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/light/light-blue-group.webp" alt="Nova Licht – Sammelkarte" width="520"></p>
+
 Lampen als Kacheln: Antippen schaltet, Regler dimmt, Kachel leuchtet in der Lichtfarbe. Eine Lampe = Einzelkachel, mehrere = Sammelkarte.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/light/light-blue-editor.webp" alt="Grafischer Editor der Nova Licht" width="720"></p>
 
 ```yaml
 type: custom:nova-light-card
@@ -29,3 +37,11 @@ entities:
 
 Je Lampe unter `entities` (statt nur der Entity-ID): `entity`, `name`, `icon`, `colors`, `tap_action`, `hold_action` und
 `slider: false` – dann hat die Kachel keinen Helligkeitsregler und wird flacher (praktisch für kleine Displays wie den Echo Show).
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/light/light-blue-group.webp" alt="Sammelkarte"><br><sub>Sammelkarte</sub></td><td align="center" width="50%"><img src="images/light/light-blue-on.webp" alt="An"><br><sub>An</sub></td></tr>
+<tr><td align="center" width="50%"><img src="images/light/light-blue-off.webp" alt="Aus"><br><sub>Aus</sub></td></tr>
+</table>
+

@@ -2,10 +2,18 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/area/area-blue-default.webp" alt="Nova Bereich – Standard" width="520"></p>
+
 Eine Raumansicht als großer Glasrahmen: oben eine Kopfzeile mit Zurück-Knopf, Icon und Raumname, darunter beliebige
 Karten in Zeilen und Spalten – genau wie in der Nova Pop-up Card, nur fest im Dashboard. Rechts neben dem Raumnamen
 sitzen auf Wunsch Chips (Werte oder Knöpfe wie „Alle Lichter im Raum aus“) – derselbe Baustein wie in der
 [Nova Chips Card](chips-card.md), die es zusätzlich als eigene Karte für das Raster gibt. Gedacht für Raum-Unteransichten (z. B. `/zuhause/wohnzimmer`).
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/area/area-blue-editor.webp" alt="Grafischer Editor der Nova Bereich" width="720"></p>
 
 ## Anlegen
 
@@ -80,3 +88,10 @@ rows:
       - card:
           type: custom:nova-media-card
 ```
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/area/area-blue-default.webp" alt="Standard"><br><sub>Standard</sub></td><td align="center" width="50%"><img src="images/area/area-blue-stacked.webp" alt="Gestapelt"><br><sub>Gestapelt</sub></td></tr>
+</table>
+

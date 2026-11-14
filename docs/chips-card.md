@@ -2,8 +2,16 @@
 
 [← Zurück zur Übersicht](../README.md)
 
+<p align="center"><img src="images/chips/chips-blue-default.webp" alt="Nova Chips – Standard" width="520"></p>
+
 Eine Reihe frei belegbarer Chips. Jeder Chip ist entweder ein **Wert-Chip** (zeigt den Zustand einer Entität) oder ein
 **Knopf-Chip** (führt eine Aktion aus). Alles lässt sich im grafischen Editor einstellen, Standard ist: keine Chips.
+
+## Einrichtung
+
+Am einfachsten über den grafischen Editor: Dashboard bearbeiten → **Karte hinzufügen** → nach „Nova“ suchen. Alle Optionen lassen sich dort einstellen, die Vorschau rechts zeigt das Ergebnis sofort.
+
+<p align="center"><img src="images/chips/chips-blue-editor.webp" alt="Grafischer Editor der Nova Chips" width="720"></p>
 
 ## Optionen der Karte
 
@@ -50,3 +58,10 @@ chips:
       target:
         entity_id: scene.wohnzimmer_gemutlich
 ```
+
+## Zustände
+
+<table>
+<tr><td align="center" width="50%"><img src="images/chips/chips-blue-default.webp" alt="Standard"><br><sub>Standard</sub></td><td align="center" width="50%"><img src="images/chips/chips-blue-colors.webp" alt="Farbrollen"><br><sub>Farbrollen</sub></td></tr>
+</table>
+

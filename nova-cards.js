@@ -800,6 +800,7 @@
       TOGGLE = ["light", "switch", "input_boolean", "fan", "cover", "group", "siren", "humidifier", "automation", "media_player", "valve"];
       PRESS = { button: ["button", "press"], input_button: ["input_button", "press"], script: ["script", "turn_on"], scene: ["scene", "turn_on"] };
       fmtState = (h, s) => {
+        if (!s) return "";
         try {
           if (h.formatEntityState) return h.formatEntityState(s);
           const u = s.attributes.unit_of_measurement;

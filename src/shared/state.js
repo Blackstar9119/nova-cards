@@ -8,6 +8,7 @@ export const TOGGLE = ['light', 'switch', 'input_boolean', 'fan', 'cover', 'grou
 export const PRESS = {button: ['button', 'press'], input_button: ['input_button', 'press'], script: ['script', 'turn_on'], scene: ['scene', 'turn_on']};
 
 export const fmtState = (h, s) => {
+  if (!s) return '';   // Entität fehlt (z. B. falsch eingetragen) – leer statt Absturz der ganzen Karte
   try {
     if (h.formatEntityState) return h.formatEntityState(s);
     const u = s.attributes.unit_of_measurement;
