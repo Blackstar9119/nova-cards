@@ -25,10 +25,10 @@ const COVERS = ['brown', 'red', 'green', 'blue'], STYLES = ['old', 'modern', 'fa
 const OPEN_MS = 1100, TURN_MS = 800, PAGE_RATIO = .72, IMG_MAX = 960;
 
 // Schriften: Caveat (Handschrift) und EB Garamond, Latin-Subset als woff2. Sie liegen in der Nova-Integration und kommen
-// von Home Assistant selbst (/nova/static/fonts) – nichts von fremden Servern, nichts im Haupt-Bundle. @font-face wird erst
+// von Home Assistant selbst (/nova_homeverse/static/fonts) – nichts von fremden Servern, nichts im Haupt-Bundle. @font-face wird erst
 // gesetzt, wenn ein Rezeptbuch zu sehen ist, und der Browser lädt eine Schrift erst, wenn Text in ihr erscheint.
 // Liefert die Integration sie (noch) nicht, greifen die Ersatzschriften. @font-face wirkt nur im Dokument, nicht im Shadow DOM.
-const FONT_URL = '/nova/static/fonts';
+const FONT_URL = '/nova_homeverse/static/fonts';
 let fontsLoaded = false;
 const loadFonts = () => {
   if (fontsLoaded) return;

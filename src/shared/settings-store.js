@@ -1,4 +1,4 @@
-/* Einstellungen der Nova-Integration (nova/settings/subscribe) – ein Abo je Verbindung für alle Karten, bleibt für die
+/* Einstellungen der Nova-Integration (nova_homeverse/settings/subscribe) – ein Abo je Verbindung für alle Karten, bleibt für die
    Sitzung offen. Ohne Integration oder mit einer älteren Version ohne Einstellungen bleibt alles beim bisherigen Standard.
    Reihenfolge überall: Option in der Karte → Nova-Einstellung → Standard der Karte. Geheimnisse kommen hier nie an. */
 
@@ -15,7 +15,7 @@ export function settingsOf(h) {
     conn.subscribeMessage(d => {
       s.data = d && typeof d === 'object' ? d : null;
       window.dispatchEvent(new CustomEvent(SETTINGS_EVENT));
-    }, {type: 'nova/settings/subscribe'}).catch(() => { /* Integration fehlt oder ist älter → Standardwerte */ });
+    }, {type: 'nova_homeverse/settings/subscribe'}).catch(() => { /* Integration fehlt oder ist älter → Standardwerte */ });
   }
   return s.data;
 }

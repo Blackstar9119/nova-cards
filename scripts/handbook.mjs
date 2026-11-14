@@ -1,4 +1,4 @@
-/* Editor-Bilder für die Rezepte im Handbuch (nova-integration/docs/de/karten/*.md).
+/* Editor-Bilder für die Rezepte im Handbuch (nova-homeverse/docs/de/karten/*.md).
    Aufruf: npm run screenshots:handbook [-- --only geraet,uhr] [-- --list geraet-card,clock-card]
 
    Je Rezept aus scripts/handbook.config.mjs: Karte in die Ansicht „handbuch“ des Showcase-Dashboards auf HA Dev legen,
@@ -16,7 +16,7 @@ import {LIST_STUBS, RECIPES} from './handbook.config.mjs';
 import {DASHBOARD} from './screenshots.config.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DOCS = join(ROOT, '../nova-integration/docs/images');
+const DOCS = join(ROOT, '../nova-homeverse/docs/images');
 const RAW = join(ROOT, 'screenshots/handbook');
 const VIEW = 'handbuch';
 const WIDTH = 1280, HEIGHT = 1400, SETTLE = 2500;

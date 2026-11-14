@@ -1,5 +1,5 @@
 /* Rezepte im Handbuch: je Eintrag ein Editor-Bild mit roten Rahmen (scripts/handbook.mjs).
-   page   Seite in nova-integration/docs/de/karten/<page>.md     id   Teil des Dateinamens
+   page   Seite in nova-homeverse/docs/de/karten/<page>.md     id   Teil des Dateinamens
    card   Kartentyp ohne „nova-“                                   img  Bildordner in docs/images (= Ordner der Karte)
    config Konfiguration der Beispielkarte (Demo-Entitäten von HA Dev)
    open   Bereiche, die aufgeklappt werden    items  Einträge in Listen (Anfang der Beschriftung, z. B. „1.“)

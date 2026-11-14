@@ -1,11 +1,11 @@
-/* README-Galerie von nova-integration: jede Karte genau einmal als Kachel 600 × 450, Theme-Vergleich und Hero.
+/* README-Galerie von nova-homeverse: jede Karte genau einmal als Kachel 600 × 450, Theme-Vergleich und Hero.
    Aufruf: npm run screenshots:gallery [-- --only room,chips] [-- --no-compare] [-- --no-hero] [-- --no-gallery] [-- --keep]
    Aufnahme aus HA Dev (Dashboard „Nova Showcase“, Konfiguration GALLERY in screenshots.config.mjs) mit:
      - fester Uhrzeit 18:30 (Uhr, Datum, Theme-Vergleich),
      - ruhigem, einfarbigem Dashboard-Hintergrund (statt Verlauf), damit die Kachel nahtlos ist,
      - Karte unverzerrt in der Kachel: passt sie hinein, mittig; sehr hohe Karten oben angeschnitten (sanft ausgeblendet);
        sehr flache Karten zusammen mit Nachbarkarten (stack), damit die Kachel nicht leer wirkt.
-   Ergebnis: ../nova-integration/docs/images/gallery/<karte>.webp, themes/compare-<theme>.webp, themes/hero-blue.webp.
+   Ergebnis: ../nova-homeverse/docs/images/gallery/<karte>.webp, themes/compare-<theme>.webp, themes/hero-blue.webp.
    Rohbilder (PNG, 2×) landen in screenshots/gallery/ (gitignored). Braucht .env mit HA_URL und HA_TOKEN. */
 import {chromium} from 'playwright';
 import {execFileSync} from 'node:child_process';
@@ -16,7 +16,7 @@ import {CARDS, COMPARE, DASHBOARD, GALLERY, HERO, THEMES} from './screenshots.co
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = join(ROOT, 'screenshots/gallery');
-let DOCS = join(ROOT, '../nova-integration/docs/images');
+let DOCS = join(ROOT, '../nova-homeverse/docs/images');
 const WIDTH = 1280, HEIGHT = 900, PAD = 24, SETTLE = 2500;
 const TILE = {w: 600, h: 450};                       // Ausgabe; aufgebaut wird in 2× (1200 × 900)
 const TIME = '2026-11-14T18:30:00';                  // Demo-Uhrzeit (Ortszeit des Browsers)
@@ -111,14 +111,14 @@ async function open(view, hash = '', {keepNavi = false} = {}) {
 }
 
 async function setTheme(key) {
-  await hass(async (h, k) => { await h.callWS({type: 'nova/theme/set', theme: k}); }, key);
+  await hass(async (h, k) => { await h.callWS({type: 'nova_homeverse/theme/set', theme: k}); }, key);
   await sleep(800);
 }
 async function themeNow() {
   return page.evaluate(() => new Promise(res => {
     const c = document.querySelector('home-assistant')?.hass?.connection;
     let unsub; const t = setTimeout(() => res(undefined), 3000);
-    c.subscribeMessage(m => { clearTimeout(t); res(m?.theme); unsub?.then(u => u()); }, {type: 'nova/theme/subscribe'})
+    c.subscribeMessage(m => { clearTimeout(t); res(m?.theme); unsub?.then(u => u()); }, {type: 'nova_homeverse/theme/subscribe'})
       .then(u => { unsub = Promise.resolve(u); }).catch(() => { clearTimeout(t); res(undefined); });
   }));
 }
@@ -238,7 +238,7 @@ async function tile(files, mode, out, {w = TILE.w, h = TILE.h, color = BG.blau} 
 async function addItems(items) {
   const ids = [];
   for (const it of [...items].reverse()) {
-    const r = await hass((h, item) => h.callWS({type: 'nova/shopping/item_save', item}), it);
+    const r = await hass((h, item) => h.callWS({type: 'nova_homeverse/shopping/item_save', item}), it);
     if (r?.id) ids.push(r.id); else if (r?.item?.id) ids.push(r.item.id);
   }
   await sleep(800);
@@ -265,7 +265,7 @@ try {
       const file = join(RAW, `${g.card}-${n}.png`);
       if (await capture(cc, s, file, g.vw)) shots.push(file);
     }
-    for (const id of demo) await hass((h, i) => h.callWS({type: 'nova/shopping/item_delete', item_id: i}), id);
+    for (const id of demo) await hass((h, i) => h.callWS({type: 'nova_homeverse/shopping/item_delete', item_id: i}), id);
     if (shots.length !== (g.parts || [{}]).length) continue;
     await tile(shots, g.mode || 'fit', join(DOCS, 'gallery', `${g.card}.webp`));
     log('  ✓ gallery/' + g.card + '.webp');

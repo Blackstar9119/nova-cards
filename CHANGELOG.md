@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen an Nova Cards. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionsnummern nach [Semantic Versioning](https://semver.org/lang/de/).
 
+## [Unveröffentlicht]
+
+### Geändert
+- Umbenennung in Nova Homeverse abgeschlossen: Die Karten und das Nova-Panel nutzen die WebSocket-Befehle
+  `nova_homeverse/…` (die alten `nova/…` gibt es nicht mehr), Bilder unter `/local/nova_homeverse/…`, Schriften des
+  Rezeptbuchs unter `/nova_homeverse/static/fonts`. Das Panel-Element heißt `nova-homeverse-panel`. Braucht Nova Homeverse
+  aus derselben Version.
+- Links (Hilfe-Link im Karteneditor, README) und Pfade der Skripte zeigen auf das Repo `nova-homeverse` (früher
+  `nova-integration`).
+
 ## [0.1.0b8] – 2026-11-14
 
 ### Behoben

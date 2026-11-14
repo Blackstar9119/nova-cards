@@ -411,7 +411,7 @@
         s.data = d;
         s.err = null;
         s.cards.forEach((fn) => fn(d, null));
-      }, { type: `nova/${kind}/subscribe` }).catch((err) => {
+      }, { type: `nova_homeverse/${kind}/subscribe` }).catch((err) => {
         s.err = reason(err);
         s.unsub = null;
         if (s.err !== "missing") console.warn(`[nova-cards] Nova-Integration: Abo ${kind} fehlgeschlagen`, err);
@@ -444,32 +444,32 @@
       storeHint = (err, kind) => err === "missing" ? ["mdi:puzzle-plus-outline", "Die Integration Nova Homeverse fehlt. Im Marketplace „Nova Homeverse“ installieren und unter Einstellungen → Geräte & Dienste hinzufügen."] : err === "disabled" ? ["mdi:toggle-switch-off-outline", `Das Modul „${MODULE_NAMES[kind] || kind}“ ist in den Optionen von Nova Homeverse abgeschaltet.`] : ["mdi:alert-circle-outline", "Die Daten konnten nicht geladen werden."];
       ws = (hass, type, data = {}) => hass.callWS({ type, ...data });
       notes = {
-        save: (hass, note) => ws(hass, "nova/notes/save", { note }).then((r) => r.note),
-        remove: (hass, id) => ws(hass, "nova/notes/delete", { note_id: id })
+        save: (hass, note) => ws(hass, "nova_homeverse/notes/save", { note }).then((r) => r.note),
+        remove: (hass, id) => ws(hass, "nova_homeverse/notes/delete", { note_id: id })
       };
       shop = {
-        save: (hass, item) => ws(hass, "nova/shopping/item_save", { item }).then((r) => r.item),
-        remove: (hass, id) => ws(hass, "nova/shopping/item_delete", { item_id: id }),
-        clearDone: (hass) => ws(hass, "nova/shopping/clear_done"),
-        reorder: (hass, ids) => ws(hass, "nova/shopping/reorder", { ids }),
-        forget: (hass, key) => ws(hass, "nova/shopping/history_delete", { key }),
-        saveStore: (hass, store) => ws(hass, "nova/shopping/store_save", { store }).then((r) => r.store),
-        removeStore: (hass, id) => ws(hass, "nova/shopping/store_delete", { store_id: id }),
-        setSync: (hass, entityId) => ws(hass, "nova/shopping/set_sync", { entity_id: entityId || null })
+        save: (hass, item) => ws(hass, "nova_homeverse/shopping/item_save", { item }).then((r) => r.item),
+        remove: (hass, id) => ws(hass, "nova_homeverse/shopping/item_delete", { item_id: id }),
+        clearDone: (hass) => ws(hass, "nova_homeverse/shopping/clear_done"),
+        reorder: (hass, ids) => ws(hass, "nova_homeverse/shopping/reorder", { ids }),
+        forget: (hass, key) => ws(hass, "nova_homeverse/shopping/history_delete", { key }),
+        saveStore: (hass, store) => ws(hass, "nova_homeverse/shopping/store_save", { store }).then((r) => r.store),
+        removeStore: (hass, id) => ws(hass, "nova_homeverse/shopping/store_delete", { store_id: id }),
+        setSync: (hass, entityId) => ws(hass, "nova_homeverse/shopping/set_sync", { entity_id: entityId || null })
       };
       recipes = {
-        save: (hass, recipe) => ws(hass, "nova/recipes/save", { recipe }).then((r) => r.recipe),
-        remove: (hass, id) => ws(hass, "nova/recipes/delete", { recipe_id: id }),
+        save: (hass, recipe) => ws(hass, "nova_homeverse/recipes/save", { recipe }).then((r) => r.recipe),
+        remove: (hass, id) => ws(hass, "nova_homeverse/recipes/delete", { recipe_id: id }),
         // Zutaten auf die Einkaufsliste; servings rechnet um, only = Positionen der Zutaten
         // Rezeptseite lesen → {recipe: Entwurf (mit image_data, source), duplicates}; speichert nichts
-        importUrl: (hass, url) => ws(hass, "nova/recipes/import", { url }),
-        toShopping: (hass, id, servings, only) => ws(hass, "nova/recipes/to_shopping", { recipe_id: id, ...servings ? { servings } : {}, ...only ? { only } : {} }).then((r) => r.added)
+        importUrl: (hass, url) => ws(hass, "nova_homeverse/recipes/import", { url }),
+        toShopping: (hass, id, servings, only) => ws(hass, "nova_homeverse/recipes/to_shopping", { recipe_id: id, ...servings ? { servings } : {}, ...only ? { only } : {} }).then((r) => r.added)
       };
-      theme = { set: (hass, key) => ws(hass, "nova/theme/set", { theme: key }) };
-      uploadImage = (hass, module, data) => ws(hass, "nova/image/upload", { module, data });
+      theme = { set: (hass, key) => ws(hass, "nova_homeverse/theme/set", { theme: key }) };
+      uploadImage = (hass, module, data) => ws(hass, "nova_homeverse/image/upload", { module, data });
       imageUrl = (hass, module, name) => {
         if (!name || !/^[a-f0-9]{32}\.(webp|jpg|png)$/.test(name)) return "";
-        const path = `/local/nova/${module}/${name}`;
+        const path = `/local/nova_homeverse/${module}/${name}`;
         return hass?.hassUrl ? hass.hassUrl(path) : path;
       };
     }
@@ -486,7 +486,7 @@
         s.ok = true;
         s.key = THEMES[m?.theme] ? m.theme : void 0;
         window.dispatchEvent(new CustomEvent(THEME_EVENT));
-      }, { type: "nova/theme/subscribe" }).catch(() => {
+      }, { type: "nova_homeverse/theme/subscribe" }).catch(() => {
       });
     }
     return s;
@@ -557,7 +557,7 @@
       conn.subscribeMessage((d) => {
         s.data = d && typeof d === "object" ? d : null;
         window.dispatchEvent(new CustomEvent(SETTINGS_EVENT));
-      }, { type: "nova/settings/subscribe" }).catch(() => {
+      }, { type: "nova_homeverse/settings/subscribe" }).catch(() => {
       });
     }
     return s.data;
@@ -725,7 +725,7 @@
           if (!window.customCards.some((c) => c.type === t)) window.customCards.push({ type: t, preview: true, ...meta });
         }
       };
-      HANDBUCH = "https://github.com/Blackstar9119/nova-integration/blob/main/docs/de/karten";
+      HANDBUCH = "https://github.com/Blackstar9119/nova-homeverse/blob/main/docs/de/karten";
       docUrl = (page) => `${HANDBUCH}/${page}.md`;
     }
   });
@@ -18589,7 +18589,7 @@ transition:border-color var(--nv-d2),box-shadow var(--nv-d2)}
       TURN_MS = 800;
       PAGE_RATIO = 0.72;
       IMG_MAX = 960;
-      FONT_URL = "/nova/static/fonts";
+      FONT_URL = "/nova_homeverse/static/fonts";
       fontsLoaded = false;
       loadFonts = () => {
         if (fontsLoaded) return;

@@ -3,7 +3,7 @@
    Integration (custom_components/nova_homeverse/static/nova-panel.js), die sie als Panel „Nova Homeverse“ anmeldet (nur Admins).
    Aufbau: links eine schmale Navigation, rechts immer genau ein Abschnitt in einer ruhigen Spalte. Optik wie die Karten
    (Tokens aus theme.js, gewähltes globales Theme und Hintergrund). Jede Änderung speichert sofort; das Abo
-   nova/settings/subscribe hält die Seite auf allen Geräten aktuell. Das Mealie-Token kommt nie hierher, nur token_gesetzt. */
+   nova_homeverse/settings/subscribe hält die Seite auf allen Geräten aktuell. Das Mealie-Token kommt nie hierher, nur token_gesetzt. */
 import {BACKGROUNDS, NOVA_VARS, THEMES, THEME_KEYS, TOKENS} from './shared/theme.js';
 import {FIELD_CSS} from './shared/styles.js';
 import {esc} from './shared/utils.js';
@@ -174,8 +174,8 @@ class NovaPanel extends HTMLElement {
     if (!conn || !this.isConnected) return;
     this._conn = conn;
     // Version der Integration (ältere kennen das Feld nicht → keine Angabe)
-    conn.sendMessagePromise({type: 'nova/info'}).then(i => { this._ver = i?.version || ''; this._render(); }).catch(() => {});
-    this._unsub = conn.subscribeMessage(s => { this._s = s; this._err = ''; this._shop(); this._render(); }, {type: 'nova/settings/subscribe'})
+    conn.sendMessagePromise({type: 'nova_homeverse/info'}).then(i => { this._ver = i?.version || ''; this._render(); }).catch(() => {});
+    this._unsub = conn.subscribeMessage(s => { this._s = s; this._err = ''; this._shop(); this._render(); }, {type: 'nova_homeverse/settings/subscribe'})
       .catch(e => { this._err = e?.code === 'unknown_command' ? 'Diese Version von Nova Homeverse kennt noch keine Einstellungen.' : (e?.message || 'Einstellungen konnten nicht geladen werden.'); this._render(); return null; });
   }
 
@@ -186,7 +186,7 @@ class NovaPanel extends HTMLElement {
       this._unsubShop = this._conn.subscribeMessage(d => {
         const st = (d?.stores || []).map(s => ({id: s.id, name: s.name, icon: s.icon}));
         if (JSON.stringify(st) !== JSON.stringify(this._stores)) { this._stores = st; this._render(); }
-      }, {type: 'nova/shopping/subscribe'}).catch(() => null);
+      }, {type: 'nova_homeverse/shopping/subscribe'}).catch(() => null);
     } else if (!on && this._unsubShop) {
       const u = this._unsubShop; this._unsubShop = null; this._stores = [];
       u.then(f => typeof f === 'function' && f()).catch(() => {});
@@ -198,8 +198,8 @@ class NovaPanel extends HTMLElement {
     try { const r = await this._h.callWS(msg); this._status('ok', ok); return r; } catch (e) { this._status('err', e?.message || 'Nicht gespeichert'); return null; }
   }
 
-  _set(section, values) { return this._ws({type: 'nova/settings/set', settings: {[section]: values}}); }
-  _reset(section) { return this._ws({type: 'nova/settings/reset', ...(section ? {bereich: section} : {})}, 'Zurückgesetzt'); }
+  _set(section, values) { return this._ws({type: 'nova_homeverse/settings/set', settings: {[section]: values}}); }
+  _reset(section) { return this._ws({type: 'nova_homeverse/settings/reset', ...(section ? {bereich: section} : {})}, 'Zurückgesetzt'); }
 
   _status(kind, text) {
     const el = this.shadowRoot.querySelector('.st');
@@ -391,13 +391,13 @@ ${this._ver ? `<div class="ver">Nova Homeverse ${esc(this._ver)}</div>` : ''}`;
     if (!name) { inp?.focus(); return; }
     inp.value = '';
     inp.blur();
-    await this._ws({type: 'nova/shopping/store_save', store: {name}}, 'Geschäft angelegt');
+    await this._ws({type: 'nova_homeverse/shopping/store_save', store: {name}}, 'Geschäft angelegt');
   }
 
   async _renameStore(id) {
     const name = this.shadowRoot.querySelector(`[data-rename="${CSS.escape(id)}"]`)?.value.trim();
     this._edit = null;
-    if (name && name !== this._stores.find(x => x.id === id)?.name) await this._ws({type: 'nova/shopping/store_save', store: {id, name}}, 'Umbenannt');
+    if (name && name !== this._stores.find(x => x.id === id)?.name) await this._ws({type: 'nova_homeverse/shopping/store_save', store: {id, name}}, 'Umbenannt');
     this._render();
   }
 
@@ -442,7 +442,7 @@ ${this._ver ? `<div class="ver">Nova Homeverse ${esc(this._ver)}</div>` : ''}`;
     } else if ('rcancel' in d) {
       this._edit = null; this._render();
     } else if (d.del) {
-      if (this._armed(`del:${d.del}`)) { this._ws({type: 'nova/shopping/store_delete', store_id: d.del}, 'Geschäft gelöscht'); this._render(); }
+      if (this._armed(`del:${d.del}`)) { this._ws({type: 'nova_homeverse/shopping/store_delete', store_id: d.del}, 'Geschäft gelöscht'); this._render(); }
     }
   }
 
@@ -465,4 +465,4 @@ ${this._ver ? `<div class="ver">Nova Homeverse ${esc(this._ver)}</div>` : ''}`;
   }
 }
 
-if (!customElements.get('nova-settings-panel')) customElements.define('nova-settings-panel', NovaPanel);
+if (!customElements.get('nova-homeverse-panel')) customElements.define('nova-homeverse-panel', NovaPanel);

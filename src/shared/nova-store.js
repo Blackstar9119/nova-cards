@@ -27,7 +27,7 @@ export function watch(hass, kind, card, onChange) {
     s.unsub = conn.subscribeMessage(d => {
       s.data = d; s.err = null;
       s.cards.forEach(fn => fn(d, null));
-    }, {type: `nova/${kind}/subscribe`}).catch(err => {
+    }, {type: `nova_homeverse/${kind}/subscribe`}).catch(err => {
       s.err = reason(err); s.unsub = null;
       if (s.err !== 'missing') console.warn(`[nova-cards] Nova-Integration: Abo ${kind} fehlgeschlagen`, err);
       s.cards.forEach(fn => fn(s.data, s.err));
@@ -50,37 +50,37 @@ export function watch(hass, kind, card, onChange) {
 const ws = (hass, type, data = {}) => hass.callWS({type, ...data});
 
 export const notes = {
-  save: (hass, note) => ws(hass, 'nova/notes/save', {note}).then(r => r.note),
-  remove: (hass, id) => ws(hass, 'nova/notes/delete', {note_id: id}),
+  save: (hass, note) => ws(hass, 'nova_homeverse/notes/save', {note}).then(r => r.note),
+  remove: (hass, id) => ws(hass, 'nova_homeverse/notes/delete', {note_id: id}),
 };
 
 export const shop = {
-  save: (hass, item) => ws(hass, 'nova/shopping/item_save', {item}).then(r => r.item),
-  remove: (hass, id) => ws(hass, 'nova/shopping/item_delete', {item_id: id}),
-  clearDone: hass => ws(hass, 'nova/shopping/clear_done'),
-  reorder: (hass, ids) => ws(hass, 'nova/shopping/reorder', {ids}),
-  forget: (hass, key) => ws(hass, 'nova/shopping/history_delete', {key}),
-  saveStore: (hass, store) => ws(hass, 'nova/shopping/store_save', {store}).then(r => r.store),
-  removeStore: (hass, id) => ws(hass, 'nova/shopping/store_delete', {store_id: id}),
-  setSync: (hass, entityId) => ws(hass, 'nova/shopping/set_sync', {entity_id: entityId || null}),
+  save: (hass, item) => ws(hass, 'nova_homeverse/shopping/item_save', {item}).then(r => r.item),
+  remove: (hass, id) => ws(hass, 'nova_homeverse/shopping/item_delete', {item_id: id}),
+  clearDone: hass => ws(hass, 'nova_homeverse/shopping/clear_done'),
+  reorder: (hass, ids) => ws(hass, 'nova_homeverse/shopping/reorder', {ids}),
+  forget: (hass, key) => ws(hass, 'nova_homeverse/shopping/history_delete', {key}),
+  saveStore: (hass, store) => ws(hass, 'nova_homeverse/shopping/store_save', {store}).then(r => r.store),
+  removeStore: (hass, id) => ws(hass, 'nova_homeverse/shopping/store_delete', {store_id: id}),
+  setSync: (hass, entityId) => ws(hass, 'nova_homeverse/shopping/set_sync', {entity_id: entityId || null}),
 };
 
 export const recipes = {
-  save: (hass, recipe) => ws(hass, 'nova/recipes/save', {recipe}).then(r => r.recipe),
-  remove: (hass, id) => ws(hass, 'nova/recipes/delete', {recipe_id: id}),
+  save: (hass, recipe) => ws(hass, 'nova_homeverse/recipes/save', {recipe}).then(r => r.recipe),
+  remove: (hass, id) => ws(hass, 'nova_homeverse/recipes/delete', {recipe_id: id}),
   // Zutaten auf die Einkaufsliste; servings rechnet um, only = Positionen der Zutaten
   // Rezeptseite lesen → {recipe: Entwurf (mit image_data, source), duplicates}; speichert nichts
-  importUrl: (hass, url) => ws(hass, 'nova/recipes/import', {url}),
-  toShopping: (hass, id, servings, only) => ws(hass, 'nova/recipes/to_shopping', {recipe_id: id, ...(servings ? {servings} : {}), ...(only ? {only} : {})}).then(r => r.added),
+  importUrl: (hass, url) => ws(hass, 'nova_homeverse/recipes/import', {url}),
+  toShopping: (hass, id, servings, only) => ws(hass, 'nova_homeverse/recipes/to_shopping', {recipe_id: id, ...(servings ? {servings} : {}), ...(only ? {only} : {})}).then(r => r.added),
 };
 
-export const theme = {set: (hass, key) => ws(hass, 'nova/theme/set', {theme: key})};
+export const theme = {set: (hass, key) => ws(hass, 'nova_homeverse/theme/set', {theme: key})};
 
 // Bild hochladen (data-URL, schon verkleinert); module = shopping | recipes. Liefert {image, url}
-export const uploadImage = (hass, module, data) => ws(hass, 'nova/image/upload', {module, data});
-// Adresse eines gespeicherten Bilds (liegt in /config/www/nova/<modul>/)
+export const uploadImage = (hass, module, data) => ws(hass, 'nova_homeverse/image/upload', {module, data});
+// Adresse eines gespeicherten Bilds (liegt in /config/www/nova_homeverse/<modul>/)
 export const imageUrl = (hass, module, name) => {
   if (!name || !/^[a-f0-9]{32}\.(webp|jpg|png)$/.test(name)) return '';
-  const path = `/local/nova/${module}/${name}`;
+  const path = `/local/nova_homeverse/${module}/${name}`;
   return hass?.hassUrl ? hass.hassUrl(path) : path;
 };
